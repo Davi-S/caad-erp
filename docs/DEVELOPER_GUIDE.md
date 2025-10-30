@@ -4,7 +4,7 @@ This guide captures the internal architecture decisions, design principles,
 and development workflow for the CAAD ERP project. It is intended for
 developers who maintain or extend the codebase.
 
-## 1. Project Overview & Core Philosophy
+## Project Overview & Core Philosophy
 
 ### What Are We Building?
 
@@ -20,28 +20,27 @@ sales, and reporting, with a focus on clarity for non-technical operators.
 
 ### Guiding Principles
 
-1. **Robustness & Integrity:** The system must never diverge from the truth; an
+- **Robustness & Integrity:** The system must never diverge from the truth; an
 audit trail is mandatory.
-2. **Ease of Analysis:** Outputs are optimized for Microsoft Excel users using
+- **Ease of Analysis:** Outputs are optimized for Microsoft Excel users using
 basic formulas and pivot tables.
-3. **Maintainability:** Code must remain clean, modular, and well-documented so
+- **Maintainability:** Code must remain clean, modular, and well-documented so
 new developers can onboard quickly.
 
-## 2. Immutable Transaction Log
+## Immutable Transaction Log
 
 The project uses an append-only `TransactionLog` stored in Excel. Data is never
 deleted or edited. Business logic adds new rows for every event, including
 corrections.
 
-- `SUM(TransactionLog.QuantityChange)` derives real-time stock levels.
 - `VOID` transactions reverse mistakes while preserving the audit trail.
 - The log ensures the system cannot be corrupted by accidental edits.
 
-## 3. Data Model
+## Data Model
 
 The "database" lives alongside a user-editable configuration file.
 
-### 3.1 Configuration (`config.ini`)
+### Configuration (`config.ini`)
 
 - `[System]`
   - `DataFile`: Path to the Excel data file.
@@ -49,7 +48,7 @@ The "database" lives alongside a user-editable configuration file.
 - `[Defaults]`
   - `DefaultSalesman`: Fallback `SalesmanID` for new sales.
 
-### 3.2 Excel Workbook (`lounge_master_data.xlsx`)
+### Excel Workbook
 
 The workbook is the source of truth and should only be modified through the
 application. It contains three sheets:
@@ -63,7 +62,7 @@ application. It contains three sheets:
     `SalesmanID`, `PaymentType`, `QuantityChange`, `TotalRevenue`,
     `TotalCost`, `LinkedTransactionID`, `Notes`.
 
-### 3.3 Separate Revenue and Cost Columns
+### Separate Revenue and Cost Columns
 
 `TotalRevenue` tracks money received; `TotalCost` tracks money spent on
 inventory. Using two columns keeps Excel analysis simple:
@@ -72,49 +71,50 @@ inventory. Using two columns keeps Excel analysis simple:
 - Cost of stock: `SUM(TotalCost)`
 - Profit: `SUM(TotalRevenue) + SUM(TotalCost)`
 
-## 4. Core Business Logic
+### Stock levels
 
-### 4.1 Transaction Types
+`SUM(TransactionLog.QuantityChange)` derives real-time stock levels.
+
+## Core Business Logic
+
+### Transaction Types
 
 1. `OPEN_STOCK`: Created by the archive script to seed a new period.
 2. `SALE`: Reduces stock and logs revenue.
-3. `RESTOCK`: Increases stock and records inventory spend (supports donations
-   when cost is `0.00`).
+3. `RESTOCK`: Increases stock and records inventory spend.
 4. `WRITE_OFF`: Reduces stock without revenue (spoilage, theft, etc.).
-5. `CREDIT_PAYMENT`: Captures cash received for an earlier credit sale.
+5. `CREDIT_PAYMENT`: Captures the payment received for an earlier credit sale.
 6. `VOID`: Perfect reversal of an incorrect transaction, linked to the original
    entry.
 
-### 4.2 Workflows
+### Workflows
 
-- **Discounts:** Handled by allowing the UI to accept any `TotalRevenue` during
-  a sale.
+- **Discounts:** Handled by allowing any `TotalRevenue` during a sale. Even
+if it will differ from the product's sell price.
 - **Sell on Credit:** Logged as a `SALE` with `PaymentType="On Credit"` and
   zero revenue, paired with a subsequent `CREDIT_PAYMENT` that references the
   original transaction via `LinkedTransactionID`.
 - **Error Correction:** Uses the "Reversal and Re-entry" method. A `VOID`
   transaction reverses the mistake, followed by a new entry with the correct
-  data.
+  data (optional for only deleting the mistake).
+- **Archiving:** In the end of a period, a script recalculates inventory, seeds
+`OPEN_STOCK` entries in a new workbook, prunes inactive products or salesmen with no
+activity, and renames the old file.
 
-## 5. Application Architecture
+## Application Architecture
 
 The code follows a three-layer design:
 
 1. **Data Access Layer (DAL) – `data_manager.py`:**
-   Handles Excel I/O, implemented with `openpyxl`. Contains utilities such as
-   `get_all_data()`, `append_transaction()`, and `update_row()`.
-
+   Handles Excel I/O, implemented with `openpyxl`.
 2. **Business Logic Layer (BLL) – `core_logic.py`:**
    Encapsulates rules and workflows, calling into the DAL without caring about
-   presentation concerns. Includes functions like `process_sale()`,
-   `process_credit_payment()`, `process_void()`, `get_unpaid_debts()`, and
-   `calculate_stock()`.
-
+   presentation concerns.
 3. **Presentation Layer (UI):**
    Not yet implemented. Future CLI or web interface will be a thin wrapper
    around the BLL.
 
-## 6. Development Workflow
+## Development Workflow
 
 - **Test-Driven Development:** New functionality should be driven by
   `pytest`-based tests under `tests/`.

@@ -4,7 +4,7 @@ Thank you for your interest in improving CAAD ERP! This document lays out the
 expectations for contributors so that changes remain predictable, maintainable,
 and easy to review.
 
-## 1. Prerequisites
+## Prerequisites
 
 - Python 3.13 or newer.
 - Git and a GitHub account (or access to the project host).
@@ -13,9 +13,9 @@ and easy to review.
 Optional but encouraged:
 
 - Familiarity with the architectural overview in `docs/DEVELOPER_GUIDE.md`.
-- A protected Excel workbook for local integration experiments.
+- An Excel workbook for local integration experiments.
 
-## 2. Local Environment Setup
+## Local Environment Setup
 
 ```bash
 git clone https://github.com/your-org/caad_erp.git
@@ -28,7 +28,7 @@ pip install -e .
 Adjust `config.ini` if you need to point at a local data file. All development
 commands assume your virtual environment is active.
 
-## 3. Workflow Expectations
+## Workflow Expectations
 
 1. **Discuss larger changes first.** Open an issue or join an existing
    conversation before starting significant work.
@@ -41,7 +41,7 @@ commands assume your virtual environment is active.
 5. **Stay synced.** Rebase or merge `main` frequently to reduce conflicts and
    ensure compatibility with the current code base.
 
-## 4. Coding Standards
+## Coding Standards
 
 - Follow the three-layer architecture (DAL, BLL, Presentation). Respect module
   boundaries spelled out in `docs/DEVELOPER_GUIDE.md`.
@@ -53,37 +53,46 @@ commands assume your virtual environment is active.
   one-liners.
 - Do not introduce new runtime dependencies without prior discussion.
 
-## 5. Testing Checklist
+## Running Tests Locally
 
 Before submitting a pull request:
 
-1. Run the entire test suite:
+1. Activate your virtual environment and confirm dependencies are installed:
+
+   ```bash
+   pip install -e .
+   ```
+
+2. Point `config.ini` at a local Excel workbook if your change touches data
+   access or integration flows.
+3. Execute the test suite:
 
    ```bash
    pytest
    ```
 
-2. Add regression tests for any bug fixes.
-3. Ensure new features have coverage at both the business-logic level and, when
-   applicable, integration tests.
-4. Verify documentation snippets or examples still execute as written.
+4. Add regression tests for fixes and coverage for new features. The suite in
+   `tests/` is the primary way to demonstrate expected behavior until the user
+   interface ships.
+5. Verify documentation snippets or examples still execute as written.
 
-## 6. Documentation & Changelog
+## Documentation & Changelog
 
 - Update `README.md` when user-facing behavior or setup steps change.
 - Extend `docs/DEVELOPER_GUIDE.md` if architectural decisions or workflows are
   adjusted.
 - Note breaking changes or significant additions in the pull request body.
 
-## 7. Pull Request Checklist
+## Pull Request Checklist
 
 - [ ] Tests pass locally (`pytest`).
 - [ ] New or updated tests cover the change.
 - [ ] Documentation updates (if needed) are included.
 - [ ] Branch is up-to-date with `main`.
 - [ ] PR description explains the motivation, approach, and testing performed.
+- [ ] All tests in the tests suit are passing.
 
-## 8. Communication
+## Communication
 
 Be respectful, concise, and collaborative. If you are stuck:
 
