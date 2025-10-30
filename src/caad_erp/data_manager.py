@@ -29,7 +29,6 @@ CONFIG_FILE_NAME = "config.ini"
 PRODUCTS_SHEET = SheetName.PRODUCTS.value
 SALESMEN_SHEET = SheetName.SALESMEN.value
 TRANSACTION_LOG_SHEET = SheetName.TRANSACTION_LOG.value
-METADATA_SHEET = SheetName.METADATA.value
 
 
 @dataclass(frozen=True)

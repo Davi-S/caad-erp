@@ -83,16 +83,11 @@ def test_load_runtime_context_returns_context(config_file):
     assert context.settings.data_file.exists()
 
 
-def test_ensure_schema_version_rejects_mismatch(config_file):
+def test_ensure_schema_version_rejects_mismatch(config_factory):
     """Schema mismatches should surface a RuntimeError with clear messaging."""
 
-    workbook = openpyxl.load_workbook(config_file.parent / "master_workbook.xlsx")
-    metadata_sheet = workbook.create_sheet(constants.SheetName.METADATA.value)
-    metadata_sheet["A1"] = "SchemaVersion"
-    metadata_sheet["B1"] = "0.9"
-    workbook.save(config_file.parent / "master_workbook.xlsx")
-
-    context = core_logic.load_runtime_context(config_file)
+    bundle = config_factory(schema_version="0.9")
+    context = core_logic.load_runtime_context(bundle.config_path)
     with pytest.raises(RuntimeError):
         core_logic.ensure_schema_version(context)
 

@@ -38,7 +38,6 @@ class SheetName(str, Enum):
     PRODUCTS = "Products"
     SALESMEN = "Salesmen"
     TRANSACTION_LOG = "TransactionLog"
-    METADATA = "Metadata"
 
 
 __all__ = [
