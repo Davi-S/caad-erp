@@ -9,7 +9,7 @@ from pathlib import Path
 import openpyxl
 import pytest
 
-from caad_erp import core_logic, data_manager  # noqa: E402
+from caad_erp import constants, core_logic, data_manager  # noqa: E402
 
 
 @pytest.fixture
@@ -23,14 +23,14 @@ def runtime_context(config_file):
 
 def _append_product(workbook_path: Path, *, product_id: str, name: str, price: Decimal, is_active: bool = True) -> None:
     workbook = openpyxl.load_workbook(workbook_path)
-    sheet = workbook["Products"]
+    sheet = workbook[constants.SheetName.PRODUCTS.value]
     sheet.append([product_id, name, str(price), is_active])
     workbook.save(workbook_path)
 
 
 def _append_salesman(workbook_path: Path, *, salesman_id: str, name: str, is_active: bool = True) -> None:
     workbook = openpyxl.load_workbook(workbook_path)
-    sheet = workbook["Salesmen"]
+    sheet = workbook[constants.SheetName.SALESMEN.value]
     sheet.append([salesman_id, name, is_active])
     workbook.save(workbook_path)
 
@@ -51,7 +51,7 @@ def _append_transaction(
     notes: str | None,
 ) -> None:
     workbook = openpyxl.load_workbook(workbook_path)
-    sheet = workbook["TransactionLog"]
+    sheet = workbook[constants.SheetName.TRANSACTION_LOG.value]
     sheet.append(
         [
             transaction_id,
@@ -87,7 +87,7 @@ def test_ensure_schema_version_rejects_mismatch(config_file):
     """Schema mismatches should surface a RuntimeError with clear messaging."""
 
     workbook = openpyxl.load_workbook(config_file.parent / "master_workbook.xlsx")
-    metadata_sheet = workbook.create_sheet("Metadata")
+    metadata_sheet = workbook.create_sheet(constants.SheetName.METADATA.value)
     metadata_sheet["A1"] = "SchemaVersion"
     metadata_sheet["B1"] = "0.9"
     workbook.save(config_file.parent / "master_workbook.xlsx")
@@ -144,10 +144,10 @@ def test_list_transactions_returns_all_rows(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T1",
         timestamp="2025-10-30T00:00:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P1",
         salesman_id="S-DEFAULT",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change="-1",
         total_revenue="1.00",
         total_cost="0.00",
@@ -195,7 +195,7 @@ def test_get_transaction_returns_match(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T55",
         timestamp="2025-10-30T01:00:00",
-        transaction_type="RESTOCK",
+        transaction_type=constants.TransactionType.RESTOCK.value,
         product_id="P10",
         salesman_id=None,
         payment_type=None,
@@ -208,7 +208,7 @@ def test_get_transaction_returns_match(config_file):
 
     context = core_logic.load_runtime_context(config_file)
     transaction = core_logic.get_transaction(context, "T55")
-    assert transaction.transaction_type == "RESTOCK"
+    assert transaction.transaction_type == constants.TransactionType.RESTOCK.value
 
 
 def test_calculate_inventory_rolls_up_quantities(config_file):
@@ -218,10 +218,10 @@ def test_calculate_inventory_rolls_up_quantities(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T100",
         timestamp="2025-10-30T02:00:00",
-        transaction_type="RESTOCK",
+        transaction_type=constants.TransactionType.RESTOCK.value,
         product_id="P10",
         salesman_id=None,
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change="5",
         total_revenue="0.00",
         total_cost="-10.00",
@@ -232,10 +232,10 @@ def test_calculate_inventory_rolls_up_quantities(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T101",
         timestamp="2025-10-30T02:30:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P10",
         salesman_id="S-DEFAULT",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change="-2",
         total_revenue="4.00",
         total_cost="0.00",
@@ -255,10 +255,10 @@ def test_calculate_profit_summary_returns_totals(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T110",
         timestamp="2025-10-30T03:00:00",
-        transaction_type="RESTOCK",
+        transaction_type=constants.TransactionType.RESTOCK.value,
         product_id="P10",
         salesman_id=None,
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change="5",
         total_revenue="0.00",
         total_cost="-15.00",
@@ -269,10 +269,10 @@ def test_calculate_profit_summary_returns_totals(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T111",
         timestamp="2025-10-30T03:15:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P10",
         salesman_id="S-DEFAULT",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change="-5",
         total_revenue="25.00",
         total_cost="0.00",
@@ -300,11 +300,11 @@ def test_record_sale_appends_transaction(config_file):
         salesman_id="S-DEFAULT",
         quantity=Decimal("2"),
         total_revenue=Decimal("7.00"),
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH,
         notes="Evening sale",
     )
     transaction = core_logic.record_sale(context, command)
-    assert transaction.transaction_type == "SALE"
+    assert transaction.transaction_type == constants.TransactionType.SALE.value
 
 
 def test_record_restock_appends_transaction(config_file):
@@ -320,6 +320,7 @@ def test_record_restock_appends_transaction(config_file):
         notes="Morning restock",
     )
     transaction = core_logic.record_restock(context, command)
+    assert transaction.transaction_type == constants.TransactionType.RESTOCK.value
     assert transaction.quantity_change == Decimal("10")
 
 
@@ -335,7 +336,7 @@ def test_record_write_off_appends_transaction(config_file):
         notes="Spoiled",
     )
     transaction = core_logic.record_write_off(context, command)
-    assert transaction.transaction_type == "WRITE_OFF"
+    assert transaction.transaction_type == constants.TransactionType.WRITE_OFF.value
 
 
 def test_record_credit_payment_appends_transaction(config_file):
@@ -346,10 +347,10 @@ def test_record_credit_payment_appends_transaction(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T-credit",
         timestamp="2025-10-30T04:00:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P203",
         salesman_id="S-DEFAULT",
-        payment_type="On Credit",
+        payment_type=constants.PaymentType.ON_CREDIT.value,
         quantity_change="-2",
         total_revenue="0.00",
         total_cost="0.00",
@@ -364,7 +365,7 @@ def test_record_credit_payment_appends_transaction(config_file):
         notes="Settled",
     )
     transaction = core_logic.record_credit_payment(context, command)
-    assert transaction.transaction_type == "CREDIT_PAYMENT"
+    assert transaction.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
 
 
 def test_record_open_stock_appends_transaction(config_file):
@@ -379,7 +380,7 @@ def test_record_open_stock_appends_transaction(config_file):
         total_revenue=Decimal("30.00"),
     )
     transaction = core_logic.record_open_stock(context, command)
-    assert transaction.transaction_type == "OPEN_STOCK"
+    assert transaction.transaction_type == constants.TransactionType.OPEN_STOCK.value
 
 
 def test_record_void_creates_reversal_and_replacement(config_file):
@@ -390,10 +391,10 @@ def test_record_void_creates_reversal_and_replacement(config_file):
         config_file.parent / "master_workbook.xlsx",
         transaction_id="T-original",
         timestamp="2025-10-30T05:00:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P205",
         salesman_id="S-DEFAULT",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change="-3",
         total_revenue="6.00",
         total_cost="0.00",
@@ -409,7 +410,7 @@ def test_record_void_creates_reversal_and_replacement(config_file):
             salesman_id="S-DEFAULT",
             quantity=Decimal("1"),
             total_revenue=Decimal("2.00"),
-            payment_type="Cash",
+            payment_type=constants.PaymentType.CASH,
             notes="Corrected",
         ),
         notes="Fix entry",
@@ -456,12 +457,14 @@ def test_persist_context_writes_to_disk(config_file):
     """persist_context should flush workbook changes to disk."""
 
     context = core_logic.load_runtime_context(config_file)
-    context.workbook["Products"].append(["P301", "Granola", "3.00", True])
+    context.workbook[constants.SheetName.PRODUCTS.value].append(["P301", "Granola", "3.00", True])
 
     core_logic.persist_context(context)
 
     reloaded = openpyxl.load_workbook(config_file.parent / "master_workbook.xlsx")
-    values = list(reloaded["Products"].iter_rows(min_row=2, values_only=True))
+    values = list(
+        reloaded[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True)
+    )
     assert ("P301", "Granola", "3.00", True) in values
 
 
@@ -469,11 +472,13 @@ def test_refresh_context_reloads_from_disk(config_file):
     """refresh_context should discard in-memory workbook state and reload."""
 
     context = core_logic.load_runtime_context(config_file)
-    context.workbook["Products"].append(["P302", "Brownie", "2.25", True])
+    context.workbook[constants.SheetName.PRODUCTS.value].append(["P302", "Brownie", "2.25", True])
     core_logic.persist_context(context)
 
     reloaded_context = core_logic.refresh_context(context)
-    values = list(reloaded_context.workbook["Products"].iter_rows(min_row=2, values_only=True))
+    values = list(
+        reloaded_context.workbook[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True)
+    )
     assert ("P302", "Brownie", "2.25", True) in values
 
 
@@ -483,10 +488,10 @@ def test_validate_credit_sale_link_accepts_credit_sale():
     sale = data_manager.TransactionRow(
         transaction_id="Tcredit",
         timestamp_iso="2025-10-30T07:00:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P205",
         salesman_id="S-DEFAULT",
-        payment_type="On Credit",
+        payment_type=constants.PaymentType.ON_CREDIT.value,
         quantity_change=Decimal("-1"),
         total_revenue=Decimal("0.00"),
         total_cost=Decimal("0.00"),
@@ -502,10 +507,10 @@ def test_validate_credit_sale_link_rejects_non_credit_sale():
     sale = data_manager.TransactionRow(
         transaction_id="Tcash",
         timestamp_iso="2025-10-30T07:30:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P205",
         salesman_id="S-DEFAULT",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change=Decimal("-1"),
         total_revenue=Decimal("2.00"),
         total_cost=Decimal("0.00"),
@@ -522,10 +527,10 @@ def test_validate_void_target_rejects_void_or_credit_payment():
     void_txn = data_manager.TransactionRow(
         transaction_id="Tvoid",
         timestamp_iso="2025-10-30T08:00:00",
-        transaction_type="VOID",
+        transaction_type=constants.TransactionType.VOID.value,
         product_id="P205",
         salesman_id="S-DEFAULT",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change=Decimal("1"),
         total_revenue=Decimal("-2.00"),
         total_cost=Decimal("0.00"),
@@ -542,10 +547,10 @@ def test_build_void_reversal_inverts_original():
     original = data_manager.TransactionRow(
         transaction_id="Torig",
         timestamp_iso="2025-10-30T09:00:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P205",
         salesman_id="S-DEFAULT",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change=Decimal("-2"),
         total_revenue=Decimal("4.00"),
         total_cost=Decimal("0.00"),
@@ -554,7 +559,7 @@ def test_build_void_reversal_inverts_original():
     )
     reversal_time = datetime(2025, 10, 30, 9, 30, 0)
     reversal = core_logic.build_void_reversal(original, timestamp=reversal_time, notes="Fix")
-    assert reversal.transaction_type == "VOID"
+    assert reversal.transaction_type == constants.TransactionType.VOID.value
     assert reversal.quantity_change == Decimal("2")
     assert reversal.total_revenue == Decimal("-4.00")
 
@@ -567,12 +572,12 @@ def test_build_sale_transaction_constructs_row():
         salesman_id="S-DEFAULT",
         quantity=Decimal("2"),
         total_revenue=Decimal("6.00"),
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH,
         timestamp=datetime(2025, 10, 30, 10, 0, 0),
         notes="Morning",
     )
     row = core_logic.build_sale_transaction(command, transaction_id="T-build", timestamp=datetime(2025, 10, 30, 10, 0, 0))
-    assert row.transaction_type == "SALE"
+    assert row.transaction_type == constants.TransactionType.SALE.value
     assert row.quantity_change == Decimal("-2")
 
 
@@ -587,7 +592,7 @@ def test_build_restock_transaction_constructs_row():
         notes="Vendor delivery",
     )
     row = core_logic.build_restock_transaction(command, transaction_id="T-restock", timestamp=datetime(2025, 10, 30, 11, 0, 0))
-    assert row.transaction_type == "RESTOCK"
+    assert row.transaction_type == constants.TransactionType.RESTOCK.value
     assert row.quantity_change == Decimal("5")
 
 
@@ -601,7 +606,7 @@ def test_build_write_off_transaction_constructs_row():
         notes="Spoilage",
     )
     row = core_logic.build_write_off_transaction(command, transaction_id="T-writeoff", timestamp=datetime(2025, 10, 30, 12, 0, 0))
-    assert row.transaction_type == "WRITE_OFF"
+    assert row.transaction_type == constants.TransactionType.WRITE_OFF.value
     assert row.total_revenue == Decimal("0")
     assert row.total_cost == Decimal("0")
 
@@ -616,7 +621,7 @@ def test_build_credit_payment_transaction_constructs_row():
         notes="Payment",
     )
     row = core_logic.build_credit_payment_transaction(command, transaction_id="T-payment", timestamp=datetime(2025, 10, 30, 13, 0, 0))
-    assert row.transaction_type == "CREDIT_PAYMENT"
+    assert row.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
     assert row.quantity_change == Decimal("0")
     assert row.total_revenue == Decimal("5.00")
     assert row.linked_transaction_id == "Tcredit"
@@ -632,5 +637,5 @@ def test_build_open_stock_transaction_constructs_row():
         timestamp=datetime(2025, 10, 30, 14, 0, 0),
     )
     row = core_logic.build_open_stock_transaction(command, transaction_id="T-open", timestamp=datetime(2025, 10, 30, 14, 0, 0))
-    assert row.transaction_type == "OPEN_STOCK"
+    assert row.transaction_type == constants.TransactionType.OPEN_STOCK.value
     assert row.total_revenue == Decimal("30.00")

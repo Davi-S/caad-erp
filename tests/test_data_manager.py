@@ -5,11 +5,12 @@ from __future__ import annotations
 import configparser
 from decimal import Decimal
 from pathlib import Path
+
 import openpyxl
 from openpyxl.workbook import Workbook as OpenpyxlWorkbook
 import pytest
 
-from caad_erp import data_manager  # noqa: E402
+from caad_erp import constants, data_manager  # noqa: E402
 
 
 def test_find_config_file_respects_explicit_path(config_file: Path):
@@ -93,12 +94,12 @@ def test_save_workbook_persists_changes(master_workbook_path):
     """save_workbook without destination should persist to the source path."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    sheet = workbook["Products"]
+    sheet = workbook[constants.SheetName.PRODUCTS.value]
     sheet.append(["P100", "Chips", "2.50", True])
     data_manager.save_workbook(workbook)
 
     reloaded = data_manager.open_workbook(master_workbook_path)
-    values = list(reloaded["Products"].iter_rows(min_row=2, values_only=True))
+    values = list(reloaded[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True))
     assert values == [("P100", "Chips", "2.50", True)]
 
 
@@ -106,13 +107,13 @@ def test_save_workbook_with_destination_creates_copy(master_workbook_path, tmp_p
     """Providing a destination should create a new file independent of the source."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    sheet = workbook["Salesmen"]
+    sheet = workbook[constants.SheetName.SALESMEN.value]
     sheet.append(["S2", "Jordan", True])
     copy_path = tmp_path / "copy.xlsx"
     data_manager.save_workbook(workbook, destination=copy_path)
 
     copy = openpyxl.load_workbook(copy_path)
-    rows = list(copy["Salesmen"].iter_rows(min_row=2, values_only=True))
+    rows = list(copy[constants.SheetName.SALESMEN.value].iter_rows(min_row=2, values_only=True))
     assert ("S2", "Jordan", True) in rows
 
 
@@ -120,13 +121,13 @@ def test_refresh_workbook_returns_new_instance(master_workbook_path):
     """refresh_workbook should return a freshly loaded workbook from disk."""
 
     original = data_manager.open_workbook(master_workbook_path)
-    sheet = original["Products"]
+    sheet = original[constants.SheetName.PRODUCTS.value]
     sheet.append(["P200", "Bars", "4.00", True])
     data_manager.save_workbook(original)
 
     refreshed = data_manager.refresh_workbook(master_workbook_path)
     assert refreshed is not original
-    values = list(refreshed["Products"].iter_rows(min_row=2, values_only=True))
+    values = list(refreshed[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True))
     assert ("P200", "Bars", "4.00", True) in values
 
 
@@ -134,7 +135,7 @@ def test_iter_products_yields_product_rows(master_workbook_path):
     """iter_products should yield ProductRow instances for worksheet data."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    products = workbook["Products"]
+    products = workbook[constants.SheetName.PRODUCTS.value]
     products.append(["P300", "Soda", "5.00", True])
     data_manager.save_workbook(workbook)
 
@@ -154,7 +155,7 @@ def test_iter_salesmen_yields_salesman_rows(master_workbook_path):
     """iter_salesmen should expose SalesmanRow objects."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    salesmen = workbook["Salesmen"]
+    salesmen = workbook[constants.SheetName.SALESMEN.value]
     salesmen.append(["S2", "Morgan", True])
     data_manager.save_workbook(workbook)
 
@@ -168,15 +169,15 @@ def test_iter_transactions_yields_transaction_rows(master_workbook_path):
     """iter_transactions should convert worksheet rows to TransactionRow objects."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    transactions = workbook["TransactionLog"]
+    transactions = workbook[constants.SheetName.TRANSACTION_LOG.value]
     transactions.append(
         [
             "T1",
             "2025-10-29T20:00:00",
-            "SALE",
+            constants.TransactionType.SALE.value,
             "P300",
             "S-DEFAULT",
-            "Cash",
+            constants.PaymentType.CASH.value,
             "-1",
             "5.00",
             "0.00",
@@ -234,10 +235,10 @@ def test_append_transaction_adds_row(master_workbook_path):
     record = data_manager.TransactionRow(
         transaction_id="T2",
         timestamp_iso="2025-10-29T21:00:00",
-        transaction_type="RESTOCK",
+        transaction_type=constants.TransactionType.RESTOCK.value,
         product_id="P400",
         salesman_id=None,
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change=Decimal("10"),
         total_revenue=Decimal("0.00"),
         total_cost=Decimal("-20.00"),
@@ -256,7 +257,7 @@ def test_update_product_modifies_existing_row(master_workbook_path):
     """update_product should mutate values for the matching ProductID."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    sheet = workbook["Products"]
+    sheet = workbook[constants.SheetName.PRODUCTS.value]
     sheet.append(["P500", "Old", "1.00", True])
     data_manager.save_workbook(workbook)
 
@@ -285,7 +286,7 @@ def test_update_salesman_modifies_existing_row(master_workbook_path):
     """update_salesman should support partial field merges."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    sheet = workbook["Salesmen"]
+    sheet = workbook[constants.SheetName.SALESMEN.value]
     sheet.append(["S500", "Taylor", True])
     data_manager.save_workbook(workbook)
 
@@ -310,12 +311,17 @@ def test_locate_row_returns_row_index(master_workbook_path):
     """locate_row should return the worksheet index of the matching key."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    sheet = workbook["Products"]
+    sheet = workbook[constants.SheetName.PRODUCTS.value]
     sheet.append(["P600", "Snack", "2.00", True])
     data_manager.save_workbook(workbook)
 
     reloaded = data_manager.open_workbook(master_workbook_path)
-    row_index = data_manager.locate_row(reloaded, "Products", "ProductID", "P600")
+    row_index = data_manager.locate_row(
+        reloaded,
+        constants.SheetName.PRODUCTS.value,
+        "ProductID",
+        "P600",
+    )
     assert row_index == 2
 
 
@@ -323,7 +329,15 @@ def test_locate_row_returns_none_when_missing(master_workbook_path):
     """locate_row should return None if the key is not present."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
-    assert data_manager.locate_row(workbook, "Products", "ProductID", "NOPE") is None
+    assert (
+        data_manager.locate_row(
+            workbook,
+            constants.SheetName.PRODUCTS.value,
+            "ProductID",
+            "NOPE",
+        )
+        is None
+    )
 
 
 def test_serialize_product_preserves_order():
@@ -346,10 +360,10 @@ def test_serialize_transaction_preserves_order():
     record = data_manager.TransactionRow(
         transaction_id="T3",
         timestamp_iso="2025-10-29T22:00:00",
-        transaction_type="SALE",
+        transaction_type=constants.TransactionType.SALE.value,
         product_id="P1",
         salesman_id="S1",
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH.value,
         quantity_change=Decimal("-1"),
         total_revenue=Decimal("3.00"),
         total_cost=Decimal("0.00"),
@@ -359,10 +373,10 @@ def test_serialize_transaction_preserves_order():
     assert data_manager.serialize_transaction(record) == [
         "T3",
         "2025-10-29T22:00:00",
-        "SALE",
+        constants.TransactionType.SALE.value,
         "P1",
         "S1",
-        "Cash",
+        constants.PaymentType.CASH.value,
         Decimal("-1"),
         Decimal("3.00"),
         Decimal("0.00"),
@@ -394,10 +408,10 @@ def test_deserialize_transaction_constructs_dataclass():
         [
             "T9",
             "2025-10-29T23:00:00",
-            "WRITE_OFF",
+            constants.TransactionType.WRITE_OFF.value,
             "P9",
             "S9",
-            "Cash",
+            constants.PaymentType.CASH.value,
             "-2",
             "0.00",
             "0.00",

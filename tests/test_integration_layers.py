@@ -12,7 +12,7 @@ from decimal import Decimal
 
 import pytest
 
-from caad_erp import core_logic, data_manager
+from caad_erp import constants, core_logic, data_manager
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def test_sale_lifecycle_flow(runtime_context):
         salesman_id=context.settings.default_salesman_id,
         quantity=Decimal("2"),
         total_revenue=Decimal("6.00"),
-        payment_type="Cash",
+        payment_type=constants.PaymentType.CASH,
         notes="First sale",
     )
     # The sale should reduce inventory and contribute revenue in the summary.
@@ -90,8 +90,8 @@ def test_sale_lifecycle_flow(runtime_context):
     core_logic.persist_context(context)
 
     # Sanity check: recorded objects surface the expected transaction types.
-    assert restock_transaction.transaction_type == "RESTOCK"
-    assert sale_transaction.transaction_type == "SALE"
+    assert restock_transaction.transaction_type == constants.TransactionType.RESTOCK.value
+    assert sale_transaction.transaction_type == constants.TransactionType.SALE.value
 
 
 def test_credit_sale_payment_and_void_flow(runtime_context):
@@ -122,7 +122,7 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
         salesman_id=context.settings.default_salesman_id,
         quantity=Decimal("2"),
         total_revenue=Decimal("0.00"),
-        payment_type="On Credit",
+        payment_type=constants.PaymentType.ON_CREDIT,
         notes="Sold on credit",
     )
     # Credit sale intentionally logs zero revenue; payment captured later.
@@ -142,7 +142,7 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
             salesman_id=context.settings.default_salesman_id,
             quantity=Decimal("1"),
             total_revenue=Decimal("0.00"),
-            payment_type="On Credit",
+            payment_type=constants.PaymentType.ON_CREDIT,
             notes="Corrected quantity",
         ),
         notes="Fix quantity",
@@ -160,8 +160,8 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
 
     assert len(void_transactions) == 2
     void_txn, corrected_sale = void_transactions
-    assert void_txn.transaction_type == "VOID"
-    assert corrected_sale.transaction_type == "SALE"
-    assert payment_transaction.transaction_type == "CREDIT_PAYMENT"
+    assert void_txn.transaction_type == constants.TransactionType.VOID.value
+    assert corrected_sale.transaction_type == constants.TransactionType.SALE.value
+    assert payment_transaction.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
 
     core_logic.persist_context(context)

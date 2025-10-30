@@ -22,9 +22,14 @@ from typing import Iterable, Optional, Sequence
 from openpyxl.workbook import Workbook
 
 from . import log
+from .constants import SheetName
 
 
 CONFIG_FILE_NAME = "config.ini"
+PRODUCTS_SHEET = SheetName.PRODUCTS.value
+SALESMEN_SHEET = SheetName.SALESMEN.value
+TRANSACTION_LOG_SHEET = SheetName.TRANSACTION_LOG.value
+METADATA_SHEET = SheetName.METADATA.value
 
 
 @dataclass(frozen=True)

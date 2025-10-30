@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, Union
 from openpyxl.workbook import Workbook
 
 from . import data_manager, log
+from .constants import PaymentType, TransactionType
 
 
 class BusinessRuleViolation(Exception):
@@ -43,7 +44,7 @@ class SaleCommand:
     salesman_id: str
     quantity: Decimal
     total_revenue: Decimal
-    payment_type: str
+    payment_type: PaymentType
     timestamp: Optional[datetime] = None
     notes: Optional[str] = None
 
@@ -96,6 +97,16 @@ TransactionCommand = Union[
     CreditPaymentCommand,
     OpenStockCommand,
 ]
+
+
+SUPPORTED_TRANSACTION_TYPES: tuple[TransactionType, ...] = (
+    TransactionType.SALE,
+    TransactionType.RESTOCK,
+    TransactionType.WRITE_OFF,
+    TransactionType.CREDIT_PAYMENT,
+    TransactionType.OPEN_STOCK,
+    TransactionType.VOID,
+)
 
 
 @dataclass(frozen=True)
