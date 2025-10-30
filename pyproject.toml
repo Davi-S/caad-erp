@@ -1,7 +1,7 @@
 [project]
 name = "caad-erp"
 version = "0.1.0"
-description = "Add your description here"
+description = "Excel-backed inventory and sales tracker for student lounges"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
