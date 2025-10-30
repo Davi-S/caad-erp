@@ -222,7 +222,7 @@ def open_workbook(data_file: Path) -> Workbook:
     wb = openpyxl.load_workbook(data_file)
     # store the source path so save_workbook can persist back when no destination
     with contextlib.suppress(Exception):
-        wb._data_manager_path = data_file
+        setattr(wb, "_data_manager_path", data_file)
     return wb
 
 
@@ -497,42 +497,42 @@ def locate_row(workbook: Workbook, sheet_name: str, key_column: str, key_value: 
     return None
 
 
-def serialize_product(record: ProductRow) -> Sequence[object]:
+def serialize_product(record: ProductRow) -> list[object]:
     """Convert a product dataclass into the worksheet column ordering.
 
     Args:
         record (ProductRow): Structured product data to transform.
 
     Returns:
-        Sequence[object]: Values arranged as ``[ProductID, ProductName,
+        list[object]: Values arranged as ``[ProductID, ProductName,
         SellPrice, IsActive]`` suitable for worksheet insertion.
     """
 
     return [record.product_id, record.product_name, record.sell_price, record.is_active]
 
 
-def serialize_salesman(record: SalesmanRow) -> Sequence[object]:
+def serialize_salesman(record: SalesmanRow) -> list[object]:
     """Convert a salesman dataclass into the worksheet column ordering.
 
     Args:
         record (SalesmanRow): Structured salesman data to transform.
 
     Returns:
-        Sequence[object]: Values arranged as ``[SalesmanID, SalesmanName,
+        list[object]: Values arranged as ``[SalesmanID, SalesmanName,
         IsActive]`` suitable for worksheet insertion.
     """
 
     return [record.salesman_id, record.salesman_name, record.is_active]
 
 
-def serialize_transaction(record: TransactionRow) -> Sequence[object]:
+def serialize_transaction(record: TransactionRow) -> list[object]:
     """Convert a transaction dataclass into the transaction log column order.
 
     Args:
         record (TransactionRow): Structured transaction data to transform.
 
     Returns:
-        Sequence[object]: Values ordered to match the spreadsheet columns,
+        list[object]: Values ordered to match the spreadsheet columns,
             preserving :class:`~decimal.Decimal` instances for numeric fields.
     """
 
