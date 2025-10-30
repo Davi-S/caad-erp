@@ -19,7 +19,7 @@ for candidate in (SRC_DIR, PROJECT_ROOT):
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
 
-from caad_erp import constants  # noqa: E402
+from caad_erp import constants, core_logic  # noqa: E402
 from setup_excel import create_master_workbook  # noqa: E402
 
 DEFAULT_SCHEMA_VERSION = constants.EXPECTED_SCHEMA_VERSION
@@ -146,3 +146,12 @@ def config_file(config_factory: Callable[..., ConfigBundle]) -> Path:
     """Convenience fixture returning only the config path."""
 
     return config_factory().config_path
+
+
+@pytest.fixture
+def runtime_context(config_file: Path) -> core_logic.RuntimeContext:
+    """Load the runtime context for tests through the public API."""
+
+    context = core_logic.load_runtime_context(config_file)
+    core_logic.ensure_schema_version(context)
+    return context

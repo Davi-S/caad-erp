@@ -12,15 +12,6 @@ import pytest
 from caad_erp import constants, core_logic, data_manager  # noqa: E402
 
 
-@pytest.fixture
-def runtime_context(config_file):
-    """Load the runtime context through the public API."""
-
-    context = core_logic.load_runtime_context(config_file)
-    core_logic.ensure_schema_version(context)
-    return context
-
-
 def _append_product(workbook_path: Path, *, product_id: str, name: str, price: Decimal, is_active: bool = True) -> None:
     workbook = openpyxl.load_workbook(workbook_path)
     sheet = workbook[constants.SheetName.PRODUCTS.value]
