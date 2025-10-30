@@ -116,10 +116,7 @@ def config_factory(tmp_path: Path, workbook_factory: Callable[..., Path]) -> Cal
             subdir=f"bundle_{bundle_id}",
             default_salesman_id=default_salesman_id,
         )
-        if make_relative:
-            data_file_entry = workbook_path.name
-        else:
-            data_file_entry = str(workbook_path)
+        data_file_entry = workbook_path.name if make_relative else str(workbook_path)
         config_path = bundle_dir / "config.ini"
         config_path.write_text(
             _CONFIG_TEMPLATE.format(
