@@ -10,19 +10,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
-
 from caad_erp import constants, core_logic, data_manager
-
-
-@pytest.fixture
-def runtime_context(config_factory):
-    """Provision a ``RuntimeContext`` backed by disposable temp files."""
-
-    bundle = config_factory()
-    context = core_logic.load_runtime_context(bundle.config_path)
-    core_logic.ensure_schema_version(context)
-    return context
 
 
 def _register_sample_product(context: core_logic.RuntimeContext, *, product_id: str, name: str, sell_price: Decimal) -> None:
