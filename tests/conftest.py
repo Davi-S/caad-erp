@@ -19,9 +19,10 @@ for candidate in (SRC_DIR, PROJECT_ROOT):
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
 
+from caad_erp import constants  # noqa: E402
 from setup_excel import create_master_workbook  # noqa: E402
 
-DEFAULT_SCHEMA_VERSION = "1.3"
+DEFAULT_SCHEMA_VERSION = constants.EXPECTED_SCHEMA_VERSION
 DEFAULT_SALESMAN_ID = "S-DEFAULT"
 _CONFIG_TEMPLATE = (
     "[System]\n"

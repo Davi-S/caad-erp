@@ -10,6 +10,10 @@ from __future__ import annotations
 from enum import Enum
 
 
+# Central schema version expected by all layers when validating workbooks.
+EXPECTED_SCHEMA_VERSION = "1.0.0"
+
+
 class PaymentType(str, Enum):
     """Enumerate supported payment mechanisms for sales."""
 
@@ -38,6 +42,7 @@ class SheetName(str, Enum):
 
 
 __all__ = [
+    "EXPECTED_SCHEMA_VERSION",
     "PaymentType",
     "TransactionType",
     "SheetName",
