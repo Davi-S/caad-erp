@@ -42,7 +42,7 @@ over complex infrastructure.
    ```
 
 5. Update `config.ini` so the `DataFile` entry points at your locked Excel
-   workbook—the file that will hold products, salespeople, and the immutable
+   workbook, the file that will hold products, salespeople, and the immutable
    transaction log.
 
 Once configured, you can run the existing Python workflows (for example, the
