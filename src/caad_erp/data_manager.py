@@ -19,7 +19,7 @@ import contextlib
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
-from typing import Iterable, Optional, Sequence
+from typing import Iterable, Optional, Sequence, Any
 
 from openpyxl.workbook import Workbook
 import openpyxl
@@ -390,7 +390,7 @@ def append_transaction(workbook: Workbook, record: TransactionRow) -> None:
     sheet.append(serialize_transaction(record))
 
 
-def update_product(workbook: Workbook, product_id: str, *, field_values: dict[str, object]) -> None:
+def update_product(workbook: Workbook, product_id: str, *, field_values: dict[str, Any]) -> None:
     """Update selected columns for an existing product.
 
     The function locates the row whose ``ProductID`` matches ``product_id``,
@@ -401,7 +401,7 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
     Args:
         workbook (Workbook): Workbook containing the products sheet.
         product_id (str): Identifier used to locate the target row.
-        field_values (dict[str, object]): Mapping of column names to replacement
+        field_values (dict[str, Any]): Mapping of column names to replacement
             values.
 
     Raises:
@@ -421,10 +421,10 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
         if field not in header_map:
             raise KeyError(f"Unknown product field: {field}")
         col = header_map[field]
-        sheet.cell(row=row_index, column=col).value = value
+        sheet.cell(row=row_index, column=col, value=value)
 
 
-def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[str, object]) -> None:
+def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[str, Any]) -> None:
     """Update selected columns for an existing salesman.
 
     The function resolves the row by ``SalesmanID``, checks that each requested
@@ -434,7 +434,7 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
     Args:
         workbook (Workbook): Workbook containing the salesmen sheet.
         salesman_id (str): Identifier used to locate the target row.
-        field_values (dict[str, object]): Mapping of column names to replacement
+        field_values (dict[str, Any]): Mapping of column names to replacement
             values.
 
     Raises:
@@ -454,7 +454,7 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
         if field not in header_map:
             raise KeyError(f"Unknown salesman field: {field}")
         col = header_map[field]
-        sheet.cell(row=row_index, column=col).value = value
+        sheet.cell(row=row_index, column=col, value=value)
 
 
 def locate_row(workbook: Workbook, sheet_name: str, key_column: str, key_value: str) -> Optional[int]:
