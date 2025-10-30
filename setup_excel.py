@@ -1,115 +1,207 @@
+"""Utility for initializing the Lounge ERP master workbook.
+
+This module can be executed as a standalone script (``python setup_excel.py``)
+*or* imported by the test-suite and other tooling. The public helpers expose the
+core behavior so the same code path is used in both contexts.
+"""
+
+from __future__ import annotations
+
+import argparse
 import configparser
-import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Mapping, MutableMapping, Sequence
 import sys
+
 import openpyxl
 from openpyxl.styles import Font
 
 # Define the schema exactly as specified in the architecture
-SHEET_COLUMNS = {
+SHEET_COLUMNS: Mapping[str, Sequence[str]] = {
     "Products": [
-        "ProductID", "ProductName", "SellPrice", "IsActive"
+        "ProductID",
+        "ProductName",
+        "SellPrice",
+        "IsActive",
     ],
     "Salesmen": [
-        "SalesmanID", "SalesmanName", "IsActive"
+        "SalesmanID",
+        "SalesmanName",
+        "IsActive",
     ],
     "TransactionLog": [
-        "TransactionID", "Timestamp", "TransactionType", "ProductID", "SalesmanID",
-        "PaymentType", "QuantityChange", "TotalRevenue", "TotalCost",
-        "LinkedTransactionID", "Notes"
-    ]
+        "TransactionID",
+        "Timestamp",
+        "TransactionType",
+        "ProductID",
+        "SalesmanID",
+        "PaymentType",
+        "QuantityChange",
+        "TotalRevenue",
+        "TotalCost",
+        "LinkedTransactionID",
+        "Notes",
+    ],
 }
 
 # Define the default salesman
-DEFAULT_SALESMAN = {
+DEFAULT_SALESMAN: MutableMapping[str, object] = {
     "SalesmanID": "GRR00000000",
     "SalesmanName": "Lounge Sale",
-    "IsActive": True
+    "IsActive": True,
 }
 
-CONFIG_FILE = 'config.ini'
+CONFIG_FILE = "config.ini"
 
-def main():
+
+@dataclass(frozen=True)
+class SetupSettings:
+    """Type-safe representation of configuration values used during setup."""
+
+    data_file: Path
+    default_salesman_id: str
+
+
+def load_settings(config_path: Path) -> SetupSettings:
+    """Read ``config.ini`` and produce :class:`SetupSettings`.
+
+    Relative paths inside the config file are resolved against the config file's
+    directory so the behavior matches the previous script.
     """
-    Main function to create and initialize the Excel data file.
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
+    parser = configparser.ConfigParser()
+    parser.read(config_path)
+
+    try:
+        data_file_raw = parser.get("System", "DataFile")
+        default_salesman_id = parser.get("Defaults", "DefaultSalesman")
+    except (configparser.NoSectionError, configparser.NoOptionError) as exc:
+        raise KeyError(f"Missing required configuration entry: {exc}") from exc
+
+    data_file_path = Path(data_file_raw)
+    if not data_file_path.is_absolute():
+        data_file_path = (config_path.parent / data_file_path).resolve()
+
+    return SetupSettings(
+        data_file=data_file_path,
+        default_salesman_id=default_salesman_id,
+    )
+
+
+def create_master_workbook(
+    destination: Path,
+    *,
+    default_salesman_id: str,
+    sheet_columns: Mapping[str, Sequence[str]] = SHEET_COLUMNS,
+    default_salesman_template: Mapping[str, object] = DEFAULT_SALESMAN,
+    overwrite: bool = False,
+) -> Path:
+    """Create the Lounge ERP master workbook at ``destination``.
+
+    Parameters are overridable to facilitate testing. When ``overwrite`` is
+    ``False`` (the default) this function raises ``FileExistsError`` if the
+    target already exists.
     """
+
+    destination = destination.expanduser().resolve()
+    if destination.exists() and not overwrite:
+        raise FileExistsError(
+            f"Refusing to overwrite existing master workbook: {destination}"
+        )
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    workbook = openpyxl.Workbook()
+
+    # Remove the default sheet openpyxl generates so we can create ours.
+    if workbook.active and workbook.active.title == "Sheet":
+        workbook.remove(workbook.active)
+
+    bold_font = Font(bold=True)
+
+    for sheet_name, columns in sheet_columns.items():
+        worksheet = workbook.create_sheet(title=sheet_name)
+        for column_index, column_name in enumerate(columns, start=1):
+            cell = worksheet.cell(row=1, column=column_index)
+            cell.value = column_name
+            cell.font = bold_font
+
+    salesmen_sheet = workbook["Salesmen"]
+    default_salesman = dict(default_salesman_template)
+    default_salesman["SalesmanID"] = default_salesman_id
+    salesmen_sheet.append(
+        [
+            default_salesman["SalesmanID"],
+            default_salesman["SalesmanName"],
+            default_salesman["IsActive"],
+        ]
+    )
+
+    workbook.save(destination)
+    return destination
+
+
+def run_from_config(config_path: Path, *, overwrite: bool = False) -> Path:
+    """Convenience helper mirroring the original CLI behavior."""
+
+    settings = load_settings(config_path)
+    return create_master_workbook(
+        settings.data_file,
+        default_salesman_id=settings.default_salesman_id,
+        overwrite=overwrite,
+    )
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for the setup script."""
+
+    parser = argparse.ArgumentParser(description="Initialize Lounge ERP data file")
+    parser.add_argument(
+        "--config",
+        default=CONFIG_FILE,
+        help="Path to configuration file (default: config.ini)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the target workbook if it already exists.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Entry point for the CLI script."""
+
+    args = parse_args(argv)
+    config_path = Path(args.config).expanduser().resolve()
+
     print("--- Lounge ERP Setup Script ---")
-
-    # 1. Read the configuration file
-    if not os.path.exists(CONFIG_FILE):
-        print(f"\n[ERROR] Configuration file '{CONFIG_FILE}' not found.")
-        print("Please create it based on the architecture document before running setup.")
-        sys.exit(1)
-        
-    config = configparser.ConfigParser()
-    config.read(CONFIG_FILE)
+    print(f"Using configuration: {config_path}")
 
     try:
-        data_file_path = config.get('System', 'DataFile')
-        default_salesman_id = config.get('Defaults', 'DefaultSalesman')
-    except (configparser.NoSectionError, configparser.NoOptionError) as e:
-        print(f"\n[ERROR] Your '{CONFIG_FILE}' is missing a required section or key.")
-        print(f"Details: {e}")
-        sys.exit(1)
+        output_path = run_from_config(config_path, overwrite=args.force)
+    except FileNotFoundError as exc:
+        print(f"\n[ERROR] {exc}")
+        return 1
+    except KeyError as exc:
+        print(f"\n[ERROR] {exc}")
+        return 1
+    except FileExistsError as exc:
+        print(f"\n[ERROR] {exc}")
+        print("Run with --force to overwrite the existing file if appropriate.")
+        return 1
+    except (PermissionError, OSError) as exc:
+        print(f"\n[ERROR] Unable to write workbook: {exc}")
+        return 1
 
-    print(f"Target data file: '{data_file_path}'")
+    print(f"\n[SUCCESS] Created master workbook at '{output_path}'.")
+    return 0
 
-    # 2. Check if the data file already exists
-    if os.path.exists(data_file_path):
-        print(f"[ERROR] The file '{data_file_path}' already exists.")
-        print("To prevent data loss, setup will not continue.")
-        print("If you want to start over, please delete the file manually and re-run this script.")
-        sys.exit(1)
 
-    # 3. Create the new Excel Workbook
-    try:
-        wb = openpyxl.Workbook()
-        
-        # Remove the default "Sheet"
-        if "Sheet" in wb.sheetnames:
-            del wb["Sheet"]
-            
-        bold_font = Font(bold=True)
-
-        # 4. Create each sheet and write the headers
-        for sheet_name, columns in SHEET_COLUMNS.items():
-            ws = wb.create_sheet(title=sheet_name)
-            print(f"Creating sheet: '{sheet_name}'...")
-            
-            for col_idx, column_name in enumerate(columns, 1):
-                cell = ws.cell(row=1, column=col_idx)
-                cell.value = column_name
-                cell.font = bold_font
-        
-        # 5. Add the default salesman
-        print(f"Adding default salesman (ID: '{default_salesman_id}')...")
-        ws_salesmen = wb["Salesmen"]
-        
-        # Use the ID from the config file, but the data from our constant
-        default_data_row = DEFAULT_SALESMAN.copy()
-        default_data_row["SalesmanID"] = default_salesman_id
-        
-        # Append the values in the correct column order
-        ws_salesmen.append([
-            default_data_row["SalesmanID"],
-            default_data_row["SalesmanName"],
-            default_data_row["IsActive"]
-        ])
-
-        # 6. Save the file
-        wb.save(data_file_path)
-        print(f"\n[SUCCESS] Successfully created '{data_file_path}'.")
-        print("You can now start testing the application.")
-
-    except (PermissionError, IOError) as e:
-        print(f"\n[ERROR] Could not write the file '{data_file_path}'.")
-        print(f"Please check your permissions in this directory.")
-        print(f"Details: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n[ERROR] An unexpected error occurred.")
-        print(f"Details: {e}")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__":  # pragma: no cover - exercised via manual runs
+    sys.exit(main())
 
