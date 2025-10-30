@@ -1,7 +1,7 @@
 """Data access layer for Lounge ERP.
 
 This module provides low-level helpers that read from and write to the
-``lounge_master_data.xlsx`` workbook. Business logic belongs elsewhere.
+``master_workbook.xlsx`` workbook. Business logic belongs elsewhere.
 
 The public API is designed around three responsibilities:
 
