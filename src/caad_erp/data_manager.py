@@ -15,7 +15,6 @@ The public API is designed around three responsibilities:
 from __future__ import annotations
 
 import configparser
-import contextlib
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -200,9 +199,8 @@ def open_workbook(data_file: Path) -> Workbook:
 
     The provided path is expanded (supporting ``~``), resolved to its absolute
     form, and verified for existence. Successful calls load the workbook via
-    :func:`openpyxl.load_workbook` and store the source path on the workbook
-    object for later use by :func:`save_workbook` when the caller saves without
-    specifying a destination.
+    :func:`openpyxl.load_workbook`. Callers must retain the resolved path and
+    provide it back to :func:`save_workbook` when persisting changes.
 
     Args:
         data_file (Path): Filesystem path to the ``master_workbook.xlsx`` file.
@@ -220,44 +218,25 @@ def open_workbook(data_file: Path) -> Workbook:
         raise FileNotFoundError(f"Workbook not found: {data_file}")
 
     wb = openpyxl.load_workbook(data_file)
-    # store the source path so save_workbook can persist back when no destination
-    with contextlib.suppress(Exception):
-        setattr(wb, "_data_manager_path", data_file)
     return wb
 
 
-def save_workbook(workbook: Workbook, destination: Optional[Path] = None) -> None:
-    """Persist the workbook to disk using either the known source or a new path.
+def save_workbook(workbook: Workbook, destination: Path) -> None:
+    """Persist the workbook to disk at an explicitly provided destination.
 
-    When ``destination`` is provided the workbook is saved to that location
-    after ensuring the parent directory exists. Without an explicit destination
-    the function relies on the ``_data_manager_path`` attribute seeded by
-    :func:`open_workbook`. Callers who construct workbooks manually must provide
-    their own destination to avoid errors.
+    The destination path is expanded (supporting ``~``) and resolved to an
+    absolute location. Parent directories are created on demand to match the
+    previous behavior of the data layer always producing the target folder.
 
     Args:
         workbook (Workbook): Workbook instance to persist.
-        destination (Path | None): Optional override path for the save
-            operation.
-
-    Raises:
-        ValueError: If no destination is provided and the workbook lacks a
-            ``_data_manager_path`` attribute.
+        destination (Path): Filesystem path that should receive the serialized
+            workbook.
     """
 
-    if destination is not None:
-        dest = Path(destination).expanduser().resolve()
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        workbook.save(dest)
-        return
-
-    # No explicit destination; try to use the path stored on the workbook
-    data_path = getattr(workbook, "_data_manager_path", None)
-    if data_path is None:
-        raise ValueError(
-            "No destination provided and workbook has no known source path")
-
-    workbook.save(data_path)
+    dest = Path(destination).expanduser().resolve()
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(dest)
 
 
 def refresh_workbook(data_file: Path) -> Workbook:

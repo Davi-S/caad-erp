@@ -17,3 +17,6 @@ master_workbook.xlsx
 
 # Logs
 .logs
+
+# VSCode
+.vscode
