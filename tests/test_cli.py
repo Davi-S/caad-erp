@@ -127,7 +127,18 @@ def test_register_add_product_command_configures_arguments():
     subparsers = parser.add_subparsers(dest="command")
     spec = cli.register_add_product_command(subparsers)
     spec.register(subparsers)
-    namespace = parser.parse_args(["add-product", "P1001", "Chocolate Bar", "3.50", "--inactive"])
+    namespace = parser.parse_args(
+        [
+            "add-product",
+            "--product-id",
+            "P1001",
+            "--product-name",
+            "Chocolate Bar",
+            "--sell-price",
+            "3.50",
+            "--inactive",
+        ]
+    )
     assert namespace.product_id == "P1001"
     assert namespace.product_name == "Chocolate Bar"
     assert namespace.sell_price == "3.50"
@@ -150,7 +161,16 @@ def test_register_add_salesman_command_configures_arguments():
     subparsers = parser.add_subparsers(dest="command")
     spec = cli.register_add_salesman_command(subparsers)
     spec.register(subparsers)
-    namespace = parser.parse_args(["add-salesman", "S100", "Alex", "--inactive"])
+    namespace = parser.parse_args(
+        [
+            "add-salesman",
+            "--salesman-id",
+            "S100",
+            "--salesman-name",
+            "Alex",
+            "--inactive",
+        ]
+    )
     assert namespace.salesman_id == "S100"
     assert namespace.salesman_name == "Alex"
     assert namespace.inactive is True
@@ -175,13 +195,15 @@ def test_register_sale_command_configures_arguments():
     namespace = parser.parse_args(
         [
             "sale",
+            "--product-id",
             "P1001",
+            "--quantity",
             "2",
-            "--salesman",
+            "--salesman-id",
             "S-DEFAULT",
-            "--revenue",
+            "--total-revenue",
             "6.00",
-            "--payment",
+            "--payment-type",
             constants.PaymentType.CASH.value,
             "--notes",
             "First sale",
@@ -217,11 +239,13 @@ def test_register_restock_command_configures_arguments():
     namespace = parser.parse_args(
         [
             "restock",
+            "--product-id",
             "P1001",
+            "--quantity",
             "5",
-            "--cost",
+            "--total-cost",
             "10.00",
-            "--salesman",
+            "--salesman-id",
             "S-DEFAULT",
             "--notes",
             "Bulk restock",
@@ -256,9 +280,11 @@ def test_register_write_off_command_configures_arguments():
     namespace = parser.parse_args(
         [
             "write-off",
+            "--product-id",
             "P1001",
+            "--quantity",
             "1",
-            "--salesman",
+            "--salesman-id",
             "S-DEFAULT",
             "--notes",
             "Damaged",
@@ -292,10 +318,11 @@ def test_register_pay_debt_command_configures_arguments():
     namespace = parser.parse_args(
         [
             "pay-debt",
+            "--linked-transaction-id",
             "T20250101010101000000",
-            "--amount",
+            "--total-revenue",
             "6.00",
-            "--salesman",
+            "--salesman-id",
             "S-DEFAULT",
             "--notes",
             "Credit payment",
@@ -329,6 +356,7 @@ def test_register_void_command_configures_arguments():
     namespace = parser.parse_args(
         [
             "void",
+            "--linked-transaction-id",
             "T20250101010101000000",
             "--notes",
             "Mistake",

@@ -95,9 +95,9 @@ def register_add_product_command(
 
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("product_id")
-        parser.add_argument("product_name")
-        parser.add_argument("sell_price")
+        parser.add_argument("--product-id", required=True)
+        parser.add_argument("--product-name", required=True)
+        parser.add_argument("--sell-price", required=True)
         parser.add_argument("--inactive", action="store_true", help="Mark the product as inactive on creation.")
         parser.set_defaults(command=name)
         return parser
@@ -114,8 +114,8 @@ def register_add_salesman_command(
 
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("salesman_id")
-        parser.add_argument("salesman_name")
+        parser.add_argument("--salesman-id", required=True)
+        parser.add_argument("--salesman-name", required=True)
         parser.add_argument("--inactive", action="store_true", help="Mark the salesman as inactive on creation.")
         parser.set_defaults(command=name)
         return parser
@@ -132,13 +132,12 @@ def register_sale_command(
 
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("product_id")
-        parser.add_argument("quantity")
-        parser.add_argument("--salesman", dest="salesman_id", required=True)
-        parser.add_argument("--revenue", dest="total_revenue", required=True)
+        parser.add_argument("--product-id", required=True)
+        parser.add_argument("--quantity", required=True)
+        parser.add_argument("--salesman-id", required=True)
+        parser.add_argument("--total-revenue", required=True)
         parser.add_argument(
-            "--payment",
-            dest="payment_type",
+            "--payment-type",
             choices=[member.value for member in PaymentType],
             required=True,
         )
@@ -159,10 +158,10 @@ def register_restock_command(
 
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("product_id")
-        parser.add_argument("quantity")
-        parser.add_argument("--cost", dest="total_cost", required=True)
-        parser.add_argument("--salesman", dest="salesman_id", required=True)
+        parser.add_argument("--product-id", required=True)
+        parser.add_argument("--quantity", required=True)
+        parser.add_argument("--total-cost", required=True)
+        parser.add_argument("--salesman-id", required=True)
         parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
@@ -180,9 +179,9 @@ def register_write_off_command(
 
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("product_id")
-        parser.add_argument("quantity")
-        parser.add_argument("--salesman", dest="salesman_id", required=True)
+        parser.add_argument("--product-id", required=True)
+        parser.add_argument("--quantity", required=True)
+        parser.add_argument("--salesman-id", required=True)
         parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
@@ -200,9 +199,9 @@ def register_pay_debt_command(
 
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("linked_transaction_id")
-        parser.add_argument("--amount", dest="total_revenue", required=True)
-        parser.add_argument("--salesman", dest="salesman_id", required=True)
+        parser.add_argument("--linked-transaction-id", required=True)
+        parser.add_argument("--total-revenue", required=True)
+        parser.add_argument("--salesman-id", required=True)
         parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
@@ -220,7 +219,7 @@ def register_void_command(
 
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("linked_transaction_id")
+        parser.add_argument("--linked-transaction-id", required=True)
         parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
