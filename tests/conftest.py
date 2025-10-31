@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
+import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable, Iterator
-import uuid
+from unittest.mock import Mock
 
 import pytest
 
@@ -19,7 +22,7 @@ for candidate in (SRC_DIR, PROJECT_ROOT):
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
 
-from caad_erp import constants, core_logic  # noqa: E402
+from caad_erp import cli, constants, core_logic, data_manager  # noqa: E402
 from setup_excel import create_master_workbook  # noqa: E402
 
 DEFAULT_SCHEMA_VERSION = constants.EXPECTED_SCHEMA_VERSION
@@ -152,3 +155,112 @@ def runtime_context(config_file: Path) -> core_logic.RuntimeContext:
     context = core_logic.load_runtime_context(config_file)
     core_logic.ensure_schema_version(context)
     return context
+
+
+# ---------------------------------------------------------------------------
+# CLI layer fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def cli_parser() -> argparse.ArgumentParser:
+    """Return a fresh CLI parser instance for tests."""
+
+    return argparse.ArgumentParser(prog="lounge-cli", description="Lounge CLI")
+
+
+@pytest.fixture
+def subparsers_action(
+    cli_parser: argparse.ArgumentParser,
+) -> argparse._SubParsersAction[argparse.ArgumentParser]:
+    """Return the subparser action used to register commands."""
+
+    return cli_parser.add_subparsers(dest="command")
+
+
+@pytest.fixture
+def command_table_entry() -> tuple[str, cli.CommandSpec]:
+    """Provide a placeholder command table entry for dispatch tests."""
+
+    called = {"called": False}
+
+    def execute(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+        called["called"] = True
+        execute.__dict__["called"] = True
+        return 0
+
+    def register(
+        subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
+    ) -> argparse.ArgumentParser:
+        return subparsers.add_parser("catalog-test")
+
+    spec = cli.CommandSpec(
+        name="catalog-test",
+        help_text="help",
+        register=register,
+        execute=execute,
+    )
+    return "catalog-test", spec
+
+
+@pytest.fixture
+def command_spec_iterable() -> list[cli.CommandSpec]:
+    """Provide a list of command specs for indexing tests."""
+
+    def _make_spec(name: str) -> cli.CommandSpec:
+        return cli.CommandSpec(
+            name,
+            f"{name} help",
+            lambda subparsers: subparsers.add_parser(name),
+            lambda *_: 0,
+        )
+
+    return [_make_spec("alpha"), _make_spec("beta"), _make_spec("gamma")]
+
+
+# ---------------------------------------------------------------------------
+# Core logic fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def settings(tmp_path: Path) -> data_manager.ConfigSettings:
+    """Provide default configuration settings for runtime context tests."""
+
+    return data_manager.ConfigSettings(
+        data_file=tmp_path / "master_workbook.xlsx",
+        lounge_name="Test Lounge",
+        schema_version=constants.EXPECTED_SCHEMA_VERSION,
+        default_salesman_id="S-DEFAULT",
+    )
+
+
+@pytest.fixture
+def workbook() -> Mock:
+    """Return a mock workbook object for business logic tests."""
+
+    return Mock(name="workbook")
+
+
+@pytest.fixture
+def context(settings: data_manager.ConfigSettings, workbook: Mock) -> core_logic.RuntimeContext:
+    """Assemble a runtime context from injected settings and workbook mocks."""
+
+    return core_logic.RuntimeContext(settings=settings, workbook=workbook)
+
+
+@pytest.fixture
+def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> Callable[[datetime], datetime]:
+    """Patch ``core_logic.datetime`` to return a predetermined moment."""
+
+    def _apply(moment: datetime) -> datetime:
+        class _FixedDateTime:
+            @staticmethod
+            def now(tz=None):
+                assert tz is UTC
+                return moment
+
+        monkeypatch.setattr(core_logic, "datetime", _FixedDateTime)
+        return moment
+
+    return _apply

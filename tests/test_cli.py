@@ -994,53 +994,6 @@ def test_main_persists_on_success(monkeypatch, runtime_context):
 
 
 # ---------------------------------------------------------------------------
-# Fixtures specific to CLI tests
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def cli_parser() -> argparse.ArgumentParser:
-    """Return a fresh CLI parser instance for tests."""
-
-    return argparse.ArgumentParser(prog="lounge-cli", description="Lounge CLI")
-
-
-@pytest.fixture
-def subparsers_action(cli_parser: argparse.ArgumentParser) -> argparse._SubParsersAction[argparse.ArgumentParser]:
-    """Return the subparser action used to register commands."""
-
-    return cli_parser.add_subparsers(dest="command")
-
-
-@pytest.fixture
-def command_table_entry() -> tuple[str, cli.CommandSpec]:
-    """Provide a placeholder command table entry for dispatch tests."""
-
-    called = {"called": False}
-
-    def execute(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
-        called["called"] = True
-        execute.__dict__["called"] = True
-        return 0
-
-    def register(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
-        return subparsers.add_parser("catalog-test")
-
-    spec = cli.CommandSpec(name="catalog-test", help_text="help", register=register, execute=execute)
-    return "catalog-test", spec
-
-
-@pytest.fixture
-def command_spec_iterable() -> list[cli.CommandSpec]:
-    """Provide a list of command specs for indexing tests."""
-
-    def _make_spec(name: str) -> cli.CommandSpec:
-        return cli.CommandSpec(name, f"{name} help", lambda subparsers: subparsers.add_parser(name), lambda *_: 0)
-
-    return [_make_spec("alpha"), _make_spec("beta"), _make_spec("gamma")]
-
-
-# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
