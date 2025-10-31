@@ -65,13 +65,13 @@ Pass `--config /path/to/config.ini` if your configuration lives elsewhere.
 These commands mutate the workbook. Each subcommand provides `--help`
 documentation with full argument details.
 
-- `add-product <product_id> <product_name> <sell_price> [--inactive]`
-- `add-salesman <salesman_id> <salesman_name> [--inactive]`
-- `sale <product_id> <quantity> --salesman <salesman_id> --revenue <amount> --payment {Cash,Debit,Credit}`
-- `restock <product_id> <quantity> --cost <amount> --salesman <salesman_id>`
-- `write-off <product_id> <quantity> --salesman <salesman_id>`
-- `pay-debt <linked_transaction_id> --amount <value> --salesman <salesman_id>`
-- `void <linked_transaction_id>`
+- `add-product --product-id <product_id> --product-name <product_name> --sell-price <sell_price> [--inactive]`
+- `add-salesman --salesman-id <salesman_id> --salesman-name <salesman_name> [--inactive]`
+- `sale --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> --total-revenue <amount> --payment-type {Cash,Debit,Credit}`
+- `restock --product-id <product_id> --quantity <quantity> --total-cost <amount> --salesman-id <salesman_id>`
+- `write-off --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id>`
+- `pay-debt --linked-transaction-id <transaction_id> --total-revenue <value> --salesman-id <salesman_id>`
+- `void --linked-transaction-id <transaction_id>`
 
 Optional flags `--notes` and `--timestamp <ISO-8601>` are available on the
 workflows that accept them.
