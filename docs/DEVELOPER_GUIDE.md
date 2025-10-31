@@ -24,8 +24,10 @@ The code follows a three-layer design:
 3. **Presentation Layer (UI):**
   Implemented as a command-line interface in `cli.py`. The module keeps the UI
   intentionally thin: it parses arguments, converts them into the command
-  objects defined by the BLL, and delegates execution. No business rules live
-  in the CLI; everything flows through `core_logic`.
+  objects defined by the BLL, and delegates execution. All user input is
+  expressed through explicit long-form options, and the CLI never accepts a
+  manual timestamp override because the business layer assigns those values.
+  No business rules live in the CLI; everything flows through `core_logic`.
 
 ## Data Model
 
@@ -79,7 +81,10 @@ inventory. Using two columns keeps Excel analysis simple:
 #### Column Types and Formatting
 
 - Identifier columns (`ProductID`, `SalesmanID`, `TransactionID`, `LinkedTransactionID`) stay as text. Transaction identifiers are generated via `core_logic.generate_transaction_id` (`TYYYYMMDDHHMMSSffffff`, `V...` for voids) so Excel preserves chronological ordering.
-- `Timestamp` cells store ISO 8601 strings. When callers omit a timestamp, `_resolve_timestamp` fabricates a UTC value (`2025-10-30T14:03:12+00:00`); if a workflow supplies a naive `datetime`, the exact representation it provides is persisted.
+- `Timestamp` cells store ISO 8601 strings captured by the business layer. Each
+  `record_*` function captures `datetime.now(UTC)` once per command and reuses
+  that moment for both the transaction identifier and the persisted row, so
+  callers cannot desynchronize the values or supply custom timestamps.
 - `QuantityChange` uses signed decimals
 - Monetary columns are written as `Decimal` instances. Revenue entries stay positive, while `build_restock_transaction` and `build_void_reversal` ensure costs are stored as negative numbers so `SUM(TotalRevenue) + SUM(TotalCost)` yields profit without extra formulas.
 - Boolean columns (`Products.IsActive`, `Salesmen.IsActive`) store Excel booleans; the DAL coerces them back to `bool` on read.

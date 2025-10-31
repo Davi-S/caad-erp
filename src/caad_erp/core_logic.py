@@ -46,7 +46,6 @@ class SaleCommand:
     quantity: Decimal
     total_revenue: Decimal
     payment_type: PaymentType
-    timestamp: Optional[datetime] = None
     notes: Optional[str] = None
 
 
@@ -58,7 +57,6 @@ class RestockCommand:
     salesman_id: str
     quantity: Decimal
     total_cost: Decimal
-    timestamp: Optional[datetime] = None
     notes: Optional[str] = None
 
 
@@ -69,7 +67,6 @@ class WriteOffCommand:
     product_id: str
     salesman_id: str
     quantity: Decimal
-    timestamp: Optional[datetime] = None
     notes: Optional[str] = None
 
 
@@ -80,7 +77,6 @@ class CreditPaymentCommand:
     linked_transaction_id: str
     salesman_id: str
     total_revenue: Decimal
-    timestamp: Optional[datetime] = None
     notes: Optional[str] = None
 
 
@@ -92,7 +88,6 @@ class OpenStockCommand:
     salesman_id: str
     quantity: Decimal
     total_revenue: Decimal
-    timestamp: Optional[datetime] = None
 
 
 TransactionCommand = Union[
@@ -120,25 +115,7 @@ class VoidCommand:
 
     linked_transaction_id: str
     replacement_command: Optional[TransactionCommand]
-    timestamp: Optional[datetime] = None
     notes: Optional[str] = None
-
-
-def _resolve_timestamp(candidate: Optional[datetime]) -> datetime:
-    """Resolve optional timestamps into consistent, timezone-aware values.
-
-    Args:
-        candidate (datetime | None): Caller-provided timestamp, usually sourced
-            from a command object. When ``None`` the helper fabricates a
-            timestamp so that downstream operations can rely on monotonic and
-            comparable values.
-
-    Returns:
-        datetime: ``candidate`` normalized as-is when provided, otherwise the
-            current UTC datetime generated via :func:`datetime.now`.
-    """
-
-    return candidate if candidate is not None else datetime.now(UTC)
 
 
 def _get_cache_bucket(context: RuntimeContext, name: str) -> Dict[str, Any]:
@@ -567,6 +544,7 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
             unknown.
         ValueError: When quantity or revenue validations fail.
     """
+    now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
         log.warning("Attempted sale on inactive product '%s'", command.product_id)
@@ -581,9 +559,8 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
         log.error("Unsupported payment type provided: %s", command.payment_type)
         raise BusinessRuleViolation(f"Unsupported payment type: {command.payment_type}")
 
-    timestamp = _resolve_timestamp(command.timestamp)
-    transaction_id = generate_transaction_id(when=timestamp)
-    transaction = build_sale_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
+    transaction_id = generate_transaction_id(when=now)
+    transaction = build_sale_transaction(command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     log.info(
@@ -617,6 +594,7 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
         MissingReferenceError: When the referenced product cannot be located.
         ValueError: If quantity or total cost validations fail.
     """
+    now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
         log.warning("Attempted restock on inactive product '%s'", command.product_id)
@@ -628,9 +606,8 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     require_positive_quantity(command.quantity)
     require_nonnegative_money(abs(command.total_cost))
 
-    timestamp = _resolve_timestamp(command.timestamp)
-    transaction_id = generate_transaction_id(when=timestamp)
-    transaction = build_restock_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
+    transaction_id = generate_transaction_id(when=now)
+    transaction = build_restock_transaction(command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     log.info(
@@ -663,6 +640,7 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
         MissingReferenceError: When the referenced product id is unknown.
         ValueError: If the quantity fails validation.
     """
+    now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
         log.warning("Attempted write-off on inactive product '%s'", command.product_id)
@@ -673,9 +651,8 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
         raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
 
-    timestamp = _resolve_timestamp(command.timestamp)
-    transaction_id = generate_transaction_id(when=timestamp)
-    transaction = build_write_off_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
+    transaction_id = generate_transaction_id(when=now)
+    transaction = build_write_off_transaction(command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     log.info(
@@ -709,6 +686,7 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
             unknown.
         ValueError: If the payment amount is negative.
     """
+    now = datetime.now(UTC)
     linked_sale = get_transaction(context, command.linked_transaction_id)
     validate_credit_sale_link(linked_sale)
     require_nonnegative_money(command.total_revenue)
@@ -717,12 +695,11 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
         log.warning("Attempted credit payment with inactive salesman '%s'", command.salesman_id)
         raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
 
-    timestamp = _resolve_timestamp(command.timestamp)
-    transaction_id = generate_transaction_id(when=timestamp)
+    transaction_id = generate_transaction_id(when=now)
     transaction = build_credit_payment_transaction(
         command,
         transaction_id=transaction_id,
-        timestamp=timestamp,
+        timestamp=now,
         product_id=linked_sale.product_id,
     )
     data_manager.append_transaction(context.workbook, transaction)
@@ -757,6 +734,7 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
         MissingReferenceError: When the product identifier is unknown.
         ValueError: If quantity or revenue validations fail.
     """
+    now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
         log.warning("Attempted open stock on inactive product '%s'", command.product_id)
@@ -768,9 +746,8 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     require_positive_quantity(command.quantity)
     require_nonnegative_money(command.total_revenue)
 
-    timestamp = _resolve_timestamp(command.timestamp)
-    transaction_id = generate_transaction_id(when=timestamp)
-    transaction = build_open_stock_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
+    transaction_id = generate_transaction_id(when=now)
+    transaction = build_open_stock_transaction(command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     log.info(
@@ -807,12 +784,12 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
             the replacement command type is unsupported.
         MissingReferenceError: When the referenced transaction is unknown.
     """
+    now = datetime.now(UTC)
     log.info("Recording VOID for transaction '%s'", command.linked_transaction_id)
     target = get_transaction(context, command.linked_transaction_id)
     validate_void_target(target)
 
-    timestamp = _resolve_timestamp(command.timestamp)
-    reversal = build_void_reversal(target, timestamp=timestamp, notes=command.notes)
+    reversal = build_void_reversal(target, timestamp=now, notes=command.notes)
     data_manager.append_transaction(context.workbook, reversal)
     _invalidate_cache(context, "transactions")
     log.info(
@@ -859,7 +836,7 @@ def generate_transaction_id(*, prefix: str = "T", when: Optional[datetime] = Non
     supplied timestamps allow deterministic identifiers during testing or data
     migrations.
     """
-    when = when or _resolve_timestamp(None)
+    when = when or datetime.now(UTC)
     return f"{prefix}{when.strftime('%Y%m%d%H%M%S%f')}"
 
 

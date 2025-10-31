@@ -73,8 +73,7 @@ documentation with full argument details.
 - `pay-debt --linked-transaction-id <transaction_id> --total-revenue <value> --salesman-id <salesman_id>`
 - `void --linked-transaction-id <transaction_id>`
 
-Optional flags `--notes` and `--timestamp <ISO-8601>` are available on the
-workflows that accept them.
+All mutating commands accept `--notes` for free-form context.
 
 ### Read Commands
 
