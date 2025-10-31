@@ -6,7 +6,7 @@ developers who maintain or extend the codebase.
 
 ## Guiding Principles
 
-- **Robustness & Integrity:** The system must never diverge from the truth; an
+- **Robustness and Integrity:** The system must never diverge from the truth; an
   audit trail is mandatory.
 - **Ease of Analysis:** Outputs are optimized for Microsoft Excel users.
 - **Maintainability:** Code must remain clean, modular, and well-documented so
@@ -68,7 +68,7 @@ inventory. Using two columns keeps Excel analysis simple:
 
 `SUM(TransactionLog.QuantityChange)` derives real-time stock levels.
 
-#### Foreign Keys & Integrity
+#### Foreign Keys and Integrity
 
 - `TransactionLog.ProductID` must match a `ProductID` in the `Products` sheet whenever it is populated.
 - `TransactionLog.SalesmanID` points at `Salesmen.SalesmanID` for user-driven activity. Inactive entries are rejected so ledger rows cannot reference retired users inadvertently.
