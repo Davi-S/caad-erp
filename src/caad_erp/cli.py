@@ -1,8 +1,10 @@
-"""Command-line interface for CAAD ERP.
+"""Command-line entry points for the CAAD ERP toolkit.
 
-This module defines the presentation layer plumbing for the lounge CLI while
-staying free of business logic. Implementations will translate parsed
-arguments into the command objects expected by the business layer.
+All orchestration in this module is limited to argparse wiring and translating
+command-line arguments into the command objects consumed by the business
+layer. Keeping the CLI thin ensures the same parser configuration can be
+reused by tests, scripts, or any alternative front-end that wants to expose
+the package capabilities.
 """
 
 from __future__ import annotations

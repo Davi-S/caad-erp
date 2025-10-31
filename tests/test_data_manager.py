@@ -1,4 +1,4 @@
-"""Unit tests documenting the expected behavior of the data access layer."""
+"""Unit tests documenting the CAAD ERP data access layer contract."""
 
 from __future__ import annotations
 

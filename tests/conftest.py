@@ -1,4 +1,4 @@
-"""Shared pytest fixtures and utilities for Lounge ERP tests."""
+"""Shared pytest fixtures and utilities for the CAAD ERP test suite."""
 
 from __future__ import annotations
 

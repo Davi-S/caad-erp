@@ -1,9 +1,8 @@
-"""Integration tests describing the end-to-end Lounge ERP workflows.
+"""Integration tests describing the end-to-end CAAD ERP workflows.
 
-These tests document the intended collaboration between the data access layer
-and the business logic layer. They currently fail because the underlying
-functions are stubs, but they outline the scenarios we expect to support once
-implementations land.
+These scenarios document how the data access and business logic layers should
+collaborate. Some tests are expected to fail until the corresponding features
+are implemented, but they record the workflows we plan to support.
 """
 
 from __future__ import annotations

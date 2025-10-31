@@ -1,8 +1,7 @@
-"""Enumerations shared across Lounge ERP modules.
+"""Domain constants shared across the CAAD ERP layers.
 
-Centralises domain constants so that the data access layer (DAL), business
-logic layer (BLL), and future presentation layers can rely on a single source
-of truth for critical identifiers.
+Collecting enumerations in one place keeps the data, business, and
+presentation layers aligned on schema and ledger identifiers.
 """
 
 from __future__ import annotations

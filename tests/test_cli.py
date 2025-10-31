@@ -1,4 +1,4 @@
-"""Unit tests describing the CLI presentation layer contract."""
+"""Unit tests codifying the CLI contract for the CAAD ERP tooling."""
 
 from __future__ import annotations
 
