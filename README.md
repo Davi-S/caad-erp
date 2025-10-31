@@ -50,7 +50,7 @@ data export utilities) while we build the user interface.
 
 ## Usage
 
-The CLI/Web UI is under development. See "Development & Testing" for now.
+The CLI/Web UI is under development.
 
 ## Contributing
 
