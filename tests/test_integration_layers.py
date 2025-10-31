@@ -9,21 +9,19 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from caad_erp import constants, core_logic, data_manager
+from caad_erp import constants, core_logic
 
 
 def _register_sample_product(context: core_logic.RuntimeContext, *, product_id: str, name: str, sell_price: Decimal) -> None:
-    """Append a single active product to the workbook via the DAL."""
+    """Append a single active product through the business logic layer."""
 
-    # The DAL provides typed row helpers. Using them here documents the
-    # intended call-site for business rules that seed catalog data.
-    product_row = data_manager.ProductRow(
+    core_logic.add_product(
+        context,
         product_id=product_id,
         product_name=name,
         sell_price=sell_price,
         is_active=True,
     )
-    data_manager.append_product(context.workbook, product_row)
 
 
 def test_sale_lifecycle_flow(runtime_context):

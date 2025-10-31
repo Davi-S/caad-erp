@@ -236,6 +236,68 @@ def test_get_product_reuses_cache_after_first_lookup(monkeypatch, context):
     iter_mock.assert_called_once_with(context.workbook)
 
 
+def test_add_product_appends_record_and_invalidates_cache(monkeypatch, context):
+    """add_product should persist a ProductRow and flush cached catalog data."""
+
+    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
+    append_mock = Mock()
+    monkeypatch.setattr(data_manager, "append_product", append_mock)
+
+    result = core_logic.add_product(
+        context,
+        product_id="SKU-001",
+        product_name="Chocolate Bar",
+        sell_price=Decimal("2.50"),
+        is_active=True,
+    )
+
+    append_mock.assert_called_once()
+    workbook_arg, record_arg = append_mock.call_args[0]
+    assert workbook_arg is context.workbook
+    assert record_arg == result
+    assert result.product_id == "SKU-001"
+    assert "products" not in context._cache
+
+
+def test_add_product_rejects_duplicate_id(monkeypatch, context):
+    """Duplicate ProductIDs should surface a BusinessRuleViolation."""
+
+    existing = data_manager.ProductRow("SKU-001", "Existing", Decimal("1.00"), True)
+    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[existing]))
+    append_mock = Mock()
+    monkeypatch.setattr(data_manager, "append_product", append_mock)
+
+    with pytest.raises(core_logic.BusinessRuleViolation):
+        core_logic.add_product(
+            context,
+            product_id="SKU-001",
+            product_name="New Product",
+            sell_price=Decimal("1.50"),
+            is_active=True,
+        )
+
+    append_mock.assert_not_called()
+
+
+def test_add_product_rejects_negative_price(monkeypatch, context):
+    """add_product should reject negative sell_price values."""
+
+    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
+    append_mock = Mock()
+    monkeypatch.setattr(data_manager, "append_product", append_mock)
+
+    with pytest.raises(ValueError):
+        core_logic.add_product(
+            context,
+            product_id="SKU-NEG",
+            product_name="Invalid",
+            sell_price=Decimal("-0.01"),
+            is_active=True,
+        )
+
+    append_mock.assert_not_called()
+
+
 def test_get_salesman_returns_match(monkeypatch, context):
     """get_salesman should fetch active salesmen."""
 
@@ -259,6 +321,65 @@ def test_get_salesman_reuses_cache_after_first_lookup(monkeypatch, context):
 
     assert first is second
     iter_mock.assert_called_once_with(context.workbook)
+
+
+def test_add_salesman_appends_record_and_invalidates_cache(monkeypatch, context):
+    """add_salesman should persist a SalesmanRow and clear the cache bucket."""
+
+    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=[]))
+    append_mock = Mock()
+    monkeypatch.setattr(data_manager, "append_salesman", append_mock)
+
+    result = core_logic.add_salesman(
+        context,
+        salesman_id="S-001",
+        salesman_name="Jamie",
+        is_active=True,
+    )
+
+    append_mock.assert_called_once()
+    workbook_arg, record_arg = append_mock.call_args[0]
+    assert workbook_arg is context.workbook
+    assert record_arg == result
+    assert result.salesman_id == "S-001"
+    assert "salesmen" not in context._cache
+
+
+def test_add_salesman_rejects_duplicate_id(monkeypatch, context):
+    """Existing SalesmanIDs should block add_salesman calls."""
+
+    existing = data_manager.SalesmanRow("S-001", "Existing", True)
+    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=[existing]))
+    append_mock = Mock()
+    monkeypatch.setattr(data_manager, "append_salesman", append_mock)
+
+    with pytest.raises(core_logic.BusinessRuleViolation):
+        core_logic.add_salesman(
+            context,
+            salesman_id="S-001",
+            salesman_name="Duplicate",
+            is_active=True,
+        )
+
+    append_mock.assert_not_called()
+
+
+def test_add_salesman_requires_nonempty_name(monkeypatch, context):
+    """add_salesman should validate the provided salesman name."""
+
+    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=[]))
+    append_mock = Mock()
+    monkeypatch.setattr(data_manager, "append_salesman", append_mock)
+
+    with pytest.raises(ValueError):
+        core_logic.add_salesman(
+            context,
+            salesman_id="S-EMPTY",
+            salesman_name="   ",
+            is_active=True,
+        )
+
+    append_mock.assert_not_called()
 
 
 def test_get_transaction_returns_match(monkeypatch, context):
