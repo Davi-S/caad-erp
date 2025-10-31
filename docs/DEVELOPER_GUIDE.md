@@ -22,8 +22,10 @@ The code follows a three-layer design:
    Encapsulates rules and workflows, calling into the DAL without caring about
    presentation concerns.
 3. **Presentation Layer (UI):**
-   Not yet implemented. Future CLI or web interface will be a thin wrapper
-   around the BLL.
+  Implemented as a command-line interface in `cli.py`. The module keeps the UI
+  intentionally thin: it parses arguments, converts them into the command
+  objects defined by the BLL, and delegates execution. No business rules live
+  in the CLI; everything flows through `core_logic`.
 
 ## Data Model
 
@@ -177,7 +179,7 @@ documentation tools.
 
 ## Future Work
 
-- Build the user-facing CLI or web UI.
+- Enhance the CLI UX (for example, rich table output) while keeping it thin.
 - Document the archive workflow as part of operational runbooks.
 - Expand automated tests to cover end-to-end scenarios once the UI exists.
 - Create a period-end script that recalculates inventory, seeds `OPEN_STOCK`
