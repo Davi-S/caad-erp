@@ -1,4 +1,4 @@
-"""Unit tests verifying the business logic layer with a mocked data access layer."""
+"""Unit tests verifying the CAAD ERP business logic layer via a mocked DAL."""
 
 from __future__ import annotations
 

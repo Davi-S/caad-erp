@@ -1,8 +1,8 @@
-"""Utility for initializing the Lounge ERP master workbook.
+"""Utility for initializing the CAAD ERP master workbook.
 
-This module can be executed as a standalone script (``python setup_excel.py``)
-*or* imported by the test-suite and other tooling. The public helpers expose the
-core behavior so the same code path is used in both contexts.
+The module doubles as a script (``python setup_excel.py``) and as a library
+used by tests or other tooling. Shared helpers keep the workbook bootstrap
+logic consistent regardless of the execution path.
 """
 
 from __future__ import annotations

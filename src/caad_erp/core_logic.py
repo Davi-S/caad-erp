@@ -1,9 +1,9 @@
-"""Business logic layer for Lounge ERP.
+"""Business logic layer for the CAAD ERP workbook.
 
-This module contains the rule engine that orchestrates the immutable
-``TransactionLog`` model. It consumes the Data Access Layer (DAL) for all I/O
-while ensuring every mutation passes through the domain rules described in the
-architecture guide.
+This module enforces the domain rules that govern interactions with the
+immutable ``TransactionLog`` model. It relies on the data access layer for all
+I/O, layering caches and command objects on top so that callers operate on
+predictable, validated workflows rather than raw spreadsheet mutations.
 """
 
 from __future__ import annotations

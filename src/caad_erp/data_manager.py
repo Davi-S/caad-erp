@@ -1,14 +1,10 @@
-"""Data access layer for Lounge ERP.
+"""Data access helpers for the CAAD ERP workbook.
 
-This module provides low-level helpers that read from and write to the
-``master_workbook.xlsx`` workbook. Business logic belongs elsewhere.
-
-The public API is designed around three responsibilities:
-
-1. Configuration handling: finding and parsing ``config.ini``.
-2. Workbook lifecycle: opening, validating, and persisting the Excel file.
-3. Sheet operations: loading structured records and appending or updating
-   individual rows.
+The routines in this module encapsulate all direct interaction with the
+``master_workbook.xlsx`` file so the rest of the codebase can depend on typed
+records instead of spreadsheet primitives. The public surface focuses on
+three areas: resolving configuration, managing the workbook lifecycle, and
+performing row-level operations on each worksheet.
 """
 
 
