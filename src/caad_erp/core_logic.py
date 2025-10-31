@@ -803,15 +803,15 @@ def persist_context(context: RuntimeContext) -> None:
         context (RuntimeContext): Runtime context whose workbook should be
             saved.
 
-    Raises:
-        ValueError: Propagated from :func:`data_manager.save_workbook` when the
-            workbook lacks a known destination.
-
-    The function delegates to the data layer, allowing it to honor any source
-    path recorded on the workbook. In-memory caches remain valid because the
-    workbook handle is unchanged after the save completes.
+    The function supplies :attr:`RuntimeContext.settings.data_file` directly to
+    the data layer to ensure saves always target the configured workbook path.
+    In-memory caches remain valid because the workbook handle is unchanged
+    after the save completes.
     """
-    data_manager.save_workbook(context.workbook)
+    data_manager.save_workbook(
+        context.workbook,
+        destination=context.settings.data_file,
+    )
     log.info("Persisted workbook '%s'", context.settings.data_file)
 
 

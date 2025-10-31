@@ -91,12 +91,12 @@ def test_open_workbook_missing_file_raises(tmp_path):
 
 
 def test_save_workbook_persists_changes(master_workbook_path):
-    """save_workbook without destination should persist to the source path."""
+    """save_workbook should persist changes to the provided destination path."""
 
     workbook = data_manager.open_workbook(master_workbook_path)
     sheet = workbook[constants.SheetName.PRODUCTS.value]
     sheet.append(["P100", "Chips", "2.50", True])
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     reloaded = data_manager.open_workbook(master_workbook_path)
     values = list(reloaded[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True))
@@ -123,7 +123,7 @@ def test_refresh_workbook_returns_new_instance(master_workbook_path):
     original = data_manager.open_workbook(master_workbook_path)
     sheet = original[constants.SheetName.PRODUCTS.value]
     sheet.append(["P200", "Bars", "4.00", True])
-    data_manager.save_workbook(original)
+    data_manager.save_workbook(original, destination=master_workbook_path)
 
     refreshed = data_manager.refresh_workbook(master_workbook_path)
     assert refreshed is not original
@@ -137,7 +137,7 @@ def test_iter_products_yields_product_rows(master_workbook_path):
     workbook = data_manager.open_workbook(master_workbook_path)
     products = workbook[constants.SheetName.PRODUCTS.value]
     products.append(["P300", "Soda", "5.00", True])
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     refreshed = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_products(refreshed))
@@ -157,7 +157,7 @@ def test_iter_salesmen_yields_salesman_rows(master_workbook_path):
     workbook = data_manager.open_workbook(master_workbook_path)
     salesmen = workbook[constants.SheetName.SALESMEN.value]
     salesmen.append(["S2", "Morgan", True])
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     refreshed = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_salesmen(refreshed))
@@ -185,7 +185,7 @@ def test_iter_transactions_yields_transaction_rows(master_workbook_path):
             "Notes",
         ]
     )
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     refreshed = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_transactions(refreshed))
@@ -204,7 +204,7 @@ def test_append_product_adds_row(master_workbook_path):
         is_active=False,
     )
     data_manager.append_product(workbook, record)
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     refreshed = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_products(refreshed))
@@ -221,7 +221,7 @@ def test_append_salesman_adds_row(master_workbook_path):
         is_active=False,
     )
     data_manager.append_salesman(workbook, record)
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     refreshed = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_salesmen(refreshed))
@@ -246,7 +246,7 @@ def test_append_transaction_adds_row(master_workbook_path):
         notes="Restock",
     )
     data_manager.append_transaction(workbook, record)
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     refreshed = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_transactions(refreshed))
@@ -259,7 +259,7 @@ def test_update_product_modifies_existing_row(master_workbook_path):
     workbook = data_manager.open_workbook(master_workbook_path)
     sheet = workbook[constants.SheetName.PRODUCTS.value]
     sheet.append(["P500", "Old", "1.00", True])
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     reloaded = data_manager.open_workbook(master_workbook_path)
     data_manager.update_product(
@@ -267,7 +267,7 @@ def test_update_product_modifies_existing_row(master_workbook_path):
         "P500",
         field_values={"ProductName": "New", "SellPrice": Decimal("2.00")},
     )
-    data_manager.save_workbook(reloaded)
+    data_manager.save_workbook(reloaded, destination=master_workbook_path)
 
     final = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_products(final))
@@ -288,11 +288,11 @@ def test_update_salesman_modifies_existing_row(master_workbook_path):
     workbook = data_manager.open_workbook(master_workbook_path)
     sheet = workbook[constants.SheetName.SALESMEN.value]
     sheet.append(["S500", "Taylor", True])
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     reloaded = data_manager.open_workbook(master_workbook_path)
     data_manager.update_salesman(reloaded, "S500", field_values={"IsActive": False})
-    data_manager.save_workbook(reloaded)
+    data_manager.save_workbook(reloaded, destination=master_workbook_path)
 
     final = data_manager.open_workbook(master_workbook_path)
     rows = list(data_manager.iter_salesmen(final))
@@ -313,7 +313,7 @@ def test_locate_row_returns_row_index(master_workbook_path):
     workbook = data_manager.open_workbook(master_workbook_path)
     sheet = workbook[constants.SheetName.PRODUCTS.value]
     sheet.append(["P600", "Snack", "2.00", True])
-    data_manager.save_workbook(workbook)
+    data_manager.save_workbook(workbook, destination=master_workbook_path)
 
     reloaded = data_manager.open_workbook(master_workbook_path)
     row_index = data_manager.locate_row(
