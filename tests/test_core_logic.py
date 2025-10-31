@@ -12,43 +12,6 @@ import pytest
 from caad_erp import constants, core_logic, data_manager
 
 
-@pytest.fixture
-def settings(tmp_path):
-    return data_manager.ConfigSettings(
-        data_file=tmp_path / "master_workbook.xlsx",
-        lounge_name="Test Lounge",
-        schema_version=constants.EXPECTED_SCHEMA_VERSION,
-        default_salesman_id="S-DEFAULT",
-    )
-
-
-@pytest.fixture
-def workbook():
-    return Mock(name="workbook")
-
-
-@pytest.fixture
-def context(settings, workbook):
-    return core_logic.RuntimeContext(settings=settings, workbook=workbook)
-
-
-@pytest.fixture
-def set_fixed_datetime(monkeypatch):
-    """Patch core_logic.datetime.now to return a predetermined moment."""
-
-    def _apply(moment: datetime) -> datetime:
-        class _FixedDateTime:
-            @staticmethod
-            def now(tz=None):
-                assert tz is UTC
-                return moment
-
-        monkeypatch.setattr(core_logic, "datetime", _FixedDateTime)
-        return moment
-
-    return _apply
-
-
 # ---------------------------------------------------------------------------
 # Runtime/context management
 # ---------------------------------------------------------------------------
