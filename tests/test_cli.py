@@ -221,6 +221,8 @@ def test_register_restock_command_configures_arguments():
             "5",
             "--cost",
             "10.00",
+            "--salesman",
+            "S-DEFAULT",
             "--notes",
             "Bulk restock",
             "--timestamp",
@@ -230,6 +232,7 @@ def test_register_restock_command_configures_arguments():
     assert namespace.product_id == "P1001"
     assert namespace.quantity == "5"
     assert namespace.total_cost == "10.00"
+    assert namespace.salesman_id == "S-DEFAULT"
     assert namespace.notes == "Bulk restock"
     assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
@@ -255,6 +258,8 @@ def test_register_write_off_command_configures_arguments():
             "write-off",
             "P1001",
             "1",
+            "--salesman",
+            "S-DEFAULT",
             "--notes",
             "Damaged",
             "--timestamp",
@@ -263,6 +268,7 @@ def test_register_write_off_command_configures_arguments():
     )
     assert namespace.product_id == "P1001"
     assert namespace.quantity == "1"
+    assert namespace.salesman_id == "S-DEFAULT"
     assert namespace.notes == "Damaged"
     assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
@@ -289,6 +295,8 @@ def test_register_pay_debt_command_configures_arguments():
             "T20250101010101000000",
             "--amount",
             "6.00",
+            "--salesman",
+            "S-DEFAULT",
             "--notes",
             "Credit payment",
             "--timestamp",
@@ -297,6 +305,7 @@ def test_register_pay_debt_command_configures_arguments():
     )
     assert namespace.linked_transaction_id == "T20250101010101000000"
     assert namespace.total_revenue == "6.00"
+    assert namespace.salesman_id == "S-DEFAULT"
     assert namespace.notes == "Credit payment"
     assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
@@ -560,6 +569,7 @@ def test_translate_restock_returns_restock_command():
         product_id="P1001",
         quantity="5",
         total_cost="10.00",
+        salesman_id="S-DEFAULT",
         timestamp="2025-10-30T14:03:12+00:00",
         notes="Bulk restock",
     )
@@ -567,6 +577,7 @@ def test_translate_restock_returns_restock_command():
     assert isinstance(command, core_logic.RestockCommand)
     assert command.quantity == Decimal("5")
     assert command.total_cost == Decimal("10.00")
+    assert command.salesman_id == "S-DEFAULT"
     assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "Bulk restock"
 
@@ -577,12 +588,14 @@ def test_translate_write_off_returns_write_off_command():
     args = argparse.Namespace(
         product_id="P1001",
         quantity="1",
+        salesman_id="S-DEFAULT",
         timestamp="2025-10-30T14:03:12+00:00",
         notes="Damaged",
     )
     command = cli.translate_write_off(args)
     assert isinstance(command, core_logic.WriteOffCommand)
     assert command.quantity == Decimal("1")
+    assert command.salesman_id == "S-DEFAULT"
     assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "Damaged"
 
@@ -593,12 +606,14 @@ def test_translate_pay_debt_returns_credit_payment_command():
     args = argparse.Namespace(
         linked_transaction_id="T20250101010101000000",
         total_revenue="6.00",
+        salesman_id="S-DEFAULT",
         timestamp="2025-10-30T14:03:12+00:00",
         notes="Settled",
     )
     command = cli.translate_pay_debt(args)
     assert isinstance(command, core_logic.CreditPaymentCommand)
     assert command.total_revenue == Decimal("6.00")
+    assert command.salesman_id == "S-DEFAULT"
     assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "Settled"
 
@@ -692,7 +707,12 @@ def test_run_restock_invokes_bll(runtime_context, monkeypatch):
     """run_restock should delegate to the business logic layer."""
 
     args = argparse.Namespace()
-    command = core_logic.RestockCommand(product_id="P1001", quantity=Decimal("5"), total_cost=Decimal("10"))
+    command = core_logic.RestockCommand(
+        product_id="P1001",
+        salesman_id="S-DEFAULT",
+        quantity=Decimal("5"),
+        total_cost=Decimal("10"),
+    )
     monkeypatch.setattr(cli, "translate_restock", lambda value: command)
     called = {}
 
@@ -710,7 +730,11 @@ def test_run_write_off_invokes_bll(runtime_context, monkeypatch):
     """run_write_off should delegate to the business logic layer."""
 
     args = argparse.Namespace()
-    command = core_logic.WriteOffCommand(product_id="P1001", quantity=Decimal("1"))
+    command = core_logic.WriteOffCommand(
+        product_id="P1001",
+        salesman_id="S-DEFAULT",
+        quantity=Decimal("1"),
+    )
     monkeypatch.setattr(cli, "translate_write_off", lambda value: command)
     called = {}
 
@@ -728,7 +752,11 @@ def test_run_pay_debt_invokes_bll(runtime_context, monkeypatch):
     """run_pay_debt should delegate to the business logic layer."""
 
     args = argparse.Namespace()
-    command = core_logic.CreditPaymentCommand(linked_transaction_id="T1", total_revenue=Decimal("6"))
+    command = core_logic.CreditPaymentCommand(
+        linked_transaction_id="T1",
+        salesman_id="S-DEFAULT",
+        total_revenue=Decimal("6"),
+    )
     monkeypatch.setattr(cli, "translate_pay_debt", lambda value: command)
     called = {}
 

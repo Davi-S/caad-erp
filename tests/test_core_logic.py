@@ -599,17 +599,21 @@ def test_record_restock_appends_transaction(monkeypatch, context):
     """record_restock should log incoming inventory with TotalCost."""
 
     products = [data_manager.ProductRow("P201", "Snack", Decimal("2.50"), True)]
+    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_products_mock = Mock(return_value=products)
+    iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-restock")
 
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
 
     timestamp = datetime(2025, 10, 30, 9, 0, 0, tzinfo=UTC)
     command = core_logic.RestockCommand(
         product_id="P201",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("10"),
         total_cost=Decimal("-12.00"),
         timestamp=timestamp,
@@ -619,18 +623,40 @@ def test_record_restock_appends_transaction(monkeypatch, context):
     transaction = core_logic.record_restock(context, command)
 
     iter_products_mock.assert_called_once_with(context.workbook)
+    iter_salesmen_mock.assert_called_once_with(context.workbook)
     generate_mock.assert_called_once_with(when=timestamp)
     append_mock.assert_called_once()
     saved_row = append_mock.call_args[0][1]
     assert saved_row.transaction_type == constants.TransactionType.RESTOCK.value
     assert saved_row.quantity_change == Decimal("10")
+    assert saved_row.salesman_id == "S-DEFAULT"
     assert transaction == saved_row
+
+
+def test_record_restock_rejects_inactive_salesman(monkeypatch, context):
+    """record_restock should reject inactive salesmen."""
+
+    products = [data_manager.ProductRow("P202", "Snack", Decimal("2.50"), True)]
+    salesmen = [data_manager.SalesmanRow("S-RETIRED", "Sam", False)]
+    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=products))
+    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=salesmen))
+
+    command = core_logic.RestockCommand(
+        product_id="P202",
+        salesman_id="S-RETIRED",
+        quantity=Decimal("5"),
+        total_cost=Decimal("-5.00"),
+    )
+
+    with pytest.raises(core_logic.BusinessRuleViolation):
+        core_logic.record_restock(context, command)
 
 
 def test_record_restock_refreshes_transaction_cache(monkeypatch, context):
     """record_restock should invalidate and rebuild the transactions cache."""
 
     product = data_manager.ProductRow("P600", "Restock Item", Decimal("3.00"), True)
+    salesman = data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)
     existing = data_manager.TransactionRow(
         transaction_id="T-existing",
         timestamp_iso="2025-10-30T06:00:00",
@@ -647,6 +673,7 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context):
     log_rows = [existing]
 
     iter_products_mock = Mock(return_value=[product])
+    iter_salesmen_mock = Mock(return_value=[salesman])
     iter_transactions_mock = Mock(side_effect=lambda _workbook: list(log_rows))
     append_calls = []
 
@@ -658,6 +685,7 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context):
     generate_mock = Mock(return_value="T-restock-new")
 
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "iter_transactions", iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
@@ -669,6 +697,7 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context):
 
     command = core_logic.RestockCommand(
         product_id="P600",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("4"),
         total_cost=Decimal("-8.00"),
         timestamp=datetime(2025, 10, 30, 21, 0, 0, tzinfo=UTC),
@@ -678,6 +707,7 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context):
     transaction = core_logic.record_restock(context, command)
 
     append_mock.assert_called_once_with(context.workbook, transaction)
+    iter_salesmen_mock.assert_called_with(context.workbook)
     generate_mock.assert_called_once()
     assert append_calls == [(context.workbook, transaction)]
     assert "transactions" not in context._cache
@@ -686,6 +716,7 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context):
     assert iter_transactions_mock.call_count == 2
     assert [row.transaction_id for row in refreshed] == ["T-existing", "T-restock-new"]
     assert refreshed[-1] is transaction
+    assert transaction.salesman_id == "S-DEFAULT"
     cache_bucket = context._cache["transactions"]
     assert cache_bucket["by_id"]["T-restock-new"] is transaction
 
@@ -698,17 +729,21 @@ def test_record_write_off_appends_transaction(monkeypatch, context):
     """record_write_off should log shrink events with zero revenue/cost."""
 
     products = [data_manager.ProductRow("P202", "Fruit", Decimal("1.25"), True)]
+    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_products_mock = Mock(return_value=products)
+    iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-writeoff")
 
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
 
     timestamp = datetime(2025, 10, 30, 12, 0, 0, tzinfo=UTC)
     command = core_logic.WriteOffCommand(
         product_id="P202",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("1"),
         timestamp=timestamp,
         notes="Spoiled",
@@ -717,11 +752,13 @@ def test_record_write_off_appends_transaction(monkeypatch, context):
     transaction = core_logic.record_write_off(context, command)
 
     iter_products_mock.assert_called_once_with(context.workbook)
+    iter_salesmen_mock.assert_called_once_with(context.workbook)
     generate_mock.assert_called_once_with(when=timestamp)
     append_mock.assert_called_once()
     saved_row = append_mock.call_args[0][1]
     assert saved_row.transaction_type == constants.TransactionType.WRITE_OFF.value
     assert saved_row.quantity_change == Decimal("-1")
+    assert saved_row.salesman_id == "S-DEFAULT"
     assert transaction == saved_row
 
 
@@ -729,12 +766,13 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context):
     """record_write_off should invalidate and rebuild the transactions cache."""
 
     product = data_manager.ProductRow("P601", "WriteOff", Decimal("2.00"), True)
+    salesman = data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)
     existing = data_manager.TransactionRow(
         transaction_id="T-existing",
         timestamp_iso="2025-10-30T06:30:00",
         transaction_type=constants.TransactionType.RESTOCK.value,
         product_id="P601",
-        salesman_id=None,
+        salesman_id="S-DEFAULT",
         payment_type=constants.PaymentType.CASH.value,
         quantity_change=Decimal("5"),
         total_revenue=Decimal("0.00"),
@@ -745,6 +783,7 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context):
     log_rows = [existing]
 
     iter_products_mock = Mock(return_value=[product])
+    iter_salesmen_mock = Mock(return_value=[salesman])
     iter_transactions_mock = Mock(side_effect=lambda _workbook: list(log_rows))
     append_calls = []
 
@@ -756,6 +795,7 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context):
     generate_mock = Mock(return_value="T-writeoff-new")
 
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "iter_transactions", iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
@@ -767,6 +807,7 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context):
 
     command = core_logic.WriteOffCommand(
         product_id="P601",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("2"),
         timestamp=datetime(2025, 10, 30, 21, 30, 0, tzinfo=UTC),
         notes="Cache refresh",
@@ -783,6 +824,7 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context):
     assert iter_transactions_mock.call_count == 2
     assert [row.transaction_id for row in refreshed] == ["T-existing", "T-writeoff-new"]
     assert refreshed[-1] is transaction
+    assert transaction.salesman_id == "S-DEFAULT"
     cache_bucket = context._cache["transactions"]
     assert cache_bucket["by_id"]["T-writeoff-new"] is transaction
 
@@ -810,16 +852,20 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context):
         )
     ]
     iter_transactions_mock = Mock(return_value=transactions)
+    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-payment")
 
     monkeypatch.setattr(data_manager, "iter_transactions", iter_transactions_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
 
     timestamp = datetime(2025, 10, 30, 19, 0, 0, tzinfo=UTC)
     command = core_logic.CreditPaymentCommand(
         linked_transaction_id="T-credit",
+        salesman_id="S-DEFAULT",
         total_revenue=Decimal("2.00"),
         timestamp=timestamp,
         notes="Settled",
@@ -828,11 +874,13 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context):
     transaction = core_logic.record_credit_payment(context, command)
 
     iter_transactions_mock.assert_called_once_with(context.workbook)
+    iter_salesmen_mock.assert_called_once_with(context.workbook)
     generate_mock.assert_called_once_with(when=timestamp)
     append_mock.assert_called_once()
     saved_row = append_mock.call_args[0][1]
     assert saved_row.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
     assert saved_row.linked_transaction_id == "T-credit"
+    assert saved_row.salesman_id == "S-DEFAULT"
     assert transaction == saved_row
 
 
@@ -855,6 +903,8 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context)
     log_rows = [credit_sale]
 
     iter_transactions_mock = Mock(side_effect=lambda _workbook: list(log_rows))
+    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    iter_salesmen_mock = Mock(return_value=salesmen)
 
     append_calls = []
 
@@ -866,6 +916,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context)
     generate_mock = Mock(return_value="T-credit-new")
 
     monkeypatch.setattr(data_manager, "iter_transactions", iter_transactions_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
 
@@ -877,6 +928,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context)
     timestamp = datetime(2025, 10, 30, 22, 0, 0, tzinfo=UTC)
     command = core_logic.CreditPaymentCommand(
         linked_transaction_id="T-credit",
+        salesman_id="S-DEFAULT",
         total_revenue=Decimal("5.00"),
         timestamp=timestamp,
         notes="Cache refresh",
@@ -885,6 +937,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context)
     transaction = core_logic.record_credit_payment(context, command)
 
     append_mock.assert_called_once_with(context.workbook, transaction)
+    iter_salesmen_mock.assert_called_with(context.workbook)
     generate_mock.assert_called_once_with(when=timestamp)
     assert append_calls == [(context.workbook, transaction)]
     assert "transactions" not in context._cache
@@ -901,21 +954,57 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context)
     assert again[-1] is transaction
 
 
+def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
+    """record_credit_payment should reject inactive collectors."""
+
+    transactions = [
+        data_manager.TransactionRow(
+            transaction_id="T-credit",
+            timestamp_iso="2025-10-30T04:00:00",
+            transaction_type=constants.TransactionType.SALE.value,
+            product_id="P203",
+            salesman_id="S-DEFAULT",
+            payment_type=constants.PaymentType.ON_CREDIT.value,
+            quantity_change=Decimal("-2"),
+            total_revenue=Decimal("0.00"),
+            total_cost=Decimal("0.00"),
+            linked_transaction_id=None,
+            notes="Credit sale",
+        )
+    ]
+
+    monkeypatch.setattr(data_manager, "iter_transactions", Mock(return_value=transactions))
+    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=[data_manager.SalesmanRow("S-INACTIVE", "Pat", False)]))
+
+    command = core_logic.CreditPaymentCommand(
+        linked_transaction_id="T-credit",
+        salesman_id="S-INACTIVE",
+        total_revenue=Decimal("1.00"),
+    )
+
+    with pytest.raises(core_logic.BusinessRuleViolation):
+        core_logic.record_credit_payment(context, command)
+
+
 def test_record_open_stock_appends_transaction(monkeypatch, context):
     """record_open_stock should log baseline stock during rollover."""
 
     products = [data_manager.ProductRow("P204", "Water", Decimal("1.50"), True)]
+    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_products_mock = Mock(return_value=products)
+    iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-open")
 
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
 
     timestamp = datetime(2025, 10, 30, 7, 0, 0, tzinfo=UTC)
     command = core_logic.OpenStockCommand(
         product_id="P204",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("20"),
         total_revenue=Decimal("30.00"),
         timestamp=timestamp,
@@ -924,11 +1013,13 @@ def test_record_open_stock_appends_transaction(monkeypatch, context):
     transaction = core_logic.record_open_stock(context, command)
 
     iter_products_mock.assert_called_once_with(context.workbook)
+    iter_salesmen_mock.assert_called_once_with(context.workbook)
     generate_mock.assert_called_once_with(when=timestamp)
     append_mock.assert_called_once()
     saved_row = append_mock.call_args[0][1]
     assert saved_row.transaction_type == constants.TransactionType.OPEN_STOCK.value
     assert saved_row.quantity_change == Decimal("20")
+    assert saved_row.salesman_id == "S-DEFAULT"
     assert transaction == saved_row
 
 
@@ -936,6 +1027,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context):
     """record_open_stock should invalidate and rebuild the transactions cache."""
 
     product = data_manager.ProductRow("P800", "Open", Decimal("1.00"), True)
+    salesman = data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)
     existing = data_manager.TransactionRow(
         transaction_id="T-existing",
         timestamp_iso="2025-10-30T07:30:00",
@@ -952,6 +1044,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context):
     log_rows = [existing]
 
     iter_products_mock = Mock(return_value=[product])
+    iter_salesmen_mock = Mock(return_value=[salesman])
     iter_transactions_mock = Mock(side_effect=lambda _workbook: list(log_rows))
     append_calls = []
 
@@ -963,6 +1056,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context):
     generate_mock = Mock(return_value="T-open-new")
 
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "iter_transactions", iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
@@ -975,6 +1069,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context):
     timestamp = datetime(2025, 10, 30, 23, 0, 0, tzinfo=UTC)
     command = core_logic.OpenStockCommand(
         product_id="P800",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("5"),
         total_revenue=Decimal("5.00"),
         timestamp=timestamp,
@@ -983,6 +1078,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context):
     transaction = core_logic.record_open_stock(context, command)
 
     append_mock.assert_called_once_with(context.workbook, transaction)
+    iter_salesmen_mock.assert_called_with(context.workbook)
     generate_mock.assert_called_once_with(when=timestamp)
     assert append_calls == [(context.workbook, transaction)]
     assert "transactions" not in context._cache
@@ -991,6 +1087,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context):
     assert iter_transactions_mock.call_count == 2
     assert [row.transaction_id for row in refreshed] == ["T-existing", "T-open-new"]
     assert refreshed[-1] is transaction
+    assert transaction.salesman_id == "S-DEFAULT"
     cache_bucket = context._cache["transactions"]
     assert cache_bucket["by_id"]["T-open-new"] is transaction
 
@@ -1312,6 +1409,7 @@ def test_build_restock_transaction_constructs_row():
 
     command = core_logic.RestockCommand(
         product_id="P205",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("5"),
         total_cost=Decimal("-8.00"),
         timestamp=datetime(2025, 10, 30, 11, 0, 0),
@@ -1320,6 +1418,7 @@ def test_build_restock_transaction_constructs_row():
     row = core_logic.build_restock_transaction(command, transaction_id="T-restock", timestamp=datetime(2025, 10, 30, 11, 0, 0))
     assert row.transaction_type == constants.TransactionType.RESTOCK.value
     assert row.quantity_change == Decimal("5")
+    assert row.salesman_id == "S-DEFAULT"
 
 
 def test_build_write_off_transaction_constructs_row():
@@ -1327,6 +1426,7 @@ def test_build_write_off_transaction_constructs_row():
 
     command = core_logic.WriteOffCommand(
         product_id="P205",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("1"),
         timestamp=datetime(2025, 10, 30, 12, 0, 0),
         notes="Spoilage",
@@ -1335,6 +1435,7 @@ def test_build_write_off_transaction_constructs_row():
     assert row.transaction_type == constants.TransactionType.WRITE_OFF.value
     assert row.total_revenue == Decimal("0")
     assert row.total_cost == Decimal("0")
+    assert row.salesman_id == "S-DEFAULT"
 
 
 def test_build_credit_payment_transaction_constructs_row():
@@ -1342,6 +1443,7 @@ def test_build_credit_payment_transaction_constructs_row():
 
     command = core_logic.CreditPaymentCommand(
         linked_transaction_id="Tcredit",
+        salesman_id="S-DEFAULT",
         total_revenue=Decimal("5.00"),
         timestamp=datetime(2025, 10, 30, 13, 0, 0),
         notes="Payment",
@@ -1351,6 +1453,7 @@ def test_build_credit_payment_transaction_constructs_row():
     assert row.quantity_change == Decimal("0")
     assert row.total_revenue == Decimal("5.00")
     assert row.linked_transaction_id == "Tcredit"
+    assert row.salesman_id == "S-DEFAULT"
 
 
 def test_build_open_stock_transaction_constructs_row():
@@ -1358,10 +1461,13 @@ def test_build_open_stock_transaction_constructs_row():
 
     command = core_logic.OpenStockCommand(
         product_id="P205",
+        salesman_id="S-DEFAULT",
         quantity=Decimal("15"),
         total_revenue=Decimal("30.00"),
         timestamp=datetime(2025, 10, 30, 14, 0, 0),
     )
     row = core_logic.build_open_stock_transaction(command, transaction_id="T-open", timestamp=datetime(2025, 10, 30, 14, 0, 0))
     assert row.transaction_type == constants.TransactionType.OPEN_STOCK.value
+    assert row.quantity_change == Decimal("15")
     assert row.total_revenue == Decimal("30.00")
+    assert row.salesman_id == "S-DEFAULT"

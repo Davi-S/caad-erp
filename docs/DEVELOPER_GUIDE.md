@@ -73,7 +73,7 @@ inventory. Using two columns keeps Excel analysis simple:
 #### Foreign Keys and Integrity
 
 - `TransactionLog.ProductID` must match a `ProductID` in the `Products` sheet whenever it is populated.
-- `TransactionLog.SalesmanID` points at `Salesmen.SalesmanID` for user-driven activity. Inactive entries are rejected so ledger rows cannot reference retired users inadvertently.
+- `TransactionLog.SalesmanID` points at `Salesmen.SalesmanID` for user-driven activity. The business layer requires every mutating command (sale, restock, write-off, credit payment, open stock) to supply a salesman identifier and rejects inactive entries so ledger rows cannot reference retired users inadvertently.
 - `TransactionLog.LinkedTransactionID` links reversal flows. `CREDIT_PAYMENT` rows link back to the originating credit sale, and `VOID` rows reference the transaction they negate.
 
 #### Column Types and Formatting
