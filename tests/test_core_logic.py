@@ -1,64 +1,35 @@
-"""Unit tests outlining the expected behavior of the business logic layer."""
+"""Unit tests verifying the business logic layer with a mocked data access layer."""
 
 from __future__ import annotations
 
-from datetime import datetime
+from dataclasses import replace
+from datetime import UTC, datetime
 from decimal import Decimal
-from pathlib import Path
+from unittest.mock import Mock
 
-import openpyxl
 import pytest
 
-from caad_erp import constants, core_logic, data_manager  # noqa: E402
+from caad_erp import constants, core_logic, data_manager
 
 
-def _append_product(workbook_path: Path, *, product_id: str, name: str, price: Decimal, is_active: bool = True) -> None:
-    workbook = openpyxl.load_workbook(workbook_path)
-    sheet = workbook[constants.SheetName.PRODUCTS.value]
-    sheet.append([product_id, name, str(price), is_active])
-    workbook.save(workbook_path)
-
-
-def _append_salesman(workbook_path: Path, *, salesman_id: str, name: str, is_active: bool = True) -> None:
-    workbook = openpyxl.load_workbook(workbook_path)
-    sheet = workbook[constants.SheetName.SALESMEN.value]
-    sheet.append([salesman_id, name, is_active])
-    workbook.save(workbook_path)
-
-
-def _append_transaction(
-    workbook_path: Path,
-    *,
-    transaction_id: str,
-    timestamp: str,
-    transaction_type: str,
-    product_id: str | None,
-    salesman_id: str | None,
-    payment_type: str | None,
-    quantity_change: str,
-    total_revenue: str,
-    total_cost: str,
-    linked_transaction_id: str | None,
-    notes: str | None,
-) -> None:
-    workbook = openpyxl.load_workbook(workbook_path)
-    sheet = workbook[constants.SheetName.TRANSACTION_LOG.value]
-    sheet.append(
-        [
-            transaction_id,
-            timestamp,
-            transaction_type,
-            product_id,
-            salesman_id,
-            payment_type,
-            quantity_change,
-            total_revenue,
-            total_cost,
-            linked_transaction_id,
-            notes,
-        ]
+@pytest.fixture
+def settings(tmp_path):
+    return data_manager.ConfigSettings(
+        data_file=tmp_path / "master_workbook.xlsx",
+        lounge_name="Test Lounge",
+        schema_version=constants.EXPECTED_SCHEMA_VERSION,
+        default_salesman_id="S-DEFAULT",
     )
-    workbook.save(workbook_path)
+
+
+@pytest.fixture
+def workbook():
+    return Mock(name="workbook")
+
+
+@pytest.fixture
+def context(settings, workbook):
+    return core_logic.RuntimeContext(settings=settings, workbook=workbook)
 
 
 # ---------------------------------------------------------------------------
@@ -66,208 +37,255 @@ def _append_transaction(
 # ---------------------------------------------------------------------------
 
 
-def test_load_runtime_context_returns_context(config_file):
+def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
     """load_runtime_context should assemble settings and workbook into a context."""
 
-    context = core_logic.load_runtime_context(config_file)
-    assert isinstance(context, core_logic.RuntimeContext)
-    assert context.settings.data_file.exists()
+    config_path = tmp_path / "config.ini"
+    parser = Mock(name="parser")
+    parsed_settings = data_manager.ConfigSettings(
+        data_file=tmp_path / "master.xlsx",
+        lounge_name="Lounge",
+        schema_version=constants.EXPECTED_SCHEMA_VERSION,
+        default_salesman_id="S-DEFAULT",
+    )
+    workbook = Mock(name="workbook")
+
+    find_config_file = Mock(return_value=config_path)
+    read_config = Mock(return_value=parser)
+    parse_settings = Mock(return_value=parsed_settings)
+    open_workbook = Mock(return_value=workbook)
+
+    monkeypatch.setattr(data_manager, "find_config_file", find_config_file)
+    monkeypatch.setattr(data_manager, "read_config", read_config)
+    monkeypatch.setattr(data_manager, "parse_settings", parse_settings)
+    monkeypatch.setattr(data_manager, "open_workbook", open_workbook)
+
+    context = core_logic.load_runtime_context(config_path)
+
+    assert context.settings is parsed_settings
+    assert context.workbook is workbook
+    find_config_file.assert_called_once_with(config_path)
+    read_config.assert_called_once_with(config_path.resolve())
+    parse_settings.assert_called_once_with(parser, base_path=config_path.resolve().parent)
+    open_workbook.assert_called_once_with(parsed_settings.data_file)
 
 
-def test_ensure_schema_version_rejects_mismatch(config_factory):
+def test_ensure_schema_version_rejects_mismatch(context):
     """Schema mismatches should surface a RuntimeError with clear messaging."""
 
-    bundle = config_factory(schema_version="0.9")
-    context = core_logic.load_runtime_context(bundle.config_path)
+    bad_settings = replace(context.settings, schema_version="0.9")
+    bad_context = core_logic.RuntimeContext(settings=bad_settings, workbook=context.workbook)
     with pytest.raises(RuntimeError):
-        core_logic.ensure_schema_version(context)
+        core_logic.ensure_schema_version(bad_context)
 
 
-def test_list_products_excludes_inactive_by_default(config_file):
+def test_list_products_excludes_inactive_by_default(monkeypatch, context):
     """list_products should hide inactive rows unless explicitly requested."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P1", name="Active", price=Decimal("1.00"))
-    _append_product(
-        config_file.parent / "master_workbook.xlsx",
-        product_id="P2",
-        name="Inactive",
-        price=Decimal("2.00"),
-        is_active=False,
-    )
+    products = [
+        data_manager.ProductRow("P1", "Active", Decimal("1.00"), True),
+        data_manager.ProductRow("P2", "Inactive", Decimal("2.00"), False),
+    ]
+    iter_mock = Mock(return_value=products)
+    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
 
-    context = core_logic.load_runtime_context(config_file)
-    products = core_logic.list_products(context)
-    ids = {product.product_id for product in products}
-    assert "P1" in ids and "P2" not in ids
+    result = core_logic.list_products(context)
+
+    assert [row.product_id for row in result] == ["P1"]
+    iter_mock.assert_called_once_with(context.workbook)
 
 
-def test_list_products_can_include_inactive(config_file):
+def test_list_products_can_include_inactive(monkeypatch, context):
     """A caller should be able to include inactive products when needed."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P3", name="Old", price=Decimal("3.00"), is_active=False)
+    products = [
+        data_manager.ProductRow("P3", "Active", Decimal("1.00"), True),
+        data_manager.ProductRow("P4", "Inactive", Decimal("2.00"), False),
+    ]
+    iter_mock = Mock(return_value=products)
+    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
 
-    context = core_logic.load_runtime_context(config_file)
-    products = core_logic.list_products(context, include_inactive=True)
-    assert any(product.product_id == "P3" for product in products)
+    core_logic.list_products(context)
+    iter_mock.reset_mock()
+
+    result = core_logic.list_products(context, include_inactive=True)
+
+    assert {row.product_id for row in result} == {"P3", "P4"}
+    iter_mock.assert_not_called()
 
 
-def test_list_salesmen_excludes_inactive_by_default(config_file):
+def test_list_salesmen_excludes_inactive_by_default(monkeypatch, context):
     """list_salesmen should filter inactive rows unless instructed otherwise."""
 
-    _append_salesman(config_file.parent / "master_workbook.xlsx", salesman_id="S2", name="Active", is_active=True)
-    _append_salesman(config_file.parent / "master_workbook.xlsx", salesman_id="S3", name="Retired", is_active=False)
+    salesmen = [
+        data_manager.SalesmanRow("S2", "Active", True),
+        data_manager.SalesmanRow("S3", "Retired", False),
+    ]
+    iter_mock = Mock(return_value=salesmen)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_mock)
 
-    context = core_logic.load_runtime_context(config_file)
-    salesmen = core_logic.list_salesmen(context)
-    ids = {salesman.salesman_id for salesman in salesmen}
-    assert "S2" in ids and "S3" not in ids
+    result = core_logic.list_salesmen(context)
+
+    assert {row.salesman_id for row in result} == {"S2"}
+    iter_mock.assert_called_once_with(context.workbook)
 
 
-def test_list_transactions_returns_all_rows(config_file):
+def test_list_transactions_returns_all_rows(monkeypatch, context):
     """list_transactions should return every ledger entry in order."""
 
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
-        transaction_id="T1",
-        timestamp="2025-10-30T00:00:00",
-        transaction_type=constants.TransactionType.SALE.value,
-        product_id="P1",
-        salesman_id="S-DEFAULT",
-        payment_type=constants.PaymentType.CASH.value,
-        quantity_change="-1",
-        total_revenue="1.00",
-        total_cost="0.00",
-        linked_transaction_id=None,
-        notes=None,
-    )
+    transactions = [
+        data_manager.TransactionRow(
+            transaction_id="T1",
+            timestamp_iso="2025-10-30T00:00:00",
+            transaction_type=constants.TransactionType.SALE.value,
+            product_id="P1",
+            salesman_id="S-DEFAULT",
+            payment_type=constants.PaymentType.CASH.value,
+            quantity_change=Decimal("-1"),
+            total_revenue=Decimal("1.00"),
+            total_cost=Decimal("0.00"),
+            linked_transaction_id=None,
+            notes=None,
+        )
+    ]
+    iter_mock = Mock(return_value=transactions)
+    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
 
-    context = core_logic.load_runtime_context(config_file)
-    transactions = core_logic.list_transactions(context)
-    assert transactions[0].transaction_id == "T1"
+    result = core_logic.list_transactions(context)
+
+    assert result[0].transaction_id == "T1"
+    iter_mock.assert_called_once_with(context.workbook)
 
 
-def test_get_product_returns_match(config_file):
+def test_get_product_returns_match(monkeypatch, context):
     """get_product should hydrate a ProductRow for the requested ID."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P10", name="Cookie", price=Decimal("4.00"))
+    products = [data_manager.ProductRow("P10", "Cookie", Decimal("4.00"), True)]
+    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=products))
 
-    context = core_logic.load_runtime_context(config_file)
     product = core_logic.get_product(context, "P10")
+
     assert product.product_name == "Cookie"
 
 
-def test_get_product_missing_raises(config_file):
+def test_get_product_missing_raises(monkeypatch, context):
     """Unknown ProductIDs should raise MissingReferenceError."""
 
-    context = core_logic.load_runtime_context(config_file)
+    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
+
     with pytest.raises(core_logic.MissingReferenceError):
         core_logic.get_product(context, "NOPE")
 
 
-def test_get_salesman_returns_match(config_file):
+def test_get_salesman_returns_match(monkeypatch, context):
     """get_salesman should fetch active salesmen."""
 
-    _append_salesman(config_file.parent / "master_workbook.xlsx", salesman_id="S8", name="Jordan")
+    salesmen = [data_manager.SalesmanRow("S8", "Jordan", True)]
+    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=salesmen))
 
-    context = core_logic.load_runtime_context(config_file)
     salesman = core_logic.get_salesman(context, "S8")
+
     assert salesman.salesman_name == "Jordan"
 
 
-def test_get_transaction_returns_match(config_file):
+def test_get_transaction_returns_match(monkeypatch, context):
     """get_transaction should retrieve ledger rows by ID."""
 
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
-        transaction_id="T55",
-        timestamp="2025-10-30T01:00:00",
-        transaction_type=constants.TransactionType.RESTOCK.value,
-        product_id="P10",
-        salesman_id=None,
-        payment_type=None,
-        quantity_change="10",
-        total_revenue="0.00",
-        total_cost="-20.00",
-        linked_transaction_id=None,
-        notes="Bulk",
-    )
+    transactions = [
+        data_manager.TransactionRow(
+            transaction_id="T55",
+            timestamp_iso="2025-10-30T01:00:00",
+            transaction_type=constants.TransactionType.RESTOCK.value,
+            product_id="P10",
+            salesman_id=None,
+            payment_type=None,
+            quantity_change=Decimal("10"),
+            total_revenue=Decimal("0.00"),
+            total_cost=Decimal("-20.00"),
+            linked_transaction_id=None,
+            notes="Bulk",
+        )
+    ]
+    monkeypatch.setattr(data_manager, "iter_transactions", Mock(return_value=transactions))
 
-    context = core_logic.load_runtime_context(config_file)
     transaction = core_logic.get_transaction(context, "T55")
+
     assert transaction.transaction_type == constants.TransactionType.RESTOCK.value
 
 
-def test_calculate_inventory_rolls_up_quantities(config_file):
+def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
     """calculate_inventory should return total on-hand per ProductID."""
 
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
-        transaction_id="T100",
-        timestamp="2025-10-30T02:00:00",
-        transaction_type=constants.TransactionType.RESTOCK.value,
-        product_id="P10",
-        salesman_id=None,
-        payment_type=constants.PaymentType.CASH.value,
-        quantity_change="5",
-        total_revenue="0.00",
-        total_cost="-10.00",
-        linked_transaction_id=None,
-        notes=None,
-    )
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
-        transaction_id="T101",
-        timestamp="2025-10-30T02:30:00",
-        transaction_type=constants.TransactionType.SALE.value,
-        product_id="P10",
-        salesman_id="S-DEFAULT",
-        payment_type=constants.PaymentType.CASH.value,
-        quantity_change="-2",
-        total_revenue="4.00",
-        total_cost="0.00",
-        linked_transaction_id=None,
-        notes=None,
-    )
+    transactions = [
+        data_manager.TransactionRow(
+            transaction_id="T100",
+            timestamp_iso="2025-10-30T02:00:00",
+            transaction_type=constants.TransactionType.RESTOCK.value,
+            product_id="P10",
+            salesman_id=None,
+            payment_type=constants.PaymentType.CASH.value,
+            quantity_change=Decimal("5"),
+            total_revenue=Decimal("0.00"),
+            total_cost=Decimal("-10.00"),
+            linked_transaction_id=None,
+            notes=None,
+        ),
+        data_manager.TransactionRow(
+            transaction_id="T101",
+            timestamp_iso="2025-10-30T02:30:00",
+            transaction_type=constants.TransactionType.SALE.value,
+            product_id="P10",
+            salesman_id="S-DEFAULT",
+            payment_type=constants.PaymentType.CASH.value,
+            quantity_change=Decimal("-2"),
+            total_revenue=Decimal("4.00"),
+            total_cost=Decimal("0.00"),
+            linked_transaction_id=None,
+            notes=None,
+        ),
+    ]
+    monkeypatch.setattr(data_manager, "iter_transactions", Mock(return_value=transactions))
 
-    context = core_logic.load_runtime_context(config_file)
     inventory = core_logic.calculate_inventory(context)
+
     assert inventory["P10"] == Decimal("3")
 
 
-def test_calculate_profit_summary_returns_totals(config_file):
+def test_calculate_profit_summary_returns_totals(monkeypatch, context):
     """calculate_profit_summary should return total revenue, cost, and profit."""
 
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
-        transaction_id="T110",
-        timestamp="2025-10-30T03:00:00",
-        transaction_type=constants.TransactionType.RESTOCK.value,
-        product_id="P10",
-        salesman_id=None,
-        payment_type=constants.PaymentType.CASH.value,
-        quantity_change="5",
-        total_revenue="0.00",
-        total_cost="-15.00",
-        linked_transaction_id=None,
-        notes=None,
-    )
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
-        transaction_id="T111",
-        timestamp="2025-10-30T03:15:00",
-        transaction_type=constants.TransactionType.SALE.value,
-        product_id="P10",
-        salesman_id="S-DEFAULT",
-        payment_type=constants.PaymentType.CASH.value,
-        quantity_change="-5",
-        total_revenue="25.00",
-        total_cost="0.00",
-        linked_transaction_id=None,
-        notes=None,
-    )
+    transactions = [
+        data_manager.TransactionRow(
+            transaction_id="T110",
+            timestamp_iso="2025-10-30T03:00:00",
+            transaction_type=constants.TransactionType.RESTOCK.value,
+            product_id="P10",
+            salesman_id=None,
+            payment_type=constants.PaymentType.CASH.value,
+            quantity_change=Decimal("5"),
+            total_revenue=Decimal("0.00"),
+            total_cost=Decimal("-15.00"),
+            linked_transaction_id=None,
+            notes=None,
+        ),
+        data_manager.TransactionRow(
+            transaction_id="T111",
+            timestamp_iso="2025-10-30T03:15:00",
+            transaction_type=constants.TransactionType.SALE.value,
+            product_id="P10",
+            salesman_id="S-DEFAULT",
+            payment_type=constants.PaymentType.CASH.value,
+            quantity_change=Decimal("-5"),
+            total_revenue=Decimal("25.00"),
+            total_cost=Decimal("0.00"),
+            linked_transaction_id=None,
+            notes=None,
+        ),
+    ]
+    monkeypatch.setattr(data_manager, "iter_transactions", Mock(return_value=transactions))
 
-    context = core_logic.load_runtime_context(config_file)
     summary = core_logic.calculate_profit_summary(context)
+
     assert summary == {
         "total_revenue": Decimal("25.00"),
         "total_cost": Decimal("-15.00"),
@@ -275,120 +293,239 @@ def test_calculate_profit_summary_returns_totals(config_file):
     }
 
 
-def test_record_sale_appends_transaction(config_file):
+def test_record_sale_appends_transaction(monkeypatch, context):
     """record_sale should validate inputs and append a SALE row."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P200", name="Drink", price=Decimal("3.50"))
+    products = [data_manager.ProductRow("P200", "Drink", Decimal("3.50"), True)]
+    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    iter_products_mock = Mock(return_value=products)
+    iter_salesmen_mock = Mock(return_value=salesmen)
+    append_mock = Mock()
+    generate_mock = Mock(return_value="T-sale")
 
-    context = core_logic.load_runtime_context(config_file)
+    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
+
+    timestamp = datetime(2025, 10, 30, 18, 0, 0, tzinfo=UTC)
     command = core_logic.SaleCommand(
         product_id="P200",
         salesman_id="S-DEFAULT",
         quantity=Decimal("2"),
         total_revenue=Decimal("7.00"),
         payment_type=constants.PaymentType.CASH,
+        timestamp=timestamp,
         notes="Evening sale",
     )
+
     transaction = core_logic.record_sale(context, command)
-    assert transaction.transaction_type == constants.TransactionType.SALE.value
+
+    iter_products_mock.assert_called_once_with(context.workbook)
+    iter_salesmen_mock.assert_called_once_with(context.workbook)
+    generate_mock.assert_called_once_with(when=timestamp)
+    append_mock.assert_called_once()
+    saved_workbook, saved_row = append_mock.call_args[0]
+    assert saved_workbook is context.workbook
+    assert saved_row.transaction_id == "T-sale"
+    assert saved_row.transaction_type == constants.TransactionType.SALE.value
+    assert transaction == saved_row
 
 
-def test_record_restock_appends_transaction(config_file):
+def test_record_restock_appends_transaction(monkeypatch, context):
     """record_restock should log incoming inventory with TotalCost."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P201", name="Snack", price=Decimal("2.50"))
+    products = [data_manager.ProductRow("P201", "Snack", Decimal("2.50"), True)]
+    iter_products_mock = Mock(return_value=products)
+    append_mock = Mock()
+    generate_mock = Mock(return_value="T-restock")
 
-    context = core_logic.load_runtime_context(config_file)
+    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
+
+    timestamp = datetime(2025, 10, 30, 9, 0, 0, tzinfo=UTC)
     command = core_logic.RestockCommand(
         product_id="P201",
         quantity=Decimal("10"),
         total_cost=Decimal("-12.00"),
+        timestamp=timestamp,
         notes="Morning restock",
     )
+
     transaction = core_logic.record_restock(context, command)
-    assert transaction.transaction_type == constants.TransactionType.RESTOCK.value
-    assert transaction.quantity_change == Decimal("10")
+
+    iter_products_mock.assert_called_once_with(context.workbook)
+    generate_mock.assert_called_once_with(when=timestamp)
+    append_mock.assert_called_once()
+    saved_row = append_mock.call_args[0][1]
+    assert saved_row.transaction_type == constants.TransactionType.RESTOCK.value
+    assert saved_row.quantity_change == Decimal("10")
+    assert transaction == saved_row
 
 
-def test_record_write_off_appends_transaction(config_file):
+def test_record_write_off_appends_transaction(monkeypatch, context):
     """record_write_off should log shrink events with zero revenue/cost."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P202", name="Fruit", price=Decimal("1.25"))
+    products = [data_manager.ProductRow("P202", "Fruit", Decimal("1.25"), True)]
+    iter_products_mock = Mock(return_value=products)
+    append_mock = Mock()
+    generate_mock = Mock(return_value="T-writeoff")
 
-    context = core_logic.load_runtime_context(config_file)
+    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
+
+    timestamp = datetime(2025, 10, 30, 12, 0, 0, tzinfo=UTC)
     command = core_logic.WriteOffCommand(
         product_id="P202",
         quantity=Decimal("1"),
+        timestamp=timestamp,
         notes="Spoiled",
     )
+
     transaction = core_logic.record_write_off(context, command)
-    assert transaction.transaction_type == constants.TransactionType.WRITE_OFF.value
+
+    iter_products_mock.assert_called_once_with(context.workbook)
+    generate_mock.assert_called_once_with(when=timestamp)
+    append_mock.assert_called_once()
+    saved_row = append_mock.call_args[0][1]
+    assert saved_row.transaction_type == constants.TransactionType.WRITE_OFF.value
+    assert saved_row.quantity_change == Decimal("-1")
+    assert transaction == saved_row
 
 
-def test_record_credit_payment_appends_transaction(config_file):
+def test_record_credit_payment_appends_transaction(monkeypatch, context):
     """record_credit_payment should log cash collection for credit sales."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P203", name="Candy", price=Decimal("1.00"))
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
-        transaction_id="T-credit",
-        timestamp="2025-10-30T04:00:00",
-        transaction_type=constants.TransactionType.SALE.value,
-        product_id="P203",
-        salesman_id="S-DEFAULT",
-        payment_type=constants.PaymentType.ON_CREDIT.value,
-        quantity_change="-2",
-        total_revenue="0.00",
-        total_cost="0.00",
-        linked_transaction_id=None,
-        notes="Credit sale",
-    )
+    transactions = [
+        data_manager.TransactionRow(
+            transaction_id="T-credit",
+            timestamp_iso="2025-10-30T04:00:00",
+            transaction_type=constants.TransactionType.SALE.value,
+            product_id="P203",
+            salesman_id="S-DEFAULT",
+            payment_type=constants.PaymentType.ON_CREDIT.value,
+            quantity_change=Decimal("-2"),
+            total_revenue=Decimal("0.00"),
+            total_cost=Decimal("0.00"),
+            linked_transaction_id=None,
+            notes="Credit sale",
+        )
+    ]
+    iter_transactions_mock = Mock(return_value=transactions)
+    append_mock = Mock()
+    generate_mock = Mock(return_value="T-payment")
 
-    context = core_logic.load_runtime_context(config_file)
+    monkeypatch.setattr(data_manager, "iter_transactions", iter_transactions_mock)
+    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
+
+    timestamp = datetime(2025, 10, 30, 19, 0, 0, tzinfo=UTC)
     command = core_logic.CreditPaymentCommand(
         linked_transaction_id="T-credit",
         total_revenue=Decimal("2.00"),
+        timestamp=timestamp,
         notes="Settled",
     )
+
     transaction = core_logic.record_credit_payment(context, command)
-    assert transaction.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
+
+    iter_transactions_mock.assert_called_once_with(context.workbook)
+    generate_mock.assert_called_once_with(when=timestamp)
+    append_mock.assert_called_once()
+    saved_row = append_mock.call_args[0][1]
+    assert saved_row.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
+    assert saved_row.linked_transaction_id == "T-credit"
+    assert transaction == saved_row
 
 
-def test_record_open_stock_appends_transaction(config_file):
+def test_record_open_stock_appends_transaction(monkeypatch, context):
     """record_open_stock should log baseline stock during rollover."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P204", name="Water", price=Decimal("1.50"))
+    products = [data_manager.ProductRow("P204", "Water", Decimal("1.50"), True)]
+    iter_products_mock = Mock(return_value=products)
+    append_mock = Mock()
+    generate_mock = Mock(return_value="T-open")
 
-    context = core_logic.load_runtime_context(config_file)
+    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
+    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(core_logic, "generate_transaction_id", generate_mock)
+
+    timestamp = datetime(2025, 10, 30, 7, 0, 0, tzinfo=UTC)
     command = core_logic.OpenStockCommand(
         product_id="P204",
         quantity=Decimal("20"),
         total_revenue=Decimal("30.00"),
+        timestamp=timestamp,
     )
+
     transaction = core_logic.record_open_stock(context, command)
-    assert transaction.transaction_type == constants.TransactionType.OPEN_STOCK.value
+
+    iter_products_mock.assert_called_once_with(context.workbook)
+    generate_mock.assert_called_once_with(when=timestamp)
+    append_mock.assert_called_once()
+    saved_row = append_mock.call_args[0][1]
+    assert saved_row.transaction_type == constants.TransactionType.OPEN_STOCK.value
+    assert saved_row.quantity_change == Decimal("20")
+    assert transaction == saved_row
 
 
-def test_record_void_creates_reversal_and_replacement(config_file):
+def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
     """record_void should produce a VOID plus replacement transaction."""
 
-    _append_product(config_file.parent / "master_workbook.xlsx", product_id="P205", name="Tea", price=Decimal("2.00"))
-    _append_transaction(
-        config_file.parent / "master_workbook.xlsx",
+    target = data_manager.TransactionRow(
         transaction_id="T-original",
-        timestamp="2025-10-30T05:00:00",
+        timestamp_iso="2025-10-30T05:00:00",
         transaction_type=constants.TransactionType.SALE.value,
         product_id="P205",
         salesman_id="S-DEFAULT",
         payment_type=constants.PaymentType.CASH.value,
-        quantity_change="-3",
-        total_revenue="6.00",
-        total_cost="0.00",
+        quantity_change=Decimal("-3"),
+        total_revenue=Decimal("6.00"),
+        total_cost=Decimal("0.00"),
         linked_transaction_id=None,
         notes="Incorrect quantity",
     )
+    reversal = data_manager.TransactionRow(
+        transaction_id="V1",
+        timestamp_iso="2025-10-30T05:10:00",
+        transaction_type=constants.TransactionType.VOID.value,
+        product_id="P205",
+        salesman_id="S-DEFAULT",
+        payment_type=constants.PaymentType.CASH.value,
+        quantity_change=Decimal("3"),
+        total_revenue=Decimal("-6.00"),
+        total_cost=Decimal("0.00"),
+        linked_transaction_id="T-original",
+        notes="Fix entry",
+    )
+    replacement_result = data_manager.TransactionRow(
+        transaction_id="T-replacement",
+        timestamp_iso="2025-10-30T05:10:30",
+        transaction_type=constants.TransactionType.SALE.value,
+        product_id="P205",
+        salesman_id="S-DEFAULT",
+        payment_type=constants.PaymentType.CASH.value,
+        quantity_change=Decimal("-1"),
+        total_revenue=Decimal("2.00"),
+        total_cost=Decimal("0.00"),
+        linked_transaction_id=None,
+        notes="Corrected",
+    )
 
-    context = core_logic.load_runtime_context(config_file)
+    get_transaction = Mock(return_value=target)
+    validate_void_target = Mock()
+    build_void_reversal = Mock(return_value=reversal)
+    append_mock = Mock()
+    record_sale = Mock(return_value=replacement_result)
+
+    monkeypatch.setattr(core_logic, "get_transaction", get_transaction)
+    monkeypatch.setattr(core_logic, "validate_void_target", validate_void_target)
+    monkeypatch.setattr(core_logic, "build_void_reversal", build_void_reversal)
+    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(core_logic, "record_sale", record_sale)
+
     command = core_logic.VoidCommand(
         linked_transaction_id="T-original",
         replacement_command=core_logic.SaleCommand(
@@ -401,8 +538,19 @@ def test_record_void_creates_reversal_and_replacement(config_file):
         ),
         notes="Fix entry",
     )
-    void_rows = core_logic.record_void(context, command)
-    assert len(void_rows) == 2
+
+    results = core_logic.record_void(context, command)
+
+    get_transaction.assert_called_once_with(context, "T-original")
+    validate_void_target.assert_called_once_with(target)
+    append_mock.assert_called_once_with(context.workbook, reversal)
+    record_sale.assert_called_once_with(context, command.replacement_command)
+    assert results == [reversal, replacement_result]
+
+
+# ---------------------------------------------------------------------------
+# Utility helpers
+# ---------------------------------------------------------------------------
 
 
 def test_generate_transaction_id_uses_timestamp():
@@ -439,33 +587,31 @@ def test_require_nonnegative_money_accepts_zero():
     core_logic.require_nonnegative_money(Decimal("0.00"))
 
 
-def test_persist_context_writes_to_disk(config_file):
+def test_persist_context_writes_to_disk(monkeypatch, context):
     """persist_context should flush workbook changes to disk."""
 
-    context = core_logic.load_runtime_context(config_file)
-    context.workbook[constants.SheetName.PRODUCTS.value].append(["P301", "Granola", "3.00", True])
+    save_mock = Mock()
+    monkeypatch.setattr(data_manager, "save_workbook", save_mock)
 
     core_logic.persist_context(context)
 
-    reloaded = openpyxl.load_workbook(config_file.parent / "master_workbook.xlsx")
-    values = list(
-        reloaded[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True)
-    )
-    assert ("P301", "Granola", "3.00", True) in values
+    save_mock.assert_called_once_with(context.workbook, destination=context.settings.data_file)
 
 
-def test_refresh_context_reloads_from_disk(config_file):
+def test_refresh_context_reloads_from_disk(monkeypatch, settings):
     """refresh_context should discard in-memory workbook state and reload."""
 
-    context = core_logic.load_runtime_context(config_file)
-    context.workbook[constants.SheetName.PRODUCTS.value].append(["P302", "Brownie", "2.25", True])
-    core_logic.persist_context(context)
+    refreshed_workbook = Mock(name="reloaded")
+    refresh_mock = Mock(return_value=refreshed_workbook)
+    monkeypatch.setattr(data_manager, "refresh_workbook", refresh_mock)
 
-    reloaded_context = core_logic.refresh_context(context)
-    values = list(
-        reloaded_context.workbook[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True)
-    )
-    assert ("P302", "Brownie", "2.25", True) in values
+    original = core_logic.RuntimeContext(settings=settings, workbook=Mock())
+    reloaded_context = core_logic.refresh_context(original)
+
+    refresh_mock.assert_called_once_with(settings.data_file)
+    assert reloaded_context.workbook is refreshed_workbook
+    assert reloaded_context.settings is settings
+    assert reloaded_context is not original
 
 
 def test_validate_credit_sale_link_accepts_credit_sale():
