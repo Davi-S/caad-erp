@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -406,6 +406,77 @@ def get_product(context: RuntimeContext, product_id: str) -> data_manager.Produc
         raise MissingReferenceError(f"Unknown product id: {product_id}") from exc
 
 
+def add_product(
+    context: RuntimeContext,
+    *,
+    product_id: str,
+    product_name: str,
+    sell_price: Decimal,
+    is_active: bool = True,
+) -> data_manager.ProductRow:
+    """Append a product row after enforcing catalog invariants.
+
+    Args:
+        context (RuntimeContext): Active runtime context encapsulating settings
+            and workbook references.
+        product_id (str): Identifier to assign in the ``Products`` sheet.
+        product_name (str): Human-friendly name stored alongside the id.
+        sell_price (Decimal): Default sale price used when recording sales.
+        is_active (bool): Initial activation state. Defaults to ``True``.
+
+    Returns:
+        data_manager.ProductRow: Persisted product record represented as a DAL
+            dataclass.
+
+    Raises:
+        ValueError: If identifiers, names, or monetary values fail validation.
+        BusinessRuleViolation: When attempting to register a duplicate product
+            identifier.
+    """
+
+    normalized_id = str(product_id).strip()
+    if not normalized_id:
+        log.error("Product creation rejected: blank product_id")
+        raise ValueError("Product ID must be provided")
+
+    normalized_name = str(product_name).strip()
+    if not normalized_name:
+        log.error("Product creation rejected: blank product_name")
+        raise ValueError("Product name must be provided")
+
+    try:
+        price = sell_price if isinstance(sell_price, Decimal) else Decimal(sell_price)
+    except (InvalidOperation, TypeError) as exc:
+        log.error("Product creation rejected: invalid sell_price '%s'", sell_price)
+        raise ValueError("Sell price must be a valid decimal number") from exc
+
+    if price < Decimal("0"):
+        log.error("Product creation rejected: negative sell_price '%s'", price)
+        raise ValueError("Sell price must be zero or positive")
+
+    bucket = _ensure_products_cache(context)
+    if normalized_id in bucket["by_id"]:
+        log.error("Product creation rejected: duplicate id '%s'", normalized_id)
+        raise BusinessRuleViolation(f"Product '{normalized_id}' already exists")
+
+    record = data_manager.ProductRow(
+        product_id=normalized_id,
+        product_name=normalized_name,
+        sell_price=price,
+        is_active=bool(is_active),
+    )
+
+    data_manager.append_product(context.workbook, record)
+    _invalidate_cache(context, "products")
+    log.info(
+        "Registered product '%s' (%s) with sell price %s",
+        record.product_id,
+        record.product_name,
+        record.sell_price,
+    )
+    return record
+
+
 def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.SalesmanRow:
     """Resolve a salesman record by its identifier.
 
@@ -430,6 +501,58 @@ def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.Sale
     except KeyError as exc:
         log.warning("Salesman lookup failed for id '%s'", salesman_id)
         raise MissingReferenceError(f"Unknown salesman id: {salesman_id}") from exc
+
+
+def add_salesman(
+    context: RuntimeContext,
+    *,
+    salesman_id: str,
+    salesman_name: str,
+    is_active: bool = True,
+) -> data_manager.SalesmanRow:
+    """Register a salesman while enforcing identifier uniqueness.
+
+    Args:
+        context (RuntimeContext): Runtime context providing workbook access.
+        salesman_id (str): Unique identifier stored in the ``Salesmen`` sheet.
+        salesman_name (str): Display name recorded next to the identifier.
+        is_active (bool): Activation flag for the new salesman. Defaults to
+            ``True``.
+
+    Returns:
+        data_manager.SalesmanRow: Persisted salesman dataclass.
+
+    Raises:
+        ValueError: If id or name values are blank.
+        BusinessRuleViolation: When a salesman with the requested identifier
+            already exists.
+    """
+
+    normalized_id = str(salesman_id).strip()
+    if not normalized_id:
+        log.error("Salesman creation rejected: blank salesman_id")
+        raise ValueError("Salesman ID must be provided")
+
+    normalized_name = str(salesman_name).strip()
+    if not normalized_name:
+        log.error("Salesman creation rejected: blank salesman_name")
+        raise ValueError("Salesman name must be provided")
+
+    bucket = _ensure_salesmen_cache(context)
+    if normalized_id in bucket["by_id"]:
+        log.error("Salesman creation rejected: duplicate id '%s'", normalized_id)
+        raise BusinessRuleViolation(f"Salesman '{normalized_id}' already exists")
+
+    record = data_manager.SalesmanRow(
+        salesman_id=normalized_id,
+        salesman_name=normalized_name,
+        is_active=bool(is_active),
+    )
+
+    data_manager.append_salesman(context.workbook, record)
+    _invalidate_cache(context, "salesmen")
+    log.info("Registered salesman '%s' (%s)", record.salesman_id, record.salesman_name)
+    return record
 
 
 def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manager.TransactionRow:

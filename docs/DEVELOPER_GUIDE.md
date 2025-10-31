@@ -111,6 +111,15 @@ corrections.
 
 ### Workflows
 
+#### Catalog Maintenance
+
+Administrative flows that extend the product or salesman catalog run through
+`core_logic.add_product` and `core_logic.add_salesman`. Both helpers validate
+identifier uniqueness, enforce non-empty names, require non-negative monetary
+values, delegate the actual insert to the DAL, and invalidate the relevant
+cache bucket. Prefer these entry points over calling the DAL directly so
+runtime caches stay coherent and business rules remain centralized.
+
 #### Discounts
 
 Handled by allowing any `TotalRevenue` during a sale, even if it will differ
