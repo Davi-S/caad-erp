@@ -158,6 +158,7 @@ def _get_cache_bucket(context: RuntimeContext, name: str) -> Dict[str, Any]:
 
     bucket = context._cache.get(name)
     if bucket is None:
+        log.debug("Initializing cache bucket '%s'", name)
         bucket = {}
         context._cache[name] = bucket
     return bucket
@@ -176,6 +177,11 @@ def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
             Missing buckets are ignored gracefully so callers can request
             targeted invalidation without defensive checks.    
     """
+
+    if not names:
+        return
+
+    log.debug("Invalidating cache buckets: %s", ", ".join(names))
 
     for name in names:
         context._cache.pop(name, None)
@@ -204,6 +210,11 @@ def _ensure_products_cache(context: RuntimeContext) -> Dict[str, Any]:
         bucket["all"] = all_products
         bucket["active"] = [product for product in all_products if product.is_active]
         bucket["by_id"] = {product.product_id: product for product in all_products}
+        log.debug(
+            "Populated products cache with %d entries (%d active)",
+            len(all_products),
+            len(bucket["active"]),
+        )
     return bucket
 
 
@@ -228,6 +239,11 @@ def _ensure_salesmen_cache(context: RuntimeContext) -> Dict[str, Any]:
         bucket["all"] = all_salesmen
         bucket["active"] = [salesman for salesman in all_salesmen if salesman.is_active]
         bucket["by_id"] = {salesman.salesman_id: salesman for salesman in all_salesmen}
+        log.debug(
+            "Populated salesmen cache with %d entries (%d active)",
+            len(all_salesmen),
+            len(bucket["active"]),
+        )
     return bucket
 
 
@@ -252,6 +268,10 @@ def _ensure_transactions_cache(context: RuntimeContext) -> Dict[str, Any]:
         all_transactions = list(data_manager.iter_transactions(context.workbook))
         bucket["all"] = all_transactions
         bucket["by_id"] = {transaction.transaction_id: transaction for transaction in all_transactions}
+        log.debug(
+            "Populated transactions cache with %d entries",
+            len(all_transactions),
+        )
     return bucket
 
 
@@ -302,10 +322,17 @@ def ensure_schema_version(context: RuntimeContext) -> None:
             not match ``EXPECTED_SCHEMA_VERSION``.
     """
     if context.settings.schema_version != EXPECTED_SCHEMA_VERSION:
+        log.error(
+            "Workbook schema mismatch: expected %s, found %s",
+            EXPECTED_SCHEMA_VERSION,
+            context.settings.schema_version,
+        )
         raise RuntimeError(
             "Workbook schema mismatch: expected %s, found %s"
             % (EXPECTED_SCHEMA_VERSION, context.settings.schema_version)
         )
+
+    log.debug("Schema version '%s' validated", context.settings.schema_version)
 
 
 def list_products(context: RuntimeContext, *, include_inactive: bool = False) -> List[data_manager.ProductRow]:
@@ -394,6 +421,7 @@ def get_product(context: RuntimeContext, product_id: str) -> data_manager.Produc
     try:
         return cache["by_id"][product_id]
     except KeyError as exc:
+        log.warning("Product lookup failed for id '%s'", product_id)
         raise MissingReferenceError(f"Unknown product id: {product_id}") from exc
 
 
@@ -419,6 +447,7 @@ def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.Sale
     try:
         return cache["by_id"][salesman_id]
     except KeyError as exc:
+        log.warning("Salesman lookup failed for id '%s'", salesman_id)
         raise MissingReferenceError(f"Unknown salesman id: {salesman_id}") from exc
 
 
@@ -444,6 +473,7 @@ def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manage
     try:
         return cache["by_id"][transaction_id]
     except KeyError as exc:
+        log.warning("Transaction lookup failed for id '%s'", transaction_id)
         raise MissingReferenceError(f"Unknown transaction id: {transaction_id}") from exc
 
 
@@ -469,6 +499,7 @@ def calculate_inventory(context: RuntimeContext) -> Dict[str, Decimal]:
             continue
         current = inventory.get(transaction.product_id, Decimal("0"))
         inventory[transaction.product_id] = current + transaction.quantity_change
+    log.debug("Calculated inventory balances for %d products", len(inventory))
     return inventory
 
 
@@ -494,6 +525,12 @@ def calculate_profit_summary(context: RuntimeContext) -> Dict[str, Decimal]:
         total_revenue += transaction.total_revenue
         total_cost += transaction.total_cost
     profit = total_revenue + total_cost
+    log.debug(
+        "Calculated profit summary: revenue=%s cost=%s profit=%s",
+        total_revenue,
+        total_cost,
+        profit,
+    )
     return {
         "total_revenue": total_revenue,
         "total_cost": total_cost,
@@ -528,13 +565,16 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
     """
     product = get_product(context, command.product_id)
     if not product.is_active:
+        log.warning("Attempted sale on inactive product '%s'", command.product_id)
         raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
     salesman = get_salesman(context, command.salesman_id)
     if not salesman.is_active:
+        log.warning("Attempted sale with inactive salesman '%s'", command.salesman_id)
         raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(command.total_revenue)
     if not isinstance(command.payment_type, PaymentType):
+        log.error("Unsupported payment type provided: %s", command.payment_type)
         raise BusinessRuleViolation(f"Unsupported payment type: {command.payment_type}")
 
     timestamp = _resolve_timestamp(command.timestamp)
@@ -542,6 +582,13 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
     transaction = build_sale_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
+    log.info(
+        "Recorded SALE transaction '%s' for product '%s' (quantity=%s, revenue=%s)",
+        transaction.transaction_id,
+        command.product_id,
+        command.quantity,
+        command.total_revenue,
+    )
     return transaction
 
 
@@ -568,6 +615,7 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     """
     product = get_product(context, command.product_id)
     if not product.is_active:
+        log.warning("Attempted restock on inactive product '%s'", command.product_id)
         raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(abs(command.total_cost))
@@ -577,6 +625,13 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     transaction = build_restock_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
+    log.info(
+        "Recorded RESTOCK transaction '%s' for product '%s' (quantity=%s, cost=%s)",
+        transaction.transaction_id,
+        command.product_id,
+        command.quantity,
+        command.total_cost,
+    )
     return transaction
 
 
@@ -602,6 +657,7 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
     """
     product = get_product(context, command.product_id)
     if not product.is_active:
+        log.warning("Attempted write-off on inactive product '%s'", command.product_id)
         raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
     require_positive_quantity(command.quantity)
 
@@ -610,6 +666,12 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
     transaction = build_write_off_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
+    log.info(
+        "Recorded WRITE_OFF transaction '%s' for product '%s' (quantity=%s)",
+        transaction.transaction_id,
+        command.product_id,
+        command.quantity,
+    )
     return transaction
 
 
@@ -649,6 +711,12 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
     )
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
+    log.info(
+        "Recorded CREDIT_PAYMENT '%s' linked to '%s' (amount=%s)",
+        transaction.transaction_id,
+        command.linked_transaction_id,
+        command.total_revenue,
+    )
     return transaction
 
 
@@ -675,6 +743,7 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     """
     product = get_product(context, command.product_id)
     if not product.is_active:
+        log.warning("Attempted open stock on inactive product '%s'", command.product_id)
         raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(command.total_revenue)
@@ -684,6 +753,13 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     transaction = build_open_stock_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
+    log.info(
+        "Recorded OPEN_STOCK transaction '%s' for product '%s' (quantity=%s, value=%s)",
+        transaction.transaction_id,
+        command.product_id,
+        command.quantity,
+        command.total_revenue,
+    )
     return transaction
 
 
@@ -711,6 +787,7 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
             the replacement command type is unsupported.
         MissingReferenceError: When the referenced transaction is unknown.
     """
+    log.info("Recording VOID for transaction '%s'", command.linked_transaction_id)
     target = get_transaction(context, command.linked_transaction_id)
     validate_void_target(target)
 
@@ -718,6 +795,11 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
     reversal = build_void_reversal(target, timestamp=timestamp, notes=command.notes)
     data_manager.append_transaction(context.workbook, reversal)
     _invalidate_cache(context, "transactions")
+    log.info(
+        "Recorded VOID reversal '%s' for transaction '%s'",
+        reversal.transaction_id,
+        target.transaction_id,
+    )
 
     results: List[data_manager.TransactionRow] = [reversal]
     replacement = command.replacement_command
@@ -776,6 +858,7 @@ def require_positive_quantity(quantity: Decimal) -> None:
     other validation helpers in the module.
     """
     if quantity <= Decimal("0"):
+        log.error("Quantity validation failed: %s", quantity)
         raise ValueError("Quantity must be greater than zero")
 
 
@@ -793,6 +876,7 @@ def require_nonnegative_money(amount: Decimal) -> None:
     figures without explicitly opting into that behavior.
     """
     if amount < Decimal("0"):
+        log.error("Monetary value validation failed: %s", amount)
         raise ValueError("Amount must be zero or positive")
 
 
@@ -855,12 +939,30 @@ def validate_credit_sale_link(transaction: data_manager.TransactionRow) -> None:
     cash sale as credit.
     """
     if transaction.transaction_type != TransactionType.SALE.value:
+        log.error(
+            "Credit payment validation failed: transaction '%s' is not a sale",
+            transaction.transaction_id,
+        )
         raise BusinessRuleViolation("Credit payments must reference a SALE transaction")
     if transaction.payment_type != PaymentType.ON_CREDIT.value:
+        log.error(
+            "Credit payment validation failed: transaction '%s' payment type is '%s'",
+            transaction.transaction_id,
+            transaction.payment_type,
+        )
         raise BusinessRuleViolation("Linked sale is not recorded as credit")
     if transaction.total_revenue > Decimal("0"):
+        log.error(
+            "Credit payment validation failed: transaction '%s' already reports revenue",
+            transaction.transaction_id,
+        )
         raise BusinessRuleViolation("Linked credit sale already reports revenue")
     if transaction.linked_transaction_id is not None:
+        log.error(
+            "Credit payment validation failed: transaction '%s' already links to '%s'",
+            transaction.transaction_id,
+            transaction.linked_transaction_id,
+        )
         raise BusinessRuleViolation("Linked sale already references another transaction")
 
 
@@ -880,8 +982,13 @@ def validate_void_target(transaction: data_manager.TransactionRow) -> None:
     settlements. Attempting to void these entries surfaces a domain error.
     """
     if transaction.transaction_type == TransactionType.VOID.value:
+        log.error("Cannot void transaction '%s' because it is already a void", transaction.transaction_id)
         raise BusinessRuleViolation("Cannot void a VOID transaction")
     if transaction.transaction_type == TransactionType.CREDIT_PAYMENT.value:
+        log.error(
+            "Cannot void transaction '%s' because it is a credit payment",
+            transaction.transaction_id,
+        )
         raise BusinessRuleViolation("Cannot void a credit payment transaction")
 
 
