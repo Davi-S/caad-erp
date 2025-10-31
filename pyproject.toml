@@ -4,7 +4,24 @@ version = "0.1.0"
 description = "Excel-backed inventory and sales tracker for student lounges"
 readme = "README.md"
 requires-python = ">=3.13"
+# Core dependencies needed for the library to run
 dependencies = [
     "openpyxl>=3.1.5",
+]
+
+[project.optional-dependencies]
+# Dependencies for running the test suite
+test = [
     "pytest>=8.4.2",
 ]
+
+# Dependencies for the CLI
+cli = [
+]
+
+# Dependencies for the Web UI
+web = [
+]
+
+[project.scripts]
+# caad-erp-cli = "caad-erp.cli:main"
