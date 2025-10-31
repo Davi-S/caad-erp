@@ -68,9 +68,9 @@ documentation with full argument details.
 - `add-product <product_id> <product_name> <sell_price> [--inactive]`
 - `add-salesman <salesman_id> <salesman_name> [--inactive]`
 - `sale <product_id> <quantity> --salesman <salesman_id> --revenue <amount> --payment {Cash,Debit,Credit}`
-- `restock <product_id> <quantity> --cost <amount>`
-- `write-off <product_id> <quantity>`
-- `pay-debt <linked_transaction_id> --amount <value>`
+- `restock <product_id> <quantity> --cost <amount> --salesman <salesman_id>`
+- `write-off <product_id> <quantity> --salesman <salesman_id>`
+- `pay-debt <linked_transaction_id> --amount <value> --salesman <salesman_id>`
 - `void <linked_transaction_id>`
 
 Optional flags `--notes` and `--timestamp <ISO-8601>` are available on the

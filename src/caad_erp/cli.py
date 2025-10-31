@@ -162,6 +162,7 @@ def register_restock_command(
         parser.add_argument("product_id")
         parser.add_argument("quantity")
         parser.add_argument("--cost", dest="total_cost", required=True)
+        parser.add_argument("--salesman", dest="salesman_id", required=True)
         parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
@@ -181,6 +182,7 @@ def register_write_off_command(
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("product_id")
         parser.add_argument("quantity")
+        parser.add_argument("--salesman", dest="salesman_id", required=True)
         parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
@@ -200,6 +202,7 @@ def register_pay_debt_command(
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("linked_transaction_id")
         parser.add_argument("--amount", dest="total_revenue", required=True)
+        parser.add_argument("--salesman", dest="salesman_id", required=True)
         parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
@@ -357,6 +360,7 @@ def translate_restock(args: argparse.Namespace) -> core_logic.RestockCommand:
     timestamp = _parse_timestamp(args.timestamp)
     return core_logic.RestockCommand(
         product_id=args.product_id,
+        salesman_id=args.salesman_id,
         quantity=Decimal(args.quantity),
         total_cost=Decimal(args.total_cost),
         timestamp=timestamp,
@@ -369,6 +373,7 @@ def translate_write_off(args: argparse.Namespace) -> core_logic.WriteOffCommand:
     timestamp = _parse_timestamp(args.timestamp)
     return core_logic.WriteOffCommand(
         product_id=args.product_id,
+        salesman_id=args.salesman_id,
         quantity=Decimal(args.quantity),
         timestamp=timestamp,
         notes=args.notes,
@@ -380,6 +385,7 @@ def translate_pay_debt(args: argparse.Namespace) -> core_logic.CreditPaymentComm
     timestamp = _parse_timestamp(args.timestamp)
     return core_logic.CreditPaymentCommand(
         linked_transaction_id=args.linked_transaction_id,
+        salesman_id=args.salesman_id,
         total_revenue=Decimal(args.total_revenue),
         timestamp=timestamp,
         notes=args.notes,

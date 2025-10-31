@@ -55,6 +55,7 @@ class RestockCommand:
     """User intent for creating a ``RESTOCK`` transaction."""
 
     product_id: str
+    salesman_id: str
     quantity: Decimal
     total_cost: Decimal
     timestamp: Optional[datetime] = None
@@ -66,6 +67,7 @@ class WriteOffCommand:
     """User intent for creating a ``WRITE_OFF`` transaction."""
 
     product_id: str
+    salesman_id: str
     quantity: Decimal
     timestamp: Optional[datetime] = None
     notes: Optional[str] = None
@@ -76,6 +78,7 @@ class CreditPaymentCommand:
     """User intent for logging a ``CREDIT_PAYMENT`` transaction."""
 
     linked_transaction_id: str
+    salesman_id: str
     total_revenue: Decimal
     timestamp: Optional[datetime] = None
     notes: Optional[str] = None
@@ -86,6 +89,7 @@ class OpenStockCommand:
     """Instruction for creating an ``OPEN_STOCK`` transaction during archiving."""
 
     product_id: str
+    salesman_id: str
     quantity: Decimal
     total_revenue: Decimal
     timestamp: Optional[datetime] = None
@@ -617,6 +621,10 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     if not product.is_active:
         log.warning("Attempted restock on inactive product '%s'", command.product_id)
         raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
+    salesman = get_salesman(context, command.salesman_id)
+    if not salesman.is_active:
+        log.warning("Attempted restock with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(abs(command.total_cost))
 
@@ -659,6 +667,10 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
     if not product.is_active:
         log.warning("Attempted write-off on inactive product '%s'", command.product_id)
         raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
+    salesman = get_salesman(context, command.salesman_id)
+    if not salesman.is_active:
+        log.warning("Attempted write-off with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
 
     timestamp = _resolve_timestamp(command.timestamp)
@@ -700,6 +712,10 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
     linked_sale = get_transaction(context, command.linked_transaction_id)
     validate_credit_sale_link(linked_sale)
     require_nonnegative_money(command.total_revenue)
+    salesman = get_salesman(context, command.salesman_id)
+    if not salesman.is_active:
+        log.warning("Attempted credit payment with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
 
     timestamp = _resolve_timestamp(command.timestamp)
     transaction_id = generate_transaction_id(when=timestamp)
@@ -745,6 +761,10 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     if not product.is_active:
         log.warning("Attempted open stock on inactive product '%s'", command.product_id)
         raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
+    salesman = get_salesman(context, command.salesman_id)
+    if not salesman.is_active:
+        log.warning("Attempted open stock with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(command.total_revenue)
 
@@ -1082,7 +1102,7 @@ def build_restock_transaction(command: RestockCommand, *, transaction_id: str, t
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.RESTOCK.value,
         product_id=command.product_id,
-        salesman_id=None,
+        salesman_id=command.salesman_id,
         payment_type=None,
         quantity_change=quantity_change,
         total_revenue=Decimal("0.00"),
@@ -1114,7 +1134,7 @@ def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.WRITE_OFF.value,
         product_id=command.product_id,
-        salesman_id=None,
+        salesman_id=command.salesman_id,
         payment_type=None,
         quantity_change=quantity_change,
         total_revenue=Decimal("0.00"),
@@ -1148,7 +1168,7 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.CREDIT_PAYMENT.value,
         product_id=product_id,
-        salesman_id=None,
+        salesman_id=command.salesman_id,
         payment_type=PaymentType.CASH.value,
         quantity_change=Decimal("0"),
         total_revenue=command.total_revenue,
@@ -1180,7 +1200,7 @@ def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: s
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.OPEN_STOCK.value,
         product_id=command.product_id,
-        salesman_id=None,
+        salesman_id=command.salesman_id,
         payment_type=None,
         quantity_change=quantity_change,
         total_revenue=command.total_revenue,

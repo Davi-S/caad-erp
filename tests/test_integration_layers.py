@@ -47,6 +47,7 @@ def test_sale_lifecycle_flow(runtime_context):
 
     restock_command = core_logic.RestockCommand(
         product_id="P1001",
+        salesman_id=context.settings.default_salesman_id,
         quantity=Decimal("2"),
         total_cost=Decimal("2.50"),
         notes="Initial stock",
@@ -99,6 +100,7 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
 
     restock_command = core_logic.RestockCommand(
         product_id="P2001",
+        salesman_id=context.settings.default_salesman_id,
         quantity=Decimal("3"),
         total_cost=Decimal("3.75"),
         notes="Bulk restock",
@@ -118,6 +120,7 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
 
     payment_command = core_logic.CreditPaymentCommand(
         linked_transaction_id=credit_sale.transaction_id,
+        salesman_id=context.settings.default_salesman_id,
         total_revenue=Decimal("6.00"),
         notes="Debt settled",
     )
