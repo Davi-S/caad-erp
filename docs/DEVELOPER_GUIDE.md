@@ -165,6 +165,20 @@ the “N+1” read pattern during domain operations.
 
 New functionality should be driven by `pytest`-based tests under `tests/`.
 
+### Testing Strategy
+
+The test suite follows a pyramid structure to keep fast feedback at the unit
+level while retaining confidence in the full stack:
+
+- `tests/test_data_manager.py` – Integration coverage for the DAL that exercises
+  real `openpyxl` reads and writes.
+- `tests/test_core_logic.py` – Unit coverage for the BLL with the entire data
+  layer mocked.
+- `tests/test_cli.py` – Unit coverage for the CLI with the business logic layer
+  mocked.
+- `tests/test_integration_layers.py` – Cross-layer integration without mocks,
+  verifying the complete workflow from CLI through the DAL.
+
 ### Logging
 
 Python's `logging` module is configured in `src/caad_erp/__init__.py`;
