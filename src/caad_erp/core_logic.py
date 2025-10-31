@@ -8,11 +8,11 @@ architecture guide.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from openpyxl.workbook import Workbook
 
@@ -34,6 +34,7 @@ class RuntimeContext:
 
     settings: data_manager.ConfigSettings
     workbook: Workbook
+    _cache: Dict[str, Dict[str, Any]] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -123,6 +124,48 @@ def _resolve_timestamp(candidate: Optional[datetime]) -> datetime:
     return candidate if candidate is not None else datetime.now(UTC)
 
 
+def _get_cache_bucket(context: RuntimeContext, name: str) -> Dict[str, Any]:
+    bucket = context._cache.get(name)
+    if bucket is None:
+        bucket = {}
+        context._cache[name] = bucket
+    return bucket
+
+
+def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
+    for name in names:
+        context._cache.pop(name, None)
+
+
+def _ensure_products_cache(context: RuntimeContext) -> Dict[str, Any]:
+    bucket = _get_cache_bucket(context, "products")
+    if "all" not in bucket:
+        all_products = list(data_manager.iter_products(context.workbook))
+        bucket["all"] = all_products
+        bucket["active"] = [product for product in all_products if product.is_active]
+        bucket["by_id"] = {product.product_id: product for product in all_products}
+    return bucket
+
+
+def _ensure_salesmen_cache(context: RuntimeContext) -> Dict[str, Any]:
+    bucket = _get_cache_bucket(context, "salesmen")
+    if "all" not in bucket:
+        all_salesmen = list(data_manager.iter_salesmen(context.workbook))
+        bucket["all"] = all_salesmen
+        bucket["active"] = [salesman for salesman in all_salesmen if salesman.is_active]
+        bucket["by_id"] = {salesman.salesman_id: salesman for salesman in all_salesmen}
+    return bucket
+
+
+def _ensure_transactions_cache(context: RuntimeContext) -> Dict[str, Any]:
+    bucket = _get_cache_bucket(context, "transactions")
+    if "all" not in bucket:
+        all_transactions = list(data_manager.iter_transactions(context.workbook))
+        bucket["all"] = all_transactions
+        bucket["by_id"] = {transaction.transaction_id: transaction for transaction in all_transactions}
+    return bucket
+
+
 def load_runtime_context(config_path: Optional[Path] = None) -> RuntimeContext:
     """Load settings and workbook references for downstream operations."""
     located_config = data_manager.find_config_file(config_path)
@@ -145,53 +188,55 @@ def ensure_schema_version(context: RuntimeContext) -> None:
 
 def list_products(context: RuntimeContext, *, include_inactive: bool = False) -> List[data_manager.ProductRow]:
     """Return all products, optionally including inactive entries."""
-    products = list(data_manager.iter_products(context.workbook))
-    if include_inactive:
-        return products
-    return [product for product in products if product.is_active]
+    cache = _ensure_products_cache(context)
+    source = cache["all"] if include_inactive else cache["active"]
+    return list(source)
 
 
 def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) -> List[data_manager.SalesmanRow]:
     """Return all salesmen, optionally including inactive entries."""
-    salesmen = list(data_manager.iter_salesmen(context.workbook))
-    if include_inactive:
-        return salesmen
-    return [salesman for salesman in salesmen if salesman.is_active]
+    cache = _ensure_salesmen_cache(context)
+    source = cache["all"] if include_inactive else cache["active"]
+    return list(source)
 
 
 def list_transactions(context: RuntimeContext) -> List[data_manager.TransactionRow]:
     """Return the full immutable transaction log."""
-    return list(data_manager.iter_transactions(context.workbook))
+    cache = _ensure_transactions_cache(context)
+    return list(cache["all"])
 
 
 def get_product(context: RuntimeContext, product_id: str) -> data_manager.ProductRow:
     """Fetch a single product or raise ``MissingReferenceError``."""
-    for product in list_products(context, include_inactive=True):
-        if product.product_id == product_id:
-            return product
-    raise MissingReferenceError(f"Unknown product id: {product_id}")
+    cache = _ensure_products_cache(context)
+    try:
+        return cache["by_id"][product_id]
+    except KeyError as exc:
+        raise MissingReferenceError(f"Unknown product id: {product_id}") from exc
 
 
 def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.SalesmanRow:
     """Fetch a single salesman or raise ``MissingReferenceError``."""
-    for salesman in list_salesmen(context, include_inactive=True):
-        if salesman.salesman_id == salesman_id:
-            return salesman
-    raise MissingReferenceError(f"Unknown salesman id: {salesman_id}")
+    cache = _ensure_salesmen_cache(context)
+    try:
+        return cache["by_id"][salesman_id]
+    except KeyError as exc:
+        raise MissingReferenceError(f"Unknown salesman id: {salesman_id}") from exc
 
 
 def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manager.TransactionRow:
     """Fetch a transaction by ID or raise ``MissingReferenceError``."""
-    for transaction in list_transactions(context):
-        if transaction.transaction_id == transaction_id:
-            return transaction
-    raise MissingReferenceError(f"Unknown transaction id: {transaction_id}")
+    cache = _ensure_transactions_cache(context)
+    try:
+        return cache["by_id"][transaction_id]
+    except KeyError as exc:
+        raise MissingReferenceError(f"Unknown transaction id: {transaction_id}") from exc
 
 
 def calculate_inventory(context: RuntimeContext) -> Dict[str, Decimal]:
     """Return stock levels keyed by ``ProductID`` computed from the log."""
     inventory: Dict[str, Decimal] = {}
-    for transaction in list_transactions(context):
+    for transaction in _ensure_transactions_cache(context)["all"]:
         if transaction.product_id is None:
             continue
         current = inventory.get(transaction.product_id, Decimal("0"))
@@ -203,7 +248,7 @@ def calculate_profit_summary(context: RuntimeContext) -> Dict[str, Decimal]:
     """Return aggregate totals for revenue, cost, and profit."""
     total_revenue = Decimal("0")
     total_cost = Decimal("0")
-    for transaction in list_transactions(context):
+    for transaction in _ensure_transactions_cache(context)["all"]:
         total_revenue += transaction.total_revenue
         total_cost += transaction.total_cost
     profit = total_revenue + total_cost
@@ -231,6 +276,7 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
     transaction_id = generate_transaction_id(when=timestamp)
     transaction = build_sale_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
+    _invalidate_cache(context, "transactions")
     return transaction
 
 
@@ -246,6 +292,7 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     transaction_id = generate_transaction_id(when=timestamp)
     transaction = build_restock_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
+    _invalidate_cache(context, "transactions")
     return transaction
 
 
@@ -260,6 +307,7 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
     transaction_id = generate_transaction_id(when=timestamp)
     transaction = build_write_off_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
+    _invalidate_cache(context, "transactions")
     return transaction
 
 
@@ -278,6 +326,7 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
         product_id=linked_sale.product_id,
     )
     data_manager.append_transaction(context.workbook, transaction)
+    _invalidate_cache(context, "transactions")
     return transaction
 
 
@@ -293,6 +342,7 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     transaction_id = generate_transaction_id(when=timestamp)
     transaction = build_open_stock_transaction(command, transaction_id=transaction_id, timestamp=timestamp)
     data_manager.append_transaction(context.workbook, transaction)
+    _invalidate_cache(context, "transactions")
     return transaction
 
 
@@ -304,6 +354,7 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
     timestamp = _resolve_timestamp(command.timestamp)
     reversal = build_void_reversal(target, timestamp=timestamp, notes=command.notes)
     data_manager.append_transaction(context.workbook, reversal)
+    _invalidate_cache(context, "transactions")
 
     results: List[data_manager.TransactionRow] = [reversal]
     replacement = command.replacement_command
