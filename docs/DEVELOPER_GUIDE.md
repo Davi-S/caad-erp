@@ -4,37 +4,26 @@ This guide captures the internal architecture decisions, design principles,
 and development workflow for the CAAD ERP project. It is intended for
 developers who maintain or extend the codebase.
 
-## Project Overview & Core Philosophy
-
-### What Are We Building?
-
-CAAD ERP is a simple, robust, and maintainable enterprise resource planning
-(ERP) system tailored for a student lounge. The application manages inventory,
-sales, and reporting, with a focus on clarity for non-technical operators.
-
-### Who Is It For?
-
-- **Maintainers** are developers who work on the codebase.
-- **End users** are student managers who rely on Excel for day-to-day analysis.
-- **High turnover** requires the system to be simple to understand and transfer.
-
-### Guiding Principles
+## Guiding Principles
 
 - **Robustness & Integrity:** The system must never diverge from the truth; an
 audit trail is mandatory.
-- **Ease of Analysis:** Outputs are optimized for Microsoft Excel users using
-basic formulas and pivot tables.
+- **Ease of Analysis:** Outputs are optimized for Microsoft Excel users.
 - **Maintainability:** Code must remain clean, modular, and well-documented so
 new developers can onboard quickly.
 
-## Immutable Transaction Log
+## Application Architecture
 
-The project uses an append-only `TransactionLog` stored in Excel. Data is never
-deleted or edited. Business logic adds new rows for every event, including
-corrections.
+The code follows a three-layer design:
 
-- `VOID` transactions reverse mistakes while preserving the audit trail.
-- The log ensures the system cannot be corrupted by accidental edits.
+1. **Data Access Layer (DAL) – `data_manager.py`:**
+   Handles Excel I/O, implemented with `openpyxl`.
+2. **Business Logic Layer (BLL) – `core_logic.py`:**
+   Encapsulates rules and workflows, calling into the DAL without caring about
+   presentation concerns.
+3. **Presentation Layer (UI):**
+   Not yet implemented. Future CLI or web interface will be a thin wrapper
+   around the BLL.
 
 ## Data Model
 
@@ -50,10 +39,10 @@ The "database" lives alongside a user-editable configuration file.
 
 ### Excel Workbook
 
-The workbook is the source of truth and should only be modified through the
+The workbook (an Excel file) is the source of truth and should only be modified through the
 application. It contains three sheets:
 
-- **`Products`**: Catalog of active and inactive products.
+- **`Products`**: Catalog of all products.
   - `ProductID`, `ProductName`, `SellPrice`, `IsActive`.
 - **`Salesmen`**: List of users who can record sales.
   - `SalesmanID`, `SalesmanName`, `IsActive`.
@@ -62,7 +51,7 @@ application. It contains three sheets:
     `SalesmanID`, `PaymentType`, `QuantityChange`, `TotalRevenue`,
     `TotalCost`, `LinkedTransactionID`, `Notes`.
 
-### Separate Revenue and Cost Columns
+#### Separate Revenue and Cost Columns
 
 `TotalRevenue` tracks money received; `TotalCost` tracks money spent on
 inventory. Using two columns keeps Excel analysis simple:
@@ -71,9 +60,15 @@ inventory. Using two columns keeps Excel analysis simple:
 - Cost of stock: `SUM(TotalCost)`
 - Profit: `SUM(TotalRevenue) + SUM(TotalCost)`
 
-### Stock levels
+#### Stock levels
 
 `SUM(TransactionLog.QuantityChange)` derives real-time stock levels.
+
+## Immutable Transaction Log
+
+The project uses an append-only `TransactionLog` stored in Excel. Data is never
+deleted or edited. Business logic adds new rows for every event, including
+corrections.
 
 ## Core Business Logic
 
@@ -89,19 +84,19 @@ inventory. Using two columns keeps Excel analysis simple:
 
 ### Workflows
 
-- **Discounts:** Handled by allowing any `TotalRevenue` during a sale. Even
+- **Discounts:** Handled by allowing any `TotalRevenue` during a sale, even
 if it will differ from the product's sell price.
 - **Sell on Credit:** Logged as a `SALE` with `PaymentType="On Credit"` and
   zero revenue, paired with a subsequent `CREDIT_PAYMENT` that references the
   original transaction via `LinkedTransactionID`.
 - **Error Correction:** Uses the "Reversal and Re-entry" method. A `VOID`
   transaction reverses the mistake, followed by a new entry with the correct
-  data (optional for only deleting the mistake).
+  data. The correct data is optional for only deleting the mistake.
 - **Archiving:** In the end of a period, a script recalculates inventory, seeds
 `OPEN_STOCK` entries in a new workbook, prunes inactive products or salesmen with no
 activity, and renames the old file.
 
-### Runtime Caching in the BLL
+## Runtime Caching in the BLL
 
 The business logic layer keeps a single workbook open inside a
 ``RuntimeContext`` instance. To avoid repeatedly walking the Excel sheets (an
@@ -131,34 +126,27 @@ Guidelines:
 This approach keeps memory usage low (only one workbook copy) while eliminating
 the “N+1” read pattern during domain operations.
 
-## Application Architecture
-
-The code follows a three-layer design:
-
-1. **Data Access Layer (DAL) – `data_manager.py`:**
-   Handles Excel I/O, implemented with `openpyxl`.
-2. **Business Logic Layer (BLL) – `core_logic.py`:**
-   Encapsulates rules and workflows, calling into the DAL without caring about
-   presentation concerns.
-3. **Presentation Layer (UI):**
-   Not yet implemented. Future CLI or web interface will be a thin wrapper
-   around the BLL.
-
 ## Development Workflow
 
-- **Test-Driven Development:** New functionality should be driven by
-  `pytest`-based tests under `tests/`.
-- **Logging:** Python's `logging` module is configured in
-  `src/caad_erp/__init__.py`; modules acquire a logger with
-  `logging.getLogger(__name__)`.
-- **Docstrings:** Use Google-style docstrings for clarity and compatibility with
-automated documentation tools.
-- **Archiving:** Period-end script recalculates inventory, seeds `OPEN_STOCK`
-entries in a new workbook, prunes inactive products or salesmen with no
-activity, and renames the old file.
+### Test-Driven Development
 
-## 7. Future Work
+New functionality should be driven by `pytest`-based tests under `tests/`.
+
+### Logging
+
+Python's `logging` module is configured in `src/caad_erp/__init__.py`;
+modules acquire a logger with `logging.getLogger(__name__)`.
+
+### Docstrings
+
+Use Google-style docstrings for clarity and compatibility with automated
+documentation tools.
+
+## Future Work
 
 - Build the user-facing CLI or web UI.
 - Document the archive workflow as part of operational runbooks.
 - Expand automated tests to cover end-to-end scenarios once the UI exists.
+- Create a period-end script that recalculates inventory, seeds `OPEN_STOCK`
+entries in a new workbook, prunes inactive products or salesmen with no activity,
+and renames the old file.

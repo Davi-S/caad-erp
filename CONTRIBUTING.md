@@ -6,14 +6,7 @@ and easy to review.
 
 ## Prerequisites
 
-- Python 3.13 or newer.
-- Git and a GitHub account (or access to the project host).
-- A basic understanding of virtual environments and `pytest`.
-
-Optional but encouraged:
-
 - Familiarity with the architectural overview in `docs/DEVELOPER_GUIDE.md`.
-- An Excel workbook for local integration experiments.
 
 ## Local Environment Setup
 
@@ -25,8 +18,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Adjust `config.ini` if you need to point at a local data file. All development
-commands assume your virtual environment is active.
+Adjust `config.ini` if you need to point at a local data file.
 
 ## Workflow Expectations
 
@@ -63,20 +55,15 @@ Before submitting a pull request:
    pip install -e .
    ```
 
-2. Point `config.ini` at a local Excel workbook if your change touches data
-   access or integration flows.
-3. Execute the test suite:
+2. Execute the test suite:
 
    ```bash
    pytest
    ```
 
-4. Add regression tests for fixes and coverage for new features. The suite in
-   `tests/` is the primary way to demonstrate expected behavior until the user
-   interface ships.
-5. Verify documentation snippets or examples still execute as written.
+3. Verify documentation snippets or examples still execute as written.
 
-## Documentation & Changelog
+## Documentation and Changelog
 
 - Update `README.md` when user-facing behavior or setup steps change.
 - Extend `docs/DEVELOPER_GUIDE.md` if architectural decisions or workflows are
@@ -85,20 +72,13 @@ Before submitting a pull request:
 
 ## Pull Request Checklist
 
-- [ ] Tests pass locally (`pytest`).
 - [ ] New or updated tests cover the change.
+- [ ] All tests pass locally.
 - [ ] Documentation updates (if needed) are included.
 - [ ] Branch is up-to-date with `main`.
 - [ ] PR description explains the motivation, approach, and testing performed.
-- [ ] All tests in the tests suit are passing.
 
-## Communication
-
-Be respectful, concise, and collaborative. If you are stuck:
-
-- Ask clarifying questions in the issue or draft PR.
-- Share relevant logs, stack traces, or failing tests.
-- Propose alternatives when suggesting changes; explain trade-offs clearly.
+## Outro
 
 By following this guide we keep CAAD ERP approachable for future contributors
 and maintainers. We appreciate your help in building a reliable system for the
