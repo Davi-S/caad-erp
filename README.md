@@ -57,6 +57,3 @@ The CLI/Web UI is under development. See "Development & Testing" for now.
 Community contributions are welcome. Please read `CONTRIBUTING.md` for the
 preferred workflow and coding standards, and visit
 `docs/DEVELOPER_GUIDE.md` for a deeper look at the system architecture.
-
-For deeper architectural context, implementation notes, and long-term plans,
-read `docs/DEVELOPER_GUIDE.md`.
