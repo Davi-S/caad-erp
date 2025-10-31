@@ -101,6 +101,36 @@ if it will differ from the product's sell price.
 `OPEN_STOCK` entries in a new workbook, prunes inactive products or salesmen with no
 activity, and renames the old file.
 
+### Runtime Caching in the BLL
+
+The business logic layer keeps a single workbook open inside a
+``RuntimeContext`` instance. To avoid repeatedly walking the Excel sheets (an
+``openpyxl`` iterator can be expensive for large ledgers), the context maintains
+an in-memory cache with these buckets:
+
+- ``products``: memoized list of every product (``all``), an ``active`` subset,
+  and an id-index map (``by_id``).
+- ``salesmen``: the same structure for salesmen.
+- ``transactions``: immutable transaction rows plus an id-index.
+
+Whenever one of the ``record_*`` functions appends a new row, the relevant
+bucket is invalidated. The next read repopulates the cache from the workbook so
+future lookups stay consistent without reloading the file.
+
+Guidelines:
+
+1. Prefer accessing data through the public helpers (``list_products``,
+  ``get_transaction``) so the caches stay transparent to callers.
+2. If you add write flows that modify products or salesmen, call
+  ``_invalidate_cache(context, "products")`` or ``_invalidate_cache(context,
+  "salesmen")`` right after the DAL operation.
+3. Avoid mutating the workbook directly from outside the BLL. Doing so bypasses
+  the invalidation hook and can leave cached data stale. If you absolutely need
+  to touch the workbook, invalidate the affected bucket beforehand.
+
+This approach keeps memory usage low (only one workbook copy) while eliminating
+the “N+1” read pattern during domain operations.
+
 ## Application Architecture
 
 The code follows a three-layer design:
