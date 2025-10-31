@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping, Optional, Sequence
@@ -141,7 +140,6 @@ def register_sale_command(
             choices=[member.value for member in PaymentType],
             required=True,
         )
-        parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
@@ -162,7 +160,6 @@ def register_restock_command(
         parser.add_argument("--quantity", required=True)
         parser.add_argument("--total-cost", required=True)
         parser.add_argument("--salesman-id", required=True)
-        parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
@@ -182,7 +179,6 @@ def register_write_off_command(
         parser.add_argument("--product-id", required=True)
         parser.add_argument("--quantity", required=True)
         parser.add_argument("--salesman-id", required=True)
-        parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
@@ -202,7 +198,6 @@ def register_pay_debt_command(
         parser.add_argument("--linked-transaction-id", required=True)
         parser.add_argument("--total-revenue", required=True)
         parser.add_argument("--salesman-id", required=True)
-        parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
@@ -220,7 +215,6 @@ def register_void_command(
     def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--linked-transaction-id", required=True)
-        parser.add_argument("--timestamp", dest="timestamp", default=None)
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
@@ -341,7 +335,6 @@ def translate_add_salesman(args: argparse.Namespace) -> Mapping[str, Any]:
 
 def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
     """Translate CLI args into a sale command object."""
-    timestamp = _parse_timestamp(args.timestamp)
     payment = PaymentType(args.payment_type)
     return core_logic.SaleCommand(
         product_id=args.product_id,
@@ -349,44 +342,37 @@ def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
         quantity=Decimal(args.quantity),
         total_revenue=Decimal(args.total_revenue),
         payment_type=payment,
-        timestamp=timestamp,
         notes=args.notes,
     )
 
 
 def translate_restock(args: argparse.Namespace) -> core_logic.RestockCommand:
     """Translate CLI args into a restock command object."""
-    timestamp = _parse_timestamp(args.timestamp)
     return core_logic.RestockCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
         quantity=Decimal(args.quantity),
         total_cost=Decimal(args.total_cost),
-        timestamp=timestamp,
         notes=args.notes,
     )
 
 
 def translate_write_off(args: argparse.Namespace) -> core_logic.WriteOffCommand:
     """Translate CLI args into a write-off command object."""
-    timestamp = _parse_timestamp(args.timestamp)
     return core_logic.WriteOffCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
         quantity=Decimal(args.quantity),
-        timestamp=timestamp,
         notes=args.notes,
     )
 
 
 def translate_pay_debt(args: argparse.Namespace) -> core_logic.CreditPaymentCommand:
     """Translate CLI args into a credit payment command object."""
-    timestamp = _parse_timestamp(args.timestamp)
     return core_logic.CreditPaymentCommand(
         linked_transaction_id=args.linked_transaction_id,
         salesman_id=args.salesman_id,
         total_revenue=Decimal(args.total_revenue),
-        timestamp=timestamp,
         notes=args.notes,
     )
 
@@ -395,11 +381,9 @@ def translate_void(
     args: argparse.Namespace,
 ) -> core_logic.VoidCommand:
     """Translate CLI args into a void command object."""
-    timestamp = _parse_timestamp(args.timestamp)
     return core_logic.VoidCommand(
         linked_transaction_id=args.linked_transaction_id,
         replacement_command=None,
-        timestamp=timestamp,
         notes=args.notes,
     )
 
@@ -510,9 +494,3 @@ def main(argv: Sequence[str] | None = None) -> int:
         return exit_code
     except Exception as error:  # pragma: no cover - centralised error handler tested separately
         return handle_cli_error(error)
-
-
-def _parse_timestamp(raw: Optional[str]) -> Optional[datetime]:
-    """Parse optional ISO-8601 strings into datetime objects."""
-
-    return datetime.fromisoformat(raw) if raw else None

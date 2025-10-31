@@ -207,8 +207,6 @@ def test_register_sale_command_configures_arguments():
             constants.PaymentType.CASH.value,
             "--notes",
             "First sale",
-            "--timestamp",
-            "2025-10-30T14:03:12+00:00",
         ]
     )
     assert namespace.product_id == "P1001"
@@ -217,7 +215,6 @@ def test_register_sale_command_configures_arguments():
     assert namespace.total_revenue == "6.00"
     assert namespace.payment_type == constants.PaymentType.CASH.value
     assert namespace.notes == "First sale"
-    assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
 
 def test_register_restock_command_returns_spec(subparsers_action):
@@ -249,8 +246,6 @@ def test_register_restock_command_configures_arguments():
             "S-DEFAULT",
             "--notes",
             "Bulk restock",
-            "--timestamp",
-            "2025-10-30T14:03:12+00:00",
         ]
     )
     assert namespace.product_id == "P1001"
@@ -258,7 +253,6 @@ def test_register_restock_command_configures_arguments():
     assert namespace.total_cost == "10.00"
     assert namespace.salesman_id == "S-DEFAULT"
     assert namespace.notes == "Bulk restock"
-    assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
 
 def test_register_write_off_command_returns_spec(subparsers_action):
@@ -288,15 +282,12 @@ def test_register_write_off_command_configures_arguments():
             "S-DEFAULT",
             "--notes",
             "Damaged",
-            "--timestamp",
-            "2025-10-30T14:03:12+00:00",
         ]
     )
     assert namespace.product_id == "P1001"
     assert namespace.quantity == "1"
     assert namespace.salesman_id == "S-DEFAULT"
     assert namespace.notes == "Damaged"
-    assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
 
 def test_register_pay_debt_command_returns_spec(subparsers_action):
@@ -326,15 +317,12 @@ def test_register_pay_debt_command_configures_arguments():
             "S-DEFAULT",
             "--notes",
             "Credit payment",
-            "--timestamp",
-            "2025-10-30T14:03:12+00:00",
         ]
     )
     assert namespace.linked_transaction_id == "T20250101010101000000"
     assert namespace.total_revenue == "6.00"
     assert namespace.salesman_id == "S-DEFAULT"
     assert namespace.notes == "Credit payment"
-    assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
 
 def test_register_void_command_returns_spec(subparsers_action):
@@ -360,13 +348,10 @@ def test_register_void_command_configures_arguments():
             "T20250101010101000000",
             "--notes",
             "Mistake",
-            "--timestamp",
-            "2025-10-30T14:03:12+00:00",
         ]
     )
     assert namespace.linked_transaction_id == "T20250101010101000000"
     assert namespace.notes == "Mistake"
-    assert namespace.timestamp == "2025-10-30T14:03:12+00:00"
 
 
 # ---------------------------------------------------------------------------
@@ -578,7 +563,6 @@ def test_translate_sale_returns_sale_command():
         salesman_id="S-DEFAULT",
         total_revenue="6.00",
         payment_type=constants.PaymentType.CASH.value,
-        timestamp="2025-10-30T14:03:12+00:00",
         notes="First sale",
     )
     command = cli.translate_sale(args)
@@ -586,7 +570,6 @@ def test_translate_sale_returns_sale_command():
     assert command.quantity == Decimal("2")
     assert command.total_revenue == Decimal("6.00")
     assert command.payment_type == constants.PaymentType.CASH
-    assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "First sale"
 
 
@@ -598,7 +581,6 @@ def test_translate_restock_returns_restock_command():
         quantity="5",
         total_cost="10.00",
         salesman_id="S-DEFAULT",
-        timestamp="2025-10-30T14:03:12+00:00",
         notes="Bulk restock",
     )
     command = cli.translate_restock(args)
@@ -606,7 +588,6 @@ def test_translate_restock_returns_restock_command():
     assert command.quantity == Decimal("5")
     assert command.total_cost == Decimal("10.00")
     assert command.salesman_id == "S-DEFAULT"
-    assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "Bulk restock"
 
 
@@ -617,14 +598,12 @@ def test_translate_write_off_returns_write_off_command():
         product_id="P1001",
         quantity="1",
         salesman_id="S-DEFAULT",
-        timestamp="2025-10-30T14:03:12+00:00",
         notes="Damaged",
     )
     command = cli.translate_write_off(args)
     assert isinstance(command, core_logic.WriteOffCommand)
     assert command.quantity == Decimal("1")
     assert command.salesman_id == "S-DEFAULT"
-    assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "Damaged"
 
 
@@ -635,14 +614,12 @@ def test_translate_pay_debt_returns_credit_payment_command():
         linked_transaction_id="T20250101010101000000",
         total_revenue="6.00",
         salesman_id="S-DEFAULT",
-        timestamp="2025-10-30T14:03:12+00:00",
         notes="Settled",
     )
     command = cli.translate_pay_debt(args)
     assert isinstance(command, core_logic.CreditPaymentCommand)
     assert command.total_revenue == Decimal("6.00")
     assert command.salesman_id == "S-DEFAULT"
-    assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "Settled"
 
 
@@ -651,13 +628,11 @@ def test_translate_void_returns_void_command():
 
     args = argparse.Namespace(
         linked_transaction_id="T20250101010101000000",
-        timestamp="2025-10-30T14:03:12+00:00",
         notes="Mistake",
     )
     command = cli.translate_void(args)
     assert isinstance(command, core_logic.VoidCommand)
     assert command.linked_transaction_id == "T20250101010101000000"
-    assert command.timestamp == datetime.fromisoformat("2025-10-30T14:03:12+00:00")
     assert command.notes == "Mistake"
     assert command.replacement_command is None
 
