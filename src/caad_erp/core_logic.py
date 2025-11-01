@@ -99,17 +99,6 @@ TransactionCommand = Union[
     OpenStockCommand,
 ]
 
-
-SUPPORTED_TRANSACTION_TYPES: tuple[TransactionType, ...] = (
-    TransactionType.SALE,
-    TransactionType.RESTOCK,
-    TransactionType.WRITE_OFF,
-    TransactionType.CREDIT_PAYMENT,
-    TransactionType.OPEN_STOCK,
-    TransactionType.VOID,
-)
-
-
 @dataclass(frozen=True)
 class VoidCommand:
     """User intent for voiding a prior transaction."""
