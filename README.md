@@ -69,6 +69,8 @@ documentation with full argument details.
 
 - `add-product --product-id <product_id> --product-name <product_name> --sell-price <sell_price> [--inactive]`
 - `add-salesman --salesman-id <salesman_id> --salesman-name <salesman_name> [--inactive]`
+- `deactivate-product --product-id <product_id>`
+- `deactivate-salesman --salesman-id <salesman_id>`
 - `sale --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> --total-revenue <amount> --payment-type {Cash,Debit,Credit}`
 - `restock --product-id <product_id> --quantity <quantity> --total-cost <amount> --salesman-id <salesman_id>`
 - `write-off --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id>`
