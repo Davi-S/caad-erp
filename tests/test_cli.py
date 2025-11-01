@@ -16,6 +16,8 @@ from caad_erp import cli, constants, core_logic
 WRITE_COMMANDS = {
     "add-product",
     "add-salesman",
+    "deactivate-product",
+    "deactivate-salesman",
     "sale",
     "restock",
     "write-off",

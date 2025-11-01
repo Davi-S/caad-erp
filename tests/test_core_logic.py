@@ -298,6 +298,56 @@ def test_add_product_rejects_negative_price(monkeypatch, context):
     append_mock.assert_not_called()
 
 
+def test_update_product_delegates_and_refreshes_cache(monkeypatch, context):
+    """update_product should call the DAL, clear caches, and reflect new data."""
+
+    original_bucket: dict[str, object] = {}
+    context._cache["products"] = original_bucket
+
+    captured: dict[str, object] = {}
+
+    def fake_update(workbook, product_id, *, field_values):
+        captured["workbook"] = workbook
+        captured["product_id"] = product_id
+        captured["field_values"] = field_values
+
+    updated_rows = [
+        data_manager.ProductRow("SKU-001", "Retired Snack", Decimal("2.50"), False)
+    ]
+
+    monkeypatch.setattr(data_manager, "update_product", fake_update)
+    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=updated_rows))
+
+    result = core_logic.update_product(context, "  SKU-001  ", is_active=False)
+
+    assert result.product_id == "SKU-001"
+    assert result.is_active is False
+    assert captured["workbook"] is context.workbook
+    assert captured["product_id"] == "SKU-001"
+    assert captured["field_values"] == {"IsActive": False}
+    assert context._cache["products"] is not original_bucket
+
+
+def test_update_product_requires_changes(context):
+    """update_product should reject calls that provide no fields to update."""
+
+    with pytest.raises(ValueError):
+        core_logic.update_product(context, "SKU-002")
+
+
+def test_update_product_unknown_id_raises(monkeypatch, context):
+    """Missing products should surface as MissingReferenceError."""
+
+    monkeypatch.setattr(
+        data_manager,
+        "update_product",
+        Mock(side_effect=KeyError("Product not found")),
+    )
+
+    with pytest.raises(core_logic.MissingReferenceError):
+        core_logic.update_product(context, "UNKNOWN", is_active=False)
+
+
 def test_get_salesman_returns_match(monkeypatch, context):
     """get_salesman should fetch active salesmen."""
 
@@ -380,6 +430,56 @@ def test_add_salesman_requires_nonempty_name(monkeypatch, context):
         )
 
     append_mock.assert_not_called()
+
+
+def test_update_salesman_delegates_and_refreshes_cache(monkeypatch, context):
+    """update_salesman should call the DAL, clear caches, and reflect new data."""
+
+    original_bucket: dict[str, object] = {}
+    context._cache["salesmen"] = original_bucket
+
+    captured: dict[str, object] = {}
+
+    def fake_update(workbook, salesman_id, *, field_values):
+        captured["workbook"] = workbook
+        captured["salesman_id"] = salesman_id
+        captured["field_values"] = field_values
+
+    updated_rows = [
+        data_manager.SalesmanRow("S-001", "Alex", False)
+    ]
+
+    monkeypatch.setattr(data_manager, "update_salesman", fake_update)
+    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=updated_rows))
+
+    result = core_logic.update_salesman(context, "  S-001  ", is_active=False)
+
+    assert result.salesman_id == "S-001"
+    assert result.is_active is False
+    assert captured["workbook"] is context.workbook
+    assert captured["salesman_id"] == "S-001"
+    assert captured["field_values"] == {"IsActive": False}
+    assert context._cache["salesmen"] is not original_bucket
+
+
+def test_update_salesman_requires_changes(context):
+    """update_salesman should reject calls without any updates."""
+
+    with pytest.raises(ValueError):
+        core_logic.update_salesman(context, "S-002")
+
+
+def test_update_salesman_unknown_id_raises(monkeypatch, context):
+    """Missing salesmen should surface as MissingReferenceError."""
+
+    monkeypatch.setattr(
+        data_manager,
+        "update_salesman",
+        Mock(side_effect=KeyError("Salesman not found")),
+    )
+
+    with pytest.raises(core_logic.MissingReferenceError):
+        core_logic.update_salesman(context, "UNKNOWN", is_active=False)
 
 
 def test_get_transaction_returns_match(monkeypatch, context):
