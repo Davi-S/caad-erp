@@ -61,6 +61,8 @@ def register_write_commands(
     specs = {
         "add-product": register_add_product_command(subparsers),
         "add-salesman": register_add_salesman_command(subparsers),
+        "deactivate-product": register_deactivate_product_command(subparsers),
+        "deactivate-salesman": register_deactivate_salesman_command(subparsers),
         "sale": register_sale_command(subparsers),
         "restock": register_restock_command(subparsers),
         "write-off": register_write_off_command(subparsers),
@@ -122,6 +124,40 @@ def register_add_salesman_command(
         return parser
 
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_add_salesman)
+
+
+def register_deactivate_product_command(
+    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
+) -> CommandSpec:
+    """Register the parser and executor for ``deactivate-product``."""
+
+    name = "deactivate-product"
+    help_text = "Mark an existing product as inactive."
+
+    def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
+        parser = action.add_parser(name, help=help_text)
+        parser.add_argument("--product-id", required=True)
+        parser.set_defaults(command=name)
+        return parser
+
+    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_deactivate_product)
+
+
+def register_deactivate_salesman_command(
+    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
+) -> CommandSpec:
+    """Register the parser and executor for ``deactivate-salesman``."""
+
+    name = "deactivate-salesman"
+    help_text = "Mark an existing salesman as inactive."
+
+    def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
+        parser = action.add_parser(name, help=help_text)
+        parser.add_argument("--salesman-id", required=True)
+        parser.set_defaults(command=name)
+        return parser
+
+    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_deactivate_salesman)
 
 
 def register_sale_command(
@@ -340,6 +376,18 @@ def translate_add_salesman(args: argparse.Namespace) -> Mapping[str, Any]:
     }
 
 
+def translate_deactivate_product(args: argparse.Namespace) -> str:
+    """Translate CLI args into a product identifier to deactivate."""
+
+    return str(args.product_id).strip()
+
+
+def translate_deactivate_salesman(args: argparse.Namespace) -> str:
+    """Translate CLI args into a salesman identifier to deactivate."""
+
+    return str(args.salesman_id).strip()
+
+
 def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
     """Translate CLI args into a sale command object."""
     payment = PaymentType(args.payment_type)
@@ -408,6 +456,22 @@ def run_add_salesman(context: core_logic.RuntimeContext, args: argparse.Namespac
     """Execute the add-salesman workflow in the BLL."""
     payload = translate_add_salesman(args)
     core_logic.add_salesman(context, **payload)  # type: ignore[attr-defined]
+    return 0
+
+
+def run_deactivate_product(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+    """Execute the deactivate-product workflow via the BLL."""
+
+    product_id = translate_deactivate_product(args)
+    core_logic.update_product(context, product_id, is_active=False)
+    return 0
+
+
+def run_deactivate_salesman(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+    """Execute the deactivate-salesman workflow via the BLL."""
+
+    salesman_id = translate_deactivate_salesman(args)
+    core_logic.update_salesman(context, salesman_id, is_active=False)
     return 0
 
 
