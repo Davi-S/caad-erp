@@ -31,7 +31,8 @@ Follow this sequence to handle a sale on credit through settlement. Replace
        --linked-transaction-id <TRANSACTION_ID> \
        --total-revenue 7.50 \
        --salesman-id ALICE \
-       --notes "Jordan settled tab in cash"
+      --payment-type "PIX" \
+      --notes "Jordan settled the tab via PIX"
    ```
 
 4. Confirm the balance no longer appears on the debts report.

@@ -77,6 +77,7 @@ class CreditPaymentCommand:
     linked_transaction_id: str
     salesman_id: str
     total_revenue: Decimal
+    payment_type: PaymentType
     notes: Optional[str] = None
 
 
@@ -813,6 +814,9 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
     linked_sale = get_transaction(context, command.linked_transaction_id)
     validate_credit_sale_link(linked_sale)
     require_nonnegative_money(command.total_revenue)
+    if not isinstance(command.payment_type, PaymentType):
+        log.error("Unsupported payment type provided for credit payment: %s", command.payment_type)
+        raise BusinessRuleViolation(f"Unsupported payment type: {command.payment_type}")
     salesman = get_salesman(context, command.salesman_id)
     if not salesman.is_active:
         log.warning("Attempted credit payment with inactive salesman '%s'", command.salesman_id)
@@ -1260,8 +1264,9 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
             layer.
 
     Credit payments do not affect stock, so the quantity is fixed at zero. The
-    helper uses ``PaymentType.CASH`` to record how the credit was settled and
-    copies the linked sale identifier for traceability.
+    helper records the payment type supplied by the caller so downstream
+    reporting can distinguish how the credit was settled. The linked sale
+    identifier is copied for traceability.
     """
     return data_manager.TransactionRow(
         transaction_id=transaction_id,
@@ -1269,7 +1274,7 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
         transaction_type=TransactionType.CREDIT_PAYMENT.value,
         product_id=product_id,
         salesman_id=command.salesman_id,
-        payment_type=PaymentType.CASH.value,
+        payment_type=command.payment_type.value,
         quantity_change=Decimal("0"),
         total_revenue=command.total_revenue,
         total_cost=Decimal("0.00"),
