@@ -28,6 +28,38 @@ def _register_sample_product(context: core_logic.RuntimeContext, *, product_id: 
     )
 
 
+def test_deactivate_workflow(runtime_context):
+    """Deactivate a product through the CLI and verify visibility rules."""
+
+    context = runtime_context
+
+    product = core_logic.add_product(
+        context,
+        product_id="P-DEACT",
+        product_name="Legacy Snack",
+        sell_price=Decimal("2.00"),
+        is_active=True,
+    )
+
+    core_logic.persist_context(context)
+    context = core_logic.refresh_context(context)
+
+    active_before = {row.product_id for row in core_logic.list_products(context)}
+    assert product.product_id in active_before
+
+    args = argparse.Namespace(product_id=product.product_id)
+    exit_code = cli.run_deactivate_product(context, args)
+    assert exit_code == 0
+
+    active_after = {row.product_id for row in core_logic.list_products(context)}
+    assert product.product_id not in active_after
+
+    all_rows = core_logic.list_products(context, include_inactive=True)
+    matching = [row for row in all_rows if row.product_id == product.product_id]
+    assert len(matching) == 1
+    assert matching[0].is_active is False
+
+
 def test_sale_lifecycle_flow(runtime_context):
     """Walk through a stock, sale, and reporting cycle using both layers."""
 
