@@ -478,6 +478,69 @@ def add_product(
     return record
 
 
+def update_product(
+    context: RuntimeContext,
+    product_id: str,
+    *,
+    product_name: Optional[str] = None,
+    sell_price: Optional[Decimal] = None,
+    is_active: Optional[bool] = None,
+) -> data_manager.ProductRow:
+    """Update selected fields for an existing product and refresh caches."""
+
+    normalized_id = str(product_id).strip()
+    if not normalized_id:
+        log.error("Product update rejected: blank product_id")
+        raise ValueError("Product ID must be provided")
+
+    field_values: dict[str, Any] = {}
+
+    if product_name is not None:
+        normalized_name = str(product_name).strip()
+        if not normalized_name:
+            log.error("Product update rejected: blank product_name")
+            raise ValueError("Product name must be provided")
+        field_values["ProductName"] = normalized_name
+
+    if sell_price is not None:
+        try:
+            price = sell_price if isinstance(sell_price, Decimal) else Decimal(sell_price)
+        except (InvalidOperation, TypeError) as exc:
+            log.error("Product update rejected: invalid sell_price '%s'", sell_price)
+            raise ValueError("Sell price must be a valid decimal number") from exc
+
+        if price < Decimal("0"):
+            log.error("Product update rejected: negative sell_price '%s'", price)
+            raise ValueError("Sell price must be zero or positive")
+
+        field_values["SellPrice"] = price
+
+    if is_active is not None:
+        if not isinstance(is_active, bool):
+            log.error("Product update rejected: non-boolean is_active '%s'", is_active)
+            raise ValueError("is_active must be a boolean value")
+        field_values["IsActive"] = is_active
+
+    if not field_values:
+        log.error("Product update rejected: no fields provided")
+        raise ValueError("At least one field must be provided to update")
+
+    try:
+        data_manager.update_product(context.workbook, normalized_id, field_values=field_values)
+    except KeyError as exc:
+        log.warning("Product update failed for id '%s'", normalized_id)
+        raise MissingReferenceError(f"Unknown product id: {normalized_id}") from exc
+
+    _invalidate_cache(context, "products")
+    updated = get_product(context, normalized_id)
+    log.info(
+        "Updated product '%s' fields: %s",
+        normalized_id,
+        ", ".join(field_values.keys()),
+    )
+    return updated
+
+
 def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.SalesmanRow:
     """Resolve a salesman record by its identifier.
 
@@ -554,6 +617,55 @@ def add_salesman(
     _invalidate_cache(context, "salesmen")
     log.info("Registered salesman '%s' (%s)", record.salesman_id, record.salesman_name)
     return record
+
+
+def update_salesman(
+    context: RuntimeContext,
+    salesman_id: str,
+    *,
+    salesman_name: Optional[str] = None,
+    is_active: Optional[bool] = None,
+) -> data_manager.SalesmanRow:
+    """Update selected fields for a salesman and refresh caches."""
+
+    normalized_id = str(salesman_id).strip()
+    if not normalized_id:
+        log.error("Salesman update rejected: blank salesman_id")
+        raise ValueError("Salesman ID must be provided")
+
+    field_values: dict[str, Any] = {}
+
+    if salesman_name is not None:
+        normalized_name = str(salesman_name).strip()
+        if not normalized_name:
+            log.error("Salesman update rejected: blank salesman_name")
+            raise ValueError("Salesman name must be provided")
+        field_values["SalesmanName"] = normalized_name
+
+    if is_active is not None:
+        if not isinstance(is_active, bool):
+            log.error("Salesman update rejected: non-boolean is_active '%s'", is_active)
+            raise ValueError("is_active must be a boolean value")
+        field_values["IsActive"] = is_active
+
+    if not field_values:
+        log.error("Salesman update rejected: no fields provided")
+        raise ValueError("At least one field must be provided to update")
+
+    try:
+        data_manager.update_salesman(context.workbook, normalized_id, field_values=field_values)
+    except KeyError as exc:
+        log.warning("Salesman update failed for id '%s'", normalized_id)
+        raise MissingReferenceError(f"Unknown salesman id: {normalized_id}") from exc
+
+    _invalidate_cache(context, "salesmen")
+    updated = get_salesman(context, normalized_id)
+    log.info(
+        "Updated salesman '%s' fields: %s",
+        normalized_id,
+        ", ".join(field_values.keys()),
+    )
+    return updated
 
 
 def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manager.TransactionRow:
