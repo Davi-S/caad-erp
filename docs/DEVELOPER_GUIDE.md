@@ -129,7 +129,9 @@ from the product's sell price.
 
 Logged as a `SALE` with `PaymentType="On Credit"` and zero revenue, paired
 with a subsequent `CREDIT_PAYMENT` that references the original
-transaction via `LinkedTransactionID`.
+transaction via `LinkedTransactionID`. Credit payment entries capture the
+actual settlement method (`PaymentType` on the command), so the ledger can
+distinguish settlement approaches when a debt is cleared.
 
 #### Error Correction
 

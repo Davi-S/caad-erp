@@ -18,6 +18,8 @@ class PaymentType(str, Enum):
 
     CASH = "Cash"
     ON_CREDIT = "On Credit"
+    PIX = "PIX"
+    OTHER = "OTHER"
 
 
 class TransactionType(str, Enum):

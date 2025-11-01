@@ -974,6 +974,7 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
         linked_transaction_id="T-credit",
         salesman_id="S-DEFAULT",
         total_revenue=Decimal("2.00"),
+        payment_type=constants.PaymentType.PIX,
         notes="Settled",
     )
 
@@ -988,6 +989,7 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
     assert saved_row.linked_transaction_id == "T-credit"
     assert saved_row.salesman_id == "S-DEFAULT"
     assert saved_row.timestamp_iso == fixed_now.isoformat()
+    assert saved_row.payment_type == constants.PaymentType.PIX.value
     assert transaction == saved_row
 
 
@@ -1038,6 +1040,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
         linked_transaction_id="T-credit",
         salesman_id="S-DEFAULT",
         total_revenue=Decimal("5.00"),
+        payment_type=constants.PaymentType.OTHER,
         notes="Cache refresh",
     )
 
@@ -1055,6 +1058,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
     assert refreshed[-1] is transaction
     cache_bucket = context._cache["transactions"]
     assert cache_bucket["by_id"]["T-credit-new"] is transaction
+    assert transaction.payment_type == constants.PaymentType.OTHER.value
 
     again = core_logic.list_transactions(context)
     assert iter_transactions_mock.call_count == 2
@@ -1087,6 +1091,7 @@ def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
         linked_transaction_id="T-credit",
         salesman_id="S-INACTIVE",
         total_revenue=Decimal("1.00"),
+        payment_type=constants.PaymentType.PIX,
     )
 
     with pytest.raises(core_logic.BusinessRuleViolation):
@@ -1552,6 +1557,7 @@ def test_build_credit_payment_transaction_constructs_row():
         linked_transaction_id="Tcredit",
         salesman_id="S-DEFAULT",
         total_revenue=Decimal("5.00"),
+        payment_type=constants.PaymentType.PIX,
         notes="Payment",
     )
     row = core_logic.build_credit_payment_transaction(command, transaction_id="T-payment", timestamp=datetime(2025, 10, 30, 13, 0, 0))
@@ -1560,6 +1566,7 @@ def test_build_credit_payment_transaction_constructs_row():
     assert row.total_revenue == Decimal("5.00")
     assert row.linked_transaction_id == "Tcredit"
     assert row.salesman_id == "S-DEFAULT"
+    assert row.payment_type == constants.PaymentType.PIX.value
 
 
 def test_build_open_stock_transaction_constructs_row():

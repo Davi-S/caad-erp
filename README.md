@@ -72,7 +72,7 @@ documentation with full argument details.
 - `sale --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> --total-revenue <amount> --payment-type {Cash,Debit,Credit}`
 - `restock --product-id <product_id> --quantity <quantity> --total-cost <amount> --salesman-id <salesman_id>`
 - `write-off --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id>`
-- `pay-debt --linked-transaction-id <transaction_id> --total-revenue <value> --salesman-id <salesman_id>`
+- `pay-debt --linked-transaction-id <transaction_id> --total-revenue <value> --salesman-id <salesman_id> --payment-type <payment_type>`
 - `void --linked-transaction-id <transaction_id>`
 
 All mutating commands accept `--notes` for free-form context.

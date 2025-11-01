@@ -123,6 +123,7 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
         linked_transaction_id=credit_sale.transaction_id,
         salesman_id=context.settings.default_salesman_id,
         total_revenue=Decimal("6.00"),
+        payment_type=constants.PaymentType.PIX,
         notes="Debt settled",
     )
     payment_transaction = core_logic.record_credit_payment(context, payment_command)
@@ -325,12 +326,14 @@ def test_multiple_credit_payments_flow(runtime_context):
         linked_transaction_id=credit_sale.transaction_id,
         salesman_id=context.settings.default_salesman_id,
         total_revenue=Decimal("5.00"),
+        payment_type=constants.PaymentType.PIX,
         notes="Partial payment",
     )
     second_payment = core_logic.CreditPaymentCommand(
         linked_transaction_id=credit_sale.transaction_id,
         salesman_id=context.settings.default_salesman_id,
         total_revenue=Decimal("7.00"),
+        payment_type=constants.PaymentType.OTHER,
         notes="Balance cleared",
     )
 

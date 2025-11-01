@@ -200,6 +200,11 @@ def register_pay_debt_command(
         parser.add_argument("--linked-transaction-id", required=True)
         parser.add_argument("--total-revenue", required=True)
         parser.add_argument("--salesman-id", required=True)
+        parser.add_argument(
+            "--payment-type",
+            choices=[member.value for member in PaymentType if member != PaymentType.ON_CREDIT],
+            required=True,
+        )
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
@@ -371,10 +376,12 @@ def translate_write_off(args: argparse.Namespace) -> core_logic.WriteOffCommand:
 
 def translate_pay_debt(args: argparse.Namespace) -> core_logic.CreditPaymentCommand:
     """Translate CLI args into a credit payment command object."""
+    payment = PaymentType(args.payment_type)
     return core_logic.CreditPaymentCommand(
         linked_transaction_id=args.linked_transaction_id,
         salesman_id=args.salesman_id,
         total_revenue=Decimal(args.total_revenue),
+        payment_type=payment,
         notes=args.notes,
     )
 
