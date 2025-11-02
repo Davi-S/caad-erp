@@ -11,6 +11,7 @@ performing row-level operations on each worksheet.
 from __future__ import annotations
 
 import configparser
+import logging
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -19,7 +20,6 @@ from typing import Iterable, Optional, Sequence, Any
 from openpyxl.workbook import Workbook
 import openpyxl
 
-from . import log
 from .constants import SheetName
 
 
@@ -27,6 +27,9 @@ CONFIG_FILE_NAME = "config.ini"
 PRODUCTS_SHEET = SheetName.PRODUCTS.value
 SALESMEN_SHEET = SheetName.SALESMEN.value
 TRANSACTION_LOG_SHEET = SheetName.TRANSACTION_LOG.value
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -100,7 +103,7 @@ def find_config_file(explicit_path: Optional[Path] = None) -> Path:
     """
 
     if explicit_path:
-        log.debug("Using explicit config path '%s'", explicit_path)
+        logger.debug("Using explicit config path '%s'", explicit_path)
         return explicit_path
 
     # Walk upwards from the current working directory looking for CONFIG_FILE_NAME
@@ -110,10 +113,11 @@ def find_config_file(explicit_path: Optional[Path] = None) -> Path:
     for p in (current, *current.parents):
         candidate = p / CONFIG_FILE_NAME
         if candidate.exists():
-            log.debug("Discovered config file at '%s'", candidate)
+            logger.debug("Discovered config file at '%s'", candidate)
             return candidate
 
-    log.error("Configuration file '%s' not found starting from '%s'", CONFIG_FILE_NAME, current)
+    logger.error("Configuration file '%s' not found starting from '%s'",
+                 CONFIG_FILE_NAME, current)
     raise FileNotFoundError(
         f"Configuration file not found: {CONFIG_FILE_NAME}")
 
@@ -140,14 +144,14 @@ def read_config(config_path: Path) -> configparser.ConfigParser:
     """
 
     config_path = config_path.expanduser().resolve()
-    log.debug("Reading configuration file '%s'", config_path)
+    logger.debug("Reading configuration file '%s'", config_path)
     if not config_path.exists():
-        log.error("Configuration file not found at '%s'", config_path)
+        logger.error("Configuration file not found at '%s'", config_path)
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     parser = configparser.ConfigParser()
     parser.read(config_path)
-    log.debug("Loaded configuration data from '%s'", config_path)
+    logger.debug("Loaded configuration data from '%s'", config_path)
     return parser
 
 
@@ -180,7 +184,7 @@ def parse_settings(parser: configparser.ConfigParser, *, base_path: Optional[Pat
         schema_version = parser.get("System", "SchemaVersion")
         default_salesman = parser.get("Defaults", "DefaultSalesman")
     except (configparser.NoSectionError, configparser.NoOptionError) as exc:
-        log.error("Missing required configuration entry: %s", exc)
+        logger.error("Missing required configuration entry: %s", exc)
         raise KeyError(f"Missing required configuration entry: {exc}") from exc
 
     data_file_path = Path(data_file_raw)
@@ -196,7 +200,7 @@ def parse_settings(parser: configparser.ConfigParser, *, base_path: Optional[Pat
         default_salesman_id=default_salesman,
     )
 
-    log.debug(
+    logger.debug(
         "Parsed settings: data_file='%s', lounge='%s', schema='%s', default_salesman='%s'",
         settings.data_file,
         settings.lounge_name,
@@ -227,13 +231,13 @@ def open_workbook(data_file: Path) -> Workbook:
     """
 
     data_file = Path(data_file).expanduser().resolve()
-    log.debug("Opening workbook '%s'", data_file)
+    logger.debug("Opening workbook '%s'", data_file)
     if not data_file.exists():
-        log.error("Workbook not found at '%s'", data_file)
+        logger.error("Workbook not found at '%s'", data_file)
         raise FileNotFoundError(f"Workbook not found: {data_file}")
 
     wb = openpyxl.load_workbook(data_file)
-    log.debug("Opened workbook '%s'", data_file)
+    logger.debug("Opened workbook '%s'", data_file)
     return wb
 
 
@@ -252,7 +256,7 @@ def save_workbook(workbook: Workbook, destination: Path) -> None:
 
     dest = Path(destination).expanduser().resolve()
     dest.parent.mkdir(parents=True, exist_ok=True)
-    log.debug("Saving workbook to '%s'", dest)
+    logger.debug("Saving workbook to '%s'", dest)
     workbook.save(dest)
 
 
@@ -271,7 +275,7 @@ def refresh_workbook(data_file: Path) -> Workbook:
     """
 
     # Simply open a fresh workbook instance
-    log.debug("Refreshing workbook from '%s'", data_file)
+    logger.debug("Refreshing workbook from '%s'", data_file)
     return open_workbook(data_file)
 
 
@@ -290,7 +294,7 @@ def iter_products(workbook: Workbook) -> Iterable[ProductRow]:
         ProductRow: One structured row for each meaningful record in the sheet.
     """
 
-    log.debug("Iterating products worksheet '%s'", PRODUCTS_SHEET)
+    logger.debug("Iterating products worksheet '%s'", PRODUCTS_SHEET)
     sheet = workbook[PRODUCTS_SHEET]
     for raw in sheet.iter_rows(min_row=2, values_only=True):
         # skip fully empty rows
@@ -312,7 +316,7 @@ def iter_salesmen(workbook: Workbook) -> Iterable[SalesmanRow]:
         SalesmanRow: Structured representation of each active row in the sheet.
     """
 
-    log.debug("Iterating salesmen worksheet '%s'", SALESMEN_SHEET)
+    logger.debug("Iterating salesmen worksheet '%s'", SALESMEN_SHEET)
     sheet = workbook[SALESMEN_SHEET]
     for raw in sheet.iter_rows(min_row=2, values_only=True):
         if any(cell is not None for cell in raw):
@@ -335,7 +339,8 @@ def iter_transactions(workbook: Workbook) -> Iterable[TransactionRow]:
         TransactionRow: Normalized transaction record for each populated row.
     """
 
-    log.debug("Iterating transactions worksheet '%s'", TRANSACTION_LOG_SHEET)
+    logger.debug("Iterating transactions worksheet '%s'",
+                 TRANSACTION_LOG_SHEET)
     sheet = workbook[TRANSACTION_LOG_SHEET]
     for raw in sheet.iter_rows(min_row=2, values_only=True):
         if any(cell is not None for cell in raw):
@@ -354,7 +359,7 @@ def append_product(workbook: Workbook, record: ProductRow) -> None:
         record (ProductRow): Structured product data ready for persistence.
     """
 
-    log.debug("Appending product '%s' to products sheet", record.product_id)
+    logger.debug("Appending product '%s' to products sheet", record.product_id)
     sheet = workbook[PRODUCTS_SHEET]
     sheet.append(serialize_product(record))
 
@@ -371,7 +376,8 @@ def append_salesman(workbook: Workbook, record: SalesmanRow) -> None:
         record (SalesmanRow): Salesman entry to append.
     """
 
-    log.debug("Appending salesman '%s' to salesmen sheet", record.salesman_id)
+    logger.debug("Appending salesman '%s' to salesmen sheet",
+                 record.salesman_id)
     sheet = workbook[SALESMEN_SHEET]
     sheet.append(serialize_salesman(record))
 
@@ -384,11 +390,11 @@ def append_transaction(workbook: Workbook, record: TransactionRow) -> None:
     saved.
 
     Args:
-        workbook (Workbook): Workbook containing the transaction log.
+        workbook (Workbook): Workbook containing the transaction logger.
         record (TransactionRow): Transaction to persist.
     """
 
-    log.debug(
+    logger.debug(
         "Appending transaction '%s' of type '%s'",
         record.transaction_id,
         record.transaction_type,
@@ -418,7 +424,7 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
     sheet_name = PRODUCTS_SHEET
     row_index = locate_row(workbook, sheet_name, "ProductID", product_id)
     if row_index is None:
-        log.warning("Product '%s' not found during update", product_id)
+        logger.warning("Product '%s' not found during update", product_id)
         raise KeyError(f"Product not found: {product_id}")
 
     sheet = workbook[sheet_name]
@@ -427,11 +433,13 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
 
     for field, value in field_values.items():
         if field not in header_map:
-            log.error("Unknown product field '%s' referenced during update", field)
+            logger.error(
+                "Unknown product field '%s' referenced during update", field)
             raise KeyError(f"Unknown product field: {field}")
         col = header_map[field]
         sheet.cell(row=row_index, column=col, value=value)
-    log.debug("Updated product '%s' fields: %s", product_id, list(field_values.keys()))
+    logger.debug("Updated product '%s' fields: %s",
+                 product_id, list(field_values.keys()))
 
 
 def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[str, Any]) -> None:
@@ -454,7 +462,7 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
     sheet_name = SALESMEN_SHEET
     row_index = locate_row(workbook, sheet_name, "SalesmanID", salesman_id)
     if row_index is None:
-        log.warning("Salesman '%s' not found during update", salesman_id)
+        logger.warning("Salesman '%s' not found during update", salesman_id)
         raise KeyError(f"Salesman not found: {salesman_id}")
 
     sheet = workbook[sheet_name]
@@ -463,11 +471,13 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
 
     for field, value in field_values.items():
         if field not in header_map:
-            log.error("Unknown salesman field '%s' referenced during update", field)
+            logger.error(
+                "Unknown salesman field '%s' referenced during update", field)
             raise KeyError(f"Unknown salesman field: {field}")
         col = header_map[field]
         sheet.cell(row=row_index, column=col, value=value)
-    log.debug("Updated salesman '%s' fields: %s", salesman_id, list(field_values.keys()))
+    logger.debug("Updated salesman '%s' fields: %s",
+                 salesman_id, list(field_values.keys()))
 
 
 def locate_row(workbook: Workbook, sheet_name: str, key_column: str, key_value: str) -> Optional[int]:
@@ -498,7 +508,8 @@ def locate_row(workbook: Workbook, sheet_name: str, key_column: str, key_value: 
     header_cells = list(sheet[1])
     header_map = {cell.value: idx + 1 for idx, cell in enumerate(header_cells)}
     if key_column not in header_map:
-        log.error("Column '%s' not found in worksheet '%s'", key_column, sheet_name)
+        logger.error("Column '%s' not found in worksheet '%s'",
+                     key_column, sheet_name)
         raise KeyError(f"Unknown column: {key_column}")
 
     key_col_index = header_map[key_column]
