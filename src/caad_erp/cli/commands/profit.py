@@ -2,17 +2,15 @@ import argparse
 
 from caad_erp import core_logic
 
-from ..command_spec import CommandSpec
+from ..command_spec import CommandSpec, SubparserFactory
 
 
-def register_profit_command(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> CommandSpec:
+def register_profit_command() -> CommandSpec:
     """Register the parser and executor for ``profit``."""
     name = "profit"
     help_text = "Display revenue, cost, and profit summaries."
 
-    def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
+    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
         parser.set_defaults(command=name)
         return parser

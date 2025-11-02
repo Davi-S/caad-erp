@@ -113,10 +113,10 @@ def test_register_read_commands_configures_parsers(subparsers_action):
 # ---------------------------------------------------------------------------
 
 
-def test_register_add_product_command_returns_spec(subparsers_action):
+def test_register_add_product_command_returns_spec():
     """register_add_product_command should return a CommandSpec."""
 
-    spec = cli.register_add_product_command(subparsers_action)
+    spec = cli.register_add_product_command()
     assert spec.name == "add-product"
     assert spec.help_text
     assert callable(spec.execute)
@@ -127,7 +127,7 @@ def test_register_add_product_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_add_product_command(subparsers)
+    spec = cli.register_add_product_command()
     spec.register(subparsers)
     namespace = parser.parse_args(
         [
@@ -147,10 +147,10 @@ def test_register_add_product_command_configures_arguments():
     assert namespace.inactive is True
 
 
-def test_register_add_salesman_command_returns_spec(subparsers_action):
+def test_register_add_salesman_command_returns_spec():
     """register_add_salesman_command should return a CommandSpec."""
 
-    spec = cli.register_add_salesman_command(subparsers_action)
+    spec = cli.register_add_salesman_command()
     assert spec.name == "add-salesman"
     assert spec.help_text
     assert callable(spec.execute)
@@ -161,7 +161,7 @@ def test_register_add_salesman_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_add_salesman_command(subparsers)
+    spec = cli.register_add_salesman_command()
     spec.register(subparsers)
     namespace = parser.parse_args(
         [
@@ -178,21 +178,21 @@ def test_register_add_salesman_command_configures_arguments():
     assert namespace.inactive is True
 
 
-def test_register_sell_command_returns_spec(subparsers_action):
-    """register_sell_command should return a CommandSpec."""
+def test_register_sale_command_returns_spec():
+    """register_sale_command should return a CommandSpec."""
 
-    spec = cli.register_sell_command(subparsers_action)
+    spec = cli.register_sale_command()
     assert spec.name == "sale"
     assert spec.help_text
     assert callable(spec.execute)
 
 
-def test_register_sell_command_configures_arguments():
-    """register_sell_command should define sale-specific arguments."""
+def test_register_sale_command_configures_arguments():
+    """register_sale_command should define sale-specific arguments."""
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_sell_command(subparsers)
+    spec = cli.register_sale_command()
     spec.register(subparsers)
     namespace = parser.parse_args(
         [
@@ -219,10 +219,10 @@ def test_register_sell_command_configures_arguments():
     assert namespace.notes == "First sale"
 
 
-def test_register_restock_command_returns_spec(subparsers_action):
+def test_register_restock_command_returns_spec():
     """register_restock_command should return a CommandSpec."""
 
-    spec = cli.register_restock_command(subparsers_action)
+    spec = cli.register_restock_command()
     assert spec.name == "restock"
     assert spec.help_text
     assert callable(spec.execute)
@@ -233,7 +233,7 @@ def test_register_restock_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_restock_command(subparsers)
+    spec = cli.register_restock_command()
     spec.register(subparsers)
     namespace = parser.parse_args(
         [
@@ -257,10 +257,10 @@ def test_register_restock_command_configures_arguments():
     assert namespace.notes == "Bulk restock"
 
 
-def test_register_write_off_command_returns_spec(subparsers_action):
+def test_register_write_off_command_returns_spec():
     """register_write_off_command should return a CommandSpec."""
 
-    spec = cli.register_write_off_command(subparsers_action)
+    spec = cli.register_write_off_command()
     assert spec.name == "write-off"
     assert spec.help_text
     assert callable(spec.execute)
@@ -271,7 +271,7 @@ def test_register_write_off_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_write_off_command(subparsers)
+    spec = cli.register_write_off_command()
     spec.register(subparsers)
     namespace = parser.parse_args(
         [
@@ -292,10 +292,10 @@ def test_register_write_off_command_configures_arguments():
     assert namespace.notes == "Damaged"
 
 
-def test_register_pay_debt_command_returns_spec(subparsers_action):
+def test_register_pay_debt_command_returns_spec():
     """register_pay_debt_command should return a CommandSpec."""
 
-    spec = cli.register_pay_debt_command(subparsers_action)
+    spec = cli.register_pay_debt_command()
     assert spec.name == "pay-debt"
     assert spec.help_text
     assert callable(spec.execute)
@@ -306,7 +306,7 @@ def test_register_pay_debt_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_pay_debt_command(subparsers)
+    spec = cli.register_pay_debt_command()
     spec.register(subparsers)
     namespace = parser.parse_args(
         [
@@ -330,10 +330,10 @@ def test_register_pay_debt_command_configures_arguments():
     assert namespace.notes == "Credit payment"
 
 
-def test_register_void_command_returns_spec(subparsers_action):
+def test_register_void_command_returns_spec():
     """register_void_command should return a CommandSpec."""
 
-    spec = cli.register_void_command(subparsers_action)
+    spec = cli.register_void_command()
     assert spec.name == "void"
     assert spec.help_text
     assert callable(spec.execute)
@@ -344,7 +344,7 @@ def test_register_void_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_void_command(subparsers)
+    spec = cli.register_void_command()
     spec.register(subparsers)
     namespace = parser.parse_args(
         [
@@ -364,10 +364,10 @@ def test_register_void_command_configures_arguments():
 # ---------------------------------------------------------------------------
 
 
-def test_register_stock_command_returns_spec(subparsers_action):
+def test_register_stock_command_returns_spec():
     """register_stock_command should return a CommandSpec."""
 
-    spec = cli.register_stock_command(subparsers_action)
+    spec = cli.register_stock_command()
     assert spec.name == "stock"
     assert spec.help_text
     assert callable(spec.execute)
@@ -378,16 +378,16 @@ def test_register_stock_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_stock_command(subparsers)
+    spec = cli.register_stock_command()
     spec.register(subparsers)
     namespace = parser.parse_args(["stock"])
     assert namespace.command == "stock"
 
 
-def test_register_profit_command_returns_spec(subparsers_action):
+def test_register_profit_command_returns_spec():
     """register_profit_command should return a CommandSpec."""
 
-    spec = cli.register_profit_command(subparsers_action)
+    spec = cli.register_profit_command()
     assert spec.name == "profit"
     assert spec.help_text
     assert callable(spec.execute)
@@ -398,16 +398,16 @@ def test_register_profit_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_profit_command(subparsers)
+    spec = cli.register_profit_command()
     spec.register(subparsers)
     namespace = parser.parse_args(["profit"])
     assert namespace.command == "profit"
 
 
-def test_register_debts_command_returns_spec(subparsers_action):
+def test_register_debts_command_returns_spec():
     """register_debts_command should return a CommandSpec."""
 
-    spec = cli.register_debts_command(subparsers_action)
+    spec = cli.register_debts_command()
     assert spec.name == "debts"
     assert spec.help_text
     assert callable(spec.execute)
@@ -418,16 +418,16 @@ def test_register_debts_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_debts_command(subparsers)
+    spec = cli.register_debts_command()
     spec.register(subparsers)
     namespace = parser.parse_args(["debts"])
     assert namespace.command == "debts"
 
 
-def test_register_log_command_returns_spec(subparsers_action):
+def test_register_log_command_returns_spec():
     """register_log_command should return a CommandSpec."""
 
-    spec = cli.register_log_command(subparsers_action)
+    spec = cli.register_log_command()
     assert spec.name == "log"
     assert spec.help_text
     assert callable(spec.execute)
@@ -438,7 +438,7 @@ def test_register_log_command_configures_arguments():
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_log_command(subparsers)
+    spec = cli.register_log_command()
     spec.register(subparsers)
     namespace = parser.parse_args(["log"])
     assert namespace.command == "log"
