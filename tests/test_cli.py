@@ -655,7 +655,7 @@ def test_run_add_product_invokes_bll(runtime_context, monkeypatch):
     args = argparse.Namespace()
     payload = {"product_id": "P1001"}
 
-    monkeypatch.setattr(cli, "translate_add_product", lambda value: payload)
+    monkeypatch.setattr(cli.commands.add_product, "translate_add_product", lambda value: payload)
     called: dict[str, object] = {}
 
     def fake_add_product(context: core_logic.RuntimeContext, **data: object) -> None:
@@ -674,7 +674,7 @@ def test_run_add_salesman_invokes_bll(runtime_context, monkeypatch):
 
     args = argparse.Namespace()
     payload = {"salesman_id": "S100"}
-    monkeypatch.setattr(cli, "translate_add_salesman", lambda value: payload)
+    monkeypatch.setattr(cli.commands.add_salesman, "translate_add_salesman", lambda value: payload)
     called: dict[str, object] = {}
 
     def fake_add_salesman(context: core_logic.RuntimeContext, **data: object) -> None:
@@ -699,7 +699,7 @@ def test_run_sale_invokes_bll(runtime_context, monkeypatch):
         total_revenue=Decimal("2.00"),
         payment_type=constants.PaymentType.CASH,
     )
-    monkeypatch.setattr(cli, "translate_sale", lambda value: command)
+    monkeypatch.setattr(cli.commands.sale, "translate_sale", lambda value: command)
     called = {}
 
     def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.SaleCommand) -> None:
@@ -723,7 +723,7 @@ def test_run_restock_invokes_bll(runtime_context, monkeypatch):
         quantity=Decimal("5"),
         total_cost=Decimal("10"),
     )
-    monkeypatch.setattr(cli, "translate_restock", lambda value: command)
+    monkeypatch.setattr(cli.commands.restock, "translate_restock", lambda value: command)
     called = {}
 
     def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.RestockCommand) -> None:
@@ -745,7 +745,7 @@ def test_run_write_off_invokes_bll(runtime_context, monkeypatch):
         salesman_id="S-DEFAULT",
         quantity=Decimal("1"),
     )
-    monkeypatch.setattr(cli, "translate_write_off", lambda value: command)
+    monkeypatch.setattr(cli.commands.write_off, "translate_write_off", lambda value: command)
     called = {}
 
     def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.WriteOffCommand) -> None:
@@ -768,7 +768,7 @@ def test_run_pay_debt_invokes_bll(runtime_context, monkeypatch):
         total_revenue=Decimal("6"),
         payment_type=constants.PaymentType.PIX,
     )
-    monkeypatch.setattr(cli, "translate_pay_debt", lambda value: command)
+    monkeypatch.setattr(cli.commands.pay_debt, "translate_pay_debt", lambda value: command)
     called = {}
 
     def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.CreditPaymentCommand) -> None:
@@ -786,7 +786,7 @@ def test_run_void_invokes_bll(runtime_context, monkeypatch):
 
     args = argparse.Namespace()
     command = core_logic.VoidCommand(linked_transaction_id="T1", replacement_command=None)
-    monkeypatch.setattr(cli, "translate_void", lambda value: command)
+    monkeypatch.setattr(cli.commands.void, "translate_void", lambda value: command)
     called = {}
 
     def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.VoidCommand) -> None:
@@ -929,9 +929,9 @@ def test_main_executes_specified_command(monkeypatch, runtime_context):
     parser = _stub_parser(command="sale")
     command_table = {"sale": cli.CommandSpec("sale", "help", lambda _: parser, lambda *_: 0)}
 
-    monkeypatch.setattr(cli, "build_parser", lambda: parser)
-    monkeypatch.setattr(cli, "configure_subcommands", lambda _: command_table)
-    monkeypatch.setattr(cli, "load_runtime_context", lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
+    monkeypatch.setattr(cli.parser, "configure_subcommands", lambda _: command_table)
+    monkeypatch.setattr(cli.parser, "load_runtime_context", lambda path=None: runtime_context)
 
     called = {}
 
@@ -941,8 +941,8 @@ def test_main_executes_specified_command(monkeypatch, runtime_context):
         called["table"] = table
         return 0
 
-    monkeypatch.setattr(cli, "dispatch_command", fake_dispatch)
-    monkeypatch.setattr(cli, "persist_workbook", lambda ctx: called.setdefault("persisted", ctx))
+    monkeypatch.setattr(cli.parser, "dispatch_command", fake_dispatch)
+    monkeypatch.setattr(cli.parser, "persist_workbook", lambda ctx: called.setdefault("persisted", ctx))
 
     exit_code = cli.main(["sale"])
     assert exit_code == 0
@@ -957,15 +957,15 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
     parser = _stub_parser(command="sale")
     command_table = {"sale": cli.CommandSpec("sale", "help", lambda _: parser, lambda *_: 0)}
 
-    monkeypatch.setattr(cli, "build_parser", lambda: parser)
-    monkeypatch.setattr(cli, "configure_subcommands", lambda _: command_table)
-    monkeypatch.setattr(cli, "load_runtime_context", lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
+    monkeypatch.setattr(cli.parser, "configure_subcommands", lambda _: command_table)
+    monkeypatch.setattr(cli.parser, "load_runtime_context", lambda path=None: runtime_context)
 
     def fake_dispatch(*_: object) -> int:
         raise core_logic.BusinessRuleViolation("invalid")
 
-    monkeypatch.setattr(cli, "dispatch_command", fake_dispatch)
-    monkeypatch.setattr(cli, "persist_workbook", lambda _: (_ for _ in ()).throw(AssertionError("should not persist")))
+    monkeypatch.setattr(cli.parser, "dispatch_command", fake_dispatch)
+    monkeypatch.setattr(cli.parser, "persist_workbook", lambda _: (_ for _ in ()).throw(AssertionError("should not persist")))
 
     handled = {}
 
@@ -973,7 +973,7 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
         handled["error"] = error
         return 99
 
-    monkeypatch.setattr(cli, "handle_cli_error", fake_handle)
+    monkeypatch.setattr(cli.parser, "handle_cli_error", fake_handle)
     exit_code = cli.main(["sale"])
     assert exit_code == 99
     assert isinstance(handled["error"], core_logic.BusinessRuleViolation)
@@ -985,17 +985,17 @@ def test_main_persists_on_success(monkeypatch, runtime_context):
     parser = _stub_parser(command="profit")
     command_table = {"profit": cli.CommandSpec("profit", "help", lambda _: parser, lambda *_: 0)}
 
-    monkeypatch.setattr(cli, "build_parser", lambda: parser)
-    monkeypatch.setattr(cli, "configure_subcommands", lambda _: command_table)
-    monkeypatch.setattr(cli, "load_runtime_context", lambda path=None: runtime_context)
-    monkeypatch.setattr(cli, "dispatch_command", lambda *_: 0)
+    monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
+    monkeypatch.setattr(cli.parser, "configure_subcommands", lambda _: command_table)
+    monkeypatch.setattr(cli.parser, "load_runtime_context", lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "dispatch_command", lambda *_: 0)
 
     persisted = {}
 
     def fake_persist(context: core_logic.RuntimeContext) -> None:
         persisted["context"] = context
 
-    monkeypatch.setattr(cli, "persist_workbook", fake_persist)
+    monkeypatch.setattr(cli.parser, "persist_workbook", fake_persist)
     exit_code = cli.main(["profit"])
     assert exit_code == 0
     assert persisted["context"] is runtime_context

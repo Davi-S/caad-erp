@@ -759,7 +759,7 @@ def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
             notes="Quantity correction",
         )
 
-    monkeypatch.setattr(cli, "translate_void", fake_translate)
+    monkeypatch.setattr(cli.commands.void, "translate_void", fake_translate)
 
     exit_code = cli.run_void(context, argparse.Namespace())
     assert exit_code == 0
