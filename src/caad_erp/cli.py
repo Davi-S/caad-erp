@@ -565,5 +565,5 @@ def main(argv: Sequence[str] | None = None) -> int:
         if exit_code == 0:
             persist_workbook(context)
         return exit_code
-    except Exception as error:  # pragma: no cover - centralised error handler tested separately
+    except Exception as error:  # pragma: no cover - centralized error handler tested separately
         return handle_cli_error(error)

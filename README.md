@@ -59,7 +59,7 @@ python -m caad_erp.cli --help
 
 By default the CLI looks for a `config.ini` in the current working directory.
 Pass `--config /path/to/config.ini` if your configuration lives elsewhere. For
-copy-pasteable walkthroughs, head over to the [examples/](./examples/)
+copy-paste walkthroughs, head over to the [examples/](./examples/)
 directory.
 
 ### Write Commands

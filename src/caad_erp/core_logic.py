@@ -299,8 +299,7 @@ def ensure_schema_version(context: RuntimeContext) -> None:
             context.settings.schema_version,
         )
         raise RuntimeError(
-            "Workbook schema mismatch: expected %s, found %s"
-            % (EXPECTED_SCHEMA_VERSION, context.settings.schema_version)
+            f"Workbook schema mismatch: expected {EXPECTED_SCHEMA_VERSION}, found {context.settings.schema_version}"
         )
 
     log.debug("Schema version '%s' validated", context.settings.schema_version)
@@ -424,12 +423,12 @@ def add_product(
             identifier.
     """
 
-    normalized_id = str(product_id).strip()
+    normalized_id = product_id.strip()
     if not normalized_id:
         log.error("Product creation rejected: blank product_id")
         raise ValueError("Product ID must be provided")
 
-    normalized_name = str(product_name).strip()
+    normalized_name = product_name.strip()
     if not normalized_name:
         log.error("Product creation rejected: blank product_name")
         raise ValueError("Product name must be provided")
@@ -453,7 +452,7 @@ def add_product(
         product_id=normalized_id,
         product_name=normalized_name,
         sell_price=price,
-        is_active=bool(is_active),
+        is_active=is_active,
     )
 
     data_manager.append_product(context.workbook, record)
@@ -477,7 +476,7 @@ def update_product(
 ) -> data_manager.ProductRow:
     """Update selected fields for an existing product and refresh caches."""
 
-    normalized_id = str(product_id).strip()
+    normalized_id = product_id.strip()
     if not normalized_id:
         log.error("Product update rejected: blank product_id")
         raise ValueError("Product ID must be provided")
@@ -581,12 +580,12 @@ def add_salesman(
             already exists.
     """
 
-    normalized_id = str(salesman_id).strip()
+    normalized_id = salesman_id.strip()
     if not normalized_id:
         log.error("Salesman creation rejected: blank salesman_id")
         raise ValueError("Salesman ID must be provided")
 
-    normalized_name = str(salesman_name).strip()
+    normalized_name = salesman_name.strip()
     if not normalized_name:
         log.error("Salesman creation rejected: blank salesman_name")
         raise ValueError("Salesman name must be provided")
@@ -599,7 +598,7 @@ def add_salesman(
     record = data_manager.SalesmanRow(
         salesman_id=normalized_id,
         salesman_name=normalized_name,
-        is_active=bool(is_active),
+        is_active=is_active,
     )
 
     data_manager.append_salesman(context.workbook, record)
@@ -617,7 +616,7 @@ def update_salesman(
 ) -> data_manager.SalesmanRow:
     """Update selected fields for a salesman and refresh caches."""
 
-    normalized_id = str(salesman_id).strip()
+    normalized_id = salesman_id.strip()
     if not normalized_id:
         log.error("Salesman update rejected: blank salesman_id")
         raise ValueError("Salesman ID must be provided")
