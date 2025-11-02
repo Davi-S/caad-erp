@@ -87,7 +87,8 @@ def workbook_factory(tmp_path: Path) -> Callable[..., Path]:
         base_dir = tmp_path if subdir is None else tmp_path / subdir
         base_dir.mkdir(parents=True, exist_ok=True)
         workbook_path = base_dir / filename
-        create_master_workbook(workbook_path, default_salesman_id=default_salesman_id, overwrite=True)
+        create_master_workbook(
+            workbook_path, default_salesman_id=default_salesman_id, overwrite=True)
         return workbook_path
 
     return _create_workbook
@@ -119,7 +120,8 @@ def config_factory(tmp_path: Path, workbook_factory: Callable[..., Path]) -> Cal
             subdir=f"bundle_{bundle_id}",
             default_salesman_id=default_salesman_id,
         )
-        data_file_entry = workbook_path.name if make_relative else str(workbook_path)
+        data_file_entry = workbook_path.name if make_relative else str(
+            workbook_path)
         config_path = bundle_dir / "config.ini"
         config_path.write_text(
             _CONFIG_TEMPLATE.format(
@@ -172,7 +174,7 @@ def cli_parser() -> argparse.ArgumentParser:
 @pytest.fixture
 def subparsers_action(
     cli_parser: argparse.ArgumentParser,
-) -> argparse._SubParsersAction[argparse.ArgumentParser]:
+) -> t.Callable[..., argparse.ArgumentParser]:
     """Return the subparser action used to register commands."""
 
     return cli_parser.add_subparsers(dest="command")
@@ -190,7 +192,7 @@ def command_table_entry() -> tuple[str, cli.CommandSpec]:
         return 0
 
     def register(
-        subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
+        subparsers: t.Callable[..., argparse.ArgumentParser],
     ) -> argparse.ArgumentParser:
         return subparsers.add_parser("catalog-test")
 

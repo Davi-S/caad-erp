@@ -178,21 +178,21 @@ def test_register_add_salesman_command_configures_arguments():
     assert namespace.inactive is True
 
 
-def test_register_sale_command_returns_spec(subparsers_action):
-    """register_sale_command should return a CommandSpec."""
+def test_register_sell_command_returns_spec(subparsers_action):
+    """register_sell_command should return a CommandSpec."""
 
-    spec = cli.register_sale_command(subparsers_action)
+    spec = cli.register_sell_command(subparsers_action)
     assert spec.name == "sale"
     assert spec.help_text
     assert callable(spec.execute)
 
 
-def test_register_sale_command_configures_arguments():
-    """register_sale_command should define sale-specific arguments."""
+def test_register_sell_command_configures_arguments():
+    """register_sell_command should define sale-specific arguments."""
 
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
-    spec = cli.register_sale_command(subparsers)
+    spec = cli.register_sell_command(subparsers)
     spec.register(subparsers)
     namespace = parser.parse_args(
         [

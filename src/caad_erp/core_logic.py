@@ -13,11 +13,15 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+import logging
 
 from openpyxl.workbook import Workbook
 
-from . import data_manager, log
+from . import data_manager
 from .constants import EXPECTED_SCHEMA_VERSION, PaymentType, TransactionType
+
+
+logger = logging.getLogger(__name__)
 
 
 class BusinessRuleViolation(Exception):
@@ -34,7 +38,8 @@ class RuntimeContext:
 
     settings: data_manager.ConfigSettings
     workbook: Workbook
-    _cache: Dict[str, Dict[str, Any]] = field(default_factory=dict, repr=False, compare=False)
+    _cache: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -99,6 +104,7 @@ TransactionCommand = Union[
     OpenStockCommand,
 ]
 
+
 @dataclass(frozen=True)
 class VoidCommand:
     """User intent for voiding a prior transaction."""
@@ -129,7 +135,7 @@ def _get_cache_bucket(context: RuntimeContext, name: str) -> Dict[str, Any]:
 
     bucket = context._cache.get(name)
     if bucket is None:
-        log.debug("Initializing cache bucket '%s'", name)
+        logger.debug("Initializing cache bucket '%s'", name)
         bucket = {}
         context._cache[name] = bucket
     return bucket
@@ -137,7 +143,7 @@ def _get_cache_bucket(context: RuntimeContext, name: str) -> Dict[str, Any]:
 
 def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
     """Evict one or more cache buckets after mutating workbook state.
-    
+
     Following write operations, invalidation ensures subsequent reads rebuild
     their caches from the updated workbook rather than serving stale data.
 
@@ -152,7 +158,7 @@ def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
     if not names:
         return
 
-    log.debug("Invalidating cache buckets: %s", ", ".join(names))
+    logger.debug("Invalidating cache buckets: %s", ", ".join(names))
 
     for name in names:
         context._cache.pop(name, None)
@@ -160,7 +166,7 @@ def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
 
 def _ensure_products_cache(context: RuntimeContext) -> Dict[str, Any]:
     """Populate the product cache bucket on demand.
-    
+
     By storing both the full list and derivative structures, higher-level
     helpers can service different query patterns without touching the workbook
     again.
@@ -179,9 +185,11 @@ def _ensure_products_cache(context: RuntimeContext) -> Dict[str, Any]:
     if "all" not in bucket:
         all_products = list(data_manager.iter_products(context.workbook))
         bucket["all"] = all_products
-        bucket["active"] = [product for product in all_products if product.is_active]
-        bucket["by_id"] = {product.product_id: product for product in all_products}
-        log.debug(
+        bucket["active"] = [
+            product for product in all_products if product.is_active]
+        bucket["by_id"] = {
+            product.product_id: product for product in all_products}
+        logger.debug(
             "Populated products cache with %d entries (%d active)",
             len(all_products),
             len(bucket["active"]),
@@ -191,7 +199,7 @@ def _ensure_products_cache(context: RuntimeContext) -> Dict[str, Any]:
 
 def _ensure_salesmen_cache(context: RuntimeContext) -> Dict[str, Any]:
     """Populate the salesman cache bucket on demand.
-    
+
     The bucket mirrors the structure used for products so public APIs can rely
     on a consistent shape when retrieving cached data.
 
@@ -208,9 +216,11 @@ def _ensure_salesmen_cache(context: RuntimeContext) -> Dict[str, Any]:
     if "all" not in bucket:
         all_salesmen = list(data_manager.iter_salesmen(context.workbook))
         bucket["all"] = all_salesmen
-        bucket["active"] = [salesman for salesman in all_salesmen if salesman.is_active]
-        bucket["by_id"] = {salesman.salesman_id: salesman for salesman in all_salesmen}
-        log.debug(
+        bucket["active"] = [
+            salesman for salesman in all_salesmen if salesman.is_active]
+        bucket["by_id"] = {
+            salesman.salesman_id: salesman for salesman in all_salesmen}
+        logger.debug(
             "Populated salesmen cache with %d entries (%d active)",
             len(all_salesmen),
             len(bucket["active"]),
@@ -220,7 +230,7 @@ def _ensure_salesmen_cache(context: RuntimeContext) -> Dict[str, Any]:
 
 def _ensure_transactions_cache(context: RuntimeContext) -> Dict[str, Any]:
     """Populate the transaction log cache bucket on demand.
-    
+
     Because transactions are immutable after creation, caching the full list
     and a dictionary keyed by ``transaction_id`` avoids repeated worksheet
     scans even for complex reporting operations.
@@ -236,10 +246,12 @@ def _ensure_transactions_cache(context: RuntimeContext) -> Dict[str, Any]:
 
     bucket = _get_cache_bucket(context, "transactions")
     if "all" not in bucket:
-        all_transactions = list(data_manager.iter_transactions(context.workbook))
+        all_transactions = list(
+            data_manager.iter_transactions(context.workbook))
         bucket["all"] = all_transactions
-        bucket["by_id"] = {transaction.transaction_id: transaction for transaction in all_transactions}
-        log.debug(
+        bucket["by_id"] = {
+            transaction.transaction_id: transaction for transaction in all_transactions}
+        logger.debug(
             "Populated transactions cache with %d entries",
             len(all_transactions),
         )
@@ -271,9 +283,10 @@ def load_runtime_context(config_path: Optional[Path] = None) -> RuntimeContext:
     located_config = data_manager.find_config_file(config_path)
     resolved_config = Path(located_config).expanduser().resolve()
     parser = data_manager.read_config(resolved_config)
-    settings = data_manager.parse_settings(parser, base_path=resolved_config.parent)
+    settings = data_manager.parse_settings(
+        parser, base_path=resolved_config.parent)
     workbook = data_manager.open_workbook(settings.data_file)
-    log.info("Loaded runtime context for workbook '%s'", settings.data_file)
+    logger.info("Loaded runtime context for workbook '%s'", settings.data_file)
     return RuntimeContext(settings=settings, workbook=workbook)
 
 
@@ -293,7 +306,7 @@ def ensure_schema_version(context: RuntimeContext) -> None:
             not match ``EXPECTED_SCHEMA_VERSION``.
     """
     if context.settings.schema_version != EXPECTED_SCHEMA_VERSION:
-        log.error(
+        logger.error(
             "Workbook schema mismatch: expected %s, found %s",
             EXPECTED_SCHEMA_VERSION,
             context.settings.schema_version,
@@ -302,7 +315,8 @@ def ensure_schema_version(context: RuntimeContext) -> None:
             f"Workbook schema mismatch: expected {EXPECTED_SCHEMA_VERSION}, found {context.settings.schema_version}"
         )
 
-    log.debug("Schema version '%s' validated", context.settings.schema_version)
+    logger.debug("Schema version '%s' validated",
+                 context.settings.schema_version)
 
 
 def list_products(context: RuntimeContext, *, include_inactive: bool = False) -> List[data_manager.ProductRow]:
@@ -391,8 +405,9 @@ def get_product(context: RuntimeContext, product_id: str) -> data_manager.Produc
     try:
         return cache["by_id"][product_id]
     except KeyError as exc:
-        log.warning("Product lookup failed for id '%s'", product_id)
-        raise MissingReferenceError(f"Unknown product id: {product_id}") from exc
+        logger.warning("Product lookup failed for id '%s'", product_id)
+        raise MissingReferenceError(
+            f"Unknown product id: {product_id}") from exc
 
 
 def add_product(
@@ -425,28 +440,33 @@ def add_product(
 
     normalized_id = product_id.strip()
     if not normalized_id:
-        log.error("Product creation rejected: blank product_id")
+        logger.error("Product creation rejected: blank product_id")
         raise ValueError("Product ID must be provided")
 
     normalized_name = product_name.strip()
     if not normalized_name:
-        log.error("Product creation rejected: blank product_name")
+        logger.error("Product creation rejected: blank product_name")
         raise ValueError("Product name must be provided")
 
     try:
-        price = sell_price if isinstance(sell_price, Decimal) else Decimal(sell_price)
+        price = sell_price if isinstance(
+            sell_price, Decimal) else Decimal(sell_price)
     except (InvalidOperation, TypeError) as exc:
-        log.error("Product creation rejected: invalid sell_price '%s'", sell_price)
+        logger.error(
+            "Product creation rejected: invalid sell_price '%s'", sell_price)
         raise ValueError("Sell price must be a valid decimal number") from exc
 
     if price < Decimal("0"):
-        log.error("Product creation rejected: negative sell_price '%s'", price)
+        logger.error(
+            "Product creation rejected: negative sell_price '%s'", price)
         raise ValueError("Sell price must be zero or positive")
 
     bucket = _ensure_products_cache(context)
     if normalized_id in bucket["by_id"]:
-        log.error("Product creation rejected: duplicate id '%s'", normalized_id)
-        raise BusinessRuleViolation(f"Product '{normalized_id}' already exists")
+        logger.error(
+            "Product creation rejected: duplicate id '%s'", normalized_id)
+        raise BusinessRuleViolation(
+            f"Product '{normalized_id}' already exists")
 
     record = data_manager.ProductRow(
         product_id=normalized_id,
@@ -457,7 +477,7 @@ def add_product(
 
     data_manager.append_product(context.workbook, record)
     _invalidate_cache(context, "products")
-    log.info(
+    logger.info(
         "Registered product '%s' (%s) with sell price %s",
         record.product_id,
         record.product_name,
@@ -478,7 +498,7 @@ def update_product(
 
     normalized_id = product_id.strip()
     if not normalized_id:
-        log.error("Product update rejected: blank product_id")
+        logger.error("Product update rejected: blank product_id")
         raise ValueError("Product ID must be provided")
 
     field_values: dict[str, Any] = {}
@@ -486,42 +506,49 @@ def update_product(
     if product_name is not None:
         normalized_name = str(product_name).strip()
         if not normalized_name:
-            log.error("Product update rejected: blank product_name")
+            logger.error("Product update rejected: blank product_name")
             raise ValueError("Product name must be provided")
         field_values["ProductName"] = normalized_name
 
     if sell_price is not None:
         try:
-            price = sell_price if isinstance(sell_price, Decimal) else Decimal(sell_price)
+            price = sell_price if isinstance(
+                sell_price, Decimal) else Decimal(sell_price)
         except (InvalidOperation, TypeError) as exc:
-            log.error("Product update rejected: invalid sell_price '%s'", sell_price)
-            raise ValueError("Sell price must be a valid decimal number") from exc
+            logger.error(
+                "Product update rejected: invalid sell_price '%s'", sell_price)
+            raise ValueError(
+                "Sell price must be a valid decimal number") from exc
 
         if price < Decimal("0"):
-            log.error("Product update rejected: negative sell_price '%s'", price)
+            logger.error(
+                "Product update rejected: negative sell_price '%s'", price)
             raise ValueError("Sell price must be zero or positive")
 
         field_values["SellPrice"] = price
 
     if is_active is not None:
         if not isinstance(is_active, bool):
-            log.error("Product update rejected: non-boolean is_active '%s'", is_active)
+            logger.error(
+                "Product update rejected: non-boolean is_active '%s'", is_active)
             raise ValueError("is_active must be a boolean value")
         field_values["IsActive"] = is_active
 
     if not field_values:
-        log.error("Product update rejected: no fields provided")
+        logger.error("Product update rejected: no fields provided")
         raise ValueError("At least one field must be provided to update")
 
     try:
-        data_manager.update_product(context.workbook, normalized_id, field_values=field_values)
+        data_manager.update_product(
+            context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
-        log.warning("Product update failed for id '%s'", normalized_id)
-        raise MissingReferenceError(f"Unknown product id: {normalized_id}") from exc
+        logger.warning("Product update failed for id '%s'", normalized_id)
+        raise MissingReferenceError(
+            f"Unknown product id: {normalized_id}") from exc
 
     _invalidate_cache(context, "products")
     updated = get_product(context, normalized_id)
-    log.info(
+    logger.info(
         "Updated product '%s' fields: %s",
         normalized_id,
         ", ".join(field_values.keys()),
@@ -551,8 +578,9 @@ def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.Sale
     try:
         return cache["by_id"][salesman_id]
     except KeyError as exc:
-        log.warning("Salesman lookup failed for id '%s'", salesman_id)
-        raise MissingReferenceError(f"Unknown salesman id: {salesman_id}") from exc
+        logger.warning("Salesman lookup failed for id '%s'", salesman_id)
+        raise MissingReferenceError(
+            f"Unknown salesman id: {salesman_id}") from exc
 
 
 def add_salesman(
@@ -582,18 +610,20 @@ def add_salesman(
 
     normalized_id = salesman_id.strip()
     if not normalized_id:
-        log.error("Salesman creation rejected: blank salesman_id")
+        logger.error("Salesman creation rejected: blank salesman_id")
         raise ValueError("Salesman ID must be provided")
 
     normalized_name = salesman_name.strip()
     if not normalized_name:
-        log.error("Salesman creation rejected: blank salesman_name")
+        logger.error("Salesman creation rejected: blank salesman_name")
         raise ValueError("Salesman name must be provided")
 
     bucket = _ensure_salesmen_cache(context)
     if normalized_id in bucket["by_id"]:
-        log.error("Salesman creation rejected: duplicate id '%s'", normalized_id)
-        raise BusinessRuleViolation(f"Salesman '{normalized_id}' already exists")
+        logger.error(
+            "Salesman creation rejected: duplicate id '%s'", normalized_id)
+        raise BusinessRuleViolation(
+            f"Salesman '{normalized_id}' already exists")
 
     record = data_manager.SalesmanRow(
         salesman_id=normalized_id,
@@ -603,7 +633,8 @@ def add_salesman(
 
     data_manager.append_salesman(context.workbook, record)
     _invalidate_cache(context, "salesmen")
-    log.info("Registered salesman '%s' (%s)", record.salesman_id, record.salesman_name)
+    logger.info("Registered salesman '%s' (%s)",
+                record.salesman_id, record.salesman_name)
     return record
 
 
@@ -618,7 +649,7 @@ def update_salesman(
 
     normalized_id = salesman_id.strip()
     if not normalized_id:
-        log.error("Salesman update rejected: blank salesman_id")
+        logger.error("Salesman update rejected: blank salesman_id")
         raise ValueError("Salesman ID must be provided")
 
     field_values: dict[str, Any] = {}
@@ -626,29 +657,32 @@ def update_salesman(
     if salesman_name is not None:
         normalized_name = str(salesman_name).strip()
         if not normalized_name:
-            log.error("Salesman update rejected: blank salesman_name")
+            logger.error("Salesman update rejected: blank salesman_name")
             raise ValueError("Salesman name must be provided")
         field_values["SalesmanName"] = normalized_name
 
     if is_active is not None:
         if not isinstance(is_active, bool):
-            log.error("Salesman update rejected: non-boolean is_active '%s'", is_active)
+            logger.error(
+                "Salesman update rejected: non-boolean is_active '%s'", is_active)
             raise ValueError("is_active must be a boolean value")
         field_values["IsActive"] = is_active
 
     if not field_values:
-        log.error("Salesman update rejected: no fields provided")
+        logger.error("Salesman update rejected: no fields provided")
         raise ValueError("At least one field must be provided to update")
 
     try:
-        data_manager.update_salesman(context.workbook, normalized_id, field_values=field_values)
+        data_manager.update_salesman(
+            context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
-        log.warning("Salesman update failed for id '%s'", normalized_id)
-        raise MissingReferenceError(f"Unknown salesman id: {normalized_id}") from exc
+        logger.warning("Salesman update failed for id '%s'", normalized_id)
+        raise MissingReferenceError(
+            f"Unknown salesman id: {normalized_id}") from exc
 
     _invalidate_cache(context, "salesmen")
     updated = get_salesman(context, normalized_id)
-    log.info(
+    logger.info(
         "Updated salesman '%s' fields: %s",
         normalized_id,
         ", ".join(field_values.keys()),
@@ -678,12 +712,13 @@ def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manage
     try:
         return cache["by_id"][transaction_id]
     except KeyError as exc:
-        log.warning("Transaction lookup failed for id '%s'", transaction_id)
-        raise MissingReferenceError(f"Unknown transaction id: {transaction_id}") from exc
+        logger.warning("Transaction lookup failed for id '%s'", transaction_id)
+        raise MissingReferenceError(
+            f"Unknown transaction id: {transaction_id}") from exc
 
 
 def calculate_inventory(context: RuntimeContext) -> Dict[str, Decimal]:
-    """Compute inventory balances from the transaction log.
+    """Compute inventory balances from the transaction logger.
 
     The routine iterates over the cached transaction list, ignoring entries
     with no ``ProductID`` (for example, credit payments) and accumulating the
@@ -703,8 +738,10 @@ def calculate_inventory(context: RuntimeContext) -> Dict[str, Decimal]:
         if transaction.product_id is None:
             continue
         current = inventory.get(transaction.product_id, Decimal("0"))
-        inventory[transaction.product_id] = current + transaction.quantity_change
-    log.debug("Calculated inventory balances for %d products", len(inventory))
+        inventory[transaction.product_id] = current + \
+            transaction.quantity_change
+    logger.debug("Calculated inventory balances for %d products",
+                 len(inventory))
     return inventory
 
 
@@ -713,7 +750,7 @@ def calculate_profit_summary(context: RuntimeContext) -> Dict[str, Decimal]:
 
     Aggregate values are derived from cached transactions so repeated calls do
     not touch the workbook. Profit is computed as ``total_revenue + total_cost``
-    because costs are recorded as negative numbers in the transaction log.
+    because costs are recorded as negative numbers in the transaction logger.
 
     Args:
         context (RuntimeContext): Runtime context providing workbook access and
@@ -730,7 +767,7 @@ def calculate_profit_summary(context: RuntimeContext) -> Dict[str, Decimal]:
         total_revenue += transaction.total_revenue
         total_cost += transaction.total_cost
     profit = total_revenue + total_cost
-    log.debug(
+    logger.debug(
         "Calculated profit summary: revenue=%s cost=%s profit=%s",
         total_revenue,
         total_cost,
@@ -744,7 +781,7 @@ def calculate_profit_summary(context: RuntimeContext) -> Dict[str, Decimal]:
 
 
 def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.TransactionRow:
-    """Validate and append a ``SALE`` transaction to the log.
+    """Validate and append a ``SALE`` transaction to the logger.
 
     The workflow ensures products and salesmen are active, enforces positive
     quantities, verifies monetary values, generates a unique identifier, and
@@ -771,23 +808,30 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
     now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
-        log.warning("Attempted sale on inactive product '%s'", command.product_id)
-        raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
+        logger.warning("Attempted sale on inactive product '%s'",
+                       command.product_id)
+        raise BusinessRuleViolation(
+            f"Product '{command.product_id}' is inactive")
     salesman = get_salesman(context, command.salesman_id)
     if not salesman.is_active:
-        log.warning("Attempted sale with inactive salesman '%s'", command.salesman_id)
-        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
+        logger.warning(
+            "Attempted sale with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(
+            f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(command.total_revenue)
     if not isinstance(command.payment_type, PaymentType):
-        log.error("Unsupported payment type provided: %s", command.payment_type)
-        raise BusinessRuleViolation(f"Unsupported payment type: {command.payment_type}")
+        logger.error("Unsupported payment type provided: %s",
+                     command.payment_type)
+        raise BusinessRuleViolation(
+            f"Unsupported payment type: {command.payment_type}")
 
     transaction_id = generate_transaction_id(when=now)
-    transaction = build_sale_transaction(command, transaction_id=transaction_id, timestamp=now)
+    transaction = build_sale_transaction(
+        command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
-    log.info(
+    logger.info(
         "Recorded SALE transaction '%s' for product '%s' (quantity=%s, revenue=%s)",
         transaction.transaction_id,
         command.product_id,
@@ -821,20 +865,25 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
-        log.warning("Attempted restock on inactive product '%s'", command.product_id)
-        raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
+        logger.warning(
+            "Attempted restock on inactive product '%s'", command.product_id)
+        raise BusinessRuleViolation(
+            f"Product '{command.product_id}' is inactive")
     salesman = get_salesman(context, command.salesman_id)
     if not salesman.is_active:
-        log.warning("Attempted restock with inactive salesman '%s'", command.salesman_id)
-        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
+        logger.warning(
+            "Attempted restock with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(
+            f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(abs(command.total_cost))
 
     transaction_id = generate_transaction_id(when=now)
-    transaction = build_restock_transaction(command, transaction_id=transaction_id, timestamp=now)
+    transaction = build_restock_transaction(
+        command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
-    log.info(
+    logger.info(
         "Recorded RESTOCK transaction '%s' for product '%s' (quantity=%s, cost=%s)",
         transaction.transaction_id,
         command.product_id,
@@ -867,19 +916,24 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
     now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
-        log.warning("Attempted write-off on inactive product '%s'", command.product_id)
-        raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
+        logger.warning(
+            "Attempted write-off on inactive product '%s'", command.product_id)
+        raise BusinessRuleViolation(
+            f"Product '{command.product_id}' is inactive")
     salesman = get_salesman(context, command.salesman_id)
     if not salesman.is_active:
-        log.warning("Attempted write-off with inactive salesman '%s'", command.salesman_id)
-        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
+        logger.warning(
+            "Attempted write-off with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(
+            f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
 
     transaction_id = generate_transaction_id(when=now)
-    transaction = build_write_off_transaction(command, transaction_id=transaction_id, timestamp=now)
+    transaction = build_write_off_transaction(
+        command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
-    log.info(
+    logger.info(
         "Recorded WRITE_OFF transaction '%s' for product '%s' (quantity=%s)",
         transaction.transaction_id,
         command.product_id,
@@ -915,12 +969,16 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
     validate_credit_sale_link(linked_sale)
     require_nonnegative_money(command.total_revenue)
     if not isinstance(command.payment_type, PaymentType):
-        log.error("Unsupported payment type provided for credit payment: %s", command.payment_type)
-        raise BusinessRuleViolation(f"Unsupported payment type: {command.payment_type}")
+        logger.error(
+            "Unsupported payment type provided for credit payment: %s", command.payment_type)
+        raise BusinessRuleViolation(
+            f"Unsupported payment type: {command.payment_type}")
     salesman = get_salesman(context, command.salesman_id)
     if not salesman.is_active:
-        log.warning("Attempted credit payment with inactive salesman '%s'", command.salesman_id)
-        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
+        logger.warning(
+            "Attempted credit payment with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(
+            f"Salesman '{command.salesman_id}' is inactive")
 
     transaction_id = generate_transaction_id(when=now)
     transaction = build_credit_payment_transaction(
@@ -931,7 +989,7 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
     )
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
-    log.info(
+    logger.info(
         "Recorded CREDIT_PAYMENT '%s' linked to '%s' (amount=%s)",
         transaction.transaction_id,
         command.linked_transaction_id,
@@ -964,20 +1022,25 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     now = datetime.now(UTC)
     product = get_product(context, command.product_id)
     if not product.is_active:
-        log.warning("Attempted open stock on inactive product '%s'", command.product_id)
-        raise BusinessRuleViolation(f"Product '{command.product_id}' is inactive")
+        logger.warning(
+            "Attempted open stock on inactive product '%s'", command.product_id)
+        raise BusinessRuleViolation(
+            f"Product '{command.product_id}' is inactive")
     salesman = get_salesman(context, command.salesman_id)
     if not salesman.is_active:
-        log.warning("Attempted open stock with inactive salesman '%s'", command.salesman_id)
-        raise BusinessRuleViolation(f"Salesman '{command.salesman_id}' is inactive")
+        logger.warning(
+            "Attempted open stock with inactive salesman '%s'", command.salesman_id)
+        raise BusinessRuleViolation(
+            f"Salesman '{command.salesman_id}' is inactive")
     require_positive_quantity(command.quantity)
     require_nonnegative_money(command.total_revenue)
 
     transaction_id = generate_transaction_id(when=now)
-    transaction = build_open_stock_transaction(command, transaction_id=transaction_id, timestamp=now)
+    transaction = build_open_stock_transaction(
+        command, transaction_id=transaction_id, timestamp=now)
     data_manager.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
-    log.info(
+    logger.info(
         "Recorded OPEN_STOCK transaction '%s' for product '%s' (quantity=%s, value=%s)",
         transaction.transaction_id,
         command.product_id,
@@ -994,7 +1057,7 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
     transaction, then optionally records a replacement command provided by the
     caller, chaining through the appropriate ``record_*`` function. Transaction
     caches are invalidated before each write to ensure consistency, so any
-    subsequent reads or balance calculations reflect the updated log.
+    subsequent reads or balance calculations reflect the updated logger.
 
     Args:
         context (RuntimeContext): Runtime context providing workbook access and
@@ -1012,14 +1075,15 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
         MissingReferenceError: When the referenced transaction is unknown.
     """
     now = datetime.now(UTC)
-    log.info("Recording VOID for transaction '%s'", command.linked_transaction_id)
+    logger.info("Recording VOID for transaction '%s'",
+                command.linked_transaction_id)
     target = get_transaction(context, command.linked_transaction_id)
     validate_void_target(target)
 
     reversal = build_void_reversal(target, timestamp=now, notes=command.notes)
     data_manager.append_transaction(context.workbook, reversal)
     _invalidate_cache(context, "transactions")
-    log.info(
+    logger.info(
         "Recorded VOID reversal '%s' for transaction '%s'",
         reversal.transaction_id,
         target.transaction_id,
@@ -1082,7 +1146,7 @@ def require_positive_quantity(quantity: Decimal) -> None:
     other validation helpers in the module.
     """
     if quantity <= Decimal("0"):
-        log.error("Quantity validation failed: %s", quantity)
+        logger.error("Quantity validation failed: %s", quantity)
         raise ValueError("Quantity must be greater than zero")
 
 
@@ -1095,12 +1159,12 @@ def require_nonnegative_money(amount: Decimal) -> None:
     Raises:
         ValueError: If ``amount`` is less than zero.
 
-    Monetary fields are stored as signed decimals within the transaction log.
+    Monetary fields are stored as signed decimals within the transaction logger.
     This helper ensures upstream workflows never pass negative revenue or cost
     figures without explicitly opting into that behavior.
     """
     if amount < Decimal("0"):
-        log.error("Monetary value validation failed: %s", amount)
+        logger.error("Monetary value validation failed: %s", amount)
         raise ValueError("Amount must be zero or positive")
 
 
@@ -1120,7 +1184,7 @@ def persist_context(context: RuntimeContext) -> None:
         context.workbook,
         destination=context.settings.data_file,
     )
-    log.info("Persisted workbook '%s'", context.settings.data_file)
+    logger.info("Persisted workbook '%s'", context.settings.data_file)
 
 
 def refresh_context(context: RuntimeContext) -> RuntimeContext:
@@ -1142,7 +1206,7 @@ def refresh_context(context: RuntimeContext) -> RuntimeContext:
     is produced, any cached data from the previous context is discarded.
     """
     workbook = data_manager.refresh_workbook(context.settings.data_file)
-    log.info("Reloaded workbook '%s'", context.settings.data_file)
+    logger.info("Reloaded workbook '%s'", context.settings.data_file)
     return RuntimeContext(settings=context.settings, workbook=workbook)
 
 
@@ -1163,31 +1227,34 @@ def validate_credit_sale_link(transaction: data_manager.TransactionRow) -> None:
     cash sale as credit.
     """
     if transaction.transaction_type != TransactionType.SALE.value:
-        log.error(
+        logger.error(
             "Credit payment validation failed: transaction '%s' is not a sale",
             transaction.transaction_id,
         )
-        raise BusinessRuleViolation("Credit payments must reference a SALE transaction")
+        raise BusinessRuleViolation(
+            "Credit payments must reference a SALE transaction")
     if transaction.payment_type != PaymentType.ON_CREDIT.value:
-        log.error(
+        logger.error(
             "Credit payment validation failed: transaction '%s' payment type is '%s'",
             transaction.transaction_id,
             transaction.payment_type,
         )
         raise BusinessRuleViolation("Linked sale is not recorded as credit")
     if transaction.total_revenue > Decimal("0"):
-        log.error(
+        logger.error(
             "Credit payment validation failed: transaction '%s' already reports revenue",
             transaction.transaction_id,
         )
-        raise BusinessRuleViolation("Linked credit sale already reports revenue")
+        raise BusinessRuleViolation(
+            "Linked credit sale already reports revenue")
     if transaction.linked_transaction_id is not None:
-        log.error(
+        logger.error(
             "Credit payment validation failed: transaction '%s' already links to '%s'",
             transaction.transaction_id,
             transaction.linked_transaction_id,
         )
-        raise BusinessRuleViolation("Linked sale already references another transaction")
+        raise BusinessRuleViolation(
+            "Linked sale already references another transaction")
 
 
 def validate_void_target(transaction: data_manager.TransactionRow) -> None:
@@ -1206,10 +1273,11 @@ def validate_void_target(transaction: data_manager.TransactionRow) -> None:
     settlements. Attempting to void these entries surfaces a domain error.
     """
     if transaction.transaction_type == TransactionType.VOID.value:
-        log.error("Cannot void transaction '%s' because it is already a void", transaction.transaction_id)
+        logger.error("Cannot void transaction '%s' because it is already a void",
+                     transaction.transaction_id)
         raise BusinessRuleViolation("Cannot void a VOID transaction")
     if transaction.transaction_type == TransactionType.CREDIT_PAYMENT.value:
-        log.error(
+        logger.error(
             "Cannot void transaction '%s' because it is a credit payment",
             transaction.transaction_id,
         )
