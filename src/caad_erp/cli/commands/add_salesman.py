@@ -3,17 +3,15 @@ import typing as t
 
 from caad_erp import core_logic
 
-from ..command_spec import CommandSpec
+from ..command_spec import CommandSpec, SubparserFactory
 
 
-def register_add_salesman_command(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> CommandSpec:
+def register_add_salesman_command() -> CommandSpec:
     """Register the parser and executor for ``add-salesman``."""
     name = "add-salesman"
     help_text = "Register a new salesman in the Salesmen sheet."
 
-    def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
+    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--salesman-id", required=True)
         parser.add_argument("--salesman-name", required=True)

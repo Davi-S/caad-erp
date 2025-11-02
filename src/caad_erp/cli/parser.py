@@ -42,15 +42,15 @@ def register_write_commands(
 ) -> t.Dict[str, CommandSpec]:
     """Declare mutating CLI commands such as sales and restocks."""
     specs = {
-        "add-product": commands.register_add_product_command(subparsers),
-        "add-salesman": commands.register_add_salesman_command(subparsers),
-        "deactivate-product": commands.register_deactivate_product_command(subparsers),
-        "deactivate-salesman": commands.register_deactivate_salesman_command(subparsers),
-        "sell": commands.register_sell_command(subparsers),
-        "restock": commands.register_restock_command(subparsers),
-        "write-off": commands.register_write_off_command(subparsers),
-        "pay-debt": commands.register_pay_debt_command(subparsers),
-        "void": commands.register_void_command(subparsers),
+        "add-product": commands.register_add_product_command(),
+        "add-salesman": commands.register_add_salesman_command(),
+        "deactivate-product": commands.register_deactivate_product_command(),
+        "deactivate-salesman": commands.register_deactivate_salesman_command(),
+        "sale": commands.register_sale_command(),
+        "restock": commands.register_restock_command(),
+        "write-off": commands.register_write_off_command(),
+        "pay-debt": commands.register_pay_debt_command(),
+        "void": commands.register_void_command(),
     }
     for spec in specs.values():
         spec.register(subparsers)
@@ -62,10 +62,10 @@ def register_read_commands(
 ) -> t.Dict[str, CommandSpec]:
     """Declare read-only CLI commands such as reports."""
     specs = {
-        "stock": commands.register_stock_command(subparsers),
-        "profit": commands.register_profit_command(subparsers),
-        "debts": commands.register_debts_command(subparsers),
-        "log": commands.register_log_command(subparsers),
+        "stock": commands.register_stock_command(),
+        "profit": commands.register_profit_command(),
+        "debts": commands.register_debts_command(),
+        "log": commands.register_log_command(),
     }
     for spec in specs.values():
         spec.register(subparsers)

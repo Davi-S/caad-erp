@@ -2,18 +2,16 @@ import argparse
 
 from caad_erp import core_logic
 
-from ..command_spec import CommandSpec
+from ..command_spec import CommandSpec, SubparserFactory
 
 
-def register_deactivate_product_command(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> CommandSpec:
+def register_deactivate_product_command() -> CommandSpec:
     """Register the parser and executor for ``deactivate-product``."""
 
     name = "deactivate-product"
     help_text = "Mark an existing product as inactive."
 
-    def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
+    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--product-id", required=True)
         parser.set_defaults(command=name)

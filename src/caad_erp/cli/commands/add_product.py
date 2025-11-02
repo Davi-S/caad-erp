@@ -4,17 +4,15 @@ from decimal import Decimal
 
 from caad_erp import core_logic
 
-from ..command_spec import CommandSpec
+from ..command_spec import CommandSpec, SubparserFactory
 
 
-def register_add_product_command(
-    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
-) -> CommandSpec:
+def register_add_product_command() -> CommandSpec:
     """Register the parser and executor for ``add-product``."""
     name = "add-product"
     help_text = "Register a new product in the Products sheet."
 
-    def registrar(action: argparse._SubParsersAction[argparse.ArgumentParser]) -> argparse.ArgumentParser:
+    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--product-id", required=True)
         parser.add_argument("--product-name", required=True)

@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable, Iterator
 from unittest.mock import Mock
+from caad_erp.cli import SubparserFactory
 
 import pytest
 
@@ -174,7 +175,7 @@ def cli_parser() -> argparse.ArgumentParser:
 @pytest.fixture
 def subparsers_action(
     cli_parser: argparse.ArgumentParser,
-) -> t.Callable[..., argparse.ArgumentParser]:
+) -> SubparserFactory:
     """Return the subparser action used to register commands."""
 
     return cli_parser.add_subparsers(dest="command")
@@ -192,7 +193,7 @@ def command_table_entry() -> tuple[str, cli.CommandSpec]:
         return 0
 
     def register(
-        subparsers: t.Callable[..., argparse.ArgumentParser],
+        subparsers: SubparserFactory,
     ) -> argparse.ArgumentParser:
         return subparsers.add_parser("catalog-test")
 
