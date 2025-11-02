@@ -567,3 +567,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return exit_code
     except Exception as error:  # pragma: no cover - centralized error handler tested separately
         return handle_cli_error(error)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
