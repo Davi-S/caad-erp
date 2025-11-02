@@ -100,7 +100,7 @@ def create_master_workbook(
     default_salesman_template: Mapping[str, object] = DEFAULT_SALESMAN,
     overwrite: bool = False,
 ) -> Path:
-    """Create the Lounge ERP master workbook at ``destination``.
+    """Create the CAAD ERP master workbook at ``destination``.
 
     Parameters are overridable to facilitate testing. When ``overwrite`` is
     ``False`` (the default) this function raises ``FileExistsError`` if the
@@ -159,7 +159,7 @@ def run_from_config(config_path: Path, *, overwrite: bool = False) -> Path:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse CLI arguments for the setup script."""
 
-    parser = argparse.ArgumentParser(description="Initialize Lounge ERP data file")
+    parser = argparse.ArgumentParser(description="Initialize CAAD ERP data file")
     parser.add_argument(
         "--config",
         default=CONFIG_FILE,
@@ -179,7 +179,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     config_path = Path(args.config).expanduser().resolve()
 
-    print("--- Lounge ERP Setup Script ---")
+    print("--- CAAD ERP Setup Script ---")
     print(f"Using configuration: {config_path}")
 
     try:

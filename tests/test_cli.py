@@ -48,8 +48,8 @@ def test_build_parser_sets_program_metadata():
     """build_parser should set user-facing program metadata."""
 
     parser = cli.build_parser()
-    assert parser.prog == "lounge-cli"
-    assert "Lounge" in (parser.description or "")
+    assert parser.prog == "caad-erp-cli"
+    assert "Command-line tools for the CAAD ERP workbook." in (parser.description or "")
 
 
 def test_configure_subcommands_registers_write_commands(cli_parser):
