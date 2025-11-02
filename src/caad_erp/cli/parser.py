@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 def build_parser() -> argparse.ArgumentParser:
     """Construct the top-level CLI argument parser."""
     parser = argparse.ArgumentParser(
-        prog="lounge-cli",
-        description="Command-line tools for the Lounge ERP workbook.",
+        prog="caad-erp-cli",
+        description="Command-line tools for the CAAD ERP workbook.",
     )
     parser.add_argument(
         "--config",

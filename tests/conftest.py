@@ -168,7 +168,7 @@ def runtime_context(config_file: Path) -> core_logic.RuntimeContext:
 def cli_parser() -> argparse.ArgumentParser:
     """Return a fresh CLI parser instance for tests."""
 
-    return argparse.ArgumentParser(prog="lounge-cli", description="Lounge CLI")
+    return argparse.ArgumentParser(prog="caad-erp-cli", description="CAAD ERP CLI")
 
 
 @pytest.fixture

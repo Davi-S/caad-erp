@@ -293,7 +293,7 @@ def load_runtime_context(config_path: Optional[Path] = None) -> RuntimeContext:
 def ensure_schema_version(context: RuntimeContext) -> None:
     """Validate workbook compatibility before mutating state.
 
-    The Lounge ERP workbook evolves alongside the source code. This guard
+    The CAAD ERP workbook evolves alongside the source code. This guard
     ensures the version stored in ``config.ini`` matches the application-level
     ``EXPECTED_SCHEMA_VERSION`` before later routines perform inserts.
 
