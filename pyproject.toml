@@ -24,4 +24,4 @@ web = [
 ]
 
 [project.scripts]
-# caad-erp-cli = "caad-erp.cli:main"
+caad-erp-cli = "caad_erp.cli:main"
