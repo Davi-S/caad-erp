@@ -10,15 +10,14 @@ import logging
 import typing as t
 from decimal import Decimal, InvalidOperation
 
-from caad_erp import dal
+from caad_erp import dal, exceptions
 
-from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
-from .runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
+from . import runtime
 
 logger = logging.getLogger(__name__)
 
 
-def _ensure_products_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
+def _ensure_products_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
     """Populate the product cache bucket on demand.
 
     By storing both the full list and derivative structures, higher-level
@@ -35,7 +34,7 @@ def _ensure_products_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
             computations when available.
     """
 
-    bucket = _get_cache_bucket(context, "products")
+    bucket = runtime._get_cache_bucket(context, "products")
     if "all" not in bucket:
         all_products = list(dal.iter_products(context.workbook))
         bucket["all"] = all_products
@@ -51,7 +50,7 @@ def _ensure_products_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
     return bucket
 
 
-def list_products(context: RuntimeContext, *, include_inactive: bool = False) -> t.List[dal.ProductRow]:
+def list_products(context: runtime.RuntimeContext, *, include_inactive: bool = False) -> t.List[dal.ProductRow]:
     """Return cached product rows optionally filtered by active status.
 
     The helper interrogates the memoized product bucket so the workbook is not
@@ -74,7 +73,7 @@ def list_products(context: RuntimeContext, *, include_inactive: bool = False) ->
     return list(source)
 
 
-def get_product(context: RuntimeContext, product_id: str) -> dal.ProductRow:
+def get_product(context: runtime.RuntimeContext, product_id: str) -> dal.ProductRow:
     """Resolve a product record by its identifier.
 
     The lookup leverages the product cache for near constant-time access and
@@ -97,12 +96,12 @@ def get_product(context: RuntimeContext, product_id: str) -> dal.ProductRow:
         return cache["by_id"][product_id]
     except KeyError as exc:
         logger.warning("Product lookup failed for id '%s'", product_id)
-        raise MissingReferenceError(
+        raise exceptions.MissingReferenceError(
             f"Unknown product id: {product_id}") from exc
 
 
 def update_product(
-    context: RuntimeContext,
+    context: runtime.RuntimeContext,
     product_id: str,
     *,
     product_name: t.Optional[str] = None,
@@ -158,10 +157,10 @@ def update_product(
             context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
         logger.warning("Product update failed for id '%s'", normalized_id)
-        raise MissingReferenceError(
+        raise exceptions.MissingReferenceError(
             f"Unknown product id: {normalized_id}") from exc
 
-    _invalidate_cache(context, "products")
+    runtime._invalidate_cache(context, "products")
     updated = get_product(context, normalized_id)
     logger.info(
         "Updated product '%s' fields: %s",
@@ -172,7 +171,7 @@ def update_product(
 
 
 def add_product(
-    context: RuntimeContext,
+    context: runtime.RuntimeContext,
     *,
     product_id: str,
     product_name: str,
@@ -226,7 +225,7 @@ def add_product(
     if normalized_id in bucket["by_id"]:
         logger.error(
             "Product creation rejected: duplicate id '%s'", normalized_id)
-        raise BusinessRuleViolation(
+        raise exceptions.BusinessRuleViolation(
             f"Product '{normalized_id}' already exists")
 
     record = dal.ProductRow(
@@ -237,7 +236,7 @@ def add_product(
     )
 
     dal.append_product(context.workbook, record)
-    _invalidate_cache(context, "products")
+    runtime._invalidate_cache(context, "products")
     logger.info(
         "Registered product '%s' (%s) with sell price %s",
         record.product_id,
