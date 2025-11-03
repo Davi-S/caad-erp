@@ -826,7 +826,7 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
     monkeypatch.setattr(
         bll.transactions, "validate_void_target", validate_void_target)
     monkeypatch.setattr(
-        bll.transactions, "build_void_reversal", build_void_reversal)
+        bll.transactions, "build_void_transaction", build_void_reversal)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(bll.transactions, "record_sale", record_sale)
 
