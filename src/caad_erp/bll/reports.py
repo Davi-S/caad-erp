@@ -10,13 +10,12 @@ import logging
 import typing as t
 from decimal import Decimal
 
-from .runtime import RuntimeContext
-from .transactions import _ensure_transactions_cache
+from . import runtime, transactions
 
 logger = logging.getLogger(__name__)
 
 
-def calculate_inventory(context: RuntimeContext) -> t.Dict[str, Decimal]:
+def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, Decimal]:
     """Compute inventory balances from the transaction logger.
 
     The routine iterates over the cached transaction list, ignoring entries
@@ -33,7 +32,7 @@ def calculate_inventory(context: RuntimeContext) -> t.Dict[str, Decimal]:
             derived by summing ``quantity_change`` across transactions.
     """
     inventory: t.Dict[str, Decimal] = {}
-    for transaction in _ensure_transactions_cache(context)["all"]:
+    for transaction in transactions._ensure_transactions_cache(context)["all"]:
         if transaction.product_id is None:
             continue
         current = inventory.get(transaction.product_id, Decimal("0"))
@@ -44,7 +43,7 @@ def calculate_inventory(context: RuntimeContext) -> t.Dict[str, Decimal]:
     return inventory
 
 
-def calculate_profit_summary(context: RuntimeContext) -> t.Dict[str, Decimal]:
+def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, Decimal]:
     """Produce aggregate revenue, cost, and profit metrics.
 
     Aggregate values are derived from cached transactions so repeated calls do
@@ -62,7 +61,7 @@ def calculate_profit_summary(context: RuntimeContext) -> t.Dict[str, Decimal]:
     """
     total_revenue = Decimal("0")
     total_cost = Decimal("0")
-    for transaction in _ensure_transactions_cache(context)["all"]:
+    for transaction in transactions._ensure_transactions_cache(context)["all"]:
         total_revenue += transaction.total_revenue
         total_cost += transaction.total_cost
     profit = total_revenue + total_cost

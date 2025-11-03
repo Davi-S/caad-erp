@@ -9,15 +9,14 @@ invariants and active status checks.
 import logging
 import typing as t
 
-from caad_erp import dal
+from caad_erp import dal, exceptions
 
-from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
-from .runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
+from . import runtime
 
 logger = logging.getLogger(__name__)
 
 
-def _ensure_salesmen_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
+def _ensure_salesmen_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
     """Populate the salesman cache bucket on demand.
 
     The bucket mirrors the structure used for products so public APIs can rely
@@ -32,7 +31,7 @@ def _ensure_salesmen_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
             and a ``by_id`` lookup dictionary.
     """
 
-    bucket = _get_cache_bucket(context, "salesmen")
+    bucket = runtime._get_cache_bucket(context, "salesmen")
     if "all" not in bucket:
         all_salesmen = list(dal.iter_salesmen(context.workbook))
         bucket["all"] = all_salesmen
@@ -48,7 +47,7 @@ def _ensure_salesmen_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
     return bucket
 
 
-def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) -> t.List[dal.SalesmanRow]:
+def list_salesmen(context: runtime.RuntimeContext, *, include_inactive: bool = False) -> t.List[dal.SalesmanRow]:
     """Return cached salesman rows optionally filtered by active status.
 
     Like :func:`list_products`, this helper operates on the memoized salesman
@@ -70,7 +69,7 @@ def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) ->
     return list(source)
 
 
-def get_salesman(context: RuntimeContext, salesman_id: str) -> dal.SalesmanRow:
+def get_salesman(context: runtime.RuntimeContext, salesman_id: str) -> dal.SalesmanRow:
     """Resolve a salesman record by its identifier.
 
     The lookup uses the salesman cache, ensuring repeated calls do not revisit
@@ -93,12 +92,12 @@ def get_salesman(context: RuntimeContext, salesman_id: str) -> dal.SalesmanRow:
         return cache["by_id"][salesman_id]
     except KeyError as exc:
         logger.warning("Salesman lookup failed for id '%s'", salesman_id)
-        raise MissingReferenceError(
+        raise exceptions.MissingReferenceError(
             f"Unknown salesman id: {salesman_id}") from exc
 
 
 def add_salesman(
-    context: RuntimeContext,
+    context: runtime.RuntimeContext,
     *,
     salesman_id: str,
     salesman_name: str,
@@ -136,7 +135,7 @@ def add_salesman(
     if normalized_id in bucket["by_id"]:
         logger.error(
             "Salesman creation rejected: duplicate id '%s'", normalized_id)
-        raise BusinessRuleViolation(
+        raise exceptions.BusinessRuleViolation(
             f"Salesman '{normalized_id}' already exists")
 
     record = dal.SalesmanRow(
@@ -146,14 +145,14 @@ def add_salesman(
     )
 
     dal.append_salesman(context.workbook, record)
-    _invalidate_cache(context, "salesmen")
+    runtime._invalidate_cache(context, "salesmen")
     logger.info("Registered salesman '%s' (%s)",
                 record.salesman_id, record.salesman_name)
     return record
 
 
 def update_salesman(
-    context: RuntimeContext,
+    context: runtime.RuntimeContext,
     salesman_id: str,
     *,
     salesman_name: t.Optional[str] = None,
@@ -191,10 +190,10 @@ def update_salesman(
             context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
         logger.warning("Salesman update failed for id '%s'", normalized_id)
-        raise MissingReferenceError(
+        raise exceptions.MissingReferenceError(
             f"Unknown salesman id: {normalized_id}") from exc
 
-    _invalidate_cache(context, "salesmen")
+    runtime._invalidate_cache(context, "salesmen")
     updated = get_salesman(context, normalized_id)
     logger.info(
         "Updated salesman '%s' fields: %s",

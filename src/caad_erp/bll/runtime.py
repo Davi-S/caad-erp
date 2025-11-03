@@ -6,27 +6,25 @@ management, and in-memory caching. Public helpers expose a single
 transaction routines to guarantee consistent state sharing.
 """
 
+import dataclasses
 import logging
 import typing as t
-from dataclasses import dataclass, field
 from pathlib import Path
 
 from openpyxl.workbook import Workbook
 
-from caad_erp import dal
-
-from caad_erp.constants import EXPECTED_SCHEMA_VERSION
+from caad_erp import constants, dal
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class RuntimeContext:
     """Container for configuration and workbook references used by the BLL."""
 
     settings: dal.ConfigSettings
     workbook: Workbook
-    _cache: t.Dict[str, t.Dict[str, t.Any]] = field(
+    _cache: t.Dict[str, t.Dict[str, t.Any]] = dataclasses.field(
         default_factory=dict, repr=False, compare=False)
 
 
@@ -169,14 +167,14 @@ def ensure_schema_version(context: RuntimeContext) -> None:
         RuntimeError: If the schema version declared in the configuration does
             not match ``EXPECTED_SCHEMA_VERSION``.
     """
-    if context.settings.schema_version != EXPECTED_SCHEMA_VERSION:
+    if context.settings.schema_version != constants.EXPECTED_SCHEMA_VERSION:
         logger.error(
             "Workbook schema mismatch: expected %s, found %s",
-            EXPECTED_SCHEMA_VERSION,
+            constants.EXPECTED_SCHEMA_VERSION,
             context.settings.schema_version,
         )
         raise RuntimeError(
-            f"Workbook schema mismatch: expected {EXPECTED_SCHEMA_VERSION}, found {context.settings.schema_version}"
+            f"Workbook schema mismatch: expected {constants.EXPECTED_SCHEMA_VERSION}, found {context.settings.schema_version}"
         )
 
     logger.debug("Schema version '%s' validated",
