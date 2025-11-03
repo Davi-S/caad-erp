@@ -92,7 +92,8 @@ def test_run_sale_invokes_bll(runtime_context, monkeypatch):
         total_revenue=Decimal("2.00"),
         payment_type=constants.PaymentType.CASH,
     )
-    monkeypatch.setattr(cli.commands.sale, "translate_sale", lambda value: command)
+    monkeypatch.setattr(cli.commands.sale, "translate_sale",
+                        lambda value: command)
     called = {}
 
     def fake_record(context: bll.RuntimeContext, cmd: bll.SaleCommand) -> None:

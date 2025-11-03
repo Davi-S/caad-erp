@@ -67,8 +67,10 @@ def test_run_void_invokes_bll(runtime_context, monkeypatch):
 
     # Arrange
     args = argparse.Namespace()
-    command = bll.VoidCommand(linked_transaction_id="T1", replacement_command=None)
-    monkeypatch.setattr(cli.commands.void, "translate_void", lambda value: command)
+    command = bll.VoidCommand(
+        linked_transaction_id="T1", replacement_command=None)
+    monkeypatch.setattr(cli.commands.void, "translate_void",
+                        lambda value: command)
     called = {}
 
     def fake_record(context: bll.RuntimeContext, cmd: bll.VoidCommand) -> None:

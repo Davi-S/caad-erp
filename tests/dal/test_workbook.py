@@ -41,7 +41,8 @@ def test_save_workbook_persists_changes(master_workbook_path):
     dal.save_workbook(workbook, master_workbook_path)
     reloaded = dal.open_workbook(master_workbook_path)
     values = list(
-        reloaded[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True)
+        reloaded[constants.SheetName.PRODUCTS.value].iter_rows(
+            min_row=2, values_only=True)
     )
 
     # Assert
@@ -60,7 +61,8 @@ def test_save_workbook_with_destination_creates_copy(master_workbook_path, tmp_p
     # Act
     dal.save_workbook(workbook, destination=copy_path)
     copy = openpyxl.load_workbook(copy_path)
-    rows = list(copy[constants.SheetName.SALESMEN.value].iter_rows(min_row=2, values_only=True))
+    rows = list(copy[constants.SheetName.SALESMEN.value].iter_rows(
+        min_row=2, values_only=True))
 
     # Assert
     assert ("S2", "Jordan", True) in rows
@@ -78,7 +80,8 @@ def test_refresh_workbook_returns_new_instance(master_workbook_path):
     # Act
     refreshed = dal.refresh_workbook(master_workbook_path)
     values = list(
-        refreshed[constants.SheetName.PRODUCTS.value].iter_rows(min_row=2, values_only=True)
+        refreshed[constants.SheetName.PRODUCTS.value].iter_rows(
+            min_row=2, values_only=True)
     )
 
     # Assert

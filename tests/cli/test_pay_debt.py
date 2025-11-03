@@ -87,7 +87,8 @@ def test_run_pay_debt_invokes_bll(runtime_context, monkeypatch):
         total_revenue=Decimal("6"),
         payment_type=constants.PaymentType.PIX,
     )
-    monkeypatch.setattr(cli.commands.pay_debt, "translate_pay_debt", lambda value: command)
+    monkeypatch.setattr(cli.commands.pay_debt,
+                        "translate_pay_debt", lambda value: command)
     called = {}
 
     def fake_record(context: bll.RuntimeContext, cmd: bll.CreditPaymentCommand) -> None:

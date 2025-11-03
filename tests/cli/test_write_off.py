@@ -81,7 +81,8 @@ def test_run_write_off_invokes_bll(runtime_context, monkeypatch):
         salesman_id="S-DEFAULT",
         quantity=Decimal("1"),
     )
-    monkeypatch.setattr(cli.commands.write_off, "translate_write_off", lambda value: command)
+    monkeypatch.setattr(cli.commands.write_off,
+                        "translate_write_off", lambda value: command)
     called = {}
 
     def fake_record(context: bll.RuntimeContext, cmd: bll.WriteOffCommand) -> None:

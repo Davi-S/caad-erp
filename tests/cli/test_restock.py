@@ -87,7 +87,8 @@ def test_run_restock_invokes_bll(runtime_context, monkeypatch):
         quantity=Decimal("5"),
         total_cost=Decimal("10"),
     )
-    monkeypatch.setattr(cli.commands.restock, "translate_restock", lambda value: command)
+    monkeypatch.setattr(cli.commands.restock,
+                        "translate_restock", lambda value: command)
     called = {}
 
     def fake_record(context: bll.RuntimeContext, cmd: bll.RestockCommand) -> None:

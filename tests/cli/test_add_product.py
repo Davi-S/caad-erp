@@ -87,7 +87,8 @@ def test_run_add_product_invokes_bll(runtime_context, monkeypatch):
         called["context"] = context
         called["data"] = data
 
-    monkeypatch.setattr(cli.bll, "add_product", fake_add_product, raising=False)
+    monkeypatch.setattr(cli.bll, "add_product",
+                        fake_add_product, raising=False)
 
     # Act
     result = cli.run_add_product(runtime_context, args)

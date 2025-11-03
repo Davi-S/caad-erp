@@ -73,7 +73,8 @@ def test_build_parser_sets_program_metadata():
 
     # Assert
     assert parser.prog == "caad-erp-cli"
-    assert "Command-line tools for the CAAD ERP workbook." in (parser.description or "")
+    assert "Command-line tools for the CAAD ERP workbook." in (
+        parser.description or "")
 
 
 def test_configure_subcommands_registers_write_commands(cli_parser):
@@ -254,8 +255,10 @@ def test_build_command_table_detects_duplicate_commands():
 
     # Arrange
     specs = [
-        cli.CommandSpec("alpha", "A", lambda s: s.add_parser("alpha"), lambda c, a: 0),
-        cli.CommandSpec("alpha", "Duplicate", lambda s: s.add_parser("alpha"), lambda c, a: 0),
+        cli.CommandSpec("alpha", "A", lambda s: s.add_parser(
+            "alpha"), lambda c, a: 0),
+        cli.CommandSpec("alpha", "Duplicate",
+                        lambda s: s.add_parser("alpha"), lambda c, a: 0),
     ]
 
     # Act / Assert
@@ -336,10 +339,13 @@ def test_main_executes_specified_command(monkeypatch, runtime_context):
 
     # Arrange
     parser = _stub_parser(command="sale")
-    command_table = {"sale": cli.CommandSpec("sale", "help", lambda _: parser, lambda *_: 0)}
+    command_table = {"sale": cli.CommandSpec(
+        "sale", "help", lambda _: parser, lambda *_: 0)}
     monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
-    monkeypatch.setattr(cli.parser, "configure_subcommands", lambda _: command_table)
-    monkeypatch.setattr(cli.parser, "load_runtime_context", lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "configure_subcommands",
+                        lambda _: command_table)
+    monkeypatch.setattr(cli.parser, "load_runtime_context",
+                        lambda path=None: runtime_context)
     called = {}
 
     def fake_dispatch(
@@ -351,7 +357,8 @@ def test_main_executes_specified_command(monkeypatch, runtime_context):
         return 0
 
     monkeypatch.setattr(cli.parser, "dispatch_command", fake_dispatch)
-    monkeypatch.setattr(cli.parser, "persist_workbook", lambda ctx: called.setdefault("persisted", ctx))
+    monkeypatch.setattr(cli.parser, "persist_workbook",
+                        lambda ctx: called.setdefault("persisted", ctx))
 
     # Act
     exit_code = cli.main(["sale"])
@@ -368,10 +375,13 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
 
     # Arrange
     parser = _stub_parser(command="sale")
-    command_table = {"sale": cli.CommandSpec("sale", "help", lambda _: parser, lambda *_: 0)}
+    command_table = {"sale": cli.CommandSpec(
+        "sale", "help", lambda _: parser, lambda *_: 0)}
     monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
-    monkeypatch.setattr(cli.parser, "configure_subcommands", lambda _: command_table)
-    monkeypatch.setattr(cli.parser, "load_runtime_context", lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "configure_subcommands",
+                        lambda _: command_table)
+    monkeypatch.setattr(cli.parser, "load_runtime_context",
+                        lambda path=None: runtime_context)
 
     def fake_dispatch(*_: object) -> int:
         raise exceptions.BusinessRuleViolation("invalid")
@@ -380,7 +390,8 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
     monkeypatch.setattr(
         cli.parser,
         "persist_workbook",
-        lambda _: iter(()).throw(AssertionError("should not persist")),  # type: ignore[arg-type]
+        lambda _: iter(()).throw(AssertionError(
+            "should not persist")),  # type: ignore[arg-type]
     )
     handled = {}
 
@@ -403,10 +414,13 @@ def test_main_persists_on_success(monkeypatch, runtime_context):
 
     # Arrange
     parser = _stub_parser(command="profit")
-    command_table = {"profit": cli.CommandSpec("profit", "help", lambda _: parser, lambda *_: 0)}
+    command_table = {"profit": cli.CommandSpec(
+        "profit", "help", lambda _: parser, lambda *_: 0)}
     monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
-    monkeypatch.setattr(cli.parser, "configure_subcommands", lambda _: command_table)
-    monkeypatch.setattr(cli.parser, "load_runtime_context", lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "configure_subcommands",
+                        lambda _: command_table)
+    monkeypatch.setattr(cli.parser, "load_runtime_context",
+                        lambda path=None: runtime_context)
     monkeypatch.setattr(cli.parser, "dispatch_command", lambda *_: 0)
     persisted = {}
 
