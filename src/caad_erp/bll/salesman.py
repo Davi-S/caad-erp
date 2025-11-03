@@ -1,3 +1,11 @@
+"""Salesman management routines for the business logic layer.
+
+This module wraps raw workbook operations with input validation, cache
+management, and friendly dataclass returns. Centralized logic keeps
+command handlers focused on parsing user intent while this module enforces
+invariants and active status checks.
+"""
+
 import logging
 import typing as t
 

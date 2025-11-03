@@ -1,3 +1,5 @@
+"""Command specification definitions for the CLI sub-parser layer."""
+
 import argparse
 import typing as t
 from dataclasses import dataclass

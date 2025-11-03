@@ -1,3 +1,11 @@
+"""Product-centric business logic built atop the data access layer.
+
+The module caches workbook queries, exposes CRUD-like helpers for individual
+products, and centralizes input validation. Functions prefer ``RuntimeContext``
+objects to ensure callers operate on pre-validated configuration and share a
+memoized cache across requests.
+"""
+
 import logging
 import typing as t
 from decimal import Decimal, InvalidOperation
