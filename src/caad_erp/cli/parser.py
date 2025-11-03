@@ -1,3 +1,10 @@
+"""Argument parsing utilities for the CAAD ERP command-line interface.
+
+This module wires the public CLI surface by constructing the root parser,
+registering each command specification, dispatching execution, and translating
+low-level exceptions into exit codes suitable for shell automation.
+"""
+
 import argparse
 import logging
 import typing as t
