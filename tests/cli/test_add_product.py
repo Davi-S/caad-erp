@@ -5,21 +5,30 @@ from caad_erp import cli, bll
 
 
 def test_register_add_product_command_returns_spec():
-    """register_add_product_command should return a CommandSpec."""
+    """Given the add-product registration When register_add_product_command runs Then a command spec returns."""
 
+    # Arrange
+    # No additional setup required for registration.
+
+    # Act
     spec = cli.register_add_product_command()
+
+    # Assert
     assert spec.name == "add-product"
     assert spec.help_text
     assert callable(spec.execute)
 
 
 def test_register_add_product_command_configures_arguments():
-    """register_add_product_command should define the necessary arguments."""
+    """Given the add-product parser When arguments are parsed Then the namespace contains expected values."""
 
+    # Arrange
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
     spec = cli.register_add_product_command()
     spec.register(subparsers)
+
+    # Act
     namespace = parser.parse_args(
         [
             "add-product",
@@ -32,6 +41,8 @@ def test_register_add_product_command_configures_arguments():
             "--inactive",
         ]
     )
+
+    # Assert
     assert namespace.product_id == "P1001"
     assert namespace.product_name == "Chocolate Bar"
     assert namespace.sell_price == "3.50"
@@ -39,15 +50,20 @@ def test_register_add_product_command_configures_arguments():
 
 
 def test_translate_add_product_returns_payload():
-    """translate_add_product should produce a DAL-friendly payload."""
+    """Given CLI arguments When translate_add_product executes Then a DAL payload dictionary is returned."""
 
+    # Arrange
     args = argparse.Namespace(
         product_id="P1001",
         product_name="Chocolate Bar",
         sell_price="3.50",
         inactive=False,
     )
+
+    # Act
     payload = cli.translate_add_product(args)
+
+    # Assert
     assert payload == {
         "product_id": "P1001",
         "product_name": "Chocolate Bar",
@@ -57,22 +73,26 @@ def test_translate_add_product_returns_payload():
 
 
 def test_run_add_product_invokes_bll(runtime_context, monkeypatch):
-    """run_add_product should delegate to the business logic layer."""
+    """Given parsed arguments When run_add_product executes Then the BLL add_product is invoked."""
 
+    # Arrange
     args = argparse.Namespace()
     payload = {"product_id": "P1001"}
-
-    monkeypatch.setattr(cli.commands.add_product,
-                        "translate_add_product", lambda value: payload)
+    monkeypatch.setattr(
+        cli.commands.add_product, "translate_add_product", lambda value: payload
+    )
     called: dict[str, object] = {}
 
     def fake_add_product(context: bll.RuntimeContext, **data: object) -> None:
         called["context"] = context
         called["data"] = data
 
-    monkeypatch.setattr(cli.bll, "add_product",
-                        fake_add_product, raising=False)
+    monkeypatch.setattr(cli.bll, "add_product", fake_add_product, raising=False)
+
+    # Act
     result = cli.run_add_product(runtime_context, args)
+
+    # Assert
     assert result == 0
     assert called["context"] is runtime_context
     assert called["data"] == payload
