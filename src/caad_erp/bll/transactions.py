@@ -13,13 +13,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from caad_erp import data_manager
+from caad_erp import dal
 from caad_erp.constants import PaymentType, TransactionType
 from caad_erp.exceptions import *
 
 from .products import get_product
 from .runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
-from .salesman import get_salesman
+from .salesmen import get_salesman
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ def _ensure_transactions_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
     bucket = _get_cache_bucket(context, "transactions")
     if "all" not in bucket:
         all_transactions = list(
-            data_manager.iter_transactions(context.workbook))
+            dal.iter_transactions(context.workbook))
         bucket["all"] = all_transactions
         bucket["by_id"] = {
             transaction.transaction_id: transaction for transaction in all_transactions}
@@ -181,7 +181,7 @@ def require_nonnegative_money(amount: Decimal) -> None:
         raise ValueError("Amount must be zero or positive")
 
 
-def list_transactions(context: RuntimeContext) -> t.List[data_manager.TransactionRow]:
+def list_transactions(context: RuntimeContext) -> t.List[dal.TransactionRow]:
     """Fetch the immutable transaction log from cache.
 
     The returned list is a shallow copy of the cached sequence so callers can
@@ -193,14 +193,14 @@ def list_transactions(context: RuntimeContext) -> t.List[data_manager.Transactio
             caches.
 
     Returns:
-        list[data_manager.TransactionRow]: Snapshot of the entire transaction log in
+        list[dal.TransactionRow]: Snapshot of the entire transaction log in
             workbook order.
     """
     cache = _ensure_transactions_cache(context)
     return list(cache["all"])
 
 
-def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manager.TransactionRow:
+def get_transaction(context: RuntimeContext, transaction_id: str) -> dal.TransactionRow:
     """Retrieve a transaction row by its primary identifier.
 
     Transactions are resolved from the cached ``by_id`` mapping and returned as
@@ -213,7 +213,7 @@ def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manage
         transaction_id (str): Transaction identifier from the log sheet.
 
     Returns:
-        data_manager.TransactionRow: Matching transaction dataclass fetched from cache.
+        dal.TransactionRow: Matching transaction dataclass fetched from cache.
 
     Raises:
         MissingReferenceError: If the log lacks the supplied identifier.
@@ -227,7 +227,7 @@ def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manage
             f"Unknown transaction id: {transaction_id}") from exc
 
 
-def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.TransactionRow:
+def record_sale(context: RuntimeContext, command: SaleCommand) -> dal.TransactionRow:
     """Validate and append a ``SALE`` transaction to the logger.
 
     The workflow ensures products and salesmen are active, enforces positive
@@ -243,7 +243,7 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
         command (SaleCommand): Structured intent describing the sale request.
 
     Returns:
-        data_manager.TransactionRow: Newly appended sale transaction.
+        dal.TransactionRow: Newly appended sale transaction.
 
     Raises:
         BusinessRuleViolation: If the referenced product or salesman is
@@ -276,7 +276,7 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
     transaction_id = generate_transaction_id(when=now)
     transaction = build_sale_transaction(
         command, transaction_id=transaction_id, timestamp=now)
-    data_manager.append_transaction(context.workbook, transaction)
+    dal.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     logger.info(
         "Recorded SALE transaction '%s' for product '%s' (quantity=%s, revenue=%s)",
@@ -288,7 +288,7 @@ def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.T
     return transaction
 
 
-def build_sale_transaction(command: SaleCommand, *, transaction_id: str, timestamp: datetime) -> data_manager.TransactionRow:
+def build_sale_transaction(command: SaleCommand, *, transaction_id: str, timestamp: datetime) -> dal.TransactionRow:
     """Materialize a :class:`SaleCommand` into a DAL transaction row.
 
     Args:
@@ -297,7 +297,7 @@ def build_sale_transaction(command: SaleCommand, *, transaction_id: str, timesta
         timestamp (datetime): Timestamp assigned to the transaction.
 
     Returns:
-        data_manager.TransactionRow: Row ready for persistence via the data
+        dal.TransactionRow: Row ready for persistence via the data
             layer.
 
     Quantities are stored as negative values to indicate stock depletion, and
@@ -306,7 +306,7 @@ def build_sale_transaction(command: SaleCommand, *, transaction_id: str, timesta
     representation.
     """
     quantity_change = -abs(command.quantity)
-    return data_manager.TransactionRow(
+    return dal.TransactionRow(
         transaction_id=transaction_id,
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.SALE.value,
@@ -321,7 +321,7 @@ def build_sale_transaction(command: SaleCommand, *, transaction_id: str, timesta
     )
 
 
-def record_restock(context: RuntimeContext, command: RestockCommand) -> data_manager.TransactionRow:
+def record_restock(context: RuntimeContext, command: RestockCommand) -> dal.TransactionRow:
     """Validate and append a ``RESTOCK`` transaction.
 
     Stock increases must specify positive quantities and nonnegative costs. The
@@ -335,7 +335,7 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
         command (RestockCommand): Structured restock intent.
 
     Returns:
-        data_manager.TransactionRow: Newly appended restock entry.
+        dal.TransactionRow: Newly appended restock entry.
 
     Raises:
         BusinessRuleViolation: If the targeted product is inactive.
@@ -361,7 +361,7 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     transaction_id = generate_transaction_id(when=now)
     transaction = build_restock_transaction(
         command, transaction_id=transaction_id, timestamp=now)
-    data_manager.append_transaction(context.workbook, transaction)
+    dal.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     logger.info(
         "Recorded RESTOCK transaction '%s' for product '%s' (quantity=%s, cost=%s)",
@@ -373,7 +373,7 @@ def record_restock(context: RuntimeContext, command: RestockCommand) -> data_man
     return transaction
 
 
-def build_restock_transaction(command: RestockCommand, *, transaction_id: str, timestamp: datetime) -> data_manager.TransactionRow:
+def build_restock_transaction(command: RestockCommand, *, transaction_id: str, timestamp: datetime) -> dal.TransactionRow:
     """Materialize a :class:`RestockCommand` into a DAL transaction row.
 
     Args:
@@ -382,7 +382,7 @@ def build_restock_transaction(command: RestockCommand, *, transaction_id: str, t
         timestamp (datetime): Timestamp assigned to the transaction.
 
     Returns:
-        data_manager.TransactionRow: Row ready for persistence via the data
+        dal.TransactionRow: Row ready for persistence via the data
             layer.
 
     Restocks add inventory, so the quantity is expressed as a positive value.
@@ -391,7 +391,7 @@ def build_restock_transaction(command: RestockCommand, *, transaction_id: str, t
     """
     quantity_change = abs(command.quantity)
     cost_value = -abs(command.total_cost)
-    return data_manager.TransactionRow(
+    return dal.TransactionRow(
         transaction_id=transaction_id,
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.RESTOCK.value,
@@ -406,7 +406,7 @@ def build_restock_transaction(command: RestockCommand, *, transaction_id: str, t
     )
 
 
-def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_manager.TransactionRow:
+def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> dal.TransactionRow:
     """Validate and append a ``WRITE_OFF`` transaction.
 
     Write-offs reduce inventory without affecting revenue or cost ledgers. The
@@ -419,7 +419,7 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
         command (WriteOffCommand): Structured write-off intent.
 
     Returns:
-        data_manager.TransactionRow: Newly appended write-off entry.
+        dal.TransactionRow: Newly appended write-off entry.
 
     Raises:
         BusinessRuleViolation: If the product is inactive.
@@ -444,7 +444,7 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
     transaction_id = generate_transaction_id(when=now)
     transaction = build_write_off_transaction(
         command, transaction_id=transaction_id, timestamp=now)
-    data_manager.append_transaction(context.workbook, transaction)
+    dal.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     logger.info(
         "Recorded WRITE_OFF transaction '%s' for product '%s' (quantity=%s)",
@@ -455,7 +455,7 @@ def record_write_off(context: RuntimeContext, command: WriteOffCommand) -> data_
     return transaction
 
 
-def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str, timestamp: datetime) -> data_manager.TransactionRow:
+def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str, timestamp: datetime) -> dal.TransactionRow:
     """Materialize a :class:`WriteOffCommand` into a DAL transaction row.
 
     Args:
@@ -464,7 +464,7 @@ def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str
         timestamp (datetime): Timestamp assigned to the transaction.
 
     Returns:
-        data_manager.TransactionRow: Row ready for persistence via the data
+        dal.TransactionRow: Row ready for persistence via the data
             layer.
 
     Write-offs reduce stock without touching revenue or cost columns. The
@@ -472,7 +472,7 @@ def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str
     monetary amounts.
     """
     quantity_change = -abs(command.quantity)
-    return data_manager.TransactionRow(
+    return dal.TransactionRow(
         transaction_id=transaction_id,
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.WRITE_OFF.value,
@@ -487,7 +487,7 @@ def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str
     )
 
 
-def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand) -> data_manager.TransactionRow:
+def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand) -> dal.TransactionRow:
     """Append a ``CREDIT_PAYMENT`` transaction linked to an outstanding sale.
 
     Before persisting, the routine verifies that the referenced sale truly
@@ -500,7 +500,7 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
         command (CreditPaymentCommand): Structured credit payment intent.
 
     Returns:
-        data_manager.TransactionRow: Newly appended credit payment entry.
+        dal.TransactionRow: Newly appended credit payment entry.
 
     Raises:
         BusinessRuleViolation: If the referenced sale is not eligible for
@@ -532,7 +532,7 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
         timestamp=now,
         product_id=linked_sale.product_id,
     )
-    data_manager.append_transaction(context.workbook, transaction)
+    dal.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     logger.info(
         "Recorded CREDIT_PAYMENT '%s' linked to '%s' (amount=%s)",
@@ -543,7 +543,7 @@ def record_credit_payment(context: RuntimeContext, command: CreditPaymentCommand
     return transaction
 
 
-def build_credit_payment_transaction(command: CreditPaymentCommand, *, transaction_id: str, timestamp: datetime, product_id: t.Optional[str] = None) -> data_manager.TransactionRow:
+def build_credit_payment_transaction(command: CreditPaymentCommand, *, transaction_id: str, timestamp: datetime, product_id: t.Optional[str] = None) -> dal.TransactionRow:
     """Materialize a :class:`CreditPaymentCommand` into a DAL transaction row.
 
     Args:
@@ -555,7 +555,7 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
             linked sale.
 
     Returns:
-        data_manager.TransactionRow: Row ready for persistence via the data
+        dal.TransactionRow: Row ready for persistence via the data
             layer.
 
     Credit payments do not affect stock, so the quantity is fixed at zero. The
@@ -563,7 +563,7 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
     reporting can distinguish how the credit was settled. The linked sale
     identifier is copied for traceability.
     """
-    return data_manager.TransactionRow(
+    return dal.TransactionRow(
         transaction_id=transaction_id,
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.CREDIT_PAYMENT.value,
@@ -578,11 +578,11 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
     )
 
 
-def validate_credit_sale_link(transaction: data_manager.TransactionRow) -> None:
+def validate_credit_sale_link(transaction: dal.TransactionRow) -> None:
     """Ensure a sale transaction qualifies for credit payment linkage.
 
     Args:
-        transaction (data_manager.TransactionRow): Transaction row purportedly
+        transaction (dal.TransactionRow): Transaction row purportedly
             representing a credit sale.
 
     Raises:
@@ -625,7 +625,7 @@ def validate_credit_sale_link(transaction: data_manager.TransactionRow) -> None:
             "Linked sale already references another transaction")
 
 
-def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> data_manager.TransactionRow:
+def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dal.TransactionRow:
     """Append an ``OPEN_STOCK`` transaction for period initialization.
 
     Opening stock transactions seed beginning-of-period inventory. Quantities
@@ -639,7 +639,7 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
         command (OpenStockCommand): Structured open stock intent.
 
     Returns:
-        data_manager.TransactionRow: Newly appended open stock entry.
+        dal.TransactionRow: Newly appended open stock entry.
 
     Raises:
         BusinessRuleViolation: If the targeted product is inactive.
@@ -665,7 +665,7 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     transaction_id = generate_transaction_id(when=now)
     transaction = build_open_stock_transaction(
         command, transaction_id=transaction_id, timestamp=now)
-    data_manager.append_transaction(context.workbook, transaction)
+    dal.append_transaction(context.workbook, transaction)
     _invalidate_cache(context, "transactions")
     logger.info(
         "Recorded OPEN_STOCK transaction '%s' for product '%s' (quantity=%s, value=%s)",
@@ -677,7 +677,7 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     return transaction
 
 
-def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: str, timestamp: datetime) -> data_manager.TransactionRow:
+def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: str, timestamp: datetime) -> dal.TransactionRow:
     """Materialize an :class:`OpenStockCommand` into a DAL transaction row.
 
     Args:
@@ -686,7 +686,7 @@ def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: s
         timestamp (datetime): Timestamp assigned to the transaction.
 
     Returns:
-        data_manager.TransactionRow: Row ready for persistence via the data
+        dal.TransactionRow: Row ready for persistence via the data
             layer.
 
     Opening stock transactions provide a baseline for inventory and valuation
@@ -694,7 +694,7 @@ def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: s
     propagates ``total_revenue`` unchanged to capture the initial valuation.
     """
     quantity_change = abs(command.quantity)
-    return data_manager.TransactionRow(
+    return dal.TransactionRow(
         transaction_id=transaction_id,
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.OPEN_STOCK.value,
@@ -709,7 +709,7 @@ def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: s
     )
 
 
-def record_void(context: RuntimeContext, command: VoidCommand) -> t.List[data_manager.TransactionRow]:
+def record_void(context: RuntimeContext, command: VoidCommand) -> t.List[dal.TransactionRow]:
     """Record a ``VOID`` reversal and optional replacement transactions.
 
     The function first writes the reversal entry that negates the target
@@ -725,7 +725,7 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> t.List[data_ma
             replacement data.
 
     Returns:
-        list[data_manager.TransactionRow]: Sequence containing the reversal and
+        list[dal.TransactionRow]: Sequence containing the reversal and
             any replacement transactions appended as part of the operation.
 
     Raises:
@@ -741,7 +741,7 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> t.List[data_ma
 
     reversal = build_void_transaction(
         target, timestamp=now, notes=command.notes)
-    data_manager.append_transaction(context.workbook, reversal)
+    dal.append_transaction(context.workbook, reversal)
     _invalidate_cache(context, "transactions")
     logger.info(
         "Recorded VOID reversal '%s' for transaction '%s'",
@@ -749,7 +749,7 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> t.List[data_ma
         target.transaction_id,
     )
 
-    results: t.List[data_manager.TransactionRow] = [reversal]
+    results: t.List[dal.TransactionRow] = [reversal]
     replacement = command.replacement_command
     if replacement is None:
         return results
@@ -770,18 +770,18 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> t.List[data_ma
     return results
 
 
-def build_void_transaction(transaction: data_manager.TransactionRow, *, timestamp: datetime, notes: t.Optional[str]) -> data_manager.TransactionRow:
+def build_void_transaction(transaction: dal.TransactionRow, *, timestamp: datetime, notes: t.Optional[str]) -> dal.TransactionRow:
     """Create a reversal transaction that negates a prior entry.
 
     Args:
-        transaction (data_manager.TransactionRow): Original transaction being
+        transaction (dal.TransactionRow): Original transaction being
             reversed.
         timestamp (datetime): Timestamp to apply to the reversal entry.
         notes (str | None): t.Optional contextual notes to persist alongside the
             reversal.
 
     Returns:
-        data_manager.TransactionRow: Synthetic ``VOID`` transaction that
+        dal.TransactionRow: Synthetic ``VOID`` transaction that
             negates the quantities, costs, and revenues of ``transaction``.
 
     The reversal mirrors the original transaction's identifiers while flipping
@@ -789,7 +789,7 @@ def build_void_transaction(transaction: data_manager.TransactionRow, *, timestam
     ``linked_transaction_id``. Consumers can use this metadata to establish
     audit trails.
     """
-    return data_manager.TransactionRow(
+    return dal.TransactionRow(
         transaction_id=generate_transaction_id(when=timestamp),
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.VOID.value,
@@ -804,11 +804,11 @@ def build_void_transaction(transaction: data_manager.TransactionRow, *, timestam
     )
 
 
-def validate_void_target(transaction: data_manager.TransactionRow) -> None:
+def validate_void_target(transaction: dal.TransactionRow) -> None:
     """Confirm that a transaction may be voided under business rules.
 
     Args:
-        transaction (data_manager.TransactionRow): Transaction row selected for
+        transaction (dal.TransactionRow): Transaction row selected for
             voiding.
 
     Raises:

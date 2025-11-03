@@ -13,7 +13,7 @@ from pathlib import Path
 
 from openpyxl.workbook import Workbook
 
-from caad_erp import data_manager
+from caad_erp import dal
 
 from caad_erp.constants import EXPECTED_SCHEMA_VERSION
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class RuntimeContext:
     """Container for configuration and workbook references used by the BLL."""
 
-    settings: data_manager.ConfigSettings
+    settings: dal.ConfigSettings
     workbook: Workbook
     _cache: t.Dict[str, t.Dict[str, t.Any]] = field(
         default_factory=dict, repr=False, compare=False)
@@ -42,7 +42,7 @@ def persist_context(context: RuntimeContext) -> None:
     In-memory caches remain valid because the workbook handle is unchanged
     after the save completes.
     """
-    data_manager.save_workbook(
+    dal.save_workbook(
         context.workbook,
         destination=context.settings.data_file,
     )
@@ -67,7 +67,7 @@ def refresh_context(context: RuntimeContext) -> RuntimeContext:
     hands back a pristine workbook pointer. Because a new :class:`RuntimeContext`
     is produced, any cached data from the previous context is discarded.
     """
-    workbook = data_manager.refresh_workbook(context.settings.data_file)
+    workbook = dal.refresh_workbook(context.settings.data_file)
     logger.info("Reloaded workbook '%s'", context.settings.data_file)
     return RuntimeContext(settings=context.settings, workbook=workbook)
 
@@ -144,12 +144,12 @@ def load_runtime_context(config_path: t.Optional[Path] = None) -> RuntimeContext
             located.
         KeyError: When mandatory configuration options are missing.
     """
-    located_config = data_manager.find_config_file(config_path)
+    located_config = dal.find_config_file(config_path)
     resolved_config = Path(located_config).expanduser().resolve()
-    parser = data_manager.read_config(resolved_config)
-    settings = data_manager.parse_settings(
+    parser = dal.read_config(resolved_config)
+    settings = dal.parse_settings(
         parser, base_path=resolved_config.parent)
-    workbook = data_manager.open_workbook(settings.data_file)
+    workbook = dal.open_workbook(settings.data_file)
     logger.info("Loaded runtime context for workbook '%s'", settings.data_file)
     return RuntimeContext(settings=settings, workbook=workbook)
 

@@ -108,7 +108,7 @@ def test_sale_lifecycle_flow(runtime_context):
     assert summary["total_cost"] == Decimal("-2.50")
     assert summary["profit"] == Decimal("3.50")
 
-    # Persisting after transactions ensures data_manager writes the latest state.
+    # Persisting after transactions ensures dal writes the latest state.
     bll.persist_context(context)
 
     # Sanity check: recorded objects surface the expected transaction types.

@@ -3,7 +3,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from caad_erp import bll, constants, data_manager
+from caad_erp import bll, constants
+from caad_erp import dal
 
 
 def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
@@ -11,7 +12,7 @@ def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
 
     config_path = tmp_path / "config.ini"
     parser = Mock(name="parser")
-    parsed_settings = data_manager.ConfigSettings(
+    parsed_settings = dal.ConfigSettings(
         data_file=tmp_path / "master.xlsx",
         lounge_name="Lounge",
         schema_version=constants.EXPECTED_SCHEMA_VERSION,
@@ -24,10 +25,10 @@ def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
     parse_settings = Mock(return_value=parsed_settings)
     open_workbook = Mock(return_value=workbook)
 
-    monkeypatch.setattr(data_manager, "find_config_file", find_config_file)
-    monkeypatch.setattr(data_manager, "read_config", read_config)
-    monkeypatch.setattr(data_manager, "parse_settings", parse_settings)
-    monkeypatch.setattr(data_manager, "open_workbook", open_workbook)
+    monkeypatch.setattr(dal, "find_config_file", find_config_file)
+    monkeypatch.setattr(dal, "read_config", read_config)
+    monkeypatch.setattr(dal, "parse_settings", parse_settings)
+    monkeypatch.setattr(dal, "open_workbook", open_workbook)
 
     context = bll.load_runtime_context(config_path)
 
@@ -54,7 +55,7 @@ def test_persist_context_writes_to_disk(monkeypatch, context):
     """persist_context should flush workbook changes to disk."""
 
     save_mock = Mock()
-    monkeypatch.setattr(data_manager, "save_workbook", save_mock)
+    monkeypatch.setattr(dal, "save_workbook", save_mock)
 
     bll.persist_context(context)
 
@@ -67,7 +68,7 @@ def test_refresh_context_reloads_from_disk(monkeypatch, settings):
 
     refreshed_workbook = Mock(name="reloaded")
     refresh_mock = Mock(return_value=refreshed_workbook)
-    monkeypatch.setattr(data_manager, "refresh_workbook", refresh_mock)
+    monkeypatch.setattr(dal, "refresh_workbook", refresh_mock)
 
     original = bll.RuntimeContext(settings=settings, workbook=Mock())
     reloaded_context = bll.refresh_context(original)

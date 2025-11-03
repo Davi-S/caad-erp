@@ -6,14 +6,15 @@ from unittest.mock import Mock
 
 import pytest
 
-from caad_erp import bll, constants, data_manager
+from caad_erp import bll, constants
+from caad_erp import dal
 
 
 def test_list_transactions_returns_all_rows(monkeypatch, context):
     """list_transactions should return every ledger entry in order."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T1",
             timestamp_iso="2025-10-30T00:00:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -28,7 +29,7 @@ def test_list_transactions_returns_all_rows(monkeypatch, context):
         )
     ]
     iter_mock = Mock(return_value=transactions)
-    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
+    monkeypatch.setattr(dal, "iter_transactions", iter_mock)
 
     result = bll.list_transactions(context)
 
@@ -40,7 +41,7 @@ def test_list_transactions_reuses_cache_between_calls(monkeypatch, context):
     """list_transactions should cache the transaction log after first load."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T-cache",
             timestamp_iso="2025-10-30T00:10:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -55,7 +56,7 @@ def test_list_transactions_reuses_cache_between_calls(monkeypatch, context):
         )
     ]
     iter_mock = Mock(return_value=transactions)
-    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
+    monkeypatch.setattr(dal, "iter_transactions", iter_mock)
 
     first = bll.list_transactions(context)
     second = bll.list_transactions(context)
@@ -69,7 +70,7 @@ def test_get_transaction_returns_match(monkeypatch, context):
     """get_transaction should retrieve ledger rows by ID."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T55",
             timestamp_iso="2025-10-30T01:00:00",
             transaction_type=constants.TransactionType.RESTOCK.value,
@@ -83,7 +84,7 @@ def test_get_transaction_returns_match(monkeypatch, context):
             notes="Bulk",
         )
     ]
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_transactions",
                         Mock(return_value=transactions))
 
     transaction = bll.get_transaction(context, "T55")
@@ -94,7 +95,7 @@ def test_get_transaction_returns_match(monkeypatch, context):
 def test_get_transaction_reuses_cache_after_first_lookup(monkeypatch, context):
     """Repeated get_transaction calls should not rescan the workbook."""
 
-    transaction_row = data_manager.TransactionRow(
+    transaction_row = dal.TransactionRow(
         transaction_id="T-cache",
         timestamp_iso="2025-10-30T01:30:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -108,7 +109,7 @@ def test_get_transaction_reuses_cache_after_first_lookup(monkeypatch, context):
         notes=None,
     )
     iter_mock = Mock(return_value=[transaction_row])
-    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
+    monkeypatch.setattr(dal, "iter_transactions", iter_mock)
 
     first = bll.get_transaction(context, "T-cache")
     second = bll.get_transaction(context, "T-cache")
@@ -120,17 +121,17 @@ def test_get_transaction_reuses_cache_after_first_lookup(monkeypatch, context):
 def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetime):
     """record_sale should validate inputs and append a SALE row."""
 
-    products = [data_manager.ProductRow(
+    products = [dal.ProductRow(
         "P200", "Drink", Decimal("3.50"), True)]
-    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    salesmen = [dal.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_products_mock = Mock(return_value=products)
     iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-sale")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -162,9 +163,9 @@ def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetim
 def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
     """record_sale should invalidate and rebuild the transactions cache."""
 
-    product = data_manager.ProductRow("P500", "Widget", Decimal("5.00"), True)
-    salesman = data_manager.SalesmanRow("S-DEFAULT", "Alex", True)
-    existing = data_manager.TransactionRow(
+    product = dal.ProductRow("P500", "Widget", Decimal("5.00"), True)
+    salesman = dal.SalesmanRow("S-DEFAULT", "Alex", True)
+    existing = dal.TransactionRow(
         transaction_id="T-existing",
         timestamp_iso="2025-10-30T00:45:00",
         transaction_type=constants.TransactionType.RESTOCK.value,
@@ -191,11 +192,11 @@ def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed
     append_mock = Mock(side_effect=_append_side_effect)
     generate_mock = Mock(return_value="T-new")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "iter_transactions",
                         iter_transactions_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -238,17 +239,17 @@ def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed
 def test_record_restock_appends_transaction(monkeypatch, context, set_fixed_datetime):
     """record_restock should log incoming inventory with TotalCost."""
 
-    products = [data_manager.ProductRow(
+    products = [dal.ProductRow(
         "P201", "Snack", Decimal("2.50"), True)]
-    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    salesmen = [dal.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_products_mock = Mock(return_value=products)
     iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-restock")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -278,12 +279,12 @@ def test_record_restock_appends_transaction(monkeypatch, context, set_fixed_date
 def test_record_restock_rejects_inactive_salesman(monkeypatch, context):
     """record_restock should reject inactive salesmen."""
 
-    products = [data_manager.ProductRow(
+    products = [dal.ProductRow(
         "P202", "Snack", Decimal("2.50"), True)]
-    salesmen = [data_manager.SalesmanRow("S-RETIRED", "Sam", False)]
-    monkeypatch.setattr(data_manager, "iter_products",
+    salesmen = [dal.SalesmanRow("S-RETIRED", "Sam", False)]
+    monkeypatch.setattr(dal, "iter_products",
                         Mock(return_value=products))
-    monkeypatch.setattr(data_manager, "iter_salesmen",
+    monkeypatch.setattr(dal, "iter_salesmen",
                         Mock(return_value=salesmen))
 
     command = bll.RestockCommand(
@@ -300,10 +301,10 @@ def test_record_restock_rejects_inactive_salesman(monkeypatch, context):
 def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
     """record_restock should invalidate and rebuild the transactions cache."""
 
-    product = data_manager.ProductRow(
+    product = dal.ProductRow(
         "P600", "Restock Item", Decimal("3.00"), True)
-    salesman = data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)
-    existing = data_manager.TransactionRow(
+    salesman = dal.SalesmanRow("S-DEFAULT", "Jamie", True)
+    existing = dal.TransactionRow(
         transaction_id="T-existing",
         timestamp_iso="2025-10-30T06:00:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -330,11 +331,11 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fi
     append_mock = Mock(side_effect=_append_side_effect)
     generate_mock = Mock(return_value="T-restock-new")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "iter_transactions",
                         iter_transactions_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -378,17 +379,17 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fi
 def test_record_write_off_appends_transaction(monkeypatch, context, set_fixed_datetime):
     """record_write_off should log shrink events with zero revenue/cost."""
 
-    products = [data_manager.ProductRow(
+    products = [dal.ProductRow(
         "P202", "Fruit", Decimal("1.25"), True)]
-    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    salesmen = [dal.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_products_mock = Mock(return_value=products)
     iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-writeoff")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -418,10 +419,10 @@ def test_record_write_off_appends_transaction(monkeypatch, context, set_fixed_da
 def test_record_write_off_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
     """record_write_off should invalidate and rebuild the transactions cache."""
 
-    product = data_manager.ProductRow(
+    product = dal.ProductRow(
         "P601", "WriteOff", Decimal("2.00"), True)
-    salesman = data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)
-    existing = data_manager.TransactionRow(
+    salesman = dal.SalesmanRow("S-DEFAULT", "Jamie", True)
+    existing = dal.TransactionRow(
         transaction_id="T-existing",
         timestamp_iso="2025-10-30T06:30:00",
         transaction_type=constants.TransactionType.RESTOCK.value,
@@ -448,11 +449,11 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context, set_
     append_mock = Mock(side_effect=_append_side_effect)
     generate_mock = Mock(return_value="T-writeoff-new")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "iter_transactions",
                         iter_transactions_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -495,7 +496,7 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
     """record_credit_payment should log cash collection for credit sales."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T-credit",
             timestamp_iso="2025-10-30T04:00:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -510,15 +511,15 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
         )
     ]
     iter_transactions_mock = Mock(return_value=transactions)
-    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    salesmen = [dal.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-payment")
 
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_transactions",
                         iter_transactions_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -550,7 +551,7 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
 def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
     """record_credit_payment should invalidate and rebuild the transactions cache."""
 
-    credit_sale = data_manager.TransactionRow(
+    credit_sale = dal.TransactionRow(
         transaction_id="T-credit",
         timestamp_iso="2025-10-30T04:00:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -566,7 +567,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
     log_rows = [credit_sale]
 
     iter_transactions_mock = Mock(side_effect=lambda _workbook: list(log_rows))
-    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    salesmen = [dal.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_salesmen_mock = Mock(return_value=salesmen)
 
     append_calls = []
@@ -578,10 +579,10 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
     append_mock = Mock(side_effect=_append_side_effect)
     generate_mock = Mock(return_value="T-credit-new")
 
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_transactions",
                         iter_transactions_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -626,7 +627,7 @@ def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
     """record_credit_payment should reject inactive collectors."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T-credit",
             timestamp_iso="2025-10-30T04:00:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -641,10 +642,10 @@ def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
         )
     ]
 
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_transactions",
                         Mock(return_value=transactions))
-    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(
-        return_value=[data_manager.SalesmanRow("S-INACTIVE", "Pat", False)]))
+    monkeypatch.setattr(dal, "iter_salesmen", Mock(
+        return_value=[dal.SalesmanRow("S-INACTIVE", "Pat", False)]))
 
     command = bll.CreditPaymentCommand(
         linked_transaction_id="T-credit",
@@ -660,17 +661,17 @@ def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
 def test_record_open_stock_appends_transaction(monkeypatch, context, set_fixed_datetime):
     """record_open_stock should log baseline stock during rollover."""
 
-    products = [data_manager.ProductRow(
+    products = [dal.ProductRow(
         "P204", "Water", Decimal("1.50"), True)]
-    salesmen = [data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)]
+    salesmen = [dal.SalesmanRow("S-DEFAULT", "Jamie", True)]
     iter_products_mock = Mock(return_value=products)
     iter_salesmen_mock = Mock(return_value=salesmen)
     append_mock = Mock()
     generate_mock = Mock(return_value="T-open")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -700,9 +701,9 @@ def test_record_open_stock_appends_transaction(monkeypatch, context, set_fixed_d
 def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
     """record_open_stock should invalidate and rebuild the transactions cache."""
 
-    product = data_manager.ProductRow("P800", "Open", Decimal("1.00"), True)
-    salesman = data_manager.SalesmanRow("S-DEFAULT", "Jamie", True)
-    existing = data_manager.TransactionRow(
+    product = dal.ProductRow("P800", "Open", Decimal("1.00"), True)
+    salesman = dal.SalesmanRow("S-DEFAULT", "Jamie", True)
+    existing = dal.TransactionRow(
         transaction_id="T-existing",
         timestamp_iso="2025-10-30T07:30:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -729,11 +730,11 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set
     append_mock = Mock(side_effect=_append_side_effect)
     generate_mock = Mock(return_value="T-open-new")
 
-    monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+    monkeypatch.setattr(dal, "iter_salesmen", iter_salesmen_mock)
+    monkeypatch.setattr(dal, "iter_transactions",
                         iter_transactions_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -776,7 +777,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set
 def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
     """record_void should produce a VOID plus replacement transaction."""
 
-    target = data_manager.TransactionRow(
+    target = dal.TransactionRow(
         transaction_id="T-original",
         timestamp_iso="2025-10-30T05:00:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -789,7 +790,7 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
         linked_transaction_id=None,
         notes="Incorrect quantity",
     )
-    reversal = data_manager.TransactionRow(
+    reversal = dal.TransactionRow(
         transaction_id="V1",
         timestamp_iso="2025-10-30T05:10:00",
         transaction_type=constants.TransactionType.VOID.value,
@@ -802,7 +803,7 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
         linked_transaction_id="T-original",
         notes="Fix entry",
     )
-    replacement_result = data_manager.TransactionRow(
+    replacement_result = dal.TransactionRow(
         transaction_id="T-replacement",
         timestamp_iso="2025-10-30T05:10:30",
         transaction_type=constants.TransactionType.SALE.value,
@@ -827,7 +828,7 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
         bll.transactions, "validate_void_target", validate_void_target)
     monkeypatch.setattr(
         bll.transactions, "build_void_transaction", build_void_reversal)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(bll.transactions, "record_sale", record_sale)
 
     command = bll.VoidCommand(
@@ -855,7 +856,7 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
 def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
     """record_void should invalidate the transaction cache after appending a reversal."""
 
-    target = data_manager.TransactionRow(
+    target = dal.TransactionRow(
         transaction_id="T-target",
         timestamp_iso="2025-10-30T05:30:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -880,9 +881,9 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
     append_mock = Mock(side_effect=_append_side_effect)
     generate_mock = Mock(return_value="V-new")
 
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_transactions",
                         iter_transactions_mock)
-    monkeypatch.setattr(data_manager, "append_transaction", append_mock)
+    monkeypatch.setattr(dal, "append_transaction", append_mock)
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
@@ -965,7 +966,7 @@ def test_require_nonnegative_money_accepts_zero():
 def test_validate_credit_sale_link_accepts_credit_sale():
     """validate_credit_sale_link should accept undisturbed credit sales."""
 
-    sale = data_manager.TransactionRow(
+    sale = dal.TransactionRow(
         transaction_id="Tcredit",
         timestamp_iso="2025-10-30T07:00:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -984,7 +985,7 @@ def test_validate_credit_sale_link_accepts_credit_sale():
 def test_validate_credit_sale_link_rejects_non_credit_sale():
     """validate_credit_sale_link should reject cash sales or mismatched entries."""
 
-    sale = data_manager.TransactionRow(
+    sale = dal.TransactionRow(
         transaction_id="Tcash",
         timestamp_iso="2025-10-30T07:30:00",
         transaction_type=constants.TransactionType.SALE.value,
@@ -1004,7 +1005,7 @@ def test_validate_credit_sale_link_rejects_non_credit_sale():
 def test_validate_void_target_rejects_void_or_credit_payment():
     """validate_void_target should reject transactions that cannot be voided."""
 
-    void_txn = data_manager.TransactionRow(
+    void_txn = dal.TransactionRow(
         transaction_id="Tvoid",
         timestamp_iso="2025-10-30T08:00:00",
         transaction_type=constants.TransactionType.VOID.value,
@@ -1024,7 +1025,7 @@ def test_validate_void_target_rejects_void_or_credit_payment():
 def test_build_void_reversal_inverts_original():
     """build_void_reversal should produce a transaction that cancels the original."""
 
-    original = data_manager.TransactionRow(
+    original = dal.TransactionRow(
         transaction_id="Torig",
         timestamp_iso="2025-10-30T09:00:00",
         transaction_type=constants.TransactionType.SALE.value,
