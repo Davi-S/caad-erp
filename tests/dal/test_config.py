@@ -7,65 +7,95 @@ from caad_erp import dal
 
 
 def test_find_config_file_respects_explicit_path(config_file: Path):
-    """Supplying an explicit path should be treated as the winning answer."""
+    """Given an explicit config path When find_config_file executes Then the same path is returned."""
 
-    result = dal.find_config_file(config_file)
-    assert result == config_file
+    # Arrange
+    explicit_path = config_file
+
+    # Act
+    result = dal.find_config_file(explicit_path)
+
+    # Assert
+    assert result == explicit_path
 
 
 def test_find_config_file_discovers_in_cwd(tmp_path, monkeypatch):
-    """Auto-discovery should locate config.ini in the working directory tree."""
+    """Given a directory containing config.ini When find_config_file auto-discovers Then the config path resolves."""
 
+    # Arrange
     config_dir = tmp_path / "nested"
     config_dir.mkdir(parents=True)
     config_file = config_dir / "config.ini"
     config_file.write_text("[System]\nDataFile=master_workbook.xlsx")
     monkeypatch.chdir(config_dir)
 
+    # Act
     result = dal.find_config_file()
+
+    # Assert
     assert result == config_file
 
 
 def test_find_config_file_raises_when_missing(tmp_path, monkeypatch):
-    """Absent configuration should surface a clear FileNotFoundError."""
+    """Given no config files present When find_config_file runs Then FileNotFoundError surfaces."""
 
+    # Arrange
     monkeypatch.chdir(tmp_path)
+
+    # Act / Assert
     with pytest.raises(FileNotFoundError):
         dal.find_config_file()
 
 
 def test_read_config_loads_sections(config_file: Path):
-    """read_config should return a populated ConfigParser."""
+    """Given a valid config file When read_config executes Then the sections load correctly."""
 
-    parser = dal.read_config(config_file)
+    # Arrange
+    target_path = config_file
+
+    # Act
+    parser = dal.read_config(target_path)
+
+    # Assert
     assert parser.get("System", "LoungeName") == "Test Lounge"
     assert parser.get("Defaults", "DefaultSalesman") == "S-DEFAULT"
 
 
 def test_read_config_missing_file_raises(tmp_path):
-    """Missing files should propagate a FileNotFoundError."""
+    """Given a missing config path When read_config executes Then FileNotFoundError is raised."""
 
+    # Arrange
+    missing_path = tmp_path / "not_there.ini"
+
+    # Act / Assert
     with pytest.raises(FileNotFoundError):
-        dal.read_config(tmp_path / "not_there.ini")
+        dal.read_config(missing_path)
 
 
 def test_parse_settings_resolves_relative_paths(config_factory):
-    """Relative DataFile entries should be anchored to the config location."""
+    """Given relative workbook paths When parse_settings loads them Then the paths anchor to the config directory."""
 
+    # Arrange
     parser = configparser.ConfigParser()
     bundle = config_factory(make_relative=True)
     parser.read(bundle.config_path)
-    settings = dal.parse_settings(
-        parser, base_path=bundle.config_path.parent)
+
+    # Act
+    settings = dal.parse_settings(parser, base_path=bundle.config_path.parent)
+
+    # Assert
     assert settings.data_file == (
         bundle.config_path.parent / bundle.workbook_path.name).resolve()
     assert settings.default_salesman_id == "S-DEFAULT"
 
 
 def test_parse_settings_requires_expected_sections(tmp_path):
-    """Missing keys should result in a descriptive KeyError."""
+    """Given missing required sections When parse_settings validates Then KeyError is raised."""
 
+    # Arrange
     parser = configparser.ConfigParser()
     parser.read_string("[Other]\nvalue=1")
+
+    # Act / Assert
     with pytest.raises(KeyError):
         dal.parse_settings(parser, base_path=tmp_path)
