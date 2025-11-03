@@ -5,7 +5,11 @@ from caad_erp import cli, bll
 
 
 def test_register_restock_command_returns_spec():
-    """Given the restock registration When register_restock_command runs Then a command spec returns."""
+    """
+    Given the restock registration 
+    When register_restock_command runs 
+    Then a command spec returns.
+    """
 
     # Arrange
     # No additional setup required for registration.
@@ -20,7 +24,11 @@ def test_register_restock_command_returns_spec():
 
 
 def test_register_restock_command_configures_arguments():
-    """Given the restock parser When arguments are parsed Then the namespace captures the inputs."""
+    """
+    Given the restock parser 
+    When arguments are parsed 
+    Then the namespace captures the inputs.
+    """
 
     # Arrange
     parser = argparse.ArgumentParser(prog="cli")
@@ -54,7 +62,11 @@ def test_register_restock_command_configures_arguments():
 
 
 def test_translate_restock_returns_restock_command():
-    """Given CLI arguments When translate_restock executes Then a RestockCommand is produced."""
+    """
+    Given CLI arguments 
+    When translate_restock executes 
+    Then a RestockCommand is produced.
+    """
 
     # Arrange
     args = argparse.Namespace(
@@ -77,7 +89,11 @@ def test_translate_restock_returns_restock_command():
 
 
 def test_run_restock_invokes_bll(runtime_context, monkeypatch):
-    """Given parsed arguments When run_restock executes Then the BLL restock recorder is called."""
+    """
+    Given parsed arguments 
+    When run_restock executes 
+    Then the BLL restock recorder is called.
+    """
 
     # Arrange
     args = argparse.Namespace()

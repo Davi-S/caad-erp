@@ -5,7 +5,11 @@ from caad_erp import cli, bll
 
 
 def test_register_write_off_command_returns_spec():
-    """Given the write-off registration When register_write_off_command runs Then a command spec returns."""
+    """
+    Given the write-off registration 
+    When register_write_off_command runs 
+    Then a command spec returns.
+    """
 
     # Arrange
     # No additional setup required for registration.
@@ -20,7 +24,11 @@ def test_register_write_off_command_returns_spec():
 
 
 def test_register_write_off_command_configures_arguments():
-    """Given the write-off parser When arguments are parsed Then the namespace captures the inputs."""
+    """
+    Given the write-off parser 
+    When arguments are parsed 
+    Then the namespace captures the inputs.
+    """
 
     # Arrange
     parser = argparse.ArgumentParser(prog="cli")
@@ -51,7 +59,11 @@ def test_register_write_off_command_configures_arguments():
 
 
 def test_translate_write_off_returns_write_off_command():
-    """Given CLI arguments When translate_write_off executes Then a WriteOffCommand is produced."""
+    """
+    Given CLI arguments 
+    When translate_write_off executes 
+    Then a WriteOffCommand is produced.
+    """
 
     # Arrange
     args = argparse.Namespace(
@@ -72,7 +84,11 @@ def test_translate_write_off_returns_write_off_command():
 
 
 def test_run_write_off_invokes_bll(runtime_context, monkeypatch):
-    """Given parsed arguments When run_write_off executes Then the BLL write-off recorder is called."""
+    """
+    Given parsed arguments 
+    When run_write_off executes 
+    Then the BLL write-off recorder is called.
+    """
 
     # Arrange
     args = argparse.Namespace()

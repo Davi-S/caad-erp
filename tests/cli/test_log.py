@@ -4,7 +4,11 @@ from caad_erp import cli, bll
 
 
 def test_register_log_command_returns_spec():
-    """Given the log registration When register_log_command runs Then a command spec returns."""
+    """
+    Given the log registration 
+    When register_log_command runs 
+    Then a command spec returns.
+    """
 
     # Arrange
     # No additional setup required for registration.
@@ -19,7 +23,11 @@ def test_register_log_command_returns_spec():
 
 
 def test_register_log_command_configures_arguments():
-    """Given the log parser When arguments are parsed Then the namespace captures the command."""
+    """
+    Given the log parser 
+    When arguments are parsed 
+    Then the namespace captures the command.
+    """
 
     # Arrange
     parser = argparse.ArgumentParser(prog="cli")
@@ -35,7 +43,11 @@ def test_register_log_command_configures_arguments():
 
 
 def test_run_log_report_invokes_bll(runtime_context, monkeypatch):
-    """Given parsed arguments When run_log_report executes Then the BLL list_transactions is invoked."""
+    """
+    Given parsed arguments 
+    When run_log_report executes 
+    Then the BLL list_transactions is invoked.
+    """
 
     # Arrange
     args = argparse.Namespace()

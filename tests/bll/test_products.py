@@ -7,7 +7,11 @@ from caad_erp import bll, dal, exceptions
 
 
 def test_list_products_excludes_inactive_by_default(monkeypatch, context):
-    """Given inactive catalog entries When listing without overrides Then inactive rows stay hidden."""
+    """
+    Given inactive catalog entries 
+    When listing without overrides 
+    Then inactive rows stay hidden.
+    """
 
     # Arrange
     products = [
@@ -26,7 +30,11 @@ def test_list_products_excludes_inactive_by_default(monkeypatch, context):
 
 
 def test_list_products_can_include_inactive(monkeypatch, context):
-    """Given a cached product catalog When include_inactive is True Then inactive rows surface alongside active ones."""
+    """
+    Given a cached product catalog 
+    When include_inactive is True 
+    Then inactive rows surface alongside active ones.
+    """
 
     # Arrange
     products = [
@@ -47,7 +55,11 @@ def test_list_products_can_include_inactive(monkeypatch, context):
 
 
 def test_list_products_reuses_cache_between_calls(monkeypatch, context):
-    """Given an empty cache When list_products executes twice Then the DAL is consulted only once."""
+    """
+    Given an empty cache 
+    When list_products executes twice 
+    Then the DAL is consulted only once.
+    """
 
     # Arrange
     products = [
@@ -68,7 +80,11 @@ def test_list_products_reuses_cache_between_calls(monkeypatch, context):
 
 
 def test_get_product_returns_match(monkeypatch, context):
-    """Given a known product When fetching by identifier Then the hydrated row matches the catalog."""
+    """
+    Given a known product 
+    When fetching by identifier 
+    Then the hydrated row matches the catalog.
+    """
 
     # Arrange
     products = [dal.ProductRow("P10", "Cookie", Decimal("4.00"), True)]
@@ -82,7 +98,11 @@ def test_get_product_returns_match(monkeypatch, context):
 
 
 def test_get_product_missing_raises(monkeypatch, context):
-    """Given an empty catalog When fetching an unknown product Then a missing reference error is raised."""
+    """
+    Given an empty catalog 
+    When fetching an unknown product 
+    Then a missing reference error is raised.
+    """
 
     # Arrange
     monkeypatch.setattr(dal, "iter_products", Mock(return_value=[]))
@@ -96,7 +116,11 @@ def test_get_product_missing_raises(monkeypatch, context):
 
 
 def test_get_product_reuses_cache_after_first_lookup(monkeypatch, context):
-    """Given a fresh cache When get_product runs twice Then the second lookup reuses cached data."""
+    """
+    Given a fresh cache 
+    When get_product runs twice 
+    Then the second lookup reuses cached data.
+    """
 
     # Arrange
     product_row = dal.ProductRow("P-cache", "Cached", Decimal("3.00"), True)
@@ -113,7 +137,11 @@ def test_get_product_reuses_cache_after_first_lookup(monkeypatch, context):
 
 
 def test_add_product_appends_record_and_invalidates_cache(monkeypatch, context):
-    """Given a new product When add_product executes Then the row is persisted and cache is cleared."""
+    """
+    Given a new product 
+    When add_product executes 
+    Then the row is persisted and cache is cleared.
+    """
 
     # Arrange
     monkeypatch.setattr(dal, "iter_products", Mock(return_value=[]))
@@ -139,7 +167,11 @@ def test_add_product_appends_record_and_invalidates_cache(monkeypatch, context):
 
 
 def test_add_product_rejects_duplicate_id(monkeypatch, context):
-    """Given an existing ProductID When add_product runs with the same ID Then a business rule violation is raised."""
+    """
+    Given an existing ProductID 
+    When add_product runs with the same ID 
+    Then a business rule violation is raised.
+    """
 
     # Arrange
     existing = dal.ProductRow("SKU-001", "Existing", Decimal("1.00"), True)
@@ -162,7 +194,11 @@ def test_add_product_rejects_duplicate_id(monkeypatch, context):
 
 
 def test_add_product_rejects_negative_price(monkeypatch, context):
-    """Given a negative price When add_product is invoked Then validation prevents persistence."""
+    """
+    Given a negative price 
+    When add_product is invoked 
+    Then validation prevents persistence.
+    """
 
     # Arrange
     monkeypatch.setattr(dal, "iter_products", Mock(return_value=[]))
@@ -184,7 +220,11 @@ def test_add_product_rejects_negative_price(monkeypatch, context):
 
 
 def test_update_product_delegates_and_refreshes_cache(monkeypatch, context):
-    """Given a cached catalog When update_product runs Then DAL is called and cache refreshes."""
+    """
+    Given a cached catalog 
+    When update_product runs 
+    Then DAL is called and cache refreshes.
+    """
 
     # Arrange
     original_bucket: dict[str, object] = {}
@@ -216,7 +256,11 @@ def test_update_product_delegates_and_refreshes_cache(monkeypatch, context):
 
 
 def test_update_product_requires_changes(context):
-    """Given no field updates When update_product runs Then validation raises ValueError."""
+    """
+    Given no field updates 
+    When update_product runs 
+    Then validation raises ValueError.
+    """
 
     # Arrange
     product_id = "SKU-002"
@@ -230,7 +274,11 @@ def test_update_product_requires_changes(context):
 
 
 def test_update_product_unknown_id_raises(monkeypatch, context):
-    """Given an unknown product ID When update_product delegates to DAL Then a missing reference error surfaces."""
+    """
+    Given an unknown product ID 
+    When update_product delegates to DAL 
+    Then a missing reference error surfaces.
+    """
 
     # Arrange
     monkeypatch.setattr(

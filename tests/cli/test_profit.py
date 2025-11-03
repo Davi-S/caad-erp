@@ -6,7 +6,11 @@ from caad_erp import cli, bll
 
 
 def test_register_profit_command_returns_spec():
-    """Given the profit registration When register_profit_command runs Then a command spec returns."""
+    """
+    Given the profit registration 
+    When register_profit_command runs 
+    Then a command spec returns.
+    """
 
     # Arrange
     # No additional setup required for registration.
@@ -21,7 +25,11 @@ def test_register_profit_command_returns_spec():
 
 
 def test_register_profit_command_configures_arguments():
-    """Given the profit parser When arguments are parsed Then the namespace captures the command."""
+    """
+    Given the profit parser 
+    When arguments are parsed 
+    Then the namespace captures the command.
+    """
 
     # Arrange
     parser = argparse.ArgumentParser(prog="cli")
@@ -37,7 +45,11 @@ def test_register_profit_command_configures_arguments():
 
 
 def test_run_profit_report_invokes_bll(runtime_context, monkeypatch):
-    """Given parsed arguments When run_profit_report executes Then the BLL profit calculator is invoked."""
+    """
+    Given parsed arguments 
+    When run_profit_report executes 
+    Then the BLL profit calculator is invoked.
+    """
 
     # Arrange
     args = argparse.Namespace()

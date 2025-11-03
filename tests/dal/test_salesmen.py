@@ -4,7 +4,11 @@ from caad_erp import dal, constants
 
 
 def test_iter_salesmen_yields_salesman_rows(master_workbook_path):
-    """Given workbook salesman data When iter_salesmen runs Then SalesmanRow entries return."""
+    """
+    Given workbook salesman data 
+    When iter_salesmen runs 
+    Then SalesmanRow entries return.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -22,7 +26,11 @@ def test_iter_salesmen_yields_salesman_rows(master_workbook_path):
 
 
 def test_append_salesman_adds_row(master_workbook_path):
-    """Given a salesman record When append_salesman executes Then the sheet receives the row."""
+    """
+    Given a salesman record 
+    When append_salesman executes 
+    Then the sheet receives the row.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -43,7 +51,11 @@ def test_append_salesman_adds_row(master_workbook_path):
 
 
 def test_update_salesman_modifies_existing_row(master_workbook_path):
-    """Given an existing salesman When update_salesman changes fields Then the sheet reflects the edit."""
+    """
+    Given an existing salesman 
+    When update_salesman changes fields 
+    Then the sheet reflects the edit.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -64,7 +76,11 @@ def test_update_salesman_modifies_existing_row(master_workbook_path):
 
 
 def test_update_salesman_missing_raises(master_workbook_path):
-    """Given an unknown salesman When update_salesman runs Then KeyError is raised."""
+    """
+    Given an unknown salesman 
+    When update_salesman runs 
+    Then KeyError is raised.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -76,7 +92,11 @@ def test_update_salesman_missing_raises(master_workbook_path):
 
 
 def test_serialize_salesman_preserves_order():
-    """Given a SalesmanRow When serialize_salesman executes Then values remain in sheet order."""
+    """
+    Given a SalesmanRow 
+    When serialize_salesman executes 
+    Then values remain in sheet order.
+    """
 
     # Arrange
     record = dal.SalesmanRow("S1", "Sam", False)
@@ -89,7 +109,11 @@ def test_serialize_salesman_preserves_order():
 
 
 def test_deserialize_salesman_constructs_dataclass():
-    """Given raw salesman values When deserialize_salesman runs Then a SalesmanRow is produced."""
+    """
+    Given raw salesman values 
+    When deserialize_salesman runs 
+    Then a SalesmanRow is produced.
+    """
 
     # Arrange
     raw_row = ["S9", "Alex", False]

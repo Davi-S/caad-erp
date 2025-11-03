@@ -5,7 +5,11 @@ from caad_erp import cli, constants, bll
 
 
 def test_register_pay_debt_command_returns_spec():
-    """Given the pay-debt registration When register_pay_debt_command runs Then a command spec returns."""
+    """
+    Given the pay-debt registration 
+    When register_pay_debt_command runs 
+    Then a command spec returns.
+    """
 
     # Arrange
     # No additional setup required for registration.
@@ -20,7 +24,11 @@ def test_register_pay_debt_command_returns_spec():
 
 
 def test_register_pay_debt_command_configures_arguments():
-    """Given the pay-debt parser When arguments are parsed Then the namespace captures the inputs."""
+    """
+    Given the pay-debt parser 
+    When arguments are parsed 
+    Then the namespace captures the inputs.
+    """
 
     # Arrange
     parser = argparse.ArgumentParser(prog="cli")
@@ -54,7 +62,11 @@ def test_register_pay_debt_command_configures_arguments():
 
 
 def test_translate_pay_debt_returns_credit_payment_command():
-    """Given CLI arguments When translate_pay_debt executes Then a CreditPaymentCommand is produced."""
+    """
+    Given CLI arguments 
+    When translate_pay_debt executes 
+    Then a CreditPaymentCommand is produced.
+    """
 
     # Arrange
     args = argparse.Namespace(
@@ -77,7 +89,11 @@ def test_translate_pay_debt_returns_credit_payment_command():
 
 
 def test_run_pay_debt_invokes_bll(runtime_context, monkeypatch):
-    """Given parsed arguments When run_pay_debt executes Then the BLL credit payment recorder is called."""
+    """
+    Given parsed arguments 
+    When run_pay_debt executes 
+    Then the BLL credit payment recorder is called.
+    """
 
     # Arrange
     args = argparse.Namespace()

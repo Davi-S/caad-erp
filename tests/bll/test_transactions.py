@@ -10,7 +10,11 @@ from caad_erp import bll, constants, dal, exceptions
 
 
 def test_list_transactions_returns_all_rows(monkeypatch, context):
-    """Given ledger entries When list_transactions executes Then every row returns in order."""
+    """
+    Given ledger entries 
+    When list_transactions executes 
+    Then every row returns in order.
+    """
 
     # Arrange
     transactions = [
@@ -40,7 +44,11 @@ def test_list_transactions_returns_all_rows(monkeypatch, context):
 
 
 def test_list_transactions_reuses_cache_between_calls(monkeypatch, context):
-    """Given a cached transaction log When list_transactions runs again Then the DAL is consulted only once."""
+    """
+    Given a cached transaction log 
+    When list_transactions runs again 
+    Then the DAL is consulted only once.
+    """
 
     # Arrange
     transactions = [
@@ -72,7 +80,11 @@ def test_list_transactions_reuses_cache_between_calls(monkeypatch, context):
 
 
 def test_get_transaction_returns_match(monkeypatch, context):
-    """Given a known transaction When fetched by ID Then the matching ledger row is returned."""
+    """
+    Given a known transaction 
+    When fetched by ID 
+    Then the matching ledger row is returned.
+    """
 
     # Arrange
     transactions = [
@@ -101,7 +113,11 @@ def test_get_transaction_returns_match(monkeypatch, context):
 
 
 def test_get_transaction_reuses_cache_after_first_lookup(monkeypatch, context):
-    """Given a fresh cache When get_transaction is called twice Then only the first call hits the DAL."""
+    """
+    Given a fresh cache 
+    When get_transaction is called twice 
+    Then only the first call hits the DAL.
+    """
 
     # Arrange
     transaction_row = dal.TransactionRow(
@@ -130,7 +146,11 @@ def test_get_transaction_reuses_cache_after_first_lookup(monkeypatch, context):
 
 
 def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetime):
-    """Given valid sale inputs When record_sale executes Then a sale transaction is persisted."""
+    """
+    Given valid sale inputs 
+    When record_sale executes 
+    Then a sale transaction is persisted.
+    """
 
     # Arrange
     products = [dal.ProductRow("P200", "Drink", Decimal("3.50"), True)]
@@ -171,7 +191,11 @@ def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetim
 
 
 def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
-    """Given a primed transaction cache When record_sale logs a new entry Then the cache invalidates and rebuilds."""
+    """
+    Given a primed transaction cache 
+    When record_sale logs a new entry 
+    Then the cache invalidates and rebuilds.
+    """
 
     # Arrange
     product = dal.ProductRow("P500", "Widget", Decimal("5.00"), True)
@@ -243,7 +267,11 @@ def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed
 
 
 def test_record_restock_appends_transaction(monkeypatch, context, set_fixed_datetime):
-    """Given valid restock inputs When record_restock executes Then a restock transaction is persisted."""
+    """
+    Given valid restock inputs 
+    When record_restock executes 
+    Then a restock transaction is persisted.
+    """
 
     # Arrange
     products = [dal.ProductRow("P201", "Snack", Decimal("2.50"), True)]
@@ -283,7 +311,11 @@ def test_record_restock_appends_transaction(monkeypatch, context, set_fixed_date
 
 
 def test_record_restock_rejects_inactive_salesman(monkeypatch, context):
-    """Given an inactive salesman When record_restock is invoked Then a business rule violation is raised."""
+    """
+    Given an inactive salesman 
+    When record_restock is invoked 
+    Then a business rule violation is raised.
+    """
 
     # Arrange
     products = [dal.ProductRow("P202", "Snack", Decimal("2.50"), True)]
@@ -306,7 +338,11 @@ def test_record_restock_rejects_inactive_salesman(monkeypatch, context):
 
 
 def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
-    """Given a primed cache When record_restock logs a new entry Then the cache invalidates and repopulates."""
+    """
+    Given a primed cache 
+    When record_restock logs a new entry 
+    Then the cache invalidates and repopulates.
+    """
 
     # Arrange
     product = dal.ProductRow("P600", "Restock Item", Decimal("3.00"), True)
@@ -379,7 +415,11 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fi
 
 
 def test_record_write_off_appends_transaction(monkeypatch, context, set_fixed_datetime):
-    """Given a write-off request When record_write_off executes Then a write-off transaction is persisted."""
+    """
+    Given a write-off request 
+    When record_write_off executes 
+    Then a write-off transaction is persisted.
+    """
 
     # Arrange
     products = [dal.ProductRow("P202", "Fruit", Decimal("1.25"), True)]
@@ -419,7 +459,11 @@ def test_record_write_off_appends_transaction(monkeypatch, context, set_fixed_da
 
 
 def test_record_write_off_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
-    """Given cached transactions When record_write_off runs Then the cache invalidates and repopulates."""
+    """
+    Given cached transactions 
+    When record_write_off runs 
+    Then the cache invalidates and repopulates.
+    """
 
     # Arrange
     product = dal.ProductRow("P601", "WriteOff", Decimal("2.00"), True)
@@ -490,7 +534,11 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context, set_
 
 
 def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fixed_datetime):
-    """Given a credit settlement When record_credit_payment executes Then a credit payment transaction is persisted."""
+    """
+    Given a credit settlement 
+    When record_credit_payment executes 
+    Then a credit payment transaction is persisted.
+    """
 
     # Arrange
     transactions = [
@@ -546,7 +594,11 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
 
 
 def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
-    """Given cached credit transactions When record_credit_payment runs Then the cache invalidates and repopulates."""
+    """
+    Given cached credit transactions 
+    When record_credit_payment runs 
+    Then the cache invalidates and repopulates.
+    """
 
     # Arrange
     credit_sale = dal.TransactionRow(
@@ -616,7 +668,11 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
 
 
 def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
-    """Given an inactive collector When record_credit_payment runs Then a business rule violation blocks it."""
+    """
+    Given an inactive collector 
+    When record_credit_payment runs 
+    Then a business rule violation blocks it.
+    """
 
     # Arrange
     transactions = [
@@ -657,7 +713,11 @@ def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
 
 
 def test_record_open_stock_appends_transaction(monkeypatch, context, set_fixed_datetime):
-    """Given a rollover command When record_open_stock executes Then an open stock transaction persists."""
+    """
+    Given a rollover command 
+    When record_open_stock executes 
+    Then an open stock transaction persists.
+    """
 
     # Arrange
     products = [dal.ProductRow("P204", "Water", Decimal("1.50"), True)]
@@ -697,7 +757,11 @@ def test_record_open_stock_appends_transaction(monkeypatch, context, set_fixed_d
 
 
 def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
-    """Given a cached ledger When record_open_stock stores a new row Then the cache is invalidated and rebuilt."""
+    """
+    Given a cached ledger 
+    When record_open_stock stores a new row 
+    Then the cache is invalidated and rebuilt.
+    """
 
     # Arrange
     product = dal.ProductRow("P800", "Open", Decimal("1.00"), True)
@@ -769,7 +833,11 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set
 
 
 def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
-    """Given a voidable sale with replacement When record_void executes Then a reversal and replacement return in order."""
+    """
+    Given a voidable sale with replacement 
+    When record_void executes 
+    Then a reversal and replacement return in order.
+    """
 
     # Arrange
     target = dal.TransactionRow(
@@ -848,7 +916,11 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
 
 
 def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
-    """Given cached transactions When record_void writes a reversal Then the cache invalidates and repopulates."""
+    """
+    Given cached transactions 
+    When record_void writes a reversal 
+    Then the cache invalidates and repopulates.
+    """
 
     # Arrange
     target = dal.TransactionRow(
@@ -920,7 +992,11 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
 
 
 def test_generate_transaction_id_uses_timestamp():
-    """Given a timestamp When generate_transaction_id executes Then the identifier starts with the date stamp."""
+    """
+    Given a timestamp 
+    When generate_transaction_id executes 
+    Then the identifier starts with the date stamp.
+    """
 
     # Arrange
     when = datetime.datetime(2025, 10, 30, 12, 30, 0)
@@ -933,7 +1009,11 @@ def test_generate_transaction_id_uses_timestamp():
 
 
 def test_require_positive_quantity_rejects_nonpositive():
-    """Given a nonpositive quantity When require_positive_quantity validates Then ValueError is raised."""
+    """
+    Given a nonpositive quantity 
+    When require_positive_quantity validates 
+    Then ValueError is raised.
+    """
 
     # Arrange
     candidate = Decimal("0")
@@ -947,7 +1027,11 @@ def test_require_positive_quantity_rejects_nonpositive():
 
 
 def test_require_positive_quantity_accepts_positive():
-    """Given a positive quantity When require_positive_quantity validates Then no error occurs."""
+    """
+    Given a positive quantity 
+    When require_positive_quantity validates 
+    Then no error occurs.
+    """
 
     # Arrange
     candidate = Decimal("1")
@@ -960,7 +1044,11 @@ def test_require_positive_quantity_accepts_positive():
 
 
 def test_require_nonnegative_money_rejects_negative():
-    """Given a negative currency value When require_nonnegative_money validates Then ValueError is raised."""
+    """
+    Given a negative currency value 
+    When require_nonnegative_money validates 
+    Then ValueError is raised.
+    """
 
     # Arrange
     candidate = Decimal("-0.01")
@@ -974,7 +1062,11 @@ def test_require_nonnegative_money_rejects_negative():
 
 
 def test_require_nonnegative_money_accepts_zero():
-    """Given a nonnegative currency value When require_nonnegative_money validates Then execution continues without error."""
+    """
+    Given a nonnegative currency value 
+    When require_nonnegative_money validates 
+    Then execution continues without error.
+    """
 
     # Arrange
     candidate = Decimal("0.00")
@@ -987,7 +1079,11 @@ def test_require_nonnegative_money_accepts_zero():
 
 
 def test_validate_credit_sale_link_accepts_credit_sale():
-    """Given a credit sale transaction When validate_credit_sale_link runs Then validation accepts it."""
+    """
+    Given a credit sale transaction 
+    When validate_credit_sale_link runs 
+    Then validation accepts it.
+    """
 
     # Arrange
     sale = dal.TransactionRow(
@@ -1012,7 +1108,11 @@ def test_validate_credit_sale_link_accepts_credit_sale():
 
 
 def test_validate_credit_sale_link_rejects_non_credit_sale():
-    """Given a non-credit sale When validate_credit_sale_link runs Then a business rule violation raises."""
+    """
+    Given a non-credit sale 
+    When validate_credit_sale_link runs 
+    Then a business rule violation raises.
+    """
 
     # Arrange
     sale = dal.TransactionRow(
@@ -1038,7 +1138,11 @@ def test_validate_credit_sale_link_rejects_non_credit_sale():
 
 
 def test_validate_void_target_rejects_void_or_credit_payment():
-    """Given an invalid void target When validate_void_target verifies Then a business rule violation is raised."""
+    """
+    Given an invalid void target 
+    When validate_void_target verifies 
+    Then a business rule violation is raised.
+    """
 
     # Arrange
     void_txn = dal.TransactionRow(
@@ -1064,7 +1168,11 @@ def test_validate_void_target_rejects_void_or_credit_payment():
 
 
 def test_build_void_reversal_inverts_original():
-    """Given a sale When build_void_transaction runs Then the reversal negates the original values."""
+    """
+    Given a sale 
+    When build_void_transaction runs 
+    Then the reversal negates the original values.
+    """
 
     # Arrange
     original = dal.TransactionRow(
@@ -1093,7 +1201,11 @@ def test_build_void_reversal_inverts_original():
 
 
 def test_build_sale_transaction_constructs_row():
-    """Given a sale command When build_sale_transaction executes Then the row reflects the sale details."""
+    """
+    Given a sale command 
+    When build_sale_transaction executes 
+    Then the row reflects the sale details.
+    """
 
     # Arrange
     command = bll.SaleCommand(
@@ -1116,7 +1228,11 @@ def test_build_sale_transaction_constructs_row():
 
 
 def test_build_restock_transaction_constructs_row():
-    """Given a restock command When build_restock_transaction executes Then the row records the restock details."""
+    """
+    Given a restock command 
+    When build_restock_transaction executes 
+    Then the row records the restock details.
+    """
 
     # Arrange
     command = bll.RestockCommand(
@@ -1139,7 +1255,11 @@ def test_build_restock_transaction_constructs_row():
 
 
 def test_build_write_off_transaction_constructs_row():
-    """Given a write-off command When build_write_off_transaction executes Then the row mirrors the write-off."""
+    """
+    Given a write-off command 
+    When build_write_off_transaction executes 
+    Then the row mirrors the write-off.
+    """
 
     # Arrange
     command = bll.WriteOffCommand(
@@ -1162,7 +1282,11 @@ def test_build_write_off_transaction_constructs_row():
 
 
 def test_build_credit_payment_transaction_constructs_row():
-    """Given a credit payment command When build_credit_payment_transaction runs Then the row reflects the payment details."""
+    """
+    Given a credit payment command 
+    When build_credit_payment_transaction runs 
+    Then the row reflects the payment details.
+    """
 
     # Arrange
     command = bll.CreditPaymentCommand(
@@ -1188,7 +1312,11 @@ def test_build_credit_payment_transaction_constructs_row():
 
 
 def test_build_open_stock_transaction_constructs_row():
-    """Given an open stock command When build_open_stock_transaction executes Then the row seeds beginning balances."""
+    """
+    Given an open stock command 
+    When build_open_stock_transaction executes 
+    Then the row seeds beginning balances.
+    """
 
     # Arrange
     command = bll.OpenStockCommand(

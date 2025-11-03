@@ -4,7 +4,11 @@ from caad_erp import dal, constants
 
 
 def test_iter_transactions_yields_transaction_rows(master_workbook_path):
-    """Given workbook ledger data When iter_transactions runs Then TransactionRow objects are produced."""
+    """
+    Given workbook ledger data 
+    When iter_transactions runs 
+    Then TransactionRow objects are produced.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -36,7 +40,11 @@ def test_iter_transactions_yields_transaction_rows(master_workbook_path):
 
 
 def test_append_transaction_adds_row(master_workbook_path):
-    """Given a transaction row When append_transaction executes Then the ledger stores it."""
+    """
+    Given a transaction row 
+    When append_transaction executes 
+    Then the ledger stores it.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -65,7 +73,11 @@ def test_append_transaction_adds_row(master_workbook_path):
 
 
 def test_serialize_transaction_preserves_order():
-    """Given a TransactionRow When serialize_transaction runs Then the column order matches the sheet schema."""
+    """
+    Given a TransactionRow 
+    When serialize_transaction runs 
+    Then the column order matches the sheet schema.
+    """
 
     # Arrange
     record = dal.TransactionRow(
@@ -102,7 +114,11 @@ def test_serialize_transaction_preserves_order():
 
 
 def test_deserialize_transaction_constructs_dataclass():
-    """Given raw ledger values When deserialize_transaction executes Then a TransactionRow is produced with parsed fields."""
+    """
+    Given raw ledger values 
+    When deserialize_transaction executes 
+    Then a TransactionRow is produced with parsed fields.
+    """
 
     # Arrange
     raw_row = [

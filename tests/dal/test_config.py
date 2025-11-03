@@ -7,7 +7,11 @@ from caad_erp import dal
 
 
 def test_find_config_file_respects_explicit_path(config_file: Path):
-    """Given an explicit config path When find_config_file executes Then the same path is returned."""
+    """
+    Given an explicit config path 
+    When find_config_file executes 
+    Then the same path is returned.
+    """
 
     # Arrange
     explicit_path = config_file
@@ -20,7 +24,11 @@ def test_find_config_file_respects_explicit_path(config_file: Path):
 
 
 def test_find_config_file_discovers_in_cwd(tmp_path, monkeypatch):
-    """Given a directory containing config.ini When find_config_file auto-discovers Then the config path resolves."""
+    """
+    Given a directory containing config.ini 
+    When find_config_file auto-discovers 
+    Then the config path resolves.
+    """
 
     # Arrange
     config_dir = tmp_path / "nested"
@@ -37,7 +45,11 @@ def test_find_config_file_discovers_in_cwd(tmp_path, monkeypatch):
 
 
 def test_find_config_file_raises_when_missing(tmp_path, monkeypatch):
-    """Given no config files present When find_config_file runs Then FileNotFoundError surfaces."""
+    """
+    Given no config files present 
+    When find_config_file runs 
+    Then FileNotFoundError surfaces.
+    """
 
     # Arrange
     monkeypatch.chdir(tmp_path)
@@ -48,7 +60,11 @@ def test_find_config_file_raises_when_missing(tmp_path, monkeypatch):
 
 
 def test_read_config_loads_sections(config_file: Path):
-    """Given a valid config file When read_config executes Then the sections load correctly."""
+    """
+    Given a valid config file 
+    When read_config executes 
+    Then the sections load correctly.
+    """
 
     # Arrange
     target_path = config_file
@@ -62,7 +78,11 @@ def test_read_config_loads_sections(config_file: Path):
 
 
 def test_read_config_missing_file_raises(tmp_path):
-    """Given a missing config path When read_config executes Then FileNotFoundError is raised."""
+    """
+    Given a missing config path 
+    When read_config executes 
+    Then FileNotFoundError is raised.
+    """
 
     # Arrange
     missing_path = tmp_path / "not_there.ini"
@@ -73,7 +93,11 @@ def test_read_config_missing_file_raises(tmp_path):
 
 
 def test_parse_settings_resolves_relative_paths(config_factory):
-    """Given relative workbook paths When parse_settings loads them Then the paths anchor to the config directory."""
+    """
+    Given relative workbook paths 
+    When parse_settings loads them 
+    Then the paths anchor to the config directory.
+    """
 
     # Arrange
     parser = configparser.ConfigParser()
@@ -90,7 +114,11 @@ def test_parse_settings_resolves_relative_paths(config_factory):
 
 
 def test_parse_settings_requires_expected_sections(tmp_path):
-    """Given missing required sections When parse_settings validates Then KeyError is raised."""
+    """
+    Given missing required sections 
+    When parse_settings validates 
+    Then KeyError is raised.
+    """
 
     # Arrange
     parser = configparser.ConfigParser()

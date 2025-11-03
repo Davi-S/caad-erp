@@ -27,7 +27,11 @@ def _register_sample_product(context: bll.RuntimeContext, *, product_id: str, na
 
 
 def test_deactivate_workflow(runtime_context):
-    """Given an active product When the CLI deactivates it Then it disappears from active listings."""
+    """
+    Given an active product 
+    When the CLI deactivates it 
+    Then it disappears from active listings.
+    """
 
     # Arrange
     context = runtime_context
@@ -58,7 +62,11 @@ def test_deactivate_workflow(runtime_context):
 
 
 def test_sale_lifecycle_flow(runtime_context):
-    """Given a stocked product When sales are recorded Then inventory and profit summaries stay consistent."""
+    """
+    Given a stocked product 
+    When sales are recorded 
+    Then inventory and profit summaries stay consistent.
+    """
 
     # Arrange
     context = runtime_context
@@ -103,7 +111,11 @@ def test_sale_lifecycle_flow(runtime_context):
 
 
 def test_credit_sale_payment_and_void_flow(runtime_context):
-    """Given a credit sale When it is paid and corrected with a void Then balances reflect the adjustment."""
+    """
+    Given a credit sale 
+    When it is paid and corrected with a void 
+    Then balances reflect the adjustment.
+    """
 
     # Arrange
     context = runtime_context
@@ -172,7 +184,11 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
 
 
 def test_write_off_lifecycle_flow(runtime_context):
-    """Given stocked inventory When a write-off is recorded Then balances reflect the loss."""
+    """
+    Given stocked inventory 
+    When a write-off is recorded 
+    Then balances reflect the loss.
+    """
 
     # Arrange
     context = runtime_context
@@ -215,7 +231,11 @@ def test_write_off_lifecycle_flow(runtime_context):
 
 
 def test_open_stock_rollover_flow(runtime_context):
-    """Given imported opening stock When sales proceed Then balances honor the handoff."""
+    """
+    Given imported opening stock 
+    When sales proceed 
+    Then balances honor the handoff.
+    """
 
     # Arrange
     context = runtime_context
@@ -259,7 +279,11 @@ def test_open_stock_rollover_flow(runtime_context):
 
 
 def test_restock_zero_cost_flow(runtime_context):
-    """Given a donated product When stock is recorded with zero cost Then profit reporting stays neutral."""
+    """
+    Given a donated product 
+    When stock is recorded with zero cost 
+    Then profit reporting stays neutral.
+    """
 
     # Arrange
     context = runtime_context
@@ -293,7 +317,11 @@ def test_restock_zero_cost_flow(runtime_context):
 
 
 def test_multiple_credit_payments_flow(runtime_context):
-    """Given a credit sale When multiple payments are recorded Then the ledger captures each settlement."""
+    """
+    Given a credit sale 
+    When multiple payments are recorded 
+    Then the ledger captures each settlement.
+    """
 
     # Arrange
     context = runtime_context
@@ -354,7 +382,11 @@ def test_multiple_credit_payments_flow(runtime_context):
 
 
 def test_void_without_replacement_flow(runtime_context):
-    """Given a mistaken sale When the transaction is voided without replacement Then balances roll back to the restocked state."""
+    """
+    Given a mistaken sale 
+    When the transaction is voided without replacement 
+    Then balances roll back to the restocked state.
+    """
 
     # Arrange
     context = runtime_context
@@ -405,7 +437,11 @@ def test_void_without_replacement_flow(runtime_context):
 
 
 def test_cli_restock_and_profit_reporting_flow(config_factory, monkeypatch):
-    """Given CLI restock operations When the profit report runs Then persisted totals match direct BLL calculations."""
+    """
+    Given CLI restock operations 
+    When the profit report runs 
+    Then persisted totals match direct BLL calculations.
+    """
 
     # Arrange
     bundle = config_factory()
@@ -468,7 +504,11 @@ def test_cli_restock_and_profit_reporting_flow(config_factory, monkeypatch):
 
 
 def test_sale_rejected_for_inactive_product_flow(runtime_context):
-    """Given an inactive product When a sale is attempted Then a business rule violation blocks the transaction."""
+    """
+    Given an inactive product 
+    When a sale is attempted 
+    Then a business rule violation blocks the transaction.
+    """
 
     # Arrange
     context = runtime_context
@@ -499,7 +539,11 @@ def test_sale_rejected_for_inactive_product_flow(runtime_context):
 
 
 def test_sale_rejected_for_inactive_salesman_flow(runtime_context):
-    """Given an inactive salesman When a sale references them Then the business layer rejects the command."""
+    """
+    Given an inactive salesman 
+    When a sale references them 
+    Then the business layer rejects the command.
+    """
 
     # Arrange
     context = runtime_context
@@ -536,7 +580,11 @@ def test_sale_rejected_for_inactive_salesman_flow(runtime_context):
 
 
 def test_stock_report_reflects_opening_balance_flow(runtime_context):
-    """Given opening stock and later activity When inventory is computed Then the balance includes all movements."""
+    """
+    Given opening stock and later activity 
+    When inventory is computed 
+    Then the balance includes all movements.
+    """
 
     # Arrange
     context = runtime_context
@@ -582,7 +630,11 @@ def test_stock_report_reflects_opening_balance_flow(runtime_context):
 
 
 def test_cli_credit_sale_and_debt_report_flow(config_factory, monkeypatch):
-    """Given a CLI credit sale When the debts report executes Then outstanding balances match the expected principal."""
+    """
+    Given a CLI credit sale 
+    When the debts report executes 
+    Then outstanding balances match the expected principal.
+    """
 
     # Arrange
     bundle = config_factory()
@@ -681,7 +733,11 @@ def test_cli_credit_sale_and_debt_report_flow(config_factory, monkeypatch):
 
 
 def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
-    """Given a CLI void with replacement When executed Then new transactions and balances reflect the correction."""
+    """
+    Given a CLI void with replacement 
+    When executed 
+    Then new transactions and balances reflect the correction.
+    """
 
     # Arrange
     bundle = config_factory()

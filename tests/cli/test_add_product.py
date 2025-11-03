@@ -5,7 +5,11 @@ from caad_erp import cli, bll
 
 
 def test_register_add_product_command_returns_spec():
-    """Given the add-product registration When register_add_product_command runs Then a command spec returns."""
+    """
+    Given the add-product registration 
+    When register_add_product_command runs 
+    Then a command spec returns.
+    """
 
     # Arrange
     # No additional setup required for registration.
@@ -20,7 +24,11 @@ def test_register_add_product_command_returns_spec():
 
 
 def test_register_add_product_command_configures_arguments():
-    """Given the add-product parser When arguments are parsed Then the namespace contains expected values."""
+    """
+    Given the add-product parser 
+    When arguments are parsed 
+    Then the namespace contains expected values.
+    """
 
     # Arrange
     parser = argparse.ArgumentParser(prog="cli")
@@ -50,7 +58,11 @@ def test_register_add_product_command_configures_arguments():
 
 
 def test_translate_add_product_returns_payload():
-    """Given CLI arguments When translate_add_product executes Then a DAL payload dictionary is returned."""
+    """
+    Given CLI arguments 
+    When translate_add_product executes 
+    Then a DAL payload dictionary is returned.
+    """
 
     # Arrange
     args = argparse.Namespace(
@@ -73,7 +85,11 @@ def test_translate_add_product_returns_payload():
 
 
 def test_run_add_product_invokes_bll(runtime_context, monkeypatch):
-    """Given parsed arguments When run_add_product executes Then the BLL add_product is invoked."""
+    """
+    Given parsed arguments 
+    When run_add_product executes 
+    Then the BLL add_product is invoked.
+    """
 
     # Arrange
     args = argparse.Namespace()
