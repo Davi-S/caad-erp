@@ -1,3 +1,11 @@
+"""Workbook lifecycle utilities for the CAAD ERP Excel datastore.
+
+Functions in this module abstract the ``openpyxl`` mechanics for opening,
+saving, refreshing, and searching worksheets. Centralizing these operations
+keeps higher layers focused on domain logic instead of file-system and
+spreadsheet plumbing concerns.
+"""
+
 import logging
 import typing as t
 from pathlib import Path

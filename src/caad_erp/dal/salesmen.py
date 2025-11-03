@@ -1,3 +1,11 @@
+"""Excel persistence helpers for maintaining the ``Salesmen`` worksheet.
+
+The module reshapes worksheet rows into typed records, exposes append and
+update primitives, and centralizes the sheet naming logic used throughout the
+data layer. It mirrors the patterns established for other workbook-backed
+entities so the business layer interacts with consistent abstractions.
+"""
+
 import dataclasses
 import logging
 import typing as t
