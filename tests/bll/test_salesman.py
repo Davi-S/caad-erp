@@ -184,7 +184,7 @@ def test_update_salesman_requires_changes(context):
         bll.update_salesman(context, salesman_id)
 
     # Assert
-    assert salesman_id in str(exc_info.value)
+    assert str(exc_info.value) == "At least one field must be provided to update"
 
 
 def test_update_salesman_unknown_id_raises(monkeypatch, context):
