@@ -4,7 +4,7 @@ import typing as t
 from caad_erp import data_manager
 
 from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
-from ..runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
+from .runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
 
 logger = logging.getLogger(__name__)
 

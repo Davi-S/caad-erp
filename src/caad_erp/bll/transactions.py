@@ -8,7 +8,7 @@ from caad_erp import data_manager
 from caad_erp.constants import PaymentType, TransactionType
 from caad_erp.exceptions import *
 
-from ..runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
+from .runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
 from .products import get_product
 from .salesman import get_salesman
 
