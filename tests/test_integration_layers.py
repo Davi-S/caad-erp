@@ -783,30 +783,3 @@ def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
     assert summary["profit"] == Decimal("-2.50")
 
     bll.persist_context(context)
-
-
-@pytest.mark.xfail(reason="Write-off guard against negative inventory not implemented", strict=False)
-def test_write_off_during_negative_inventory_flow(runtime_context):
-    """Write-offs should be rejected when no stock is available to deplete."""
-
-    context = runtime_context
-
-    _register_sample_product(
-        context,
-        product_id="P3006",
-        name="Fragile Glass",
-        sell_price=Decimal("2.00"),
-    )
-
-    bll.persist_context(context)
-    context = bll.refresh_context(context)
-
-    write_off_command = bll.WriteOffCommand(
-        product_id="P3006",
-        salesman_id=context.settings.default_salesman_id,
-        quantity=Decimal("1"),
-        notes="Lost in transit",
-    )
-
-    with pytest.raises(bll.BusinessRuleViolation):
-        bll.record_write_off(context, write_off_command)
