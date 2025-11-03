@@ -12,7 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Construct the top-level CLI argument parser."""
+    """Construct the root parser for all CLI entry points.
+
+    The base parser handles global options that apply to every sub-command,
+    such as the optional ``--config`` override. Sub-command registration is
+    layered on top of the returned instance via
+    :func:`configure_subcommands`.
+
+    Returns:
+        argparse.ArgumentParser: Parser pre-configured with the CLI program
+            metadata and shared options.
+    """
     parser = argparse.ArgumentParser(
         prog="caad-erp-cli",
         description="Command-line tools for the CAAD ERP workbook.",
@@ -29,7 +39,21 @@ def build_parser() -> argparse.ArgumentParser:
 def configure_subcommands(
     parser: argparse.ArgumentParser,
 ) -> t.Mapping[str, CommandSpec]:
-    """Wire all CLI sub-commands onto the supplied parser."""
+    """Attach read and write sub-commands to the base parser.
+
+    This routine coordinates registration of every command exposed by the CLI
+    by delegating to :func:`register_write_commands` and
+    :func:`register_read_commands`. The resulting command table is keyed by
+    command name for quick lookups during dispatch.
+
+    Args:
+        parser (argparse.ArgumentParser): Parser produced by
+            :func:`build_parser` that should receive sub-command definitions.
+
+    Returns:
+        Mapping[str, CommandSpec]: Immutable view mapping command names to
+            their registered specifications.
+    """
     subparsers = parser.add_subparsers(
         dest="command", required=True, title="commands")
     write_specs = register_write_commands(subparsers)
@@ -40,7 +64,17 @@ def configure_subcommands(
 def register_write_commands(
     subparsers: argparse._SubParsersAction,
 ) -> t.Dict[str, CommandSpec]:
-    """Declare mutating CLI commands such as sales and restocks."""
+    """Register state-mutating commands like sales, restocks, and voids.
+
+    Args:
+        subparsers (argparse._SubParsersAction): Sub-parser collection created
+            by :meth:`argparse.ArgumentParser.add_subparsers` that is used to
+            install each write-capable command.
+
+    Returns:
+        dict[str, CommandSpec]: Mapping of command names to their
+            specifications, already registered with ``subparsers``.
+    """
     specs = {
         "add-product": commands.register_add_product_command(),
         "add-salesman": commands.register_add_salesman_command(),
@@ -60,7 +94,17 @@ def register_write_commands(
 def register_read_commands(
     subparsers: argparse._SubParsersAction,
 ) -> t.Dict[str, CommandSpec]:
-    """Declare read-only CLI commands such as reports."""
+    """Register read-only reporting commands such as stock and profit views.
+
+    Args:
+        subparsers (argparse._SubParsersAction): Sub-parser collection created
+            by :meth:`argparse.ArgumentParser.add_subparsers` that is used to
+            install each reporting command.
+
+    Returns:
+        dict[str, CommandSpec]: Mapping of command names to their
+            specifications, already registered with ``subparsers``.
+    """
     specs = {
         "stock": commands.register_stock_command(),
         "profit": commands.register_profit_command(),
@@ -77,7 +121,23 @@ def dispatch_command(
     args: argparse.Namespace,
     command_table: t.Mapping[str, CommandSpec],
 ) -> int:
-    """Dispatch the parsed arguments to the configured executor."""
+    """Route parsed CLI arguments to the appropriate command executor.
+
+    Args:
+        context (core_logic.RuntimeContext): Live runtime context that holds
+            workbook handles and cached data.
+        args (argparse.Namespace): Namespace returned by
+            :meth:`argparse.ArgumentParser.parse_args` containing CLI inputs.
+        command_table (Mapping[str, CommandSpec]): Lookup table produced by
+            :func:`build_command_table` describing all registered commands.
+
+    Returns:
+        int: Exit status produced by the selected command implementation.
+
+    Raises:
+        KeyError: If the requested command is missing from ``command_table``
+            or if the parsed arguments do not define a command.
+    """
     if not hasattr(args, "command") or args.command is None:
         raise KeyError("No command specified")
     spec = command_table.get(args.command)
@@ -89,7 +149,20 @@ def dispatch_command(
 def build_command_table(
     specs: t.Iterable[CommandSpec],
 ) -> t.MutableMapping[str, CommandSpec]:
-    """Build an index of command specifications keyed by command name."""
+    """Index command specifications by their declared command name.
+
+    Args:
+        specs (Iterable[CommandSpec]): Collection of command definitions to be
+            made addressable by name.
+
+    Returns:
+        MutableMapping[str, CommandSpec]: Mapping containing every spec keyed
+            by :attr:`CommandSpec.name`.
+
+    Raises:
+        ValueError: If multiple specifications declare the same command name,
+            which would make dispatch ambiguous.
+    """
     table: t.Dict[str, CommandSpec] = {}
     for spec in specs:
         if spec.name in table:
@@ -99,7 +172,17 @@ def build_command_table(
 
 
 def handle_cli_error(error: Exception) -> int:
-    """Convert raised exceptions into user-friendly exit codes."""
+    """Translate uncaught exceptions into CLI-friendly exit codes.
+
+    Args:
+        error (Exception): Unhandled exception raised during command
+            execution.
+
+    Returns:
+        int: Exit status communicating the error category to the shell. Domain
+            validation issues map to ``2``, missing files to ``3``, and all
+            other failures to ``1``.
+    """
     if isinstance(error, core_logic.BusinessRuleViolation):
         logger.error("%s", error)
         return 2
@@ -111,7 +194,17 @@ def handle_cli_error(error: Exception) -> int:
 
 
 def persist_workbook(context: core_logic.RuntimeContext) -> None:
-    """Persist workbook changes after successful execution."""
+    """Flush pending workbook mutations to disk after a successful run.
+
+    Args:
+        context (core_logic.RuntimeContext): Runtime context whose workbook
+            should be persisted.
+
+    Raises:
+        RuntimeError: If saving the workbook fails due to permission
+            constraints. The original :class:`PermissionError` is preserved as
+            the cause.
+    """
     try:
         core_logic.persist_context(context)
     except PermissionError as error:
@@ -119,14 +212,36 @@ def persist_workbook(context: core_logic.RuntimeContext) -> None:
 
 
 def load_runtime_context(config_path: t.Optional[Path] = None) -> core_logic.RuntimeContext:
-    """Resolve the runtime context for CLI operations."""
+    """Load configuration and workbook state for CLI execution.
+
+    Args:
+        config_path (Path | None): Optional override pointing to ``config.ini``.
+            When omitted the search starts in the current working directory.
+
+    Returns:
+        core_logic.RuntimeContext: Context object bundling parsed settings,
+            an open workbook, and cache containers.
+
+    Raises:
+        FileNotFoundError: If the configuration file or workbook cannot be
+            located.
+        KeyError: When required configuration options are missing.
+    """
     target = Path(
         config_path) if config_path is not None else Path.cwd() / "config.ini"
     return core_logic.load_runtime_context(target)
 
 
 def main(argv: t.Sequence[str] | None = None) -> int:
-    """CLI entry point that orchestrates parsing and execution."""
+    """Parse arguments, execute the selected command, and persist changes.
+
+    Args:
+        argv (Sequence[str] | None): Optional argument vector to parse. When
+            ``None`` the default ``sys.argv`` semantics apply.
+
+    Returns:
+        int: Exit status emitted by the invoked command or error handler.
+    """
     parse = build_parser()
     command_table = configure_subcommands(parse)
     args = parse.parse_args(argv)

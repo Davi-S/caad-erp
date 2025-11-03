@@ -8,11 +8,25 @@ from ..command_spec import CommandSpec, SubparserFactory
 
 
 def register_sale_command() -> CommandSpec:
-    """Register the parser and executor for ``sale``."""
+    """Create CLI wiring for the ``sale`` sub-command.
+
+    Returns:
+        CommandSpec: Specification containing the parser registrar and
+            executor used to register and execute the command.
+    """
     name = "sale"
     help_text = "Record a sale transaction."
 
     def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+        """Attach ``sale`` arguments to the provided sub-parser.
+
+        Args:
+            action (SubparserFactory): Factory responsible for adding the
+                command-specific parser to the CLI.
+
+        Returns:
+            argparse.ArgumentParser: Parser configured for the sale workflow.
+        """
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--product-id", required=True)
         parser.add_argument("--quantity", required=True)
@@ -31,7 +45,23 @@ def register_sale_command() -> CommandSpec:
 
 
 def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
-    """Translate CLI args into a sale command object."""
+    """Convert parsed CLI arguments into a ``SaleCommand``.
+
+    Args:
+        args (argparse.Namespace): Namespace populated with ``sale`` options.
+
+    Returns:
+        core_logic.SaleCommand: Domain command capturing sale details.
+            Quantity and revenue values are coerced to
+            :class:`~decimal.Decimal`, and the payment type string is converted
+            to :class:`~caad_erp.constants.PaymentType`.
+
+    Raises:
+        decimal.InvalidOperation: If ``--quantity`` or ``--total-revenue``
+            cannot be parsed as valid decimal numbers.
+        ValueError: If ``--payment-type`` does not correspond to a known
+            :class:`~caad_erp.constants.PaymentType` value.
+    """
     payment = PaymentType(args.payment_type)
     return core_logic.SaleCommand(
         product_id=args.product_id,
@@ -44,7 +74,17 @@ def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
 
 
 def run_sale(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the sale workflow via the BLL."""
+    """Execute the sale workflow through the business logic layer.
+
+    Args:
+        context (core_logic.RuntimeContext): Runtime context providing access
+            to transactional mutations.
+        args (argparse.Namespace): Parsed CLI arguments describing the sale
+            operation.
+
+    Returns:
+        int: Exit code ``0`` when the sale is recorded successfully.
+    """
     command = translate_sale(args)
     core_logic.record_sale(context, command)
     return 0

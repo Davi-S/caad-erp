@@ -8,11 +8,26 @@ from ..command_spec import CommandSpec, SubparserFactory
 
 
 def register_add_product_command() -> CommandSpec:
-    """Register the parser and executor for ``add-product``."""
+    """Create CLI wiring for the ``add-product`` sub-command.
+
+    Returns:
+        CommandSpec: Specification containing the parser registrar and
+            executor used to register and execute the command.
+    """
     name = "add-product"
     help_text = "Register a new product in the Products sheet."
 
     def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+        """Attach ``add-product`` arguments to the provided sub-parser.
+
+        Args:
+            action (SubparserFactory): Factory responsible for creating the
+                parser dedicated to this command.
+
+        Returns:
+            argparse.ArgumentParser: Parser configured with all accepted
+                ``add-product`` options.
+        """
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--product-id", required=True)
         parser.add_argument("--product-name", required=True)
@@ -26,14 +41,40 @@ def register_add_product_command() -> CommandSpec:
 
 
 def run_add_product(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the add-product workflow in the BLL."""
+    """Execute the add-product workflow through the business logic layer.
+
+    Args:
+        context (core_logic.RuntimeContext): Active runtime context containing
+            the workbook session to mutate.
+        args (argparse.Namespace): Parsed CLI arguments representing user
+            input for the ``add-product`` command.
+
+    Returns:
+        int: Exit code ``0`` on success. Errors are propagated for higher level
+            handling.
+    """
     payload = translate_add_product(args)
     core_logic.add_product(context, **payload)  # type: ignore[attr-defined]
     return 0
 
 
 def translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
-    """Translate CLI args into an add-product request."""
+    """Convert parsed CLI arguments into ``add_product`` keyword arguments.
+
+    Args:
+        args (argparse.Namespace): Namespace produced by
+            :func:`argparse.ArgumentParser.parse_args` for the command.
+
+    Returns:
+        Mapping[str, Any]: Keyword payload compatible with
+            :func:`core_logic.add_product`. Numerical values are coerced to
+            :class:`~decimal.Decimal` and the ``--inactive`` flag is inverted
+            into the ``is_active`` boolean expected by the business layer.
+
+    Raises:
+        decimal.InvalidOperation: If ``--sell-price`` cannot be parsed as a
+            valid decimal number.
+    """
     return {
         "product_id": args.product_id,
         "product_name": args.product_name,

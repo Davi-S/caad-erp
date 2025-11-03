@@ -6,11 +6,25 @@ from ..command_spec import CommandSpec, SubparserFactory
 
 
 def register_void_command() -> CommandSpec:
-    """Register the parser and executor for ``void``."""
+    """Create CLI wiring for the ``void`` sub-command.
+
+    Returns:
+        CommandSpec: Specification containing the parser registrar and
+            executor used to register and execute the command.
+    """
     name = "void"
     help_text = "Void an existing transaction."
 
     def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+        """Attach ``void`` arguments to the provided sub-parser.
+
+        Args:
+            action (SubparserFactory): Factory responsible for adding the
+                command-specific parser to the CLI.
+
+        Returns:
+            argparse.ArgumentParser: Parser configured for the void workflow.
+        """
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--linked-transaction-id", required=True)
         parser.add_argument("--notes", dest="notes", default=None)
@@ -23,7 +37,16 @@ def register_void_command() -> CommandSpec:
 def translate_void(
     args: argparse.Namespace,
 ) -> core_logic.VoidCommand:
-    """Translate CLI args into a void command object."""
+    """Convert parsed CLI arguments into a ``VoidCommand``.
+
+    Args:
+        args (argparse.Namespace): Namespace populated with ``void`` options.
+
+    Returns:
+        core_logic.VoidCommand: Domain command capturing void details. The
+            CLI does not support replacement commands, so ``replacement_command``
+            is set to ``None``.
+    """
     return core_logic.VoidCommand(
         linked_transaction_id=args.linked_transaction_id,
         replacement_command=None,
@@ -32,7 +55,17 @@ def translate_void(
 
 
 def run_void(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the void workflow via the BLL."""
+    """Execute the void workflow through the business logic layer.
+
+    Args:
+        context (core_logic.RuntimeContext): Runtime context providing access
+            to transactional mutations.
+        args (argparse.Namespace): Parsed CLI arguments describing the void
+            operation.
+
+    Returns:
+        int: Exit code ``0`` when the void is recorded successfully.
+    """
     command = translate_void(args)
     core_logic.record_void(context, command)
     return 0

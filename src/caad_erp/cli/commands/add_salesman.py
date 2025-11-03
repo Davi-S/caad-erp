@@ -7,11 +7,26 @@ from ..command_spec import CommandSpec, SubparserFactory
 
 
 def register_add_salesman_command() -> CommandSpec:
-    """Register the parser and executor for ``add-salesman``."""
+    """Create CLI wiring for the ``add-salesman`` sub-command.
+
+    Returns:
+        CommandSpec: Specification containing the parser registrar and
+            executor used to register and execute the command.
+    """
     name = "add-salesman"
     help_text = "Register a new salesman in the Salesmen sheet."
 
     def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+        """Attach ``add-salesman`` arguments to the provided sub-parser.
+
+        Args:
+            action (SubparserFactory): Factory responsible for adding the
+                command-specific parser to the CLI.
+
+        Returns:
+            argparse.ArgumentParser: Parser configured with the
+                ``add-salesman`` options.
+        """
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--salesman-id", required=True)
         parser.add_argument("--salesman-name", required=True)
@@ -24,7 +39,16 @@ def register_add_salesman_command() -> CommandSpec:
 
 
 def translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
-    """Translate CLI args into an add-salesman request."""
+    """Convert parsed CLI arguments into ``add_salesman`` keyword arguments.
+
+    Args:
+        args (argparse.Namespace): Namespace produced for the
+            ``add-salesman`` command.
+
+    Returns:
+        Mapping[str, Any]: Keyword payload used by :func:`core_logic.add_salesman`.
+            The ``--inactive`` option is inverted into the ``is_active`` flag.
+    """
     return {
         "salesman_id": args.salesman_id,
         "salesman_name": args.salesman_name,
@@ -33,7 +57,16 @@ def translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
 
 
 def run_add_salesman(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the add-salesman workflow in the BLL."""
+    """Execute the add-salesman workflow through the business logic layer.
+
+    Args:
+        context (core_logic.RuntimeContext): Active runtime context containing
+            workbook accessors and caches.
+        args (argparse.Namespace): Parsed CLI arguments for the command.
+
+    Returns:
+        int: Exit code ``0`` when the salesman is successfully recorded.
+    """
     payload = translate_add_salesman(args)
     core_logic.add_salesman(context, **payload)  # type: ignore[attr-defined]
     return 0
