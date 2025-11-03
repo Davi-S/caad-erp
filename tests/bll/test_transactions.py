@@ -1038,7 +1038,7 @@ def test_build_void_reversal_inverts_original():
         notes="Original",
     )
     reversal_time = datetime(2025, 10, 30, 9, 30, 0)
-    reversal = bll.build_void_reversal(
+    reversal = bll.build_void_transaction(
         original, timestamp=reversal_time, notes="Fix")
     assert reversal.transaction_type == constants.TransactionType.VOID.value
     assert reversal.quantity_change == Decimal("2")
