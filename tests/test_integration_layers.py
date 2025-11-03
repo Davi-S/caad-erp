@@ -27,10 +27,10 @@ def _register_sample_product(context: bll.RuntimeContext, *, product_id: str, na
 
 
 def test_deactivate_workflow(runtime_context):
-    """Deactivate a product through the CLI and verify visibility rules."""
+    """Given an active product When the CLI deactivates it Then it disappears from active listings."""
 
+    # Arrange
     context = runtime_context
-
     product = bll.add_product(
         context,
         product_id="P-DEACT",
@@ -38,20 +38,19 @@ def test_deactivate_workflow(runtime_context):
         sell_price=Decimal("2.00"),
         is_active=True,
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
-
     active_before = {row.product_id for row in bll.list_products(context)}
-    assert product.product_id in active_before
 
+    # Act
     args = argparse.Namespace(product_id=product.product_id)
     exit_code = cli.run_deactivate_product(context, args)
-    assert exit_code == 0
 
+    # Assert
+    assert product.product_id in active_before
+    assert exit_code == 0
     active_after = {row.product_id for row in bll.list_products(context)}
     assert product.product_id not in active_after
-
     all_rows = bll.list_products(context, include_inactive=True)
     matching = [row for row in all_rows if row.product_id == product.product_id]
     assert len(matching) == 1
@@ -59,23 +58,20 @@ def test_deactivate_workflow(runtime_context):
 
 
 def test_sale_lifecycle_flow(runtime_context):
-    """Walk through a stock, sale, and reporting cycle using both layers."""
+    """Given a stocked product When sales are recorded Then inventory and profit summaries stay consistent."""
 
-    # Each scenario receives an isolated runtime context from the fixture.
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P1001",
         name="Snickers",
         sell_price=Decimal("3.00"),
     )
-
-    # Persist and reload so the test mirrors the lifecycle of the production
-    # application where writes go to disk before subsequent operations.
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     restock_command = bll.RestockCommand(
         product_id="P1001",
         salesman_id=context.settings.default_salesman_id,
@@ -83,10 +79,7 @@ def test_sale_lifecycle_flow(runtime_context):
         total_cost=Decimal("2.50"),
         notes="Initial stock",
     )
-    # BLL validates that the product exists and that quantities/costs are sane
-    # before appending to the immutable log via the DAL.
     restock_transaction = bll.record_restock(context, restock_command)
-
     sale_command = bll.SaleCommand(
         product_id="P1001",
         salesman_id=context.settings.default_salesman_id,
@@ -95,40 +88,35 @@ def test_sale_lifecycle_flow(runtime_context):
         payment_type=constants.PaymentType.CASH,
         notes="First sale",
     )
-    # The sale should reduce inventory and contribute revenue in the summary.
     sale_transaction = bll.record_sale(context, sale_command)
+    bll.persist_context(context)
 
+    # Assert
     inventory = bll.calculate_inventory(context)
     assert inventory["P1001"] == Decimal("0")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_revenue"] == Decimal("6.00")
     assert summary["total_cost"] == Decimal("-2.50")
     assert summary["profit"] == Decimal("3.50")
-
-    # Persisting after transactions ensures dal writes the latest state.
-    bll.persist_context(context)
-
-    # Sanity check: recorded objects surface the expected transaction types.
     assert restock_transaction.transaction_type == constants.TransactionType.RESTOCK.value
     assert sale_transaction.transaction_type == constants.TransactionType.SALE.value
 
 
 def test_credit_sale_payment_and_void_flow(runtime_context):
-    """Document the credit sale, payment, and reversal + re-entry workflow."""
+    """Given a credit sale When it is paid and corrected with a void Then balances reflect the adjustment."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P2001",
         name="Energy Bar",
         sell_price=Decimal("3.00"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     restock_command = bll.RestockCommand(
         product_id="P2001",
         salesman_id=context.settings.default_salesman_id,
@@ -137,7 +125,6 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
         notes="Bulk restock",
     )
     bll.record_restock(context, restock_command)
-
     credit_sale_command = bll.SaleCommand(
         product_id="P2001",
         salesman_id=context.settings.default_salesman_id,
@@ -146,9 +133,7 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
         payment_type=constants.PaymentType.ON_CREDIT,
         notes="Sold on credit",
     )
-    # Credit sale intentionally logs zero revenue; payment captured later.
     credit_sale = bll.record_sale(context, credit_sale_command)
-
     payment_command = bll.CreditPaymentCommand(
         linked_transaction_id=credit_sale.transaction_id,
         salesman_id=context.settings.default_salesman_id,
@@ -157,7 +142,6 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
         notes="Debt settled",
     )
     payment_transaction = bll.record_credit_payment(context, payment_command)
-
     void_command = bll.VoidCommand(
         linked_transaction_id=credit_sale.transaction_id,
         replacement_command=bll.SaleCommand(
@@ -170,41 +154,38 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
         ),
         notes="Fix quantity",
     )
-    # The VOID should produce a reversal plus the corrected transaction.
     void_transactions = bll.record_void(context, void_command)
+    bll.persist_context(context)
 
+    # Assert
     inventory = bll.calculate_inventory(context)
     assert inventory["P2001"] == Decimal("2")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_revenue"] == Decimal("6.00")
     assert summary["total_cost"] == Decimal("-3.75")
     assert summary["profit"] == Decimal("2.25")
-
     assert len(void_transactions) == 2
     void_txn, corrected_sale = void_transactions
     assert void_txn.transaction_type == constants.TransactionType.VOID.value
     assert corrected_sale.transaction_type == constants.TransactionType.SALE.value
     assert payment_transaction.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
 
-    bll.persist_context(context)
-
 
 def test_write_off_lifecycle_flow(runtime_context):
-    """Record a restock followed by a write-off and verify downstream balances."""
+    """Given stocked inventory When a write-off is recorded Then balances reflect the loss."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P3001",
         name="Trail Mix",
         sell_price=Decimal("4.50"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     restock_command = bll.RestockCommand(
         product_id="P3001",
         salesman_id=context.settings.default_salesman_id,
@@ -213,7 +194,6 @@ def test_write_off_lifecycle_flow(runtime_context):
         notes="Weekly replenishment",
     )
     restock_txn = bll.record_restock(context, restock_command)
-
     write_off_command = bll.WriteOffCommand(
         product_id="P3001",
         salesman_id=context.settings.default_salesman_id,
@@ -221,36 +201,34 @@ def test_write_off_lifecycle_flow(runtime_context):
         notes="Damaged in transit",
     )
     write_off_txn = bll.record_write_off(context, write_off_command)
+    bll.persist_context(context)
 
+    # Assert
     inventory = bll.calculate_inventory(context)
     assert inventory["P3001"] == Decimal("3")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_revenue"] == Decimal("0.00")
     assert summary["total_cost"] == Decimal("-12.50")
     assert summary["profit"] == Decimal("-12.50")
-
     assert restock_txn.transaction_type == constants.TransactionType.RESTOCK.value
     assert write_off_txn.transaction_type == constants.TransactionType.WRITE_OFF.value
 
-    bll.persist_context(context)
-
 
 def test_open_stock_rollover_flow(runtime_context):
-    """Roll inventory forward with OPEN_STOCK and ensure subsequent sales reconcile."""
+    """Given imported opening stock When sales proceed Then balances honor the handoff."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P3002",
         name="Cold Brew",
         sell_price=Decimal("5.00"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     open_stock_command = bll.OpenStockCommand(
         product_id="P3002",
         salesman_id=context.settings.default_salesman_id,
@@ -258,7 +236,6 @@ def test_open_stock_rollover_flow(runtime_context):
         total_revenue=Decimal("20.00"),
     )
     open_stock_txn = bll.record_open_stock(context, open_stock_command)
-
     sale_command = bll.SaleCommand(
         product_id="P3002",
         salesman_id=context.settings.default_salesman_id,
@@ -268,36 +245,34 @@ def test_open_stock_rollover_flow(runtime_context):
         notes="Opening day sale",
     )
     sale_txn = bll.record_sale(context, sale_command)
+    bll.persist_context(context)
 
+    # Assert
     inventory = bll.calculate_inventory(context)
     assert inventory["P3002"] == Decimal("3")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_revenue"] == Decimal("25.00")
     assert summary["total_cost"] == Decimal("0.00")
     assert summary["profit"] == Decimal("25.00")
-
     assert open_stock_txn.transaction_type == constants.TransactionType.OPEN_STOCK.value
     assert sale_txn.transaction_type == constants.TransactionType.SALE.value
 
-    bll.persist_context(context)
-
 
 def test_restock_zero_cost_flow(runtime_context):
-    """Restock with zero cost to ensure inventory rises without affecting costs."""
+    """Given a donated product When stock is recorded with zero cost Then profit reporting stays neutral."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P3002-Z",
         name="Donated Snacks",
         sell_price=Decimal("1.00"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     restock_command = bll.RestockCommand(
         product_id="P3002-Z",
         salesman_id=context.settings.default_salesman_id,
@@ -306,33 +281,32 @@ def test_restock_zero_cost_flow(runtime_context):
         notes="Community donation",
     )
     restock_txn = bll.record_restock(context, restock_command)
+    bll.persist_context(context)
 
+    # Assert
     inventory = bll.calculate_inventory(context)
     assert inventory["P3002-Z"] == Decimal("8")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_cost"] == Decimal("0.00")
     assert summary["profit"] == Decimal("0.00")
     assert restock_txn.total_cost == Decimal("0.00")
 
-    bll.persist_context(context)
-
 
 def test_multiple_credit_payments_flow(runtime_context):
-    """Split a credit settlement across multiple CREDIT_PAYMENT entries."""
+    """Given a credit sale When multiple payments are recorded Then the ledger captures each settlement."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P3003",
         name="Iced Tea",
         sell_price=Decimal("3.00"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     restock_command = bll.RestockCommand(
         product_id="P3003",
         salesman_id=context.settings.default_salesman_id,
@@ -341,7 +315,6 @@ def test_multiple_credit_payments_flow(runtime_context):
         notes="Seasonal stock",
     )
     bll.record_restock(context, restock_command)
-
     credit_sale_command = bll.SaleCommand(
         product_id="P3003",
         salesman_id=context.settings.default_salesman_id,
@@ -351,7 +324,6 @@ def test_multiple_credit_payments_flow(runtime_context):
         notes="Employee tab",
     )
     credit_sale = bll.record_sale(context, credit_sale_command)
-
     first_payment = bll.CreditPaymentCommand(
         linked_transaction_id=credit_sale.transaction_id,
         salesman_id=context.settings.default_salesman_id,
@@ -366,39 +338,36 @@ def test_multiple_credit_payments_flow(runtime_context):
         payment_type=constants.PaymentType.OTHER,
         notes="Balance cleared",
     )
-
     payment_one = bll.record_credit_payment(context, first_payment)
     payment_two = bll.record_credit_payment(context, second_payment)
+    bll.persist_context(context)
 
+    # Assert
     inventory = bll.calculate_inventory(context)
     assert inventory["P3003"] == Decimal("6")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_revenue"] == Decimal("12.00")
     assert summary["total_cost"] == Decimal("-30.00")
     assert summary["profit"] == Decimal("-18.00")
-
     assert payment_one.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
     assert payment_two.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
 
-    bll.persist_context(context)
-
 
 def test_void_without_replacement_flow(runtime_context):
-    """Void an erroneous sale without a replacement and verify balances reset."""
+    """Given a mistaken sale When the transaction is voided without replacement Then balances roll back to the restocked state."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P3004",
         name="Protein Shake",
         sell_price=Decimal("4.00"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     restock_command = bll.RestockCommand(
         product_id="P3004",
         salesman_id=context.settings.default_salesman_id,
@@ -407,7 +376,6 @@ def test_void_without_replacement_flow(runtime_context):
         notes="Morning batch",
     )
     bll.record_restock(context, restock_command)
-
     sale_command = bll.SaleCommand(
         product_id="P3004",
         salesman_id=context.settings.default_salesman_id,
@@ -417,34 +385,31 @@ def test_void_without_replacement_flow(runtime_context):
         notes="Mistaken sale",
     )
     sale_txn = bll.record_sale(context, sale_command)
-
     void_command = bll.VoidCommand(
         linked_transaction_id=sale_txn.transaction_id,
         replacement_command=None,
         notes="Customer cancelled",
     )
     void_results = bll.record_void(context, void_command)
+    bll.persist_context(context)
 
+    # Assert
     assert len(void_results) == 1
     assert void_results[0].transaction_type == constants.TransactionType.VOID.value
-
     inventory = bll.calculate_inventory(context)
     assert inventory["P3004"] == Decimal("4")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_revenue"] == Decimal("0.00")
     assert summary["total_cost"] == Decimal("-8.00")
     assert summary["profit"] == Decimal("-8.00")
 
-    bll.persist_context(context)
-
 
 def test_cli_restock_and_profit_reporting_flow(config_factory, monkeypatch):
-    """Ensure the CLI restock command persists costs and the profit report surfaces them."""
+    """Given CLI restock operations When the profit report runs Then persisted totals match direct BLL calculations."""
 
+    # Arrange
     bundle = config_factory()
     product_id = "CLI-P3001"
-
     add_product_args = [
         "--config",
         str(bundle.config_path),
@@ -472,10 +437,6 @@ def test_cli_restock_and_profit_reporting_flow(config_factory, monkeypatch):
         "CLI restock",
     ]
     profit_args = ["--config", str(bundle.config_path), "profit"]
-
-    assert cli.main(add_product_args) == 0
-    assert cli.main(restock_args) == 0
-
     summary_capture: dict[str, object] = {}
     original_summary = bll.calculate_profit_summary
 
@@ -487,13 +448,19 @@ def test_cli_restock_and_profit_reporting_flow(config_factory, monkeypatch):
 
     monkeypatch.setattr(cli.bll, "calculate_profit_summary", capture_summary)
 
-    assert cli.main(profit_args) == 0
-    assert "summary" in summary_capture
+    # Act
+    add_exit_code = cli.main(add_product_args)
+    restock_exit_code = cli.main(restock_args)
+    profit_exit_code = cli.main(profit_args)
 
+    # Assert
+    assert add_exit_code == 0
+    assert restock_exit_code == 0
+    assert profit_exit_code == 0
+    assert "summary" in summary_capture
     context = bll.load_runtime_context(bundle.config_path)
     bll.ensure_schema_version(context)
     expected_summary = original_summary(context)
-
     assert summary_capture["summary"] == expected_summary
     assert expected_summary["total_revenue"] == Decimal("0.00")
     assert expected_summary["total_cost"] == Decimal("-15.00")
@@ -501,10 +468,10 @@ def test_cli_restock_and_profit_reporting_flow(config_factory, monkeypatch):
 
 
 def test_sale_rejected_for_inactive_product_flow(runtime_context):
-    """Sales against inactive products should surface a business rule violation."""
+    """Given an inactive product When a sale is attempted Then a business rule violation blocks the transaction."""
 
+    # Arrange
     context = runtime_context
-
     bll.add_product(
         context,
         product_id="P-INACTIVE",
@@ -512,10 +479,8 @@ def test_sale_rejected_for_inactive_product_flow(runtime_context):
         sell_price=Decimal("5.00"),
         is_active=False,
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
-
     sale_command = bll.SaleCommand(
         product_id="P-INACTIVE",
         salesman_id=context.settings.default_salesman_id,
@@ -525,34 +490,33 @@ def test_sale_rejected_for_inactive_product_flow(runtime_context):
         notes="Attempted sale",
     )
 
+    # Act
     with pytest.raises(exceptions.BusinessRuleViolation):
         bll.record_sale(context, sale_command)
 
+    # Assert
     assert bll.list_transactions(context) == []
 
 
 def test_sale_rejected_for_inactive_salesman_flow(runtime_context):
-    """Sales should fail when the referenced salesman is inactive."""
+    """Given an inactive salesman When a sale references them Then the business layer rejects the command."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P-ACTIVE",
         name="Active Product",
         sell_price=Decimal("3.00"),
     )
-
     bll.add_salesman(
         context,
         salesman_id="S-INACTIVE",
         salesman_name="On Leave",
         is_active=False,
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
-
     sale_command = bll.SaleCommand(
         product_id="P-ACTIVE",
         salesman_id="S-INACTIVE",
@@ -562,28 +526,30 @@ def test_sale_rejected_for_inactive_salesman_flow(runtime_context):
         notes="Attempt with inactive salesman",
     )
 
+    # Act
     with pytest.raises(exceptions.BusinessRuleViolation):
         bll.record_sale(context, sale_command)
 
+    # Assert
     transactions = bll.list_transactions(context)
     assert all(txn.salesman_id != "S-INACTIVE" for txn in transactions)
 
 
 def test_stock_report_reflects_opening_balance_flow(runtime_context):
-    """OPEN_STOCK entries should contribute to inventory calculations."""
+    """Given opening stock and later activity When inventory is computed Then the balance includes all movements."""
 
+    # Arrange
     context = runtime_context
-
     _register_sample_product(
         context,
         product_id="P3005",
         name="Kombucha",
         sell_price=Decimal("4.00"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
 
+    # Act
     open_stock_command = bll.OpenStockCommand(
         product_id="P3005",
         salesman_id=context.settings.default_salesman_id,
@@ -591,7 +557,6 @@ def test_stock_report_reflects_opening_balance_flow(runtime_context):
         total_revenue=Decimal("24.00"),
     )
     bll.record_open_stock(context, open_stock_command)
-
     restock_command = bll.RestockCommand(
         product_id="P3005",
         salesman_id=context.settings.default_salesman_id,
@@ -600,7 +565,6 @@ def test_stock_report_reflects_opening_balance_flow(runtime_context):
         notes="Top-up",
     )
     bll.record_restock(context, restock_command)
-
     sale_command = bll.SaleCommand(
         product_id="P3005",
         salesman_id=context.settings.default_salesman_id,
@@ -610,55 +574,53 @@ def test_stock_report_reflects_opening_balance_flow(runtime_context):
         notes="Evening sales",
     )
     bll.record_sale(context, sale_command)
+    bll.persist_context(context)
 
+    # Assert
     inventory = bll.calculate_inventory(context)
     assert inventory["P3005"] == Decimal("5")
 
-    bll.persist_context(context)
-
 
 def test_cli_credit_sale_and_debt_report_flow(config_factory, monkeypatch):
-    """Validate that CLI credit sales surface on the debts report pipeline."""
+    """Given a CLI credit sale When the debts report executes Then outstanding balances match the expected principal."""
 
+    # Arrange
     bundle = config_factory()
     product_id = "CLI-CREDIT-1"
+    add_args = [
+        "--config",
+        str(bundle.config_path),
+        "add-product",
+        "--product-id",
+        product_id,
+        "--product-name",
+        "CLI Credit Item",
+        "--sell-price",
+        "7.50",
+    ]
+    sale_args = [
+        "--config",
+        str(bundle.config_path),
+        "sale",
+        "--product-id",
+        product_id,
+        "--quantity",
+        "2",
+        "--salesman-id",
+        bundle.default_salesman_id,
+        "--total-revenue",
+        "0",
+        "--payment-type",
+        constants.PaymentType.ON_CREDIT.value,
+        "--notes",
+        "CLI credit sale",
+    ]
+    debt_args = ["--config", str(bundle.config_path), "debts"]
+    captured: dict[str, dict[str, Decimal]] = {}
 
-    exit_code = cli.main(
-        [
-            "--config",
-            str(bundle.config_path),
-            "add-product",
-            "--product-id",
-            product_id,
-            "--product-name",
-            "CLI Credit Item",
-            "--sell-price",
-            "7.50",
-        ]
-    )
-    assert exit_code == 0
-
-    exit_code = cli.main(
-        [
-            "--config",
-            str(bundle.config_path),
-            "sale",
-            "--product-id",
-            product_id,
-            "--quantity",
-            "2",
-            "--salesman-id",
-            bundle.default_salesman_id,
-            "--total-revenue",
-            "0",
-            "--payment-type",
-            constants.PaymentType.ON_CREDIT.value,
-            "--notes",
-            "CLI credit sale",
-        ]
-    )
-    assert exit_code == 0
-
+    # Act
+    add_exit_code = cli.main(add_args)
+    sale_exit_code = cli.main(sale_args)
     context = bll.load_runtime_context(bundle.config_path)
     bll.ensure_schema_version(context)
     transactions = bll.list_transactions(context)
@@ -673,59 +635,64 @@ def test_cli_credit_sale_and_debt_report_flow(config_factory, monkeypatch):
     product_row = bll.get_product(context, product_id)
     expected_due = abs(sale_txn.quantity_change) * product_row.sell_price
 
-    captured: dict[str, dict[str, Decimal]] = {}
-
-    def compute_outstanding(context: bll.RuntimeContext) -> dict[str, Decimal]:
-        products = {row.product_id: row for row in bll.list_products(
-            context, include_inactive=True)}
+    def compute_outstanding(runtime_context: bll.RuntimeContext) -> dict[str, Decimal]:
+        products = {
+            row.product_id: row
+            for row in bll.list_products(runtime_context, include_inactive=True)
+        }
         payments = collections.defaultdict(Decimal)
-        for txn in bll.list_transactions(context):
-            if txn.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value and txn.linked_transaction_id:
+        for txn in bll.list_transactions(runtime_context):
+            is_payment = txn.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
+            if is_payment and txn.linked_transaction_id:
                 payments[txn.linked_transaction_id] += txn.total_revenue
 
         outstanding: dict[str, Decimal] = {}
-        for txn in bll.list_transactions(context):
-            if txn.transaction_type == constants.TransactionType.SALE.value and txn.payment_type == constants.PaymentType.ON_CREDIT.value:
-                product_id = txn.product_id
-                if product_id is None:
+        for txn in bll.list_transactions(runtime_context):
+            is_credit_sale = txn.transaction_type == constants.TransactionType.SALE.value
+            if is_credit_sale and txn.payment_type == constants.PaymentType.ON_CREDIT.value:
+                product_id_value = txn.product_id
+                if product_id_value is None:
                     continue
-                product = products.get(product_id)
-                unit_price = product.sell_price if product is not None else Decimal(
-                    "0")
+                target_product = products.get(product_id_value)
+                unit_price = target_product.sell_price if target_product else Decimal("0")
                 principal = abs(txn.quantity_change) * unit_price
-                balance = principal - \
-                    payments.get(txn.transaction_id, Decimal("0"))
+                balance = principal - payments.get(txn.transaction_id, Decimal("0"))
                 if balance > Decimal("0"):
                     outstanding[txn.transaction_id] = balance
 
         captured["summary"] = outstanding
         return outstanding
 
-    monkeypatch.setattr(cli.bll, "calculate_outstanding_debts",
-                        compute_outstanding, raising=False)
+    monkeypatch.setattr(
+        cli.bll,
+        "calculate_outstanding_debts",
+        compute_outstanding,
+        raising=False,
+    )
+    debt_exit_code = cli.main(debt_args)
 
-    exit_code = cli.main(["--config", str(bundle.config_path), "debts"])
-    assert exit_code == 0
+    # Assert
+    assert add_exit_code == 0
+    assert sale_exit_code == 0
+    assert debt_exit_code == 0
     assert captured["summary"] == {sale_txn.transaction_id: expected_due}
 
 
 def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
-    """Drive a void with a replacement command through the CLI helpers."""
+    """Given a CLI void with replacement When executed Then new transactions and balances reflect the correction."""
 
+    # Arrange
     bundle = config_factory()
     context = bll.load_runtime_context(bundle.config_path)
     bll.ensure_schema_version(context)
-
     _register_sample_product(
         context,
         product_id="CLI-PVOID",
         name="CLI Smoothie",
         sell_price=Decimal("5.00"),
     )
-
     bll.persist_context(context)
     context = bll.refresh_context(context)
-
     restock_command = bll.RestockCommand(
         product_id="CLI-PVOID",
         salesman_id=context.settings.default_salesman_id,
@@ -734,7 +701,6 @@ def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
         notes="Initial load",
     )
     bll.record_restock(context, restock_command)
-
     sale_command = bll.SaleCommand(
         product_id="CLI-PVOID",
         salesman_id=context.settings.default_salesman_id,
@@ -744,7 +710,6 @@ def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
         notes="Original sale",
     )
     sale_txn = bll.record_sale(context, sale_command)
-
     replacement_sale = bll.SaleCommand(
         product_id="CLI-PVOID",
         salesman_id=context.settings.default_salesman_id,
@@ -763,21 +728,20 @@ def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
 
     monkeypatch.setattr(cli.commands.void, "translate_void", fake_translate)
 
+    # Act
     exit_code = cli.run_void(context, argparse.Namespace())
-    assert exit_code == 0
+    bll.persist_context(context)
 
+    # Assert
+    assert exit_code == 0
     transactions = bll.list_transactions(context)
     void_txn, replacement_txn = transactions[-2:]
     assert void_txn.transaction_type == constants.TransactionType.VOID.value
     assert void_txn.linked_transaction_id == sale_txn.transaction_id
     assert replacement_txn.transaction_type == constants.TransactionType.SALE.value
-
     inventory = bll.calculate_inventory(context)
     assert inventory["CLI-PVOID"] == Decimal("3")
-
     summary = bll.calculate_profit_summary(context)
     assert summary["total_revenue"] == Decimal("10.00")
     assert summary["total_cost"] == Decimal("-12.50")
     assert summary["profit"] == Decimal("-2.50")
-
-    bll.persist_context(context)
