@@ -390,8 +390,8 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
     monkeypatch.setattr(
         cli.parser,
         "persist_workbook",
-        lambda _: iter(()).throw(AssertionError(
-            "should not persist")),  # type: ignore[arg-type]
+        lambda _: iter(()).throw(AssertionError(  # type: ignore[arg-type]
+            "should not persist")),
     )
     handled = {}
 
