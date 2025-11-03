@@ -5,21 +5,30 @@ from caad_erp import cli, bll, constants
 
 
 def test_register_sale_command_returns_spec():
-    """register_sale_command should return a CommandSpec."""
+    """Given the sale registration When register_sale_command runs Then a command spec returns."""
 
+    # Arrange
+    # No additional setup required for registration.
+
+    # Act
     spec = cli.register_sale_command()
+
+    # Assert
     assert spec.name == "sale"
     assert spec.help_text
     assert callable(spec.execute)
 
 
 def test_register_sale_command_configures_arguments():
-    """register_sale_command should define sale-specific arguments."""
+    """Given the sale parser When arguments are parsed Then the namespace reflects the inputs."""
 
+    # Arrange
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
     spec = cli.register_sale_command()
     spec.register(subparsers)
+
+    # Act
     namespace = parser.parse_args(
         [
             "sale",
@@ -37,6 +46,8 @@ def test_register_sale_command_configures_arguments():
             "First sale",
         ]
     )
+
+    # Assert
     assert namespace.product_id == "P1001"
     assert namespace.quantity == "2"
     assert namespace.salesman_id == "S-DEFAULT"
@@ -46,8 +57,9 @@ def test_register_sale_command_configures_arguments():
 
 
 def test_translate_sale_returns_sale_command():
-    """translate_sale should produce a SaleCommand instance."""
+    """Given CLI arguments When translate_sale executes Then a SaleCommand is produced."""
 
+    # Arrange
     args = argparse.Namespace(
         product_id="P1001",
         quantity="2",
@@ -56,7 +68,11 @@ def test_translate_sale_returns_sale_command():
         payment_type=constants.PaymentType.CASH.value,
         notes="First sale",
     )
+
+    # Act
     command = cli.translate_sale(args)
+
+    # Assert
     assert isinstance(command, bll.SaleCommand)
     assert command.quantity == Decimal("2")
     assert command.total_revenue == Decimal("6.00")
@@ -65,8 +81,9 @@ def test_translate_sale_returns_sale_command():
 
 
 def test_run_sale_invokes_bll(runtime_context, monkeypatch):
-    """run_sale should delegate to the business logic layer."""
+    """Given parsed arguments When run_sale executes Then the BLL sale recorder is called."""
 
+    # Arrange
     args = argparse.Namespace()
     command = bll.SaleCommand(
         product_id="P1001",
@@ -75,8 +92,7 @@ def test_run_sale_invokes_bll(runtime_context, monkeypatch):
         total_revenue=Decimal("2.00"),
         payment_type=constants.PaymentType.CASH,
     )
-    monkeypatch.setattr(cli.commands.sale, "translate_sale",
-                        lambda value: command)
+    monkeypatch.setattr(cli.commands.sale, "translate_sale", lambda value: command)
     called = {}
 
     def fake_record(context: bll.RuntimeContext, cmd: bll.SaleCommand) -> None:
@@ -84,7 +100,11 @@ def test_run_sale_invokes_bll(runtime_context, monkeypatch):
         called["cmd"] = cmd
 
     monkeypatch.setattr(cli.bll, "record_sale", fake_record)
+
+    # Act
     result = cli.run_sale(runtime_context, args)
+
+    # Assert
     assert result == 0
     assert called["context"] is runtime_context
     assert called["cmd"] is command

@@ -5,21 +5,30 @@ from caad_erp import cli, bll
 
 
 def test_register_restock_command_returns_spec():
-    """register_restock_command should return a CommandSpec."""
+    """Given the restock registration When register_restock_command runs Then a command spec returns."""
 
+    # Arrange
+    # No additional setup required for registration.
+
+    # Act
     spec = cli.register_restock_command()
+
+    # Assert
     assert spec.name == "restock"
     assert spec.help_text
     assert callable(spec.execute)
 
 
 def test_register_restock_command_configures_arguments():
-    """register_restock_command should define restock-specific arguments."""
+    """Given the restock parser When arguments are parsed Then the namespace captures the inputs."""
 
+    # Arrange
     parser = argparse.ArgumentParser(prog="cli")
     subparsers = parser.add_subparsers(dest="command")
     spec = cli.register_restock_command()
     spec.register(subparsers)
+
+    # Act
     namespace = parser.parse_args(
         [
             "restock",
@@ -35,6 +44,8 @@ def test_register_restock_command_configures_arguments():
             "Bulk restock",
         ]
     )
+
+    # Assert
     assert namespace.product_id == "P1001"
     assert namespace.quantity == "5"
     assert namespace.total_cost == "10.00"
@@ -43,8 +54,9 @@ def test_register_restock_command_configures_arguments():
 
 
 def test_translate_restock_returns_restock_command():
-    """translate_restock should produce a RestockCommand instance."""
+    """Given CLI arguments When translate_restock executes Then a RestockCommand is produced."""
 
+    # Arrange
     args = argparse.Namespace(
         product_id="P1001",
         quantity="5",
@@ -52,7 +64,11 @@ def test_translate_restock_returns_restock_command():
         salesman_id="S-DEFAULT",
         notes="Bulk restock",
     )
+
+    # Act
     command = cli.translate_restock(args)
+
+    # Assert
     assert isinstance(command, bll.RestockCommand)
     assert command.quantity == Decimal("5")
     assert command.total_cost == Decimal("10.00")
@@ -61,8 +77,9 @@ def test_translate_restock_returns_restock_command():
 
 
 def test_run_restock_invokes_bll(runtime_context, monkeypatch):
-    """run_restock should delegate to the business logic layer."""
+    """Given parsed arguments When run_restock executes Then the BLL restock recorder is called."""
 
+    # Arrange
     args = argparse.Namespace()
     command = bll.RestockCommand(
         product_id="P1001",
@@ -70,8 +87,7 @@ def test_run_restock_invokes_bll(runtime_context, monkeypatch):
         quantity=Decimal("5"),
         total_cost=Decimal("10"),
     )
-    monkeypatch.setattr(cli.commands.restock,
-                        "translate_restock", lambda value: command)
+    monkeypatch.setattr(cli.commands.restock, "translate_restock", lambda value: command)
     called = {}
 
     def fake_record(context: bll.RuntimeContext, cmd: bll.RestockCommand) -> None:
@@ -79,6 +95,10 @@ def test_run_restock_invokes_bll(runtime_context, monkeypatch):
         called["cmd"] = cmd
 
     monkeypatch.setattr(cli.bll, "record_restock", fake_record)
+
+    # Act
     result = cli.run_restock(runtime_context, args)
+
+    # Assert
     assert result == 0
     assert called["cmd"] is command
