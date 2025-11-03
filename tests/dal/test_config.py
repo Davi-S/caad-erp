@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from caad_erp import dal  # noqa: E402
+from caad_erp import dal
 
 
 def test_find_config_file_respects_explicit_path(config_file: Path):

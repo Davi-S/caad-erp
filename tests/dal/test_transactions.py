@@ -1,7 +1,6 @@
 from decimal import Decimal
 
-from caad_erp import dal
-from caad_erp import constants
+from caad_erp import dal, constants
 
 
 def test_iter_transactions_yields_transaction_rows(master_workbook_path):

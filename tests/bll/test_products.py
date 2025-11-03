@@ -3,8 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from caad_erp import bll
-from caad_erp import dal
+from caad_erp import bll, dal, exceptions
 
 
 def test_list_products_excludes_inactive_by_default(monkeypatch, context):
@@ -79,7 +78,7 @@ def test_get_product_missing_raises(monkeypatch, context):
 
     monkeypatch.setattr(dal, "iter_products", Mock(return_value=[]))
 
-    with pytest.raises(bll.MissingReferenceError):
+    with pytest.raises(exceptions.MissingReferenceError):
         bll.get_product(context, "NOPE")
 
 
@@ -131,7 +130,7 @@ def test_add_product_rejects_duplicate_id(monkeypatch, context):
     append_mock = Mock()
     monkeypatch.setattr(dal, "append_product", append_mock)
 
-    with pytest.raises(bll.BusinessRuleViolation):
+    with pytest.raises(exceptions.BusinessRuleViolation):
         bll.add_product(
             context,
             product_id="SKU-001",
@@ -210,5 +209,5 @@ def test_update_product_unknown_id_raises(monkeypatch, context):
         Mock(side_effect=KeyError("Product not found")),
     )
 
-    with pytest.raises(bll.MissingReferenceError):
+    with pytest.raises(exceptions.MissingReferenceError):
         bll.update_product(context, "UNKNOWN", is_active=False)

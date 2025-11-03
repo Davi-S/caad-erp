@@ -1,7 +1,6 @@
 import pytest
 
-from caad_erp import dal  # noqa: E402
-from caad_erp import constants
+from caad_erp import dal, constants
 
 
 def test_iter_salesmen_yields_salesman_rows(master_workbook_path):

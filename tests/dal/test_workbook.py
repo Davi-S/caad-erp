@@ -2,8 +2,7 @@ import openpyxl
 import pytest
 from openpyxl.workbook import Workbook as OpenpyxlWorkbook
 
-from caad_erp import dal  # noqa: E402
-from caad_erp import constants
+from caad_erp import dal, constants
 
 
 def test_open_workbook_returns_openpyxl_instance(master_workbook_path):
