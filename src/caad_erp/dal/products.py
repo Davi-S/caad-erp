@@ -1,20 +1,21 @@
+import dataclasses
 import logging
 import typing as t
-from dataclasses import dataclass
 from decimal import Decimal
 
 from openpyxl.workbook import Workbook
 
-from ..constants import SheetName
-from .workbook import locate_row
+from caad_erp import constants
+
+from . import workbook as dal_workbook
 
 logger = logging.getLogger(__name__)
 
 
-PRODUCTS_SHEET = SheetName.PRODUCTS.value
+PRODUCTS_SHEET = constants.SheetName.PRODUCTS.value
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ProductRow:
     """In-memory view of a row from the ``Products`` sheet."""
 
@@ -83,7 +84,8 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
     """
 
     sheet_name = PRODUCTS_SHEET
-    row_index = locate_row(workbook, sheet_name, "ProductID", product_id)
+    row_index = dal_workbook.locate_row(
+        workbook, sheet_name, "ProductID", product_id)
     if row_index is None:
         logger.warning("Product '%s' not found during update", product_id)
         raise KeyError(f"Product not found: {product_id}")

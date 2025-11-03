@@ -1,7 +1,7 @@
 import configparser
+import dataclasses
 import logging
 import typing as t
-from dataclasses import dataclass
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 CONFIG_FILE_NAME = "config.ini"
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ConfigSettings:
     """Typed representation of the ``config.ini`` settings we care about."""
 

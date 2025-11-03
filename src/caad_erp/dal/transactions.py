@@ -1,19 +1,19 @@
+import dataclasses
 import logging
 import typing as t
-from dataclasses import dataclass
 from decimal import Decimal
 
 from openpyxl.workbook import Workbook
 
-from ..constants import SheetName
+from caad_erp import constants
 
 logger = logging.getLogger(__name__)
 
 
-TRANSACTION_LOG_SHEET = SheetName.TRANSACTION_LOG.value
+TRANSACTION_LOG_SHEET = constants.SheetName.TRANSACTION_LOG.value
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class TransactionRow:
     """In-memory view of a row from the ``TransactionLog`` sheet."""
 

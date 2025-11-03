@@ -1,19 +1,20 @@
+import dataclasses
 import logging
 import typing as t
-from dataclasses import dataclass
 
 from openpyxl.workbook import Workbook
 
-from ..constants import SheetName
-from .workbook import locate_row
+from caad_erp import constants
+
+from . import workbook as dal_workbook
 
 logger = logging.getLogger(__name__)
 
 
-SALESMEN_SHEET = SheetName.SALESMEN.value
+SALESMEN_SHEET = constants.SheetName.SALESMEN.value
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class SalesmanRow:
     """In-memory view of a row from the ``Salesmen`` sheet."""
 
@@ -79,7 +80,8 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
     """
 
     sheet_name = SALESMEN_SHEET
-    row_index = locate_row(workbook, sheet_name, "SalesmanID", salesman_id)
+    row_index = dal_workbook.locate_row(
+        workbook, sheet_name, "SalesmanID", salesman_id)
     if row_index is None:
         logger.warning("Salesman '%s' not found during update", salesman_id)
         raise KeyError(f"Salesman not found: {salesman_id}")
