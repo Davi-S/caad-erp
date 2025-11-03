@@ -3,10 +3,10 @@ from decimal import Decimal
 
 from caad_erp import bll
 
-from ..command_spec import CommandSpec, SubparserFactory
+from .. import command_spec
 
 
-def register_write_off_command() -> CommandSpec:
+def register_write_off_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``write-off`` sub-command.
 
     Returns:
@@ -16,7 +16,7 @@ def register_write_off_command() -> CommandSpec:
     name = "write-off"
     help_text = "Record a write-off transaction."
 
-    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``write-off`` arguments to the provided sub-parser.
 
         Args:
@@ -35,7 +35,7 @@ def register_write_off_command() -> CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_write_off)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_write_off)
 
 
 def translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:

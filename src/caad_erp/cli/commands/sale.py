@@ -1,13 +1,12 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import bll
-from caad_erp.constants import PaymentType
+from caad_erp import bll, constants
 
-from ..command_spec import CommandSpec, SubparserFactory
+from .. import command_spec
 
 
-def register_sale_command() -> CommandSpec:
+def register_sale_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``sale`` sub-command.
 
     Returns:
@@ -17,7 +16,7 @@ def register_sale_command() -> CommandSpec:
     name = "sale"
     help_text = "Record a sale transaction."
 
-    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``sale`` arguments to the provided sub-parser.
 
         Args:
@@ -34,14 +33,14 @@ def register_sale_command() -> CommandSpec:
         parser.add_argument("--total-revenue", required=True)
         parser.add_argument(
             "--payment-type",
-            choices=[member.value for member in PaymentType],
+            choices=[member.value for member in constants.PaymentType],
             required=True,
         )
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
 
-    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_sale)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_sale)
 
 
 def translate_sale(args: argparse.Namespace) -> bll.SaleCommand:
@@ -62,7 +61,7 @@ def translate_sale(args: argparse.Namespace) -> bll.SaleCommand:
         ValueError: If ``--payment-type`` does not correspond to a known
             :class:`~caad_erp.constants.PaymentType` value.
     """
-    payment = PaymentType(args.payment_type)
+    payment = constants.PaymentType(args.payment_type)
     return bll.SaleCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,

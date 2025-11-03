@@ -1,8 +1,8 @@
 """Command specification definitions for the CLI sub-parser layer."""
 
 import argparse
+import dataclasses
 import typing as t
-from dataclasses import dataclass
 
 from caad_erp import bll
 
@@ -13,7 +13,7 @@ class SubparserFactory(t.Protocol):
     ) -> argparse.ArgumentParser: ...
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class CommandSpec:
     """Describe how a CLI sub-command is configured and executed."""
 

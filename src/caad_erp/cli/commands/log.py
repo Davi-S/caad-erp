@@ -2,10 +2,10 @@ import argparse
 
 from caad_erp import bll
 
-from ..command_spec import CommandSpec, SubparserFactory
+from .. import command_spec
 
 
-def register_log_command() -> CommandSpec:
+def register_log_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``log`` reporting sub-command.
 
     Returns:
@@ -15,7 +15,7 @@ def register_log_command() -> CommandSpec:
     name = "log"
     help_text = "Display the transaction log."
 
-    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``log`` arguments to the provided sub-parser.
 
         Args:
@@ -30,7 +30,7 @@ def register_log_command() -> CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_log_report)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_log_report)
 
 
 def run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:

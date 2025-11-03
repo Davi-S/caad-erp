@@ -12,8 +12,7 @@ from pathlib import Path
 
 from caad_erp import bll, exceptions
 
-from . import commands
-from .command_spec import CommandSpec
+from . import command_spec, commands
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def configure_subcommands(
     parser: argparse.ArgumentParser,
-) -> t.Mapping[str, CommandSpec]:
+) -> t.Mapping[str, command_spec.CommandSpec]:
     """Attach read and write sub-commands to the base parser.
 
     This routine coordinates registration of every command exposed by the CLI
@@ -70,7 +69,7 @@ def configure_subcommands(
 
 def register_write_commands(
     subparsers: argparse._SubParsersAction,
-) -> t.Dict[str, CommandSpec]:
+) -> t.Dict[str, command_spec.CommandSpec]:
     """Register state-mutating commands like sales, restocks, and voids.
 
     Args:
@@ -100,7 +99,7 @@ def register_write_commands(
 
 def register_read_commands(
     subparsers: argparse._SubParsersAction,
-) -> t.Dict[str, CommandSpec]:
+) -> t.Dict[str, command_spec.CommandSpec]:
     """Register read-only reporting commands such as stock and profit views.
 
     Args:
@@ -126,7 +125,7 @@ def register_read_commands(
 def dispatch_command(
     context: bll.RuntimeContext,
     args: argparse.Namespace,
-    command_table: t.Mapping[str, CommandSpec],
+    command_table: t.Mapping[str, command_spec.CommandSpec],
 ) -> int:
     """Route parsed CLI arguments to the appropriate command executor.
 
@@ -154,8 +153,8 @@ def dispatch_command(
 
 
 def build_command_table(
-    specs: t.Iterable[CommandSpec],
-) -> t.MutableMapping[str, CommandSpec]:
+    specs: t.Iterable[command_spec.CommandSpec],
+) -> t.MutableMapping[str, command_spec.CommandSpec]:
     """Index command specifications by their declared command name.
 
     Args:
@@ -170,7 +169,7 @@ def build_command_table(
         ValueError: If multiple specifications declare the same command name,
             which would make dispatch ambiguous.
     """
-    table: t.Dict[str, CommandSpec] = {}
+    table: t.Dict[str, command_spec.CommandSpec] = {}
     for spec in specs:
         if spec.name in table:
             raise ValueError(f"Duplicate command name: {spec.name}")

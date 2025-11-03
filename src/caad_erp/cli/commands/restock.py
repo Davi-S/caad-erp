@@ -3,10 +3,10 @@ from decimal import Decimal
 
 from caad_erp import bll
 
-from ..command_spec import CommandSpec, SubparserFactory
+from .. import command_spec
 
 
-def register_restock_command() -> CommandSpec:
+def register_restock_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``restock`` sub-command.
 
     Returns:
@@ -16,7 +16,7 @@ def register_restock_command() -> CommandSpec:
     name = "restock"
     help_text = "Record a restock transaction."
 
-    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``restock`` arguments to the provided sub-parser.
 
         Args:
@@ -36,7 +36,7 @@ def register_restock_command() -> CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_restock)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_restock)
 
 
 def translate_restock(args: argparse.Namespace) -> bll.RestockCommand:

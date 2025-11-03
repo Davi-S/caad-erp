@@ -2,10 +2,10 @@ import argparse
 
 from caad_erp import bll
 
-from ..command_spec import CommandSpec, SubparserFactory
+from .. import command_spec
 
 
-def register_deactivate_product_command() -> CommandSpec:
+def register_deactivate_product_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``deactivate-product`` sub-command.
 
     Returns:
@@ -16,7 +16,7 @@ def register_deactivate_product_command() -> CommandSpec:
     name = "deactivate-product"
     help_text = "Mark an existing product as inactive."
 
-    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``deactivate-product`` arguments to the provided sub-parser.
 
         Args:
@@ -32,7 +32,7 @@ def register_deactivate_product_command() -> CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_deactivate_product)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_deactivate_product)
 
 
 def translate_deactivate_product(args: argparse.Namespace) -> str:
