@@ -1,3 +1,11 @@
+"""Excel persistence helpers for the transaction log worksheet.
+
+These helpers stream, append, and normalize transaction rows to keep
+``openpyxl`` interactions encapsulated. By surfacing typed dataclasses the
+business layer can reason about monetary values and optional relationships
+without handling spreadsheet quirks directly.
+"""
+
 import dataclasses
 import logging
 import typing as t

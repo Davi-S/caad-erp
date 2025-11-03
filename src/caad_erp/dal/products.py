@@ -1,3 +1,11 @@
+"""Excel persistence helpers for the ``Products`` worksheet.
+
+The routines in this module coordinate with :mod:`openpyxl` to read and write
+product rows while preserving types that the business layer expects. They
+provide iteration, append, and update behaviors plus serializers that bridge
+between worksheet row tuples and typed dataclasses.
+"""
+
 import dataclasses
 import logging
 import typing as t

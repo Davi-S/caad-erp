@@ -1,3 +1,12 @@
+"""Configuration helpers for the CAAD ERP data layer.
+
+This module discovers, parses, and validates the ``config.ini`` file that
+controls how the persistence layer connects to the Excel data store. The
+utilities expose strongly typed settings and defensive logging so that higher
+layers receive actionable diagnostics when configuration is missing or
+malformed.
+"""
+
 import configparser
 import dataclasses
 import logging
