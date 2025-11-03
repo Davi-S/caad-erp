@@ -1,3 +1,10 @@
+"""Public command registrations for the CAAD ERP CLI.
+
+Importing this module makes every command registration helper available via a
+single namespace, simplifying command table composition in
+``caad_erp.cli.parser`` and for any downstream tooling.
+"""
+
 from .add_product import *
 from .add_salesman import *
 from .deactivate_product import *
