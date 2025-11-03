@@ -1,8 +1,5 @@
 """Unit tests verifying the CAAD ERP business logic layer via a mocked DAL."""
 
-from __future__ import annotations
-
-from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import Mock
@@ -10,142 +7,6 @@ from unittest.mock import Mock
 import pytest
 
 from caad_erp import bll, constants, data_manager
-
-# ---------------------------------------------------------------------------
-# Runtime/context management
-# ---------------------------------------------------------------------------
-
-
-def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
-    """load_runtime_context should assemble settings and workbook into a context."""
-
-    config_path = tmp_path / "config.ini"
-    parser = Mock(name="parser")
-    parsed_settings = data_manager.ConfigSettings(
-        data_file=tmp_path / "master.xlsx",
-        lounge_name="Lounge",
-        schema_version=constants.EXPECTED_SCHEMA_VERSION,
-        default_salesman_id="S-DEFAULT",
-    )
-    workbook = Mock(name="workbook")
-
-    find_config_file = Mock(return_value=config_path)
-    read_config = Mock(return_value=parser)
-    parse_settings = Mock(return_value=parsed_settings)
-    open_workbook = Mock(return_value=workbook)
-
-    monkeypatch.setattr(data_manager, "find_config_file", find_config_file)
-    monkeypatch.setattr(data_manager, "read_config", read_config)
-    monkeypatch.setattr(data_manager, "parse_settings", parse_settings)
-    monkeypatch.setattr(data_manager, "open_workbook", open_workbook)
-
-    context = bll.load_runtime_context(config_path)
-
-    assert context.settings is parsed_settings
-    assert context.workbook is workbook
-    find_config_file.assert_called_once_with(config_path)
-    read_config.assert_called_once_with(config_path.resolve())
-    parse_settings.assert_called_once_with(
-        parser, base_path=config_path.resolve().parent)
-    open_workbook.assert_called_once_with(parsed_settings.data_file)
-
-
-def test_ensure_schema_version_rejects_mismatch(context):
-    """Schema mismatches should surface a RuntimeError with clear messaging."""
-
-    bad_settings = replace(context.settings, schema_version="0.9")
-    bad_context = bll.RuntimeContext(
-        settings=bad_settings, workbook=context.workbook)
-    with pytest.raises(RuntimeError):
-        bll.ensure_schema_version(bad_context)
-
-
-def test_list_products_excludes_inactive_by_default(monkeypatch, context):
-    """list_products should hide inactive rows unless explicitly requested."""
-
-    products = [
-        data_manager.ProductRow("P1", "Active", Decimal("1.00"), True),
-        data_manager.ProductRow("P2", "Inactive", Decimal("2.00"), False),
-    ]
-    iter_mock = Mock(return_value=products)
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
-
-    result = bll.list_products(context)
-
-    assert [row.product_id for row in result] == ["P1"]
-    iter_mock.assert_called_once_with(context.workbook)
-
-
-def test_list_products_can_include_inactive(monkeypatch, context):
-    """A caller should be able to include inactive products when needed."""
-
-    products = [
-        data_manager.ProductRow("P3", "Active", Decimal("1.00"), True),
-        data_manager.ProductRow("P4", "Inactive", Decimal("2.00"), False),
-    ]
-    iter_mock = Mock(return_value=products)
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
-
-    bll.list_products(context)
-    iter_mock.reset_mock()
-
-    result = bll.list_products(context, include_inactive=True)
-
-    assert {row.product_id for row in result} == {"P3", "P4"}
-    iter_mock.assert_not_called()
-
-
-def test_list_products_reuses_cache_between_calls(monkeypatch, context):
-    """list_products should populate the cache once and reuse it."""
-
-    products = [
-        data_manager.ProductRow("P-cache", "Cached", Decimal("1.00"), True),
-        data_manager.ProductRow("P-inactive", "Hidden",
-                                Decimal("2.00"), False),
-    ]
-    iter_mock = Mock(return_value=products)
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
-
-    first = bll.list_products(context)
-    second = bll.list_products(context)
-
-    assert [row.product_id for row in first] == ["P-cache"]
-    assert [row.product_id for row in second] == ["P-cache"]
-    iter_mock.assert_called_once_with(context.workbook)
-
-
-def test_list_salesmen_excludes_inactive_by_default(monkeypatch, context):
-    """list_salesmen should filter inactive rows unless instructed otherwise."""
-
-    salesmen = [
-        data_manager.SalesmanRow("S2", "Active", True),
-        data_manager.SalesmanRow("S3", "Retired", False),
-    ]
-    iter_mock = Mock(return_value=salesmen)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_mock)
-
-    result = bll.list_salesmen(context)
-
-    assert {row.salesman_id for row in result} == {"S2"}
-    iter_mock.assert_called_once_with(context.workbook)
-
-
-def test_list_salesmen_reuses_cache_between_calls(monkeypatch, context):
-    """list_salesmen should only hit the data layer once per context."""
-
-    salesmen = [
-        data_manager.SalesmanRow("S-cache", "Cached", True),
-        data_manager.SalesmanRow("S-inactive", "Hidden", False),
-    ]
-    iter_mock = Mock(return_value=salesmen)
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_mock)
-
-    first = bll.list_salesmen(context)
-    second = bll.list_salesmen(context, include_inactive=True)
-
-    assert {row.salesman_id for row in first} == {"S-cache"}
-    assert {row.salesman_id for row in second} == {"S-cache", "S-inactive"}
-    iter_mock.assert_called_once_with(context.workbook)
 
 
 def test_list_transactions_returns_all_rows(monkeypatch, context):
@@ -204,296 +65,6 @@ def test_list_transactions_reuses_cache_between_calls(monkeypatch, context):
     iter_mock.assert_called_once_with(context.workbook)
 
 
-def test_get_product_returns_match(monkeypatch, context):
-    """get_product should hydrate a ProductRow for the requested ID."""
-
-    products = [data_manager.ProductRow(
-        "P10", "Cookie", Decimal("4.00"), True)]
-    monkeypatch.setattr(data_manager, "iter_products",
-                        Mock(return_value=products))
-
-    product = bll.get_product(context, "P10")
-
-    assert product.product_name == "Cookie"
-
-
-def test_get_product_missing_raises(monkeypatch, context):
-    """Unknown ProductIDs should raise MissingReferenceError."""
-
-    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
-
-    with pytest.raises(bll.MissingReferenceError):
-        bll.get_product(context, "NOPE")
-
-
-def test_get_product_reuses_cache_after_first_lookup(monkeypatch, context):
-    """Product lookups should rely on the cached ``by_id`` mapping."""
-
-    product_row = data_manager.ProductRow(
-        "P-cache", "Cached", Decimal("3.00"), True)
-    iter_mock = Mock(return_value=[product_row])
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
-
-    first = bll.get_product(context, "P-cache")
-    second = bll.get_product(context, "P-cache")
-
-    assert first is second
-    iter_mock.assert_called_once_with(context.workbook)
-
-
-def test_add_product_appends_record_and_invalidates_cache(monkeypatch, context):
-    """add_product should persist a ProductRow and flush cached catalog data."""
-
-    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
-    append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_product", append_mock)
-
-    result = bll.add_product(
-        context,
-        product_id="SKU-001",
-        product_name="Chocolate Bar",
-        sell_price=Decimal("2.50"),
-        is_active=True,
-    )
-
-    append_mock.assert_called_once()
-    workbook_arg, record_arg = append_mock.call_args[0]
-    assert workbook_arg is context.workbook
-    assert record_arg == result
-    assert result.product_id == "SKU-001"
-    assert "products" not in context._cache
-
-
-def test_add_product_rejects_duplicate_id(monkeypatch, context):
-    """Duplicate ProductIDs should surface a BusinessRuleViolation."""
-
-    existing = data_manager.ProductRow(
-        "SKU-001", "Existing", Decimal("1.00"), True)
-    monkeypatch.setattr(data_manager, "iter_products",
-                        Mock(return_value=[existing]))
-    append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_product", append_mock)
-
-    with pytest.raises(bll.BusinessRuleViolation):
-        bll.add_product(
-            context,
-            product_id="SKU-001",
-            product_name="New Product",
-            sell_price=Decimal("1.50"),
-            is_active=True,
-        )
-
-    append_mock.assert_not_called()
-
-
-def test_add_product_rejects_negative_price(monkeypatch, context):
-    """add_product should reject negative sell_price values."""
-
-    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
-    append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_product", append_mock)
-
-    with pytest.raises(ValueError):
-        bll.add_product(
-            context,
-            product_id="SKU-NEG",
-            product_name="Invalid",
-            sell_price=Decimal("-0.01"),
-            is_active=True,
-        )
-
-    append_mock.assert_not_called()
-
-
-def test_update_product_delegates_and_refreshes_cache(monkeypatch, context):
-    """update_product should call the DAL, clear caches, and reflect new data."""
-
-    original_bucket: dict[str, object] = {}
-    context._cache["products"] = original_bucket
-
-    captured: dict[str, object] = {}
-
-    def fake_update(workbook, product_id, *, field_values):
-        captured["workbook"] = workbook
-        captured["product_id"] = product_id
-        captured["field_values"] = field_values
-
-    updated_rows = [
-        data_manager.ProductRow(
-            "SKU-001", "Retired Snack", Decimal("2.50"), False)
-    ]
-
-    monkeypatch.setattr(data_manager, "update_product", fake_update)
-    monkeypatch.setattr(data_manager, "iter_products",
-                        Mock(return_value=updated_rows))
-
-    result = bll.update_product(context, "  SKU-001  ", is_active=False)
-
-    assert result.product_id == "SKU-001"
-    assert result.is_active is False
-    assert captured["workbook"] is context.workbook
-    assert captured["product_id"] == "SKU-001"
-    assert captured["field_values"] == {"IsActive": False}
-    assert context._cache["products"] is not original_bucket
-
-
-def test_update_product_requires_changes(context):
-    """update_product should reject calls that provide no fields to update."""
-
-    with pytest.raises(ValueError):
-        bll.update_product(context, "SKU-002")
-
-
-def test_update_product_unknown_id_raises(monkeypatch, context):
-    """Missing products should surface as MissingReferenceError."""
-
-    monkeypatch.setattr(
-        data_manager,
-        "update_product",
-        Mock(side_effect=KeyError("Product not found")),
-    )
-
-    with pytest.raises(bll.MissingReferenceError):
-        bll.update_product(context, "UNKNOWN", is_active=False)
-
-
-def test_get_salesman_returns_match(monkeypatch, context):
-    """get_salesman should fetch active salesmen."""
-
-    salesmen = [data_manager.SalesmanRow("S8", "Jordan", True)]
-    monkeypatch.setattr(data_manager, "iter_salesmen",
-                        Mock(return_value=salesmen))
-
-    salesman = bll.get_salesman(context, "S8")
-
-    assert salesman.salesman_name == "Jordan"
-
-
-def test_get_salesman_reuses_cache_after_first_lookup(monkeypatch, context):
-    """Salesman lookups should be served from cache after first access."""
-
-    salesman_row = data_manager.SalesmanRow("S-cache", "Cached", True)
-    iter_mock = Mock(return_value=[salesman_row])
-    monkeypatch.setattr(data_manager, "iter_salesmen", iter_mock)
-
-    first = bll.get_salesman(context, "S-cache")
-    second = bll.get_salesman(context, "S-cache")
-
-    assert first is second
-    iter_mock.assert_called_once_with(context.workbook)
-
-
-def test_add_salesman_appends_record_and_invalidates_cache(monkeypatch, context):
-    """add_salesman should persist a SalesmanRow and clear the cache bucket."""
-
-    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=[]))
-    append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_salesman", append_mock)
-
-    result = bll.add_salesman(
-        context,
-        salesman_id="S-001",
-        salesman_name="Jamie",
-        is_active=True,
-    )
-
-    append_mock.assert_called_once()
-    workbook_arg, record_arg = append_mock.call_args[0]
-    assert workbook_arg is context.workbook
-    assert record_arg == result
-    assert result.salesman_id == "S-001"
-    assert "salesmen" not in context._cache
-
-
-def test_add_salesman_rejects_duplicate_id(monkeypatch, context):
-    """Existing SalesmanIDs should block add_salesman calls."""
-
-    existing = data_manager.SalesmanRow("S-001", "Existing", True)
-    monkeypatch.setattr(data_manager, "iter_salesmen",
-                        Mock(return_value=[existing]))
-    append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_salesman", append_mock)
-
-    with pytest.raises(bll.BusinessRuleViolation):
-        bll.add_salesman(
-            context,
-            salesman_id="S-001",
-            salesman_name="Duplicate",
-            is_active=True,
-        )
-
-    append_mock.assert_not_called()
-
-
-def test_add_salesman_requires_nonempty_name(monkeypatch, context):
-    """add_salesman should validate the provided salesman name."""
-
-    monkeypatch.setattr(data_manager, "iter_salesmen", Mock(return_value=[]))
-    append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_salesman", append_mock)
-
-    with pytest.raises(ValueError):
-        bll.add_salesman(
-            context,
-            salesman_id="S-EMPTY",
-            salesman_name="   ",
-            is_active=True,
-        )
-
-    append_mock.assert_not_called()
-
-
-def test_update_salesman_delegates_and_refreshes_cache(monkeypatch, context):
-    """update_salesman should call the DAL, clear caches, and reflect new data."""
-
-    original_bucket: dict[str, object] = {}
-    context._cache["salesmen"] = original_bucket
-
-    captured: dict[str, object] = {}
-
-    def fake_update(workbook, salesman_id, *, field_values):
-        captured["workbook"] = workbook
-        captured["salesman_id"] = salesman_id
-        captured["field_values"] = field_values
-
-    updated_rows = [
-        data_manager.SalesmanRow("S-001", "Alex", False)
-    ]
-
-    monkeypatch.setattr(data_manager, "update_salesman", fake_update)
-    monkeypatch.setattr(data_manager, "iter_salesmen",
-                        Mock(return_value=updated_rows))
-
-    result = bll.update_salesman(context, "  S-001  ", is_active=False)
-
-    assert result.salesman_id == "S-001"
-    assert result.is_active is False
-    assert captured["workbook"] is context.workbook
-    assert captured["salesman_id"] == "S-001"
-    assert captured["field_values"] == {"IsActive": False}
-    assert context._cache["salesmen"] is not original_bucket
-
-
-def test_update_salesman_requires_changes(context):
-    """update_salesman should reject calls without any updates."""
-
-    with pytest.raises(ValueError):
-        bll.update_salesman(context, "S-002")
-
-
-def test_update_salesman_unknown_id_raises(monkeypatch, context):
-    """Missing salesmen should surface as MissingReferenceError."""
-
-    monkeypatch.setattr(
-        data_manager,
-        "update_salesman",
-        Mock(side_effect=KeyError("Salesman not found")),
-    )
-
-    with pytest.raises(bll.MissingReferenceError):
-        bll.update_salesman(context, "UNKNOWN", is_active=False)
-
-
 def test_get_transaction_returns_match(monkeypatch, context):
     """get_transaction should retrieve ledger rows by ID."""
 
@@ -546,160 +117,6 @@ def test_get_transaction_reuses_cache_after_first_lookup(monkeypatch, context):
     iter_mock.assert_called_once_with(context.workbook)
 
 
-def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
-    """calculate_inventory should return total on-hand per ProductID."""
-
-    transactions = [
-        data_manager.TransactionRow(
-            transaction_id="T100",
-            timestamp_iso="2025-10-30T02:00:00",
-            transaction_type=constants.TransactionType.RESTOCK.value,
-            product_id="P10",
-            salesman_id=None,
-            payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("5"),
-            total_revenue=Decimal("0.00"),
-            total_cost=Decimal("-10.00"),
-            linked_transaction_id=None,
-            notes=None,
-        ),
-        data_manager.TransactionRow(
-            transaction_id="T101",
-            timestamp_iso="2025-10-30T02:30:00",
-            transaction_type=constants.TransactionType.SALE.value,
-            product_id="P10",
-            salesman_id="S-DEFAULT",
-            payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("-2"),
-            total_revenue=Decimal("4.00"),
-            total_cost=Decimal("0.00"),
-            linked_transaction_id=None,
-            notes=None,
-        ),
-    ]
-    monkeypatch.setattr(data_manager, "iter_transactions",
-                        Mock(return_value=transactions))
-
-    inventory = bll.calculate_inventory(context)
-
-    assert inventory["P10"] == Decimal("3")
-
-
-def test_calculate_inventory_reuses_transaction_cache(monkeypatch, context):
-    """calculate_inventory should reuse the cached transaction list."""
-
-    transactions = [
-        data_manager.TransactionRow(
-            transaction_id="T200",
-            timestamp_iso="2025-10-30T02:45:00",
-            transaction_type=constants.TransactionType.SALE.value,
-            product_id="P11",
-            salesman_id="S-DEFAULT",
-            payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("-1"),
-            total_revenue=Decimal("2.50"),
-            total_cost=Decimal("0.00"),
-            linked_transaction_id=None,
-            notes=None,
-        )
-    ]
-    iter_mock = Mock(return_value=transactions)
-    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
-
-    first = bll.calculate_inventory(context)
-    second = bll.calculate_inventory(context)
-
-    assert first == {"P11": Decimal("-1")}
-    assert second == {"P11": Decimal("-1")}
-    iter_mock.assert_called_once_with(context.workbook)
-
-
-def test_calculate_profit_summary_returns_totals(monkeypatch, context):
-    """calculate_profit_summary should return total revenue, cost, and profit."""
-
-    transactions = [
-        data_manager.TransactionRow(
-            transaction_id="T110",
-            timestamp_iso="2025-10-30T03:00:00",
-            transaction_type=constants.TransactionType.RESTOCK.value,
-            product_id="P10",
-            salesman_id=None,
-            payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("5"),
-            total_revenue=Decimal("0.00"),
-            total_cost=Decimal("-15.00"),
-            linked_transaction_id=None,
-            notes=None,
-        ),
-        data_manager.TransactionRow(
-            transaction_id="T111",
-            timestamp_iso="2025-10-30T03:15:00",
-            transaction_type=constants.TransactionType.SALE.value,
-            product_id="P10",
-            salesman_id="S-DEFAULT",
-            payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("-5"),
-            total_revenue=Decimal("25.00"),
-            total_cost=Decimal("0.00"),
-            linked_transaction_id=None,
-            notes=None,
-        ),
-    ]
-    monkeypatch.setattr(data_manager, "iter_transactions",
-                        Mock(return_value=transactions))
-
-    summary = bll.calculate_profit_summary(context)
-
-    assert summary == {
-        "total_revenue": Decimal("25.00"),
-        "total_cost": Decimal("-15.00"),
-        "profit": Decimal("10.00"),
-    }
-
-
-def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context):
-    """calculate_profit_summary should not rescan the workbook after caching."""
-
-    transactions = [
-        data_manager.TransactionRow(
-            transaction_id="T210",
-            timestamp_iso="2025-10-30T03:30:00",
-            transaction_type=constants.TransactionType.RESTOCK.value,
-            product_id="P12",
-            salesman_id=None,
-            payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("5"),
-            total_revenue=Decimal("0.00"),
-            total_cost=Decimal("-10.00"),
-            linked_transaction_id=None,
-            notes=None,
-        ),
-        data_manager.TransactionRow(
-            transaction_id="T211",
-            timestamp_iso="2025-10-30T03:45:00",
-            transaction_type=constants.TransactionType.SALE.value,
-            product_id="P12",
-            salesman_id="S-DEFAULT",
-            payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("-5"),
-            total_revenue=Decimal("20.00"),
-            total_cost=Decimal("0.00"),
-            linked_transaction_id=None,
-            notes=None,
-        ),
-    ]
-    iter_mock = Mock(return_value=transactions)
-    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
-
-    first = bll.calculate_profit_summary(context)
-    second = bll.calculate_profit_summary(context)
-
-    assert first == {"total_revenue": Decimal(
-        "20.00"), "total_cost": Decimal("-10.00"), "profit": Decimal("10.00")}
-    assert second == first
-    iter_mock.assert_called_once_with(context.workbook)
-
-
 def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetime):
     """record_sale should validate inputs and append a SALE row."""
 
@@ -714,7 +131,8 @@ def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetim
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 18, 0, 0, tzinfo=UTC)
 
@@ -778,7 +196,8 @@ def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -830,7 +249,8 @@ def test_record_restock_appends_transaction(monkeypatch, context, set_fixed_date
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 9, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -915,7 +335,8 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fi
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -968,7 +389,8 @@ def test_record_write_off_appends_transaction(monkeypatch, context, set_fixed_da
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 12, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -1031,7 +453,8 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context, set_
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -1096,7 +519,8 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 19, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -1158,7 +582,8 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [credit_sale]
@@ -1246,7 +671,8 @@ def test_record_open_stock_appends_transaction(monkeypatch, context, set_fixed_d
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 7, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -1308,7 +734,8 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -1396,8 +823,10 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
     record_sale = Mock(return_value=replacement_result)
 
     monkeypatch.setattr(bll.transactions, "get_transaction", get_transaction)
-    monkeypatch.setattr(bll.transactions, "validate_void_target", validate_void_target)
-    monkeypatch.setattr(bll.transactions, "build_void_reversal", build_void_reversal)
+    monkeypatch.setattr(
+        bll.transactions, "validate_void_target", validate_void_target)
+    monkeypatch.setattr(
+        bll.transactions, "build_void_reversal", build_void_reversal)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
     monkeypatch.setattr(bll.transactions, "record_sale", record_sale)
 
@@ -1454,7 +883,8 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(
+        bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [target]
@@ -1530,34 +960,6 @@ def test_require_nonnegative_money_accepts_zero():
     """Zero or positive currency values should pass validation."""
 
     bll.require_nonnegative_money(Decimal("0.00"))
-
-
-def test_persist_context_writes_to_disk(monkeypatch, context):
-    """persist_context should flush workbook changes to disk."""
-
-    save_mock = Mock()
-    monkeypatch.setattr(data_manager, "save_workbook", save_mock)
-
-    bll.persist_context(context)
-
-    save_mock.assert_called_once_with(
-        context.workbook, destination=context.settings.data_file)
-
-
-def test_refresh_context_reloads_from_disk(monkeypatch, settings):
-    """refresh_context should discard in-memory workbook state and reload."""
-
-    refreshed_workbook = Mock(name="reloaded")
-    refresh_mock = Mock(return_value=refreshed_workbook)
-    monkeypatch.setattr(data_manager, "refresh_workbook", refresh_mock)
-
-    original = bll.RuntimeContext(settings=settings, workbook=Mock())
-    reloaded_context = bll.refresh_context(original)
-
-    refresh_mock.assert_called_once_with(settings.data_file)
-    assert reloaded_context.workbook is refreshed_workbook
-    assert reloaded_context.settings is settings
-    assert reloaded_context is not original
 
 
 def test_validate_credit_sale_link_accepts_credit_sale():
