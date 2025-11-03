@@ -87,25 +87,22 @@ class VoidCommand:
     notes: t.Optional[str] = None
 
 
-def generate_transaction_id(*, prefix: str = "T", when: t.Optional[datetime] = None) -> str:
+def generate_transaction_id(when: datetime) -> str:
     """Generate a sortable transaction identifier using UTC timestamps.
 
     Args:
-        prefix (str): t.Optional designator prepended to the identifier. Defaults
-            to ``"T"`` for standard transactions but is overridden for voids.
-        when (datetime | None): Timestamp used for deterministically producing
-            the identifier. When ``None`` the current UTC time is used.
+        when (datetime): Timestamp used for deterministically producing
+            the identifier.
 
     Returns:
-        str: Identifier formed as ``{prefix}{YYYYMMDDHHMMSSffffff}``.
+        str: Identifier formed as ``YYYYMMDDHHMMSSffffff``.
 
     The format preserves chronological ordering and packs microseconds to avoid
     collisions when multiple transactions occur within the same second. Caller
     supplied timestamps allow deterministic identifiers during testing or data
     migrations.
     """
-    when = when or datetime.now(UTC)
-    return f"{prefix}{when.strftime('%Y%m%d%H%M%S%f')}"
+    return when.strftime('%Y%m%d%H%M%S%f')
 
 
 def require_positive_quantity(quantity: Decimal) -> None:
@@ -648,7 +645,7 @@ def build_void_reversal(transaction: data_manager.TransactionRow, *, timestamp: 
     audit trails.
     """
     return data_manager.TransactionRow(
-        transaction_id=generate_transaction_id(prefix="V", when=timestamp),
+        transaction_id=generate_transaction_id(when=timestamp),
         timestamp_iso=timestamp.isoformat(),
         transaction_type=TransactionType.VOID.value,
         product_id=transaction.product_id,
