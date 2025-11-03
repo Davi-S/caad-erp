@@ -6,12 +6,27 @@ from ..command_spec import CommandSpec, SubparserFactory
 
 
 def register_deactivate_product_command() -> CommandSpec:
-    """Register the parser and executor for ``deactivate-product``."""
+    """Create CLI wiring for the ``deactivate-product`` sub-command.
+
+    Returns:
+        CommandSpec: Specification containing the parser registrar and
+            executor used to register and execute the command.
+    """
 
     name = "deactivate-product"
     help_text = "Mark an existing product as inactive."
 
     def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+        """Attach ``deactivate-product`` arguments to the provided sub-parser.
+
+        Args:
+            action (SubparserFactory): Factory responsible for adding the
+                command-specific parser to the CLI definition.
+
+        Returns:
+            argparse.ArgumentParser: Parser configured for product
+                deactivation inputs.
+        """
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("--product-id", required=True)
         parser.set_defaults(command=name)
@@ -21,13 +36,31 @@ def register_deactivate_product_command() -> CommandSpec:
 
 
 def translate_deactivate_product(args: argparse.Namespace) -> str:
-    """Translate CLI args into a product identifier to deactivate."""
+    """Normalize CLI arguments into a product identifier.
+
+    Args:
+        args (argparse.Namespace): Namespace containing the
+            ``deactivate-product`` options.
+
+    Returns:
+        str: Sanitized product identifier suitable for
+            :func:`core_logic.update_product`.
+    """
 
     return str(args.product_id).strip()
 
 
 def run_deactivate_product(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the deactivate-product workflow via the BLL."""
+    """Execute the deactivate-product workflow through the business logic layer.
+
+    Args:
+        context (core_logic.RuntimeContext): Active runtime context that
+            exposes workbook mutation APIs.
+        args (argparse.Namespace): Parsed CLI arguments for the command.
+
+    Returns:
+        int: Exit code ``0`` after the product has been flagged as inactive.
+    """
 
     product_id = translate_deactivate_product(args)
     core_logic.update_product(context, product_id, is_active=False)

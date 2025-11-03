@@ -6,11 +6,26 @@ from ..command_spec import CommandSpec, SubparserFactory
 
 
 def register_debts_command() -> CommandSpec:
-    """Register the parser and executor for ``debts``."""
+    """Create CLI wiring for the ``debts`` reporting sub-command.
+
+    Returns:
+        CommandSpec: Specification containing the parser registrar and
+            executor used to register and execute the command.
+    """
     name = "debts"
     help_text = "Display outstanding credit balances."
 
     def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+        """Attach ``debts`` arguments to the provided sub-parser.
+
+        Args:
+            action (SubparserFactory): Factory responsible for adding the
+                command-specific parser to the CLI.
+
+        Returns:
+            argparse.ArgumentParser: Parser configured for the debts report
+                command.
+        """
         parser = action.add_parser(name, help=help_text)
         parser.set_defaults(command=name)
         return parser
@@ -19,7 +34,19 @@ def register_debts_command() -> CommandSpec:
 
 
 def run_debts_report(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the outstanding debts reporting workflow."""
-    core_logic.calculate_outstanding_debts(
-        context)  # type: ignore[attr-defined]
+    """Execute the outstanding debts reporting workflow.
+
+    Args:
+        context (core_logic.RuntimeContext): Runtime context providing access
+            to the immutable transaction log and caches.
+        args (argparse.Namespace): Parsed CLI arguments for the command. This
+            command currently consumes no additional options but is included
+            for API parity.
+
+    Returns:
+        int: Exit code ``0`` after triggering the calculation.
+    """
+    core_logic.calculate_outstanding_debts(  # type: ignore[attr-defined]
+        context
+    )
     return 0
