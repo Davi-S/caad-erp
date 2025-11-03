@@ -226,7 +226,7 @@ def test_update_product_requires_changes(context):
         bll.update_product(context, product_id)
 
     # Assert
-    assert product_id in str(exc_info.value)
+    assert str(exc_info.value) == "At least one field must be provided to update"
 
 
 def test_update_product_unknown_id_raises(monkeypatch, context):
