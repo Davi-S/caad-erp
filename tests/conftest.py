@@ -262,7 +262,7 @@ def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> Callable[[datetime], 
                 assert tz is UTC
                 return moment
 
-        monkeypatch.setattr(bll, "datetime", _FixedDateTime)
+        monkeypatch.setattr(bll.transactions, "datetime", _FixedDateTime)
         return moment
 
     return _apply

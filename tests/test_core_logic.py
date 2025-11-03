@@ -714,7 +714,7 @@ def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetim
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 18, 0, 0, tzinfo=UTC)
 
@@ -778,7 +778,7 @@ def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -830,7 +830,7 @@ def test_record_restock_appends_transaction(monkeypatch, context, set_fixed_date
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 9, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -915,7 +915,7 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fi
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -968,7 +968,7 @@ def test_record_write_off_appends_transaction(monkeypatch, context, set_fixed_da
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 12, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -1031,7 +1031,7 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context, set_
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -1096,7 +1096,7 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 19, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -1158,7 +1158,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [credit_sale]
@@ -1246,7 +1246,7 @@ def test_record_open_stock_appends_transaction(monkeypatch, context, set_fixed_d
     monkeypatch.setattr(data_manager, "iter_products", iter_products_mock)
     monkeypatch.setattr(data_manager, "iter_salesmen", iter_salesmen_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     fixed_now = datetime(2025, 10, 30, 7, 0, 0, tzinfo=UTC)
     set_fixed_datetime(fixed_now)
@@ -1308,7 +1308,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [existing]
@@ -1395,11 +1395,11 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
     append_mock = Mock()
     record_sale = Mock(return_value=replacement_result)
 
-    monkeypatch.setattr(bll, "get_transaction", get_transaction)
-    monkeypatch.setattr(bll, "validate_void_target", validate_void_target)
-    monkeypatch.setattr(bll, "build_void_reversal", build_void_reversal)
+    monkeypatch.setattr(bll.transactions, "get_transaction", get_transaction)
+    monkeypatch.setattr(bll.transactions, "validate_void_target", validate_void_target)
+    monkeypatch.setattr(bll.transactions, "build_void_reversal", build_void_reversal)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "record_sale", record_sale)
+    monkeypatch.setattr(bll.transactions, "record_sale", record_sale)
 
     command = bll.VoidCommand(
         linked_transaction_id="T-original",
@@ -1454,7 +1454,7 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
     monkeypatch.setattr(data_manager, "iter_transactions",
                         iter_transactions_mock)
     monkeypatch.setattr(data_manager, "append_transaction", append_mock)
-    monkeypatch.setattr(bll, "generate_transaction_id", generate_mock)
+    monkeypatch.setattr(bll.transactions, "generate_transaction_id", generate_mock)
 
     initial = bll.list_transactions(context)
     assert initial == [target]
@@ -1474,7 +1474,7 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
     assert len(results) == 1
     reversal = results[0]
     append_mock.assert_called_once_with(context.workbook, reversal)
-    generate_mock.assert_called_once_with(prefix="V", when=fixed_now)
+    generate_mock.assert_called_once_with(when=fixed_now)
     assert append_calls == [(context.workbook, reversal)]
     assert reversal.transaction_id == "V-new"
     assert reversal.timestamp_iso == fixed_now.isoformat()
@@ -1503,7 +1503,7 @@ def test_generate_transaction_id_uses_timestamp():
 
     when = datetime(2025, 10, 30, 12, 30, 0)
     tx_id = bll.generate_transaction_id(when=when)
-    assert tx_id.startswith("T20251030")
+    assert tx_id.startswith("20251030")
 
 
 def test_require_positive_quantity_rejects_nonpositive():
