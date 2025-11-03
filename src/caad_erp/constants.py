@@ -4,10 +4,7 @@ Collecting enumerations in one place keeps the data, business, and
 presentation layers aligned on schema and ledger identifiers.
 """
 
-from __future__ import annotations
-
 from enum import Enum
-
 
 # Central schema version expected by all layers when validating workbooks.
 EXPECTED_SCHEMA_VERSION = "1.0.0"
@@ -39,11 +36,3 @@ class SheetName(str, Enum):
     PRODUCTS = "Products"
     SALESMEN = "Salesmen"
     TRANSACTION_LOG = "TransactionLog"
-
-
-__all__ = [
-    "EXPECTED_SCHEMA_VERSION",
-    "PaymentType",
-    "TransactionType",
-    "SheetName",
-]
