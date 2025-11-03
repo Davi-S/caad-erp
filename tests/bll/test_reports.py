@@ -5,8 +5,9 @@ from caad_erp import bll, constants, dal
 
 
 def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
-    """calculate_inventory should return total on-hand per ProductID."""
+    """Given restock and sale entries When inventory is calculated Then on-hand quantity reflects both movements."""
 
+    # Arrange
     transactions = [
         dal.TransactionRow(
             transaction_id="T100",
@@ -35,17 +36,19 @@ def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
             notes=None,
         ),
     ]
-    monkeypatch.setattr(dal, "iter_transactions",
-                        Mock(return_value=transactions))
+    monkeypatch.setattr(dal, "iter_transactions", Mock(return_value=transactions))
 
+    # Act
     inventory = bll.calculate_inventory(context)
 
+    # Assert
     assert inventory["P10"] == Decimal("3")
 
 
 def test_calculate_inventory_reuses_transaction_cache(monkeypatch, context):
-    """calculate_inventory should reuse the cached transaction list."""
+    """Given a cached transaction list When calculate_inventory runs again Then no additional DAL reads occur."""
 
+    # Arrange
     transactions = [
         dal.TransactionRow(
             transaction_id="T200",
@@ -64,17 +67,20 @@ def test_calculate_inventory_reuses_transaction_cache(monkeypatch, context):
     iter_mock = Mock(return_value=transactions)
     monkeypatch.setattr(dal, "iter_transactions", iter_mock)
 
+    # Act
     first = bll.calculate_inventory(context)
     second = bll.calculate_inventory(context)
 
+    # Assert
     assert first == {"P11": Decimal("-1")}
     assert second == {"P11": Decimal("-1")}
     iter_mock.assert_called_once_with(context.workbook)
 
 
 def test_calculate_profit_summary_returns_totals(monkeypatch, context):
-    """calculate_profit_summary should return total revenue, cost, and profit."""
+    """Given sales and restocks When profit summary runs Then totals aggregate revenue and cost."""
 
+    # Arrange
     transactions = [
         dal.TransactionRow(
             transaction_id="T110",
@@ -103,11 +109,12 @@ def test_calculate_profit_summary_returns_totals(monkeypatch, context):
             notes=None,
         ),
     ]
-    monkeypatch.setattr(dal, "iter_transactions",
-                        Mock(return_value=transactions))
+    monkeypatch.setattr(dal, "iter_transactions", Mock(return_value=transactions))
 
+    # Act
     summary = bll.calculate_profit_summary(context)
 
+    # Assert
     assert summary == {
         "total_revenue": Decimal("25.00"),
         "total_cost": Decimal("-15.00"),
@@ -116,8 +123,9 @@ def test_calculate_profit_summary_returns_totals(monkeypatch, context):
 
 
 def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context):
-    """calculate_profit_summary should not rescan the workbook after caching."""
+    """Given cached transactions When profit summary recalculates Then DAL iteration happens only once."""
 
+    # Arrange
     transactions = [
         dal.TransactionRow(
             transaction_id="T210",
@@ -149,10 +157,15 @@ def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context)
     iter_mock = Mock(return_value=transactions)
     monkeypatch.setattr(dal, "iter_transactions", iter_mock)
 
+    # Act
     first = bll.calculate_profit_summary(context)
     second = bll.calculate_profit_summary(context)
 
-    assert first == {"total_revenue": Decimal(
-        "20.00"), "total_cost": Decimal("-10.00"), "profit": Decimal("10.00")}
+    # Assert
+    assert first == {
+        "total_revenue": Decimal("20.00"),
+        "total_cost": Decimal("-10.00"),
+        "profit": Decimal("10.00"),
+    }
     assert second == first
     iter_mock.assert_called_once_with(context.workbook)
