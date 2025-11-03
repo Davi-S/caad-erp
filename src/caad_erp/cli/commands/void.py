@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -36,29 +36,29 @@ def register_void_command() -> CommandSpec:
 
 def translate_void(
     args: argparse.Namespace,
-) -> core_logic.VoidCommand:
+) -> bll.VoidCommand:
     """Convert parsed CLI arguments into a ``VoidCommand``.
 
     Args:
         args (argparse.Namespace): Namespace populated with ``void`` options.
 
     Returns:
-        core_logic.VoidCommand: Domain command capturing void details. The
+        bll.VoidCommand: Domain command capturing void details. The
             CLI does not support replacement commands, so ``replacement_command``
             is set to ``None``.
     """
-    return core_logic.VoidCommand(
+    return bll.VoidCommand(
         linked_transaction_id=args.linked_transaction_id,
         replacement_command=None,
         notes=args.notes,
     )
 
 
-def run_void(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_void(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the void workflow through the business logic layer.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context providing access
+        context (bll.RuntimeContext): Runtime context providing access
             to transactional mutations.
         args (argparse.Namespace): Parsed CLI arguments describing the void
             operation.
@@ -67,5 +67,5 @@ def run_void(context: core_logic.RuntimeContext, args: argparse.Namespace) -> in
         int: Exit code ``0`` when the void is recorded successfully.
     """
     command = translate_void(args)
-    core_logic.record_void(context, command)
+    bll.record_void(context, command)
     return 0

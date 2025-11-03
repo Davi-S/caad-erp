@@ -2,7 +2,7 @@ import argparse
 import typing as t
 from dataclasses import dataclass
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 
 class SubparserFactory(t.Protocol):
@@ -18,4 +18,4 @@ class CommandSpec:
     name: str
     help_text: str
     register: t.Callable[[SubparserFactory], argparse.ArgumentParser]
-    execute: t.Callable[[core_logic.RuntimeContext, argparse.Namespace], int]
+    execute: t.Callable[[bll.RuntimeContext, argparse.Namespace], int]

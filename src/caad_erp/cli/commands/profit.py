@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -33,11 +33,11 @@ def register_profit_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_profit_report)
 
 
-def run_profit_report(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the profit reporting workflow.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context providing access
+        context (bll.RuntimeContext): Runtime context providing access
             to cached inventory and transaction data.
         args (argparse.Namespace): Parsed CLI arguments for the command. This
             command currently consumes no additional options but is included
@@ -46,5 +46,5 @@ def run_profit_report(context: core_logic.RuntimeContext, args: argparse.Namespa
     Returns:
         int: Exit code ``0`` after calculating the profit summary.
     """
-    core_logic.calculate_profit_summary(context)
+    bll.calculate_profit_summary(context)
     return 0

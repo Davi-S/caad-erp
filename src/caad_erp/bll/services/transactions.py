@@ -1,45 +1,18 @@
-"""Business logic layer for the CAAD ERP workbook.
-
-This module enforces the domain rules that govern interactions with the
-immutable ``TransactionLog`` model. It relies on the data access layer for all
-I/O, layering caches and command objects on top so that callers operate on
-predictable, validated workflows rather than raw spreadsheet mutations.
-"""
-
-from __future__ import annotations
-
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from decimal import Decimal, InvalidOperation
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
 import logging
+import typing as t
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from decimal import Decimal
 
-from openpyxl.workbook import Workbook
+from caad_erp import data_manager
+from caad_erp.constants import PaymentType, TransactionType
+from caad_erp.exceptions import *
 
-from . import data_manager
-from .constants import EXPECTED_SCHEMA_VERSION, PaymentType, TransactionType
-
+from ..runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
+from .products import get_product
+from .salesman import get_salesman
 
 logger = logging.getLogger(__name__)
-
-
-class BusinessRuleViolation(Exception):
-    """Raised when a requested operation violates a domain constraint."""
-
-
-class MissingReferenceError(BusinessRuleViolation):
-    """Raised when a referenced product, salesman, or transaction is unknown."""
-
-
-@dataclass(frozen=True)
-class RuntimeContext:
-    """Container for configuration and workbook references used by the BLL."""
-
-    settings: data_manager.ConfigSettings
-    workbook: Workbook
-    _cache: Dict[str, Dict[str, Any]] = field(
-        default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -51,7 +24,7 @@ class SaleCommand:
     quantity: Decimal
     total_revenue: Decimal
     payment_type: PaymentType
-    notes: Optional[str] = None
+    notes: t.Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -62,7 +35,7 @@ class RestockCommand:
     salesman_id: str
     quantity: Decimal
     total_cost: Decimal
-    notes: Optional[str] = None
+    notes: t.Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -72,7 +45,7 @@ class WriteOffCommand:
     product_id: str
     salesman_id: str
     quantity: Decimal
-    notes: Optional[str] = None
+    notes: t.Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -83,7 +56,7 @@ class CreditPaymentCommand:
     salesman_id: str
     total_revenue: Decimal
     payment_type: PaymentType
-    notes: Optional[str] = None
+    notes: t.Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -96,7 +69,7 @@ class OpenStockCommand:
     total_revenue: Decimal
 
 
-TransactionCommand = Union[
+TransactionCommand = t.Union[
     SaleCommand,
     RestockCommand,
     WriteOffCommand,
@@ -110,125 +83,69 @@ class VoidCommand:
     """User intent for voiding a prior transaction."""
 
     linked_transaction_id: str
-    replacement_command: Optional[TransactionCommand]
-    notes: Optional[str] = None
+    replacement_command: t.Optional[TransactionCommand]
+    notes: t.Optional[str] = None
 
 
-def _get_cache_bucket(context: RuntimeContext, name: str) -> Dict[str, Any]:
-    """Return a mutable cache bucket dedicated to the supplied name.
-
-    The business logic layer maintains in-memory caches keyed by domain area
-    (products, salesmen, transactions). This helper retrieves or initializes
-    the bucket associated with ``name``. Buckets are simple dictionaries that
-    store precomputed query results, significantly reducing repeated workbook
-    scans.
+def generate_transaction_id(*, prefix: str = "T", when: t.Optional[datetime] = None) -> str:
+    """Generate a sortable transaction identifier using UTC timestamps.
 
     Args:
-        context (RuntimeContext): Runtime state carrying the shared cache
-            dictionary.
-        name (str): Logical bucket name to fetch or create.
+        prefix (str): t.Optional designator prepended to the identifier. Defaults
+            to ``"T"`` for standard transactions but is overridden for voids.
+        when (datetime | None): Timestamp used for deterministically producing
+            the identifier. When ``None`` the current UTC time is used.
 
     Returns:
-        dict[str, Any]: Mutable mapping used to cache derived collections for a
-            specific domain entity set.
+        str: Identifier formed as ``{prefix}{YYYYMMDDHHMMSSffffff}``.
+
+    The format preserves chronological ordering and packs microseconds to avoid
+    collisions when multiple transactions occur within the same second. Caller
+    supplied timestamps allow deterministic identifiers during testing or data
+    migrations.
     """
-
-    bucket = context._cache.get(name)
-    if bucket is None:
-        logger.debug("Initializing cache bucket '%s'", name)
-        bucket = {}
-        context._cache[name] = bucket
-    return bucket
+    when = when or datetime.now(UTC)
+    return f"{prefix}{when.strftime('%Y%m%d%H%M%S%f')}"
 
 
-def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
-    """Evict one or more cache buckets after mutating workbook state.
-
-    Following write operations, invalidation ensures subsequent reads rebuild
-    their caches from the updated workbook rather than serving stale data.
+def require_positive_quantity(quantity: Decimal) -> None:
+    """Validate that a quantity is strictly positive.
 
     Args:
-        context (RuntimeContext): Active runtime context whose cache should be
-            pruned.
-        *names (str): Variable-length list of bucket identifiers to remove.
-            Missing buckets are ignored gracefully so callers can request
-            targeted invalidation without defensive checks.    
+        quantity (Decimal): Quantity supplied by a command object.
+
+    Raises:
+        ValueError: If ``quantity`` is zero or negative.
+
+    Inventory adjustments that decrease stock convert the quantity into a
+    negative value later in the pipeline, so callers always submit positive
+    magnitudes here. Using :class:`ValueError` keeps the guard consistent with
+    other validation helpers in the module.
     """
-
-    if not names:
-        return
-
-    logger.debug("Invalidating cache buckets: %s", ", ".join(names))
-
-    for name in names:
-        context._cache.pop(name, None)
+    if quantity <= Decimal("0"):
+        logger.error("Quantity validation failed: %s", quantity)
+        raise ValueError("Quantity must be greater than zero")
 
 
-def _ensure_products_cache(context: RuntimeContext) -> Dict[str, Any]:
-    """Populate the product cache bucket on demand.
-
-    By storing both the full list and derivative structures, higher-level
-    helpers can service different query patterns without touching the workbook
-    again.
+def require_nonnegative_money(amount: Decimal) -> None:
+    """Validate that a monetary value is nonnegative.
 
     Args:
-        context (RuntimeContext): Runtime state used to access the workbook and
-            shared caches.
+        amount (Decimal): Currency value supplied by a command object.
 
-    Returns:
-        dict[str, Any]: Bucket containing ``all`` products, ``active``
-            products, and a ``by_id`` lookup dictionary. Reuses prior
-            computations when available.
+    Raises:
+        ValueError: If ``amount`` is less than zero.
+
+    Monetary fields are stored as signed decimals within the transaction logger.
+    This helper ensures upstream workflows never pass negative revenue or cost
+    figures without explicitly opting into that behavior.
     """
-
-    bucket = _get_cache_bucket(context, "products")
-    if "all" not in bucket:
-        all_products = list(data_manager.iter_products(context.workbook))
-        bucket["all"] = all_products
-        bucket["active"] = [
-            product for product in all_products if product.is_active]
-        bucket["by_id"] = {
-            product.product_id: product for product in all_products}
-        logger.debug(
-            "Populated products cache with %d entries (%d active)",
-            len(all_products),
-            len(bucket["active"]),
-        )
-    return bucket
+    if amount < Decimal("0"):
+        logger.error("Monetary value validation failed: %s", amount)
+        raise ValueError("Amount must be zero or positive")
 
 
-def _ensure_salesmen_cache(context: RuntimeContext) -> Dict[str, Any]:
-    """Populate the salesman cache bucket on demand.
-
-    The bucket mirrors the structure used for products so public APIs can rely
-    on a consistent shape when retrieving cached data.
-
-    Args:
-        context (RuntimeContext): Runtime state used to access the workbook and
-            shared caches.
-
-    Returns:
-        dict[str, Any]: Bucket containing ``all`` salesmen, ``active`` salesmen,
-            and a ``by_id`` lookup dictionary.
-    """
-
-    bucket = _get_cache_bucket(context, "salesmen")
-    if "all" not in bucket:
-        all_salesmen = list(data_manager.iter_salesmen(context.workbook))
-        bucket["all"] = all_salesmen
-        bucket["active"] = [
-            salesman for salesman in all_salesmen if salesman.is_active]
-        bucket["by_id"] = {
-            salesman.salesman_id: salesman for salesman in all_salesmen}
-        logger.debug(
-            "Populated salesmen cache with %d entries (%d active)",
-            len(all_salesmen),
-            len(bucket["active"]),
-        )
-    return bucket
-
-
-def _ensure_transactions_cache(context: RuntimeContext) -> Dict[str, Any]:
+def _ensure_transactions_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
     """Populate the transaction log cache bucket on demand.
 
     Because transactions are immutable after creation, caching the full list
@@ -240,7 +157,7 @@ def _ensure_transactions_cache(context: RuntimeContext) -> Dict[str, Any]:
             shared caches.
 
     Returns:
-        dict[str, Any]: Bucket containing ``all`` transactions and a ``by_id``
+        dict[str, t.Any]: Bucket containing ``all`` transactions and a ``by_id``
             dictionary for quick primary key lookups.
     """
 
@@ -258,113 +175,10 @@ def _ensure_transactions_cache(context: RuntimeContext) -> Dict[str, Any]:
     return bucket
 
 
-def load_runtime_context(config_path: Optional[Path] = None) -> RuntimeContext:
-    """Load configuration settings and a live workbook for the BLL.
-
-    The helper forms the foundation for all business logic calls by resolving
-    ``config.ini``, parsing settings, and opening the Excel workbook that
-    stores transactional data. The resulting :class:`RuntimeContext` bundles the
-    immutable settings with a mutable workbook handle and an empty cache store.
-
-    Args:
-        config_path (Path | None): Optional override path for the configuration
-            file. When omitted the data layer performs its upward search from
-            the current working directory.
-
-    Returns:
-        RuntimeContext: Fully populated context ready for orchestration
-            functions.
-
-    Raises:
-        FileNotFoundError: If the configuration file or workbook cannot be
-            located.
-        KeyError: When mandatory configuration options are missing.
-    """
-    located_config = data_manager.find_config_file(config_path)
-    resolved_config = Path(located_config).expanduser().resolve()
-    parser = data_manager.read_config(resolved_config)
-    settings = data_manager.parse_settings(
-        parser, base_path=resolved_config.parent)
-    workbook = data_manager.open_workbook(settings.data_file)
-    logger.info("Loaded runtime context for workbook '%s'", settings.data_file)
-    return RuntimeContext(settings=settings, workbook=workbook)
+logger = logging.getLogger(__name__)
 
 
-def ensure_schema_version(context: RuntimeContext) -> None:
-    """Validate workbook compatibility before mutating state.
-
-    The CAAD ERP workbook evolves alongside the source code. This guard
-    ensures the version stored in ``config.ini`` matches the application-level
-    ``EXPECTED_SCHEMA_VERSION`` before later routines perform inserts.
-
-    Args:
-        context (RuntimeContext): Runtime context containing the resolved
-            settings.
-
-    Raises:
-        RuntimeError: If the schema version declared in the configuration does
-            not match ``EXPECTED_SCHEMA_VERSION``.
-    """
-    if context.settings.schema_version != EXPECTED_SCHEMA_VERSION:
-        logger.error(
-            "Workbook schema mismatch: expected %s, found %s",
-            EXPECTED_SCHEMA_VERSION,
-            context.settings.schema_version,
-        )
-        raise RuntimeError(
-            f"Workbook schema mismatch: expected {EXPECTED_SCHEMA_VERSION}, found {context.settings.schema_version}"
-        )
-
-    logger.debug("Schema version '%s' validated",
-                 context.settings.schema_version)
-
-
-def list_products(context: RuntimeContext, *, include_inactive: bool = False) -> List[data_manager.ProductRow]:
-    """Return cached product rows optionally filtered by active status.
-
-    The helper interrogates the memoized product bucket so the workbook is not
-    re-scanned between calls. When ``include_inactive`` is ``False`` only rows
-    whose ``ProductRow.is_active`` flag evaluates to ``True`` are returned,
-    preserving the default behavior expected by point-of-sale workflows.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        include_inactive (bool): When ``True`` the result includes soft-deleted
-            or inactive products. The default is to surface only active entries.
-
-    Returns:
-        list[data_manager.ProductRow]: Copy of the cached product dataset in
-            sheet order.
-    """
-    cache = _ensure_products_cache(context)
-    source = cache["all"] if include_inactive else cache["active"]
-    return list(source)
-
-
-def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) -> List[data_manager.SalesmanRow]:
-    """Return cached salesman rows optionally filtered by active status.
-
-    Like :func:`list_products`, this helper operates on the memoized salesman
-    bucket to avoid workbook iteration. Callers opt into seeing inactive
-    records when they need historical reporting or audit trails.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        include_inactive (bool): When ``True`` exposes inactive salesmen.
-            Defaults to active-only listings for operational flows.
-
-    Returns:
-        list[data_manager.SalesmanRow]: Copy of the cached salesman dataset in
-            sheet order.
-    """
-    cache = _ensure_salesmen_cache(context)
-    source = cache["all"] if include_inactive else cache["active"]
-    return list(source)
-
-
-def list_transactions(context: RuntimeContext) -> List[data_manager.TransactionRow]:
+def list_transactions(context: RuntimeContext) -> t.List[data_manager.TransactionRow]:
     """Fetch the immutable transaction log from cache.
 
     The returned list is a shallow copy of the cached sequence so callers can
@@ -381,313 +195,6 @@ def list_transactions(context: RuntimeContext) -> List[data_manager.TransactionR
     """
     cache = _ensure_transactions_cache(context)
     return list(cache["all"])
-
-
-def get_product(context: RuntimeContext, product_id: str) -> data_manager.ProductRow:
-    """Resolve a product record by its identifier.
-
-    The lookup leverages the product cache for near constant-time access and
-    raises :class:`MissingReferenceError` when the workbook does not contain
-    the requested identifier.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        product_id (str): Identifier populated in the ``Products`` sheet.
-
-    Returns:
-        data_manager.ProductRow: Matching product dataclass sourced from cache.
-
-    Raises:
-        MissingReferenceError: If ``product_id`` is absent from the workbook.
-    """
-    cache = _ensure_products_cache(context)
-    try:
-        return cache["by_id"][product_id]
-    except KeyError as exc:
-        logger.warning("Product lookup failed for id '%s'", product_id)
-        raise MissingReferenceError(
-            f"Unknown product id: {product_id}") from exc
-
-
-def add_product(
-    context: RuntimeContext,
-    *,
-    product_id: str,
-    product_name: str,
-    sell_price: Decimal,
-    is_active: bool = True,
-) -> data_manager.ProductRow:
-    """Append a product row after enforcing catalog invariants.
-
-    Args:
-        context (RuntimeContext): Active runtime context encapsulating settings
-            and workbook references.
-        product_id (str): Identifier to assign in the ``Products`` sheet.
-        product_name (str): Human-friendly name stored alongside the id.
-        sell_price (Decimal): Default sale price used when recording sales.
-        is_active (bool): Initial activation state. Defaults to ``True``.
-
-    Returns:
-        data_manager.ProductRow: Persisted product record represented as a DAL
-            dataclass.
-
-    Raises:
-        ValueError: If identifiers, names, or monetary values fail validation.
-        BusinessRuleViolation: When attempting to register a duplicate product
-            identifier.
-    """
-
-    normalized_id = product_id.strip()
-    if not normalized_id:
-        logger.error("Product creation rejected: blank product_id")
-        raise ValueError("Product ID must be provided")
-
-    normalized_name = product_name.strip()
-    if not normalized_name:
-        logger.error("Product creation rejected: blank product_name")
-        raise ValueError("Product name must be provided")
-
-    try:
-        price = sell_price if isinstance(
-            sell_price, Decimal) else Decimal(sell_price)
-    except (InvalidOperation, TypeError) as exc:
-        logger.error(
-            "Product creation rejected: invalid sell_price '%s'", sell_price)
-        raise ValueError("Sell price must be a valid decimal number") from exc
-
-    if price < Decimal("0"):
-        logger.error(
-            "Product creation rejected: negative sell_price '%s'", price)
-        raise ValueError("Sell price must be zero or positive")
-
-    bucket = _ensure_products_cache(context)
-    if normalized_id in bucket["by_id"]:
-        logger.error(
-            "Product creation rejected: duplicate id '%s'", normalized_id)
-        raise BusinessRuleViolation(
-            f"Product '{normalized_id}' already exists")
-
-    record = data_manager.ProductRow(
-        product_id=normalized_id,
-        product_name=normalized_name,
-        sell_price=price,
-        is_active=is_active,
-    )
-
-    data_manager.append_product(context.workbook, record)
-    _invalidate_cache(context, "products")
-    logger.info(
-        "Registered product '%s' (%s) with sell price %s",
-        record.product_id,
-        record.product_name,
-        record.sell_price,
-    )
-    return record
-
-
-def update_product(
-    context: RuntimeContext,
-    product_id: str,
-    *,
-    product_name: Optional[str] = None,
-    sell_price: Optional[Decimal] = None,
-    is_active: Optional[bool] = None,
-) -> data_manager.ProductRow:
-    """Update selected fields for an existing product and refresh caches."""
-
-    normalized_id = product_id.strip()
-    if not normalized_id:
-        logger.error("Product update rejected: blank product_id")
-        raise ValueError("Product ID must be provided")
-
-    field_values: dict[str, Any] = {}
-
-    if product_name is not None:
-        normalized_name = str(product_name).strip()
-        if not normalized_name:
-            logger.error("Product update rejected: blank product_name")
-            raise ValueError("Product name must be provided")
-        field_values["ProductName"] = normalized_name
-
-    if sell_price is not None:
-        try:
-            price = sell_price if isinstance(
-                sell_price, Decimal) else Decimal(sell_price)
-        except (InvalidOperation, TypeError) as exc:
-            logger.error(
-                "Product update rejected: invalid sell_price '%s'", sell_price)
-            raise ValueError(
-                "Sell price must be a valid decimal number") from exc
-
-        if price < Decimal("0"):
-            logger.error(
-                "Product update rejected: negative sell_price '%s'", price)
-            raise ValueError("Sell price must be zero or positive")
-
-        field_values["SellPrice"] = price
-
-    if is_active is not None:
-        if not isinstance(is_active, bool):
-            logger.error(
-                "Product update rejected: non-boolean is_active '%s'", is_active)
-            raise ValueError("is_active must be a boolean value")
-        field_values["IsActive"] = is_active
-
-    if not field_values:
-        logger.error("Product update rejected: no fields provided")
-        raise ValueError("At least one field must be provided to update")
-
-    try:
-        data_manager.update_product(
-            context.workbook, normalized_id, field_values=field_values)
-    except KeyError as exc:
-        logger.warning("Product update failed for id '%s'", normalized_id)
-        raise MissingReferenceError(
-            f"Unknown product id: {normalized_id}") from exc
-
-    _invalidate_cache(context, "products")
-    updated = get_product(context, normalized_id)
-    logger.info(
-        "Updated product '%s' fields: %s",
-        normalized_id,
-        ", ".join(field_values.keys()),
-    )
-    return updated
-
-
-def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.SalesmanRow:
-    """Resolve a salesman record by its identifier.
-
-    The lookup uses the salesman cache, ensuring repeated calls do not revisit
-    the Excel sheet. Unknown identifiers surface as
-    :class:`MissingReferenceError` instances to keep error handling consistent.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        salesman_id (str): Identifier populated in the ``Salesmen`` sheet.
-
-    Returns:
-        data_manager.SalesmanRow: Matching salesman dataclass retrieved from cache.
-
-    Raises:
-        MissingReferenceError: If ``salesman_id`` cannot be located.
-    """
-    cache = _ensure_salesmen_cache(context)
-    try:
-        return cache["by_id"][salesman_id]
-    except KeyError as exc:
-        logger.warning("Salesman lookup failed for id '%s'", salesman_id)
-        raise MissingReferenceError(
-            f"Unknown salesman id: {salesman_id}") from exc
-
-
-def add_salesman(
-    context: RuntimeContext,
-    *,
-    salesman_id: str,
-    salesman_name: str,
-    is_active: bool = True,
-) -> data_manager.SalesmanRow:
-    """Register a salesman while enforcing identifier uniqueness.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access.
-        salesman_id (str): Unique identifier stored in the ``Salesmen`` sheet.
-        salesman_name (str): Display name recorded next to the identifier.
-        is_active (bool): Activation flag for the new salesman. Defaults to
-            ``True``.
-
-    Returns:
-        data_manager.SalesmanRow: Persisted salesman dataclass.
-
-    Raises:
-        ValueError: If id or name values are blank.
-        BusinessRuleViolation: When a salesman with the requested identifier
-            already exists.
-    """
-
-    normalized_id = salesman_id.strip()
-    if not normalized_id:
-        logger.error("Salesman creation rejected: blank salesman_id")
-        raise ValueError("Salesman ID must be provided")
-
-    normalized_name = salesman_name.strip()
-    if not normalized_name:
-        logger.error("Salesman creation rejected: blank salesman_name")
-        raise ValueError("Salesman name must be provided")
-
-    bucket = _ensure_salesmen_cache(context)
-    if normalized_id in bucket["by_id"]:
-        logger.error(
-            "Salesman creation rejected: duplicate id '%s'", normalized_id)
-        raise BusinessRuleViolation(
-            f"Salesman '{normalized_id}' already exists")
-
-    record = data_manager.SalesmanRow(
-        salesman_id=normalized_id,
-        salesman_name=normalized_name,
-        is_active=is_active,
-    )
-
-    data_manager.append_salesman(context.workbook, record)
-    _invalidate_cache(context, "salesmen")
-    logger.info("Registered salesman '%s' (%s)",
-                record.salesman_id, record.salesman_name)
-    return record
-
-
-def update_salesman(
-    context: RuntimeContext,
-    salesman_id: str,
-    *,
-    salesman_name: Optional[str] = None,
-    is_active: Optional[bool] = None,
-) -> data_manager.SalesmanRow:
-    """Update selected fields for a salesman and refresh caches."""
-
-    normalized_id = salesman_id.strip()
-    if not normalized_id:
-        logger.error("Salesman update rejected: blank salesman_id")
-        raise ValueError("Salesman ID must be provided")
-
-    field_values: dict[str, Any] = {}
-
-    if salesman_name is not None:
-        normalized_name = str(salesman_name).strip()
-        if not normalized_name:
-            logger.error("Salesman update rejected: blank salesman_name")
-            raise ValueError("Salesman name must be provided")
-        field_values["SalesmanName"] = normalized_name
-
-    if is_active is not None:
-        if not isinstance(is_active, bool):
-            logger.error(
-                "Salesman update rejected: non-boolean is_active '%s'", is_active)
-            raise ValueError("is_active must be a boolean value")
-        field_values["IsActive"] = is_active
-
-    if not field_values:
-        logger.error("Salesman update rejected: no fields provided")
-        raise ValueError("At least one field must be provided to update")
-
-    try:
-        data_manager.update_salesman(
-            context.workbook, normalized_id, field_values=field_values)
-    except KeyError as exc:
-        logger.warning("Salesman update failed for id '%s'", normalized_id)
-        raise MissingReferenceError(
-            f"Unknown salesman id: {normalized_id}") from exc
-
-    _invalidate_cache(context, "salesmen")
-    updated = get_salesman(context, normalized_id)
-    logger.info(
-        "Updated salesman '%s' fields: %s",
-        normalized_id,
-        ", ".join(field_values.keys()),
-    )
-    return updated
 
 
 def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manager.TransactionRow:
@@ -715,69 +222,6 @@ def get_transaction(context: RuntimeContext, transaction_id: str) -> data_manage
         logger.warning("Transaction lookup failed for id '%s'", transaction_id)
         raise MissingReferenceError(
             f"Unknown transaction id: {transaction_id}") from exc
-
-
-def calculate_inventory(context: RuntimeContext) -> Dict[str, Decimal]:
-    """Compute inventory balances from the transaction logger.
-
-    The routine iterates over the cached transaction list, ignoring entries
-    with no ``ProductID`` (for example, credit payments) and accumulating the
-    signed ``quantity_change`` values per product. The resulting mapping mirrors
-    the on-hand stock after applying every log entry in chronological order.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-
-    Returns:
-        dict[str, Decimal]: Mapping of ``ProductID`` to cumulative quantity
-            derived by summing ``quantity_change`` across transactions.
-    """
-    inventory: Dict[str, Decimal] = {}
-    for transaction in _ensure_transactions_cache(context)["all"]:
-        if transaction.product_id is None:
-            continue
-        current = inventory.get(transaction.product_id, Decimal("0"))
-        inventory[transaction.product_id] = current + \
-            transaction.quantity_change
-    logger.debug("Calculated inventory balances for %d products",
-                 len(inventory))
-    return inventory
-
-
-def calculate_profit_summary(context: RuntimeContext) -> Dict[str, Decimal]:
-    """Produce aggregate revenue, cost, and profit metrics.
-
-    Aggregate values are derived from cached transactions so repeated calls do
-    not touch the workbook. Profit is computed as ``total_revenue + total_cost``
-    because costs are recorded as negative numbers in the transaction logger.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-
-    Returns:
-        dict[str, Decimal]: Dictionary containing ``total_revenue``,
-            ``total_cost``, and ``profit`` values derived from cached
-            transactions.
-    """
-    total_revenue = Decimal("0")
-    total_cost = Decimal("0")
-    for transaction in _ensure_transactions_cache(context)["all"]:
-        total_revenue += transaction.total_revenue
-        total_cost += transaction.total_cost
-    profit = total_revenue + total_cost
-    logger.debug(
-        "Calculated profit summary: revenue=%s cost=%s profit=%s",
-        total_revenue,
-        total_cost,
-        profit,
-    )
-    return {
-        "total_revenue": total_revenue,
-        "total_cost": total_cost,
-        "profit": profit,
-    }
 
 
 def record_sale(context: RuntimeContext, command: SaleCommand) -> data_manager.TransactionRow:
@@ -1050,7 +494,7 @@ def record_open_stock(context: RuntimeContext, command: OpenStockCommand) -> dat
     return transaction
 
 
-def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_manager.TransactionRow]:
+def record_void(context: RuntimeContext, command: VoidCommand) -> t.List[data_manager.TransactionRow]:
     """Record a ``VOID`` reversal and optional replacement transactions.
 
     The function first writes the reversal entry that negates the target
@@ -1089,7 +533,7 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
         target.transaction_id,
     )
 
-    results: List[data_manager.TransactionRow] = [reversal]
+    results: t.List[data_manager.TransactionRow] = [reversal]
     replacement = command.replacement_command
     if replacement is None:
         return results
@@ -1108,106 +552,6 @@ def record_void(context: RuntimeContext, command: VoidCommand) -> List[data_mana
         raise BusinessRuleViolation("Unsupported replacement command type")
 
     return results
-
-
-def generate_transaction_id(*, prefix: str = "T", when: Optional[datetime] = None) -> str:
-    """Generate a sortable transaction identifier using UTC timestamps.
-
-    Args:
-        prefix (str): Optional designator prepended to the identifier. Defaults
-            to ``"T"`` for standard transactions but is overridden for voids.
-        when (datetime | None): Timestamp used for deterministically producing
-            the identifier. When ``None`` the current UTC time is used.
-
-    Returns:
-        str: Identifier formed as ``{prefix}{YYYYMMDDHHMMSSffffff}``.
-
-    The format preserves chronological ordering and packs microseconds to avoid
-    collisions when multiple transactions occur within the same second. Caller
-    supplied timestamps allow deterministic identifiers during testing or data
-    migrations.
-    """
-    when = when or datetime.now(UTC)
-    return f"{prefix}{when.strftime('%Y%m%d%H%M%S%f')}"
-
-
-def require_positive_quantity(quantity: Decimal) -> None:
-    """Validate that a quantity is strictly positive.
-
-    Args:
-        quantity (Decimal): Quantity supplied by a command object.
-
-    Raises:
-        ValueError: If ``quantity`` is zero or negative.
-
-    Inventory adjustments that decrease stock convert the quantity into a
-    negative value later in the pipeline, so callers always submit positive
-    magnitudes here. Using :class:`ValueError` keeps the guard consistent with
-    other validation helpers in the module.
-    """
-    if quantity <= Decimal("0"):
-        logger.error("Quantity validation failed: %s", quantity)
-        raise ValueError("Quantity must be greater than zero")
-
-
-def require_nonnegative_money(amount: Decimal) -> None:
-    """Validate that a monetary value is nonnegative.
-
-    Args:
-        amount (Decimal): Currency value supplied by a command object.
-
-    Raises:
-        ValueError: If ``amount`` is less than zero.
-
-    Monetary fields are stored as signed decimals within the transaction logger.
-    This helper ensures upstream workflows never pass negative revenue or cost
-    figures without explicitly opting into that behavior.
-    """
-    if amount < Decimal("0"):
-        logger.error("Monetary value validation failed: %s", amount)
-        raise ValueError("Amount must be zero or positive")
-
-
-def persist_context(context: RuntimeContext) -> None:
-    """Persist any in-memory workbook changes to disk.
-
-    Args:
-        context (RuntimeContext): Runtime context whose workbook should be
-            saved.
-
-    The function supplies :attr:`RuntimeContext.settings.data_file` directly to
-    the data layer to ensure saves always target the configured workbook path.
-    In-memory caches remain valid because the workbook handle is unchanged
-    after the save completes.
-    """
-    data_manager.save_workbook(
-        context.workbook,
-        destination=context.settings.data_file,
-    )
-    logger.info("Persisted workbook '%s'", context.settings.data_file)
-
-
-def refresh_context(context: RuntimeContext) -> RuntimeContext:
-    """Reload the workbook to discard unsaved modifications.
-
-    Args:
-        context (RuntimeContext): Runtime context whose settings should be
-            reused.
-
-    Returns:
-        RuntimeContext: Fresh context containing a newly opened workbook and
-            an empty cache.
-
-    Raises:
-        FileNotFoundError: If the backing workbook cannot be reloaded.
-
-    This is effectively a "revert" operation that drops in-memory edits and
-    hands back a pristine workbook pointer. Because a new :class:`RuntimeContext`
-    is produced, any cached data from the previous context is discarded.
-    """
-    workbook = data_manager.refresh_workbook(context.settings.data_file)
-    logger.info("Reloaded workbook '%s'", context.settings.data_file)
-    return RuntimeContext(settings=context.settings, workbook=workbook)
 
 
 def validate_credit_sale_link(transaction: data_manager.TransactionRow) -> None:
@@ -1284,14 +628,14 @@ def validate_void_target(transaction: data_manager.TransactionRow) -> None:
         raise BusinessRuleViolation("Cannot void a credit payment transaction")
 
 
-def build_void_reversal(transaction: data_manager.TransactionRow, *, timestamp: datetime, notes: Optional[str]) -> data_manager.TransactionRow:
+def build_void_reversal(transaction: data_manager.TransactionRow, *, timestamp: datetime, notes: t.Optional[str]) -> data_manager.TransactionRow:
     """Create a reversal transaction that negates a prior entry.
 
     Args:
         transaction (data_manager.TransactionRow): Original transaction being
             reversed.
         timestamp (datetime): Timestamp to apply to the reversal entry.
-        notes (str | None): Optional contextual notes to persist alongside the
+        notes (str | None): t.Optional contextual notes to persist alongside the
             reversal.
 
     Returns:
@@ -1416,7 +760,7 @@ def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str
     )
 
 
-def build_credit_payment_transaction(command: CreditPaymentCommand, *, transaction_id: str, timestamp: datetime, product_id: Optional[str] = None) -> data_manager.TransactionRow:
+def build_credit_payment_transaction(command: CreditPaymentCommand, *, transaction_id: str, timestamp: datetime, product_id: t.Optional[str] = None) -> data_manager.TransactionRow:
     """Materialize a :class:`CreditPaymentCommand` into a DAL transaction row.
 
     Args:
@@ -1424,7 +768,7 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
             payment.
         transaction_id (str): Unique identifier allocated for the transaction.
         timestamp (datetime): Timestamp assigned to the transaction.
-        product_id (str | None): Optional product identifier inferred from the
+        product_id (str | None): t.Optional product identifier inferred from the
             linked sale.
 
     Returns:

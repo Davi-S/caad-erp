@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -33,11 +33,11 @@ def register_debts_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_debts_report)
 
 
-def run_debts_report(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_debts_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the outstanding debts reporting workflow.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context providing access
+        context (bll.RuntimeContext): Runtime context providing access
             to the immutable transaction log and caches.
         args (argparse.Namespace): Parsed CLI arguments for the command. This
             command currently consumes no additional options but is included
@@ -46,7 +46,7 @@ def run_debts_report(context: core_logic.RuntimeContext, args: argparse.Namespac
     Returns:
         int: Exit code ``0`` after triggering the calculation.
     """
-    core_logic.calculate_outstanding_debts(  # type: ignore[attr-defined]
+    bll.calculate_outstanding_debts(  # type: ignore[attr-defined]
         context
     )
     return 0

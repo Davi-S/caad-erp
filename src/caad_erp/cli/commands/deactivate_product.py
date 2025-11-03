@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -44,17 +44,17 @@ def translate_deactivate_product(args: argparse.Namespace) -> str:
 
     Returns:
         str: Sanitized product identifier suitable for
-            :func:`core_logic.update_product`.
+            :func:`bll.update_product`.
     """
 
     return str(args.product_id).strip()
 
 
-def run_deactivate_product(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_deactivate_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the deactivate-product workflow through the business logic layer.
 
     Args:
-        context (core_logic.RuntimeContext): Active runtime context that
+        context (bll.RuntimeContext): Active runtime context that
             exposes workbook mutation APIs.
         args (argparse.Namespace): Parsed CLI arguments for the command.
 
@@ -63,5 +63,5 @@ def run_deactivate_product(context: core_logic.RuntimeContext, args: argparse.Na
     """
 
     product_id = translate_deactivate_product(args)
-    core_logic.update_product(context, product_id, is_active=False)
+    bll.update_product(context, product_id, is_active=False)
     return 0

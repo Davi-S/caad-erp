@@ -22,7 +22,7 @@ for candidate in (SRC_DIR, PROJECT_ROOT):
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
 
-from caad_erp import cli, constants, core_logic, data_manager  # noqa: E402
+from caad_erp import cli, constants, bll, data_manager  # noqa: E402
 from setup_excel import create_master_workbook  # noqa: E402
 
 DEFAULT_SCHEMA_VERSION = constants.EXPECTED_SCHEMA_VERSION
@@ -151,11 +151,11 @@ def config_file(config_factory: Callable[..., ConfigBundle]) -> Path:
 
 
 @pytest.fixture
-def runtime_context(config_file: Path) -> core_logic.RuntimeContext:
+def runtime_context(config_file: Path) -> bll.RuntimeContext:
     """Load the runtime context for tests through the public API."""
 
-    context = core_logic.load_runtime_context(config_file)
-    core_logic.ensure_schema_version(context)
+    context = bll.load_runtime_context(config_file)
+    bll.ensure_schema_version(context)
     return context
 
 
@@ -186,7 +186,7 @@ def command_table_entry() -> tuple[str, cli.CommandSpec]:
 
     called = {"called": False}
 
-    def execute(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+    def execute(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
         called["called"] = True
         execute.__dict__["called"] = True
         return 0
@@ -245,15 +245,15 @@ def workbook() -> Mock:
 
 
 @pytest.fixture
-def context(settings: data_manager.ConfigSettings, workbook: Mock) -> core_logic.RuntimeContext:
+def context(settings: data_manager.ConfigSettings, workbook: Mock) -> bll.RuntimeContext:
     """Assemble a runtime context from injected settings and workbook mocks."""
 
-    return core_logic.RuntimeContext(settings=settings, workbook=workbook)
+    return bll.RuntimeContext(settings=settings, workbook=workbook)
 
 
 @pytest.fixture
 def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> Callable[[datetime], datetime]:
-    """Patch ``core_logic.datetime`` to return a predetermined moment."""
+    """Patch ``bll.datetime`` to return a predetermined moment."""
 
     def _apply(moment: datetime) -> datetime:
         class _FixedDateTime:
@@ -262,7 +262,7 @@ def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> Callable[[datetime], 
                 assert tz is UTC
                 return moment
 
-        monkeypatch.setattr(core_logic, "datetime", _FixedDateTime)
+        monkeypatch.setattr(bll, "datetime", _FixedDateTime)
         return moment
 
     return _apply

@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import core_logic
+from caad_erp import bll
 from caad_erp.constants import PaymentType
 
 from ..command_spec import CommandSpec, SubparserFactory
@@ -44,14 +44,14 @@ def register_sale_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_sale)
 
 
-def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
+def translate_sale(args: argparse.Namespace) -> bll.SaleCommand:
     """Convert parsed CLI arguments into a ``SaleCommand``.
 
     Args:
         args (argparse.Namespace): Namespace populated with ``sale`` options.
 
     Returns:
-        core_logic.SaleCommand: Domain command capturing sale details.
+        bll.SaleCommand: Domain command capturing sale details.
             Quantity and revenue values are coerced to
             :class:`~decimal.Decimal`, and the payment type string is converted
             to :class:`~caad_erp.constants.PaymentType`.
@@ -63,7 +63,7 @@ def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
             :class:`~caad_erp.constants.PaymentType` value.
     """
     payment = PaymentType(args.payment_type)
-    return core_logic.SaleCommand(
+    return bll.SaleCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
         quantity=Decimal(args.quantity),
@@ -73,11 +73,11 @@ def translate_sale(args: argparse.Namespace) -> core_logic.SaleCommand:
     )
 
 
-def run_sale(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_sale(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the sale workflow through the business logic layer.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context providing access
+        context (bll.RuntimeContext): Runtime context providing access
             to transactional mutations.
         args (argparse.Namespace): Parsed CLI arguments describing the sale
             operation.
@@ -86,5 +86,5 @@ def run_sale(context: core_logic.RuntimeContext, args: argparse.Namespace) -> in
         int: Exit code ``0`` when the sale is recorded successfully.
     """
     command = translate_sale(args)
-    core_logic.record_sale(context, command)
+    bll.record_sale(context, command)
     return 0

@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import cli, core_logic
+from caad_erp import cli, bll
 
 
 def test_register_add_salesman_command_returns_spec():
@@ -59,11 +59,11 @@ def test_run_add_salesman_invokes_bll(runtime_context, monkeypatch):
                         "translate_add_salesman", lambda value: payload)
     called: dict[str, object] = {}
 
-    def fake_add_salesman(context: core_logic.RuntimeContext, **data: object) -> None:
+    def fake_add_salesman(context: bll.RuntimeContext, **data: object) -> None:
         called["context"] = context
         called["data"] = data
 
-    monkeypatch.setattr(cli.core_logic, "add_salesman",
+    monkeypatch.setattr(cli.bll, "add_salesman",
                         fake_add_salesman, raising=False)
     result = cli.run_add_salesman(runtime_context, args)
     assert result == 0

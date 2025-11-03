@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import cli, core_logic
+from caad_erp import cli, bll
 
 
 def test_register_void_command_returns_spec():
@@ -40,7 +40,7 @@ def test_translate_void_returns_void_command():
         notes="Mistake",
     )
     command = cli.translate_void(args)
-    assert isinstance(command, core_logic.VoidCommand)
+    assert isinstance(command, bll.VoidCommand)
     assert command.linked_transaction_id == "T20250101010101000000"
     assert command.notes == "Mistake"
     assert command.replacement_command is None
@@ -50,17 +50,17 @@ def test_run_void_invokes_bll(runtime_context, monkeypatch):
     """run_void should delegate to the business logic layer."""
 
     args = argparse.Namespace()
-    command = core_logic.VoidCommand(
+    command = bll.VoidCommand(
         linked_transaction_id="T1", replacement_command=None)
     monkeypatch.setattr(cli.commands.void, "translate_void",
                         lambda value: command)
     called = {}
 
-    def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.VoidCommand) -> None:
+    def fake_record(context: bll.RuntimeContext, cmd: bll.VoidCommand) -> None:
         called["context"] = context
         called["cmd"] = cmd
 
-    monkeypatch.setattr(cli.core_logic, "record_void", fake_record)
+    monkeypatch.setattr(cli.bll, "record_void", fake_record)
     result = cli.run_void(runtime_context, args)
     assert result == 0
     assert called["cmd"] is command
