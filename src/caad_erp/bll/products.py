@@ -10,7 +10,7 @@ import logging
 import typing as t
 from decimal import Decimal, InvalidOperation
 
-from caad_erp import data_manager
+from caad_erp import dal
 
 from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
 from .runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
@@ -37,7 +37,7 @@ def _ensure_products_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
 
     bucket = _get_cache_bucket(context, "products")
     if "all" not in bucket:
-        all_products = list(data_manager.iter_products(context.workbook))
+        all_products = list(dal.iter_products(context.workbook))
         bucket["all"] = all_products
         bucket["active"] = [
             product for product in all_products if product.is_active]
@@ -51,7 +51,7 @@ def _ensure_products_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
     return bucket
 
 
-def list_products(context: RuntimeContext, *, include_inactive: bool = False) -> t.List[data_manager.ProductRow]:
+def list_products(context: RuntimeContext, *, include_inactive: bool = False) -> t.List[dal.ProductRow]:
     """Return cached product rows optionally filtered by active status.
 
     The helper interrogates the memoized product bucket so the workbook is not
@@ -66,7 +66,7 @@ def list_products(context: RuntimeContext, *, include_inactive: bool = False) ->
             or inactive products. The default is to surface only active entries.
 
     Returns:
-        list[data_manager.ProductRow]: Copy of the cached product dataset in
+        list[dal.ProductRow]: Copy of the cached product dataset in
             sheet order.
     """
     cache = _ensure_products_cache(context)
@@ -74,7 +74,7 @@ def list_products(context: RuntimeContext, *, include_inactive: bool = False) ->
     return list(source)
 
 
-def get_product(context: RuntimeContext, product_id: str) -> data_manager.ProductRow:
+def get_product(context: RuntimeContext, product_id: str) -> dal.ProductRow:
     """Resolve a product record by its identifier.
 
     The lookup leverages the product cache for near constant-time access and
@@ -87,7 +87,7 @@ def get_product(context: RuntimeContext, product_id: str) -> data_manager.Produc
         product_id (str): Identifier populated in the ``Products`` sheet.
 
     Returns:
-        data_manager.ProductRow: Matching product dataclass sourced from cache.
+        dal.ProductRow: Matching product dataclass sourced from cache.
 
     Raises:
         MissingReferenceError: If ``product_id`` is absent from the workbook.
@@ -108,7 +108,7 @@ def update_product(
     product_name: t.Optional[str] = None,
     sell_price: t.Optional[Decimal] = None,
     is_active: t.Optional[bool] = None,
-) -> data_manager.ProductRow:
+) -> dal.ProductRow:
     """Update selected fields for an existing product and refresh caches."""
 
     normalized_id = product_id.strip()
@@ -154,7 +154,7 @@ def update_product(
         raise ValueError("At least one field must be provided to update")
 
     try:
-        data_manager.update_product(
+        dal.update_product(
             context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
         logger.warning("Product update failed for id '%s'", normalized_id)
@@ -178,7 +178,7 @@ def add_product(
     product_name: str,
     sell_price: Decimal,
     is_active: bool = True,
-) -> data_manager.ProductRow:
+) -> dal.ProductRow:
     """Append a product row after enforcing catalog invariants.
 
     Args:
@@ -190,7 +190,7 @@ def add_product(
         is_active (bool): Initial activation state. Defaults to ``True``.
 
     Returns:
-        data_manager.ProductRow: Persisted product record represented as a DAL
+        dal.ProductRow: Persisted product record represented as a DAL
             dataclass.
 
     Raises:
@@ -229,14 +229,14 @@ def add_product(
         raise BusinessRuleViolation(
             f"Product '{normalized_id}' already exists")
 
-    record = data_manager.ProductRow(
+    record = dal.ProductRow(
         product_id=normalized_id,
         product_name=normalized_name,
         sell_price=price,
         is_active=is_active,
     )
 
-    data_manager.append_product(context.workbook, record)
+    dal.append_product(context.workbook, record)
     _invalidate_cache(context, "products")
     logger.info(
         "Registered product '%s' (%s) with sell price %s",

@@ -16,7 +16,7 @@ developers who maintain or extend the codebase.
 
 The code follows a three-layer design:
 
-1. **Data Access Layer (DAL) – `data_manager.py`:**
+1. **Data Access Layer (DAL) – `dal.py`:**
    Handles Excel I/O, implemented with `openpyxl`.
 2. **Business Logic Layer (BLL) – `core_logic.py`:**
    Encapsulates rules and workflows, calling into the DAL without caring about
@@ -186,7 +186,7 @@ New functionality should be driven by `pytest`-based tests under `tests/`.
 The test suite follows a pyramid structure to keep fast feedback at the unit
 level while retaining confidence in the full stack:
 
-- `tests/test_data_manager.py` – Integration coverage for the DAL that exercises
+- `tests/test_dal.py` – Integration coverage for the DAL that exercises
   real `openpyxl` reads and writes.
 - `tests/test_core_logic.py` – Unit coverage for the BLL with the entire data
   layer mocked.

@@ -1,14 +1,15 @@
 from decimal import Decimal
 from unittest.mock import Mock
 
-from caad_erp import bll, constants, data_manager
+from caad_erp import bll, constants
+from caad_erp import dal
 
 
 def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
     """calculate_inventory should return total on-hand per ProductID."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T100",
             timestamp_iso="2025-10-30T02:00:00",
             transaction_type=constants.TransactionType.RESTOCK.value,
@@ -21,7 +22,7 @@ def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
             linked_transaction_id=None,
             notes=None,
         ),
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T101",
             timestamp_iso="2025-10-30T02:30:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -35,7 +36,7 @@ def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
             notes=None,
         ),
     ]
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_transactions",
                         Mock(return_value=transactions))
 
     inventory = bll.calculate_inventory(context)
@@ -47,7 +48,7 @@ def test_calculate_inventory_reuses_transaction_cache(monkeypatch, context):
     """calculate_inventory should reuse the cached transaction list."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T200",
             timestamp_iso="2025-10-30T02:45:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -62,7 +63,7 @@ def test_calculate_inventory_reuses_transaction_cache(monkeypatch, context):
         )
     ]
     iter_mock = Mock(return_value=transactions)
-    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
+    monkeypatch.setattr(dal, "iter_transactions", iter_mock)
 
     first = bll.calculate_inventory(context)
     second = bll.calculate_inventory(context)
@@ -76,7 +77,7 @@ def test_calculate_profit_summary_returns_totals(monkeypatch, context):
     """calculate_profit_summary should return total revenue, cost, and profit."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T110",
             timestamp_iso="2025-10-30T03:00:00",
             transaction_type=constants.TransactionType.RESTOCK.value,
@@ -89,7 +90,7 @@ def test_calculate_profit_summary_returns_totals(monkeypatch, context):
             linked_transaction_id=None,
             notes=None,
         ),
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T111",
             timestamp_iso="2025-10-30T03:15:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -103,7 +104,7 @@ def test_calculate_profit_summary_returns_totals(monkeypatch, context):
             notes=None,
         ),
     ]
-    monkeypatch.setattr(data_manager, "iter_transactions",
+    monkeypatch.setattr(dal, "iter_transactions",
                         Mock(return_value=transactions))
 
     summary = bll.calculate_profit_summary(context)
@@ -119,7 +120,7 @@ def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context)
     """calculate_profit_summary should not rescan the workbook after caching."""
 
     transactions = [
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T210",
             timestamp_iso="2025-10-30T03:30:00",
             transaction_type=constants.TransactionType.RESTOCK.value,
@@ -132,7 +133,7 @@ def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context)
             linked_transaction_id=None,
             notes=None,
         ),
-        data_manager.TransactionRow(
+        dal.TransactionRow(
             transaction_id="T211",
             timestamp_iso="2025-10-30T03:45:00",
             transaction_type=constants.TransactionType.SALE.value,
@@ -147,7 +148,7 @@ def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context)
         ),
     ]
     iter_mock = Mock(return_value=transactions)
-    monkeypatch.setattr(data_manager, "iter_transactions", iter_mock)
+    monkeypatch.setattr(dal, "iter_transactions", iter_mock)
 
     first = bll.calculate_profit_summary(context)
     second = bll.calculate_profit_summary(context)

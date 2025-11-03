@@ -9,7 +9,7 @@ invariants and active status checks.
 import logging
 import typing as t
 
-from caad_erp import data_manager
+from caad_erp import dal
 
 from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
 from .runtime import RuntimeContext, _get_cache_bucket, _invalidate_cache
@@ -34,7 +34,7 @@ def _ensure_salesmen_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
 
     bucket = _get_cache_bucket(context, "salesmen")
     if "all" not in bucket:
-        all_salesmen = list(data_manager.iter_salesmen(context.workbook))
+        all_salesmen = list(dal.iter_salesmen(context.workbook))
         bucket["all"] = all_salesmen
         bucket["active"] = [
             salesman for salesman in all_salesmen if salesman.is_active]
@@ -48,7 +48,7 @@ def _ensure_salesmen_cache(context: RuntimeContext) -> t.Dict[str, t.Any]:
     return bucket
 
 
-def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) -> t.List[data_manager.SalesmanRow]:
+def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) -> t.List[dal.SalesmanRow]:
     """Return cached salesman rows optionally filtered by active status.
 
     Like :func:`list_products`, this helper operates on the memoized salesman
@@ -62,7 +62,7 @@ def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) ->
             Defaults to active-only listings for operational flows.
 
     Returns:
-        list[data_manager.SalesmanRow]: Copy of the cached salesman dataset in
+        list[dal.SalesmanRow]: Copy of the cached salesman dataset in
             sheet order.
     """
     cache = _ensure_salesmen_cache(context)
@@ -70,7 +70,7 @@ def list_salesmen(context: RuntimeContext, *, include_inactive: bool = False) ->
     return list(source)
 
 
-def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.SalesmanRow:
+def get_salesman(context: RuntimeContext, salesman_id: str) -> dal.SalesmanRow:
     """Resolve a salesman record by its identifier.
 
     The lookup uses the salesman cache, ensuring repeated calls do not revisit
@@ -83,7 +83,7 @@ def get_salesman(context: RuntimeContext, salesman_id: str) -> data_manager.Sale
         salesman_id (str): Identifier populated in the ``Salesmen`` sheet.
 
     Returns:
-        data_manager.SalesmanRow: Matching salesman dataclass retrieved from cache.
+        dal.SalesmanRow: Matching salesman dataclass retrieved from cache.
 
     Raises:
         MissingReferenceError: If ``salesman_id`` cannot be located.
@@ -103,7 +103,7 @@ def add_salesman(
     salesman_id: str,
     salesman_name: str,
     is_active: bool = True,
-) -> data_manager.SalesmanRow:
+) -> dal.SalesmanRow:
     """Register a salesman while enforcing identifier uniqueness.
 
     Args:
@@ -114,7 +114,7 @@ def add_salesman(
             ``True``.
 
     Returns:
-        data_manager.SalesmanRow: Persisted salesman dataclass.
+        dal.SalesmanRow: Persisted salesman dataclass.
 
     Raises:
         ValueError: If id or name values are blank.
@@ -139,13 +139,13 @@ def add_salesman(
         raise BusinessRuleViolation(
             f"Salesman '{normalized_id}' already exists")
 
-    record = data_manager.SalesmanRow(
+    record = dal.SalesmanRow(
         salesman_id=normalized_id,
         salesman_name=normalized_name,
         is_active=is_active,
     )
 
-    data_manager.append_salesman(context.workbook, record)
+    dal.append_salesman(context.workbook, record)
     _invalidate_cache(context, "salesmen")
     logger.info("Registered salesman '%s' (%s)",
                 record.salesman_id, record.salesman_name)
@@ -158,7 +158,7 @@ def update_salesman(
     *,
     salesman_name: t.Optional[str] = None,
     is_active: t.Optional[bool] = None,
-) -> data_manager.SalesmanRow:
+) -> dal.SalesmanRow:
     """Update selected fields for a salesman and refresh caches."""
 
     normalized_id = salesman_id.strip()
@@ -187,7 +187,7 @@ def update_salesman(
         raise ValueError("At least one field must be provided to update")
 
     try:
-        data_manager.update_salesman(
+        dal.update_salesman(
             context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
         logger.warning("Salesman update failed for id '%s'", normalized_id)

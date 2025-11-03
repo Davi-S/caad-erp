@@ -3,18 +3,19 @@ from unittest.mock import Mock
 
 import pytest
 
-from caad_erp import bll, data_manager
+from caad_erp import bll
+from caad_erp import dal
 
 
 def test_list_products_excludes_inactive_by_default(monkeypatch, context):
     """list_products should hide inactive rows unless explicitly requested."""
 
     products = [
-        data_manager.ProductRow("P1", "Active", Decimal("1.00"), True),
-        data_manager.ProductRow("P2", "Inactive", Decimal("2.00"), False),
+        dal.ProductRow("P1", "Active", Decimal("1.00"), True),
+        dal.ProductRow("P2", "Inactive", Decimal("2.00"), False),
     ]
     iter_mock = Mock(return_value=products)
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_mock)
 
     result = bll.list_products(context)
 
@@ -26,11 +27,11 @@ def test_list_products_can_include_inactive(monkeypatch, context):
     """A caller should be able to include inactive products when needed."""
 
     products = [
-        data_manager.ProductRow("P3", "Active", Decimal("1.00"), True),
-        data_manager.ProductRow("P4", "Inactive", Decimal("2.00"), False),
+        dal.ProductRow("P3", "Active", Decimal("1.00"), True),
+        dal.ProductRow("P4", "Inactive", Decimal("2.00"), False),
     ]
     iter_mock = Mock(return_value=products)
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_mock)
 
     bll.list_products(context)
     iter_mock.reset_mock()
@@ -45,12 +46,12 @@ def test_list_products_reuses_cache_between_calls(monkeypatch, context):
     """list_products should populate the cache once and reuse it."""
 
     products = [
-        data_manager.ProductRow("P-cache", "Cached", Decimal("1.00"), True),
-        data_manager.ProductRow("P-inactive", "Hidden",
-                                Decimal("2.00"), False),
+        dal.ProductRow("P-cache", "Cached", Decimal("1.00"), True),
+        dal.ProductRow("P-inactive", "Hidden",
+                       Decimal("2.00"), False),
     ]
     iter_mock = Mock(return_value=products)
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_mock)
 
     first = bll.list_products(context)
     second = bll.list_products(context)
@@ -63,9 +64,9 @@ def test_list_products_reuses_cache_between_calls(monkeypatch, context):
 def test_get_product_returns_match(monkeypatch, context):
     """get_product should hydrate a ProductRow for the requested ID."""
 
-    products = [data_manager.ProductRow(
+    products = [dal.ProductRow(
         "P10", "Cookie", Decimal("4.00"), True)]
-    monkeypatch.setattr(data_manager, "iter_products",
+    monkeypatch.setattr(dal, "iter_products",
                         Mock(return_value=products))
 
     product = bll.get_product(context, "P10")
@@ -76,7 +77,7 @@ def test_get_product_returns_match(monkeypatch, context):
 def test_get_product_missing_raises(monkeypatch, context):
     """Unknown ProductIDs should raise MissingReferenceError."""
 
-    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
+    monkeypatch.setattr(dal, "iter_products", Mock(return_value=[]))
 
     with pytest.raises(bll.MissingReferenceError):
         bll.get_product(context, "NOPE")
@@ -85,10 +86,10 @@ def test_get_product_missing_raises(monkeypatch, context):
 def test_get_product_reuses_cache_after_first_lookup(monkeypatch, context):
     """Product lookups should rely on the cached ``by_id`` mapping."""
 
-    product_row = data_manager.ProductRow(
+    product_row = dal.ProductRow(
         "P-cache", "Cached", Decimal("3.00"), True)
     iter_mock = Mock(return_value=[product_row])
-    monkeypatch.setattr(data_manager, "iter_products", iter_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_mock)
 
     first = bll.get_product(context, "P-cache")
     second = bll.get_product(context, "P-cache")
@@ -100,9 +101,9 @@ def test_get_product_reuses_cache_after_first_lookup(monkeypatch, context):
 def test_add_product_appends_record_and_invalidates_cache(monkeypatch, context):
     """add_product should persist a ProductRow and flush cached catalog data."""
 
-    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
+    monkeypatch.setattr(dal, "iter_products", Mock(return_value=[]))
     append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_product", append_mock)
+    monkeypatch.setattr(dal, "append_product", append_mock)
 
     result = bll.add_product(
         context,
@@ -123,12 +124,12 @@ def test_add_product_appends_record_and_invalidates_cache(monkeypatch, context):
 def test_add_product_rejects_duplicate_id(monkeypatch, context):
     """Duplicate ProductIDs should surface a BusinessRuleViolation."""
 
-    existing = data_manager.ProductRow(
+    existing = dal.ProductRow(
         "SKU-001", "Existing", Decimal("1.00"), True)
-    monkeypatch.setattr(data_manager, "iter_products",
+    monkeypatch.setattr(dal, "iter_products",
                         Mock(return_value=[existing]))
     append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_product", append_mock)
+    monkeypatch.setattr(dal, "append_product", append_mock)
 
     with pytest.raises(bll.BusinessRuleViolation):
         bll.add_product(
@@ -145,9 +146,9 @@ def test_add_product_rejects_duplicate_id(monkeypatch, context):
 def test_add_product_rejects_negative_price(monkeypatch, context):
     """add_product should reject negative sell_price values."""
 
-    monkeypatch.setattr(data_manager, "iter_products", Mock(return_value=[]))
+    monkeypatch.setattr(dal, "iter_products", Mock(return_value=[]))
     append_mock = Mock()
-    monkeypatch.setattr(data_manager, "append_product", append_mock)
+    monkeypatch.setattr(dal, "append_product", append_mock)
 
     with pytest.raises(ValueError):
         bll.add_product(
@@ -175,12 +176,12 @@ def test_update_product_delegates_and_refreshes_cache(monkeypatch, context):
         captured["field_values"] = field_values
 
     updated_rows = [
-        data_manager.ProductRow(
+        dal.ProductRow(
             "SKU-001", "Retired Snack", Decimal("2.50"), False)
     ]
 
-    monkeypatch.setattr(data_manager, "update_product", fake_update)
-    monkeypatch.setattr(data_manager, "iter_products",
+    monkeypatch.setattr(dal, "update_product", fake_update)
+    monkeypatch.setattr(dal, "iter_products",
                         Mock(return_value=updated_rows))
 
     result = bll.update_product(context, "  SKU-001  ", is_active=False)
@@ -204,7 +205,7 @@ def test_update_product_unknown_id_raises(monkeypatch, context):
     """Missing products should surface as MissingReferenceError."""
 
     monkeypatch.setattr(
-        data_manager,
+        dal,
         "update_product",
         Mock(side_effect=KeyError("Product not found")),
     )

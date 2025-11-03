@@ -6,5 +6,5 @@ via the ``caad_erp.bll`` namespace without deep import chains.
 from .runtime import *
 from .products import *
 from .reports import *
-from .salesman import *
+from .salesmen import *
 from .transactions import *
