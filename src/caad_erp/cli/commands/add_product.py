@@ -40,24 +40,6 @@ def register_add_product_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_add_product)
 
 
-def run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the add-product workflow through the business logic layer.
-
-    Args:
-        context (bll.RuntimeContext): Active runtime context containing
-            the workbook session to mutate.
-        args (argparse.Namespace): Parsed CLI arguments representing user
-            input for the ``add-product`` command.
-
-    Returns:
-        int: Exit code ``0`` on success. Errors are propagated for higher level
-            handling.
-    """
-    payload = translate_add_product(args)
-    bll.add_product(context, **payload)  # type: ignore[attr-defined]
-    return 0
-
-
 def translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
     """Convert parsed CLI arguments into ``add_product`` keyword arguments.
 
@@ -81,3 +63,21 @@ def translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
         "sell_price": Decimal(args.sell_price),
         "is_active": not getattr(args, "inactive", False),
     }
+
+
+def run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+    """Execute the add-product workflow through the business logic layer.
+
+    Args:
+        context (bll.RuntimeContext): Active runtime context containing
+            the workbook session to mutate.
+        args (argparse.Namespace): Parsed CLI arguments representing user
+            input for the ``add-product`` command.
+
+    Returns:
+        int: Exit code ``0`` on success. Errors are propagated for higher level
+            handling.
+    """
+    payload = translate_add_product(args)
+    bll.add_product(context, **payload)  # type: ignore[attr-defined]
+    return 0
