@@ -2,7 +2,7 @@ import logging
 import typing as t
 from decimal import Decimal
 
-from ..runtime import RuntimeContext
+from .runtime import RuntimeContext
 from .transactions import _ensure_transactions_cache
 
 logger = logging.getLogger(__name__)
