@@ -81,7 +81,8 @@ def test_run_add_salesman_invokes_bll(runtime_context, monkeypatch):
         called["context"] = context
         called["data"] = data
 
-    monkeypatch.setattr(cli.bll, "add_salesman", fake_add_salesman, raising=False)
+    monkeypatch.setattr(cli.bll, "add_salesman",
+                        fake_add_salesman, raising=False)
 
     # Act
     result = cli.run_add_salesman(runtime_context, args)

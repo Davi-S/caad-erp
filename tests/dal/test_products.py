@@ -48,7 +48,8 @@ def test_append_product_adds_row(master_workbook_path):
     rows = list(dal.iter_products(refreshed))
 
     # Assert
-    assert any(row.product_id == "P400" and row.is_active is False for row in rows)
+    assert any(row.product_id ==
+               "P400" and row.is_active is False for row in rows)
 
 
 def test_update_product_modifies_existing_row(master_workbook_path):
@@ -72,7 +73,8 @@ def test_update_product_modifies_existing_row(master_workbook_path):
     rows = list(dal.iter_products(final))
 
     # Assert
-    assert any(row.product_id == "P500" and row.product_name == "New" for row in rows)
+    assert any(row.product_id == "P500" and row.product_name ==
+               "New" for row in rows)
 
 
 def test_update_product_missing_raises(master_workbook_path):

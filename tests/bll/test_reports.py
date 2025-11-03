@@ -36,7 +36,8 @@ def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
             notes=None,
         ),
     ]
-    monkeypatch.setattr(dal, "iter_transactions", Mock(return_value=transactions))
+    monkeypatch.setattr(dal, "iter_transactions",
+                        Mock(return_value=transactions))
 
     # Act
     inventory = bll.calculate_inventory(context)
@@ -109,7 +110,8 @@ def test_calculate_profit_summary_returns_totals(monkeypatch, context):
             notes=None,
         ),
     ]
-    monkeypatch.setattr(dal, "iter_transactions", Mock(return_value=transactions))
+    monkeypatch.setattr(dal, "iter_transactions",
+                        Mock(return_value=transactions))
 
     # Act
     summary = bll.calculate_profit_summary(context)

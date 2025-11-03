@@ -654,9 +654,11 @@ def test_cli_credit_sale_and_debt_report_flow(config_factory, monkeypatch):
                 if product_id_value is None:
                     continue
                 target_product = products.get(product_id_value)
-                unit_price = target_product.sell_price if target_product else Decimal("0")
+                unit_price = target_product.sell_price if target_product else Decimal(
+                    "0")
                 principal = abs(txn.quantity_change) * unit_price
-                balance = principal - payments.get(txn.transaction_id, Decimal("0"))
+                balance = principal - \
+                    payments.get(txn.transaction_id, Decimal("0"))
                 if balance > Decimal("0"):
                     outstanding[txn.transaction_id] = balance
 

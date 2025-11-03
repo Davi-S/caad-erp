@@ -36,7 +36,8 @@ def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
     assert context.workbook is workbook
     find_config_file.assert_called_once_with(config_path)
     read_config.assert_called_once_with(config_path.resolve())
-    parse_settings.assert_called_once_with(parser, base_path=config_path.resolve().parent)
+    parse_settings.assert_called_once_with(
+        parser, base_path=config_path.resolve().parent)
     open_workbook.assert_called_once_with(parsed_settings.data_file)
 
 
@@ -45,7 +46,8 @@ def test_ensure_schema_version_rejects_mismatch(context):
 
     # Arrange
     bad_settings = dataclasses.replace(context.settings, schema_version="0.9")
-    bad_context = bll.RuntimeContext(settings=bad_settings, workbook=context.workbook)
+    bad_context = bll.RuntimeContext(
+        settings=bad_settings, workbook=context.workbook)
 
     # Act
     with pytest.raises(RuntimeError) as exc_info:
@@ -66,7 +68,8 @@ def test_persist_context_writes_to_disk(monkeypatch, context):
     bll.persist_context(context)
 
     # Assert
-    save_mock.assert_called_once_with(context.workbook, destination=context.settings.data_file)
+    save_mock.assert_called_once_with(
+        context.workbook, destination=context.settings.data_file)
 
 
 def test_refresh_context_reloads_from_disk(monkeypatch, settings):

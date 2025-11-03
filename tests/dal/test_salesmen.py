@@ -59,7 +59,8 @@ def test_update_salesman_modifies_existing_row(master_workbook_path):
     rows = list(dal.iter_salesmen(final))
 
     # Assert
-    assert any(row.salesman_id == "S500" and row.is_active is False for row in rows)
+    assert any(row.salesman_id ==
+               "S500" and row.is_active is False for row in rows)
 
 
 def test_update_salesman_missing_raises(master_workbook_path):
@@ -70,7 +71,8 @@ def test_update_salesman_missing_raises(master_workbook_path):
 
     # Act / Assert
     with pytest.raises(KeyError):
-        dal.update_salesman(workbook, "MISSING", field_values={"IsActive": False})
+        dal.update_salesman(workbook, "MISSING",
+                            field_values={"IsActive": False})
 
 
 def test_serialize_salesman_preserves_order():
