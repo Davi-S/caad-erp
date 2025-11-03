@@ -1,13 +1,12 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import bll
-from caad_erp.constants import PaymentType
+from caad_erp import bll, constants
 
-from ..command_spec import CommandSpec, SubparserFactory
+from .. import command_spec
 
 
-def register_pay_debt_command() -> CommandSpec:
+def register_pay_debt_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``pay-debt`` sub-command.
 
     Returns:
@@ -17,7 +16,7 @@ def register_pay_debt_command() -> CommandSpec:
     name = "pay-debt"
     help_text = "Record a credit payment for an outstanding sale."
 
-    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``pay-debt`` arguments to the provided sub-parser.
 
         Args:
@@ -34,15 +33,15 @@ def register_pay_debt_command() -> CommandSpec:
         parser.add_argument("--salesman-id", required=True)
         parser.add_argument(
             "--payment-type",
-            choices=[member.value for member in PaymentType if member !=
-                     PaymentType.ON_CREDIT],
+            choices=[member.value for member in constants.PaymentType if member !=
+                     constants.PaymentType.ON_CREDIT],
             required=True,
         )
         parser.add_argument("--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
 
-    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_pay_debt)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_pay_debt)
 
 
 def translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:
@@ -64,7 +63,7 @@ def translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:
         ValueError: If ``--payment-type`` does not correspond to an allowed
             :class:`~caad_erp.constants.PaymentType` value.
     """
-    payment = PaymentType(args.payment_type)
+    payment = constants.PaymentType(args.payment_type)
     return bll.CreditPaymentCommand(
         linked_transaction_id=args.linked_transaction_id,
         salesman_id=args.salesman_id,

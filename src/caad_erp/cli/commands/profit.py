@@ -2,10 +2,10 @@ import argparse
 
 from caad_erp import bll
 
-from ..command_spec import CommandSpec, SubparserFactory
+from .. import command_spec
 
 
-def register_profit_command() -> CommandSpec:
+def register_profit_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``profit`` reporting sub-command.
 
     Returns:
@@ -15,7 +15,7 @@ def register_profit_command() -> CommandSpec:
     name = "profit"
     help_text = "Display revenue, cost, and profit summaries."
 
-    def registrar(action: SubparserFactory) -> argparse.ArgumentParser:
+    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``profit`` arguments to the provided sub-parser.
 
         Args:
@@ -30,7 +30,7 @@ def register_profit_command() -> CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_profit_report)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_profit_report)
 
 
 def run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
