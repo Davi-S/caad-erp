@@ -1,14 +1,12 @@
 """Shared pytest fixtures and utilities for the CAAD ERP test suite."""
 
-from __future__ import annotations
-
 import argparse
+import dataclasses
+import datetime
 import sys
+import typing as t
 import uuid
-from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable, Iterator
 from unittest.mock import Mock
 
 import pytest
@@ -22,7 +20,7 @@ for candidate in (SRC_DIR, PROJECT_ROOT):
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
 
-from caad_erp import cli, constants, bll, dal  # noqa: E402
+from caad_erp import bll, cli, constants, dal  # noqa: E402
 from setup_excel import create_master_workbook  # noqa: E402
 
 DEFAULT_SCHEMA_VERSION = constants.EXPECTED_SCHEMA_VERSION
@@ -37,7 +35,7 @@ _CONFIG_TEMPLATE = (
 )
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ConfigBundle:
     """Container bundling together config metadata for tests."""
 
@@ -50,7 +48,7 @@ class ConfigBundle:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _restore_sys_path() -> Iterator[None]:
+def _restore_sys_path() -> t.Iterator[None]:
     """Ensure sys.path modifications are undone after the test session."""
 
     original = sys.path.copy()
@@ -75,7 +73,7 @@ def src_dir() -> Path:
 
 
 @pytest.fixture
-def workbook_factory(tmp_path: Path) -> Callable[..., Path]:
+def workbook_factory(tmp_path: Path) -> t.Callable[..., Path]:
     """Factory that creates an initialized master workbook in a temp folder."""
 
     def _create_workbook(
@@ -95,7 +93,7 @@ def workbook_factory(tmp_path: Path) -> Callable[..., Path]:
 
 
 @pytest.fixture
-def master_workbook_path(workbook_factory: Callable[..., Path]) -> Path:
+def master_workbook_path(workbook_factory: t.Callable[..., Path]) -> Path:
     """Return a fresh master workbook ready for use in a test."""
 
     unique_dir = f"workbook_{uuid.uuid4().hex}"
@@ -103,7 +101,7 @@ def master_workbook_path(workbook_factory: Callable[..., Path]) -> Path:
 
 
 @pytest.fixture
-def config_factory(tmp_path: Path, workbook_factory: Callable[..., Path]) -> Callable[..., ConfigBundle]:
+def config_factory(tmp_path: Path, workbook_factory: t.Callable[..., Path]) -> t.Callable[..., ConfigBundle]:
     """Provide a callable that creates config/workbook bundles on demand."""
 
     def _create_config(
@@ -144,7 +142,7 @@ def config_factory(tmp_path: Path, workbook_factory: Callable[..., Path]) -> Cal
 
 
 @pytest.fixture
-def config_file(config_factory: Callable[..., ConfigBundle]) -> Path:
+def config_file(config_factory: t.Callable[..., ConfigBundle]) -> Path:
     """Convenience fixture returning only the config path."""
 
     return config_factory().config_path
@@ -252,14 +250,14 @@ def context(settings: dal.ConfigSettings, workbook: Mock) -> bll.RuntimeContext:
 
 
 @pytest.fixture
-def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> Callable[[datetime], datetime]:
+def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[datetime.datetime], datetime.datetime]:
     """Patch ``bll.datetime`` to return a predetermined moment."""
 
-    def _apply(moment: datetime) -> datetime:
+    def _apply(moment: datetime.datetime) -> datetime.datetime:
         class _FixedDateTime:
             @staticmethod
             def now(tz=None):
-                assert tz is UTC
+                assert tz is datetime.UTC
                 return moment
 
         monkeypatch.setattr(bll.transactions, "datetime", _FixedDateTime)

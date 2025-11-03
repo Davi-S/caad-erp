@@ -1,10 +1,9 @@
-from dataclasses import replace
+import dataclasses
 from unittest.mock import Mock
 
 import pytest
 
-from caad_erp import bll, constants
-from caad_erp import dal
+from caad_erp import bll, constants, dal
 
 
 def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
@@ -44,7 +43,7 @@ def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
 def test_ensure_schema_version_rejects_mismatch(context):
     """Schema mismatches should surface a RuntimeError with clear messaging."""
 
-    bad_settings = replace(context.settings, schema_version="0.9")
+    bad_settings = dataclasses.replace(context.settings, schema_version="0.9")
     bad_context = bll.RuntimeContext(
         settings=bad_settings, workbook=context.workbook)
     with pytest.raises(RuntimeError):

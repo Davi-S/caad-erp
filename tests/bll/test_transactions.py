@@ -1,13 +1,12 @@
 """Unit tests verifying the CAAD ERP business logic layer via a mocked DAL."""
 
-from datetime import UTC, datetime
+import datetime
 from decimal import Decimal
 from unittest.mock import Mock
 
 import pytest
 
-from caad_erp import bll, constants
-from caad_erp import dal
+from caad_erp import bll, constants, dal, exceptions
 
 
 def test_list_transactions_returns_all_rows(monkeypatch, context):
@@ -135,7 +134,7 @@ def test_record_sale_appends_transaction(monkeypatch, context, set_fixed_datetim
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
-    fixed_now = datetime(2025, 10, 30, 18, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 18, 0, 0, tzinfo=datetime.UTC)
 
     set_fixed_datetime(fixed_now)
     command = bll.SaleCommand(
@@ -205,7 +204,7 @@ def test_record_sale_refreshes_transaction_cache(monkeypatch, context, set_fixed
     assert iter_transactions_mock.call_count == 1
     assert "transactions" in context._cache
 
-    fixed_now = datetime(2025, 10, 30, 20, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 20, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.SaleCommand(
         product_id="P500",
@@ -253,7 +252,7 @@ def test_record_restock_appends_transaction(monkeypatch, context, set_fixed_date
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
-    fixed_now = datetime(2025, 10, 30, 9, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 9, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.RestockCommand(
         product_id="P201",
@@ -294,7 +293,7 @@ def test_record_restock_rejects_inactive_salesman(monkeypatch, context):
         total_cost=Decimal("-5.00"),
     )
 
-    with pytest.raises(bll.BusinessRuleViolation):
+    with pytest.raises(exceptions.BusinessRuleViolation):
         bll.record_restock(context, command)
 
 
@@ -344,7 +343,7 @@ def test_record_restock_refreshes_transaction_cache(monkeypatch, context, set_fi
     assert iter_transactions_mock.call_count == 1
     assert "transactions" in context._cache
 
-    fixed_now = datetime(2025, 10, 30, 21, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 21, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.RestockCommand(
         product_id="P600",
@@ -393,7 +392,7 @@ def test_record_write_off_appends_transaction(monkeypatch, context, set_fixed_da
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
-    fixed_now = datetime(2025, 10, 30, 12, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 12, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.WriteOffCommand(
         product_id="P202",
@@ -462,7 +461,7 @@ def test_record_write_off_refreshes_transaction_cache(monkeypatch, context, set_
     assert iter_transactions_mock.call_count == 1
     assert "transactions" in context._cache
 
-    fixed_now = datetime(2025, 10, 30, 21, 30, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 21, 30, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.WriteOffCommand(
         product_id="P601",
@@ -523,7 +522,7 @@ def test_record_credit_payment_appends_transaction(monkeypatch, context, set_fix
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
-    fixed_now = datetime(2025, 10, 30, 19, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 19, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.CreditPaymentCommand(
         linked_transaction_id="T-credit",
@@ -591,7 +590,7 @@ def test_record_credit_payment_refreshes_transaction_cache(monkeypatch, context,
     assert iter_transactions_mock.call_count == 1
     assert "transactions" in context._cache
 
-    fixed_now = datetime(2025, 10, 30, 22, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 22, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.CreditPaymentCommand(
         linked_transaction_id="T-credit",
@@ -654,7 +653,7 @@ def test_record_credit_payment_rejects_inactive_salesman(monkeypatch, context):
         payment_type=constants.PaymentType.PIX,
     )
 
-    with pytest.raises(bll.BusinessRuleViolation):
+    with pytest.raises(exceptions.BusinessRuleViolation):
         bll.record_credit_payment(context, command)
 
 
@@ -675,7 +674,7 @@ def test_record_open_stock_appends_transaction(monkeypatch, context, set_fixed_d
     monkeypatch.setattr(
         bll.transactions, "generate_transaction_id", generate_mock)
 
-    fixed_now = datetime(2025, 10, 30, 7, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 7, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.OpenStockCommand(
         product_id="P204",
@@ -743,7 +742,7 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set
     assert iter_transactions_mock.call_count == 1
     assert "transactions" in context._cache
 
-    fixed_now = datetime(2025, 10, 30, 23, 0, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 23, 0, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.OpenStockCommand(
         product_id="P800",
@@ -892,7 +891,7 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
     assert iter_transactions_mock.call_count == 1
     assert "transactions" in context._cache
 
-    fixed_now = datetime(2025, 10, 30, 23, 30, 0, tzinfo=UTC)
+    fixed_now = datetime.datetime(2025, 10, 30, 23, 30, 0, tzinfo=datetime.UTC)
     set_fixed_datetime(fixed_now)
     command = bll.VoidCommand(
         linked_transaction_id="T-target",
@@ -932,7 +931,7 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
 def test_generate_transaction_id_uses_timestamp():
     """Transaction IDs should be sortable and include the timestamp."""
 
-    when = datetime(2025, 10, 30, 12, 30, 0)
+    when = datetime.datetime(2025, 10, 30, 12, 30, 0)
     tx_id = bll.generate_transaction_id(when=when)
     assert tx_id.startswith("20251030")
 
@@ -998,7 +997,7 @@ def test_validate_credit_sale_link_rejects_non_credit_sale():
         linked_transaction_id=None,
         notes=None,
     )
-    with pytest.raises(bll.BusinessRuleViolation):
+    with pytest.raises(exceptions.BusinessRuleViolation):
         bll.validate_credit_sale_link(sale)
 
 
@@ -1018,7 +1017,7 @@ def test_validate_void_target_rejects_void_or_credit_payment():
         linked_transaction_id="Torig",
         notes=None,
     )
-    with pytest.raises(bll.BusinessRuleViolation):
+    with pytest.raises(exceptions.BusinessRuleViolation):
         bll.validate_void_target(void_txn)
 
 
@@ -1038,7 +1037,7 @@ def test_build_void_reversal_inverts_original():
         linked_transaction_id=None,
         notes="Original",
     )
-    reversal_time = datetime(2025, 10, 30, 9, 30, 0)
+    reversal_time = datetime.datetime(2025, 10, 30, 9, 30, 0)
     reversal = bll.build_void_transaction(
         original, timestamp=reversal_time, notes="Fix")
     assert reversal.transaction_type == constants.TransactionType.VOID.value
@@ -1058,7 +1057,7 @@ def test_build_sale_transaction_constructs_row():
         notes="Morning",
     )
     row = bll.build_sale_transaction(
-        command, transaction_id="T-build", timestamp=datetime(2025, 10, 30, 10, 0, 0))
+        command, transaction_id="T-build", timestamp=datetime.datetime(2025, 10, 30, 10, 0, 0))
     assert row.transaction_type == constants.TransactionType.SALE.value
     assert row.quantity_change == Decimal("-2")
 
@@ -1074,7 +1073,7 @@ def test_build_restock_transaction_constructs_row():
         notes="Vendor delivery",
     )
     row = bll.build_restock_transaction(
-        command, transaction_id="T-restock", timestamp=datetime(2025, 10, 30, 11, 0, 0))
+        command, transaction_id="T-restock", timestamp=datetime.datetime(2025, 10, 30, 11, 0, 0))
     assert row.transaction_type == constants.TransactionType.RESTOCK.value
     assert row.quantity_change == Decimal("5")
     assert row.salesman_id == "S-DEFAULT"
@@ -1090,7 +1089,7 @@ def test_build_write_off_transaction_constructs_row():
         notes="Spoilage",
     )
     row = bll.build_write_off_transaction(
-        command, transaction_id="T-writeoff", timestamp=datetime(2025, 10, 30, 12, 0, 0))
+        command, transaction_id="T-writeoff", timestamp=datetime.datetime(2025, 10, 30, 12, 0, 0))
     assert row.transaction_type == constants.TransactionType.WRITE_OFF.value
     assert row.total_revenue == Decimal("0")
     assert row.total_cost == Decimal("0")
@@ -1108,7 +1107,7 @@ def test_build_credit_payment_transaction_constructs_row():
         notes="Payment",
     )
     row = bll.build_credit_payment_transaction(
-        command, transaction_id="T-payment", timestamp=datetime(2025, 10, 30, 13, 0, 0))
+        command, transaction_id="T-payment", timestamp=datetime.datetime(2025, 10, 30, 13, 0, 0))
     assert row.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
     assert row.quantity_change == Decimal("0")
     assert row.total_revenue == Decimal("5.00")
@@ -1127,7 +1126,7 @@ def test_build_open_stock_transaction_constructs_row():
         total_revenue=Decimal("30.00"),
     )
     row = bll.build_open_stock_transaction(
-        command, transaction_id="T-open", timestamp=datetime(2025, 10, 30, 14, 0, 0))
+        command, transaction_id="T-open", timestamp=datetime.datetime(2025, 10, 30, 14, 0, 0))
     assert row.transaction_type == constants.TransactionType.OPEN_STOCK.value
     assert row.quantity_change == Decimal("15")
     assert row.total_revenue == Decimal("30.00")

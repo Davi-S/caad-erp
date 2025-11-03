@@ -5,15 +5,13 @@ collaborate. Some tests are expected to fail until the corresponding features
 are implemented, but they record the workflows we plan to support.
 """
 
-from __future__ import annotations
-
 import argparse
-from collections import defaultdict
+import collections
 from decimal import Decimal
 
 import pytest
 
-from caad_erp import cli, constants, bll
+from caad_erp import cli, constants, bll, exceptions
 
 
 def _register_sample_product(context: bll.RuntimeContext, *, product_id: str, name: str, sell_price: Decimal) -> None:
@@ -527,7 +525,7 @@ def test_sale_rejected_for_inactive_product_flow(runtime_context):
         notes="Attempted sale",
     )
 
-    with pytest.raises(bll.BusinessRuleViolation):
+    with pytest.raises(exceptions.BusinessRuleViolation):
         bll.record_sale(context, sale_command)
 
     assert bll.list_transactions(context) == []
@@ -564,7 +562,7 @@ def test_sale_rejected_for_inactive_salesman_flow(runtime_context):
         notes="Attempt with inactive salesman",
     )
 
-    with pytest.raises(bll.BusinessRuleViolation):
+    with pytest.raises(exceptions.BusinessRuleViolation):
         bll.record_sale(context, sale_command)
 
     transactions = bll.list_transactions(context)
@@ -680,7 +678,7 @@ def test_cli_credit_sale_and_debt_report_flow(config_factory, monkeypatch):
     def compute_outstanding(context: bll.RuntimeContext) -> dict[str, Decimal]:
         products = {row.product_id: row for row in bll.list_products(
             context, include_inactive=True)}
-        payments = defaultdict(Decimal)
+        payments = collections.defaultdict(Decimal)
         for txn in bll.list_transactions(context):
             if txn.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value and txn.linked_transaction_id:
                 payments[txn.linked_transaction_id] += txn.total_revenue

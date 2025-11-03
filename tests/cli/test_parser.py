@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from caad_erp import cli, bll
+from caad_erp import bll, cli, exceptions
 
 WRITE_COMMANDS = {
     "add-product",
@@ -192,7 +192,7 @@ def test_build_command_table_detects_duplicate_commands():
 @pytest.mark.parametrize(
     "error, expected",
     [
-        (bll.BusinessRuleViolation("invalid"), 2),
+        (exceptions.BusinessRuleViolation("invalid"), 2),
         (FileNotFoundError("missing"), 3),
         (ValueError("bad value"), 1),
     ],
@@ -210,7 +210,7 @@ def test_handle_cli_error_logs_human_readable_message(caplog: pytest.LogCaptureF
     """handle_cli_error should emit a user-friendly log message."""
 
     caplog.set_level("ERROR")
-    error = bll.BusinessRuleViolation("invalid")
+    error = exceptions.BusinessRuleViolation("invalid")
     cli.handle_cli_error(error)
     assert any("invalid" in record.getMessage() for record in caplog.records)
 
@@ -285,7 +285,7 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
                         lambda path=None: runtime_context)
 
     def fake_dispatch(*_: object) -> int:
-        raise bll.BusinessRuleViolation("invalid")
+        raise exceptions.BusinessRuleViolation("invalid")
 
     monkeypatch.setattr(cli.parser, "dispatch_command", fake_dispatch)
     monkeypatch.setattr(
@@ -304,7 +304,7 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
     monkeypatch.setattr(cli.parser, "handle_cli_error", fake_handle)
     exit_code = cli.main(["sale"])
     assert exit_code == 99
-    assert isinstance(handled["error"], bll.BusinessRuleViolation)
+    assert isinstance(handled["error"], exceptions.BusinessRuleViolation)
 
 
 def test_main_persists_on_success(monkeypatch, runtime_context):

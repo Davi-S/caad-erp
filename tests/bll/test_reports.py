@@ -1,8 +1,7 @@
 from decimal import Decimal
 from unittest.mock import Mock
 
-from caad_erp import bll, constants
-from caad_erp import dal
+from caad_erp import bll, constants, dal
 
 
 def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
