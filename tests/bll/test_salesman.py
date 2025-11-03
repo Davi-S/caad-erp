@@ -6,7 +6,11 @@ from caad_erp import bll, dal, exceptions
 
 
 def test_list_salesmen_excludes_inactive_by_default(monkeypatch, context):
-    """Given inactive salesmen When listing without overrides Then inactive rows stay hidden."""
+    """
+    Given inactive salesmen 
+    When listing without overrides 
+    Then inactive rows stay hidden.
+    """
 
     # Arrange
     salesmen = [
@@ -25,7 +29,11 @@ def test_list_salesmen_excludes_inactive_by_default(monkeypatch, context):
 
 
 def test_list_salesmen_reuses_cache_between_calls(monkeypatch, context):
-    """Given cached salesmen When requesting active and full lists Then the DAL is queried only once."""
+    """
+    Given cached salesmen 
+    When requesting active and full lists 
+    Then the DAL is queried only once.
+    """
 
     # Arrange
     salesmen = [
@@ -46,7 +54,11 @@ def test_list_salesmen_reuses_cache_between_calls(monkeypatch, context):
 
 
 def test_get_salesman_returns_match(monkeypatch, context):
-    """Given a known salesman When fetched by ID Then the hydrated row matches the catalog."""
+    """
+    Given a known salesman 
+    When fetched by ID 
+    Then the hydrated row matches the catalog.
+    """
 
     # Arrange
     salesmen = [dal.SalesmanRow("S8", "Jordan", True)]
@@ -60,7 +72,11 @@ def test_get_salesman_returns_match(monkeypatch, context):
 
 
 def test_get_salesman_reuses_cache_after_first_lookup(monkeypatch, context):
-    """Given a fresh salesman cache When the same ID is requested twice Then the second call is served from cache."""
+    """
+    Given a fresh salesman cache 
+    When the same ID is requested twice 
+    Then the second call is served from cache.
+    """
 
     # Arrange
     salesman_row = dal.SalesmanRow("S-cache", "Cached", True)
@@ -77,7 +93,11 @@ def test_get_salesman_reuses_cache_after_first_lookup(monkeypatch, context):
 
 
 def test_add_salesman_appends_record_and_invalidates_cache(monkeypatch, context):
-    """Given a new salesman When add_salesman executes Then the row persists and cache clears."""
+    """
+    Given a new salesman 
+    When add_salesman executes 
+    Then the row persists and cache clears.
+    """
 
     # Arrange
     monkeypatch.setattr(dal, "iter_salesmen", Mock(return_value=[]))
@@ -102,7 +122,11 @@ def test_add_salesman_appends_record_and_invalidates_cache(monkeypatch, context)
 
 
 def test_add_salesman_rejects_duplicate_id(monkeypatch, context):
-    """Given an existing salesman ID When add_salesman runs Then a business rule violation prevents duplication."""
+    """
+    Given an existing salesman ID 
+    When add_salesman runs 
+    Then a business rule violation prevents duplication.
+    """
 
     # Arrange
     existing = dal.SalesmanRow("S-001", "Existing", True)
@@ -124,7 +148,11 @@ def test_add_salesman_rejects_duplicate_id(monkeypatch, context):
 
 
 def test_add_salesman_requires_nonempty_name(monkeypatch, context):
-    """Given a blank name When add_salesman is invoked Then validation raises ValueError."""
+    """
+    Given a blank name 
+    When add_salesman is invoked 
+    Then validation raises ValueError.
+    """
 
     # Arrange
     monkeypatch.setattr(dal, "iter_salesmen", Mock(return_value=[]))
@@ -145,7 +173,11 @@ def test_add_salesman_requires_nonempty_name(monkeypatch, context):
 
 
 def test_update_salesman_delegates_and_refreshes_cache(monkeypatch, context):
-    """Given cached salesman data When update_salesman runs Then DAL updates and cache refreshes."""
+    """
+    Given cached salesman data 
+    When update_salesman runs 
+    Then DAL updates and cache refreshes.
+    """
 
     # Arrange
     original_bucket: dict[str, object] = {}
@@ -174,7 +206,11 @@ def test_update_salesman_delegates_and_refreshes_cache(monkeypatch, context):
 
 
 def test_update_salesman_requires_changes(context):
-    """Given no update fields When update_salesman executes Then ValueError highlights the missing changes."""
+    """
+    Given no update fields 
+    When update_salesman executes 
+    Then ValueError highlights the missing changes.
+    """
 
     # Arrange
     salesman_id = "S-002"
@@ -188,7 +224,11 @@ def test_update_salesman_requires_changes(context):
 
 
 def test_update_salesman_unknown_id_raises(monkeypatch, context):
-    """Given an unknown salesman ID When update_salesman hits the DAL Then a missing reference error is raised."""
+    """
+    Given an unknown salesman ID 
+    When update_salesman hits the DAL 
+    Then a missing reference error is raised.
+    """
 
     # Arrange
     monkeypatch.setattr(

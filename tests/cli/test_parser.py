@@ -50,7 +50,11 @@ def _registered_choices(parser: argparse.ArgumentParser) -> set[str]:
 
 
 def test_build_parser_returns_argument_parser():
-    """Given the parser factory When build_parser runs Then an argparse parser is returned."""
+    """
+    Given the parser factory 
+    When build_parser runs 
+    Then an argparse parser is returned.
+    """
 
     # Arrange
     # No additional setup required for parser construction.
@@ -63,7 +67,11 @@ def test_build_parser_returns_argument_parser():
 
 
 def test_build_parser_sets_program_metadata():
-    """Given the parser factory When build_parser runs Then program metadata is populated."""
+    """
+    Given the parser factory 
+    When build_parser runs 
+    Then program metadata is populated.
+    """
 
     # Arrange
     # No additional setup required for parser construction.
@@ -78,7 +86,11 @@ def test_build_parser_sets_program_metadata():
 
 
 def test_configure_subcommands_registers_write_commands(cli_parser):
-    """Given a base parser When configure_subcommands runs Then all write commands register."""
+    """
+    Given a base parser 
+    When configure_subcommands runs 
+    Then all write commands register.
+    """
 
     # Arrange
     parser = cli_parser
@@ -95,7 +107,11 @@ def test_configure_subcommands_registers_write_commands(cli_parser):
 
 
 def test_configure_subcommands_registers_read_commands(cli_parser):
-    """Given a base parser When configure_subcommands runs Then all read commands register."""
+    """
+    Given a base parser 
+    When configure_subcommands runs 
+    Then all read commands register.
+    """
 
     # Arrange
     parser = cli_parser
@@ -112,7 +128,11 @@ def test_configure_subcommands_registers_read_commands(cli_parser):
 
 
 def test_register_write_commands_returns_command_specs(subparsers_action):
-    """Given subparser actions When register_write_commands executes Then command specs are returned."""
+    """
+    Given subparser actions 
+    When register_write_commands executes 
+    Then command specs are returned.
+    """
 
     # Arrange
     action = subparsers_action
@@ -127,7 +147,11 @@ def test_register_write_commands_returns_command_specs(subparsers_action):
 
 
 def test_register_write_commands_configures_parsers(subparsers_action):
-    """Given subparser actions When register_write_commands executes Then parser choices include each command."""
+    """
+    Given subparser actions 
+    When register_write_commands executes 
+    Then parser choices include each command.
+    """
 
     # Arrange
     action = subparsers_action
@@ -141,7 +165,11 @@ def test_register_write_commands_configures_parsers(subparsers_action):
 
 
 def test_register_read_commands_returns_command_specs(subparsers_action):
-    """Given subparser actions When register_read_commands executes Then command specs are returned."""
+    """
+    Given subparser actions 
+    When register_read_commands executes 
+    Then command specs are returned.
+    """
 
     # Arrange
     action = subparsers_action
@@ -156,7 +184,11 @@ def test_register_read_commands_returns_command_specs(subparsers_action):
 
 
 def test_register_read_commands_configures_parsers(subparsers_action):
-    """Given subparser actions When register_read_commands executes Then parser choices include each command."""
+    """
+    Given subparser actions 
+    When register_read_commands executes 
+    Then parser choices include each command.
+    """
 
     # Arrange
     action = subparsers_action
@@ -170,7 +202,11 @@ def test_register_read_commands_configures_parsers(subparsers_action):
 
 
 def test_load_runtime_context_uses_provided_path(config_file, monkeypatch):
-    """Given an explicit config path When load_runtime_context executes Then that path is forwarded."""
+    """
+    Given an explicit config path 
+    When load_runtime_context executes 
+    Then that path is forwarded.
+    """
 
     # Arrange
     sentinel_context = object()
@@ -189,7 +225,11 @@ def test_load_runtime_context_uses_provided_path(config_file, monkeypatch):
 
 
 def test_load_runtime_context_supports_defaults(monkeypatch, tmp_path):
-    """Given a working directory config.ini When load_runtime_context executes Then the default path is used."""
+    """
+    Given a working directory config.ini 
+    When load_runtime_context executes 
+    Then the default path is used.
+    """
 
     # Arrange
     config_path = tmp_path / "config.ini"
@@ -211,7 +251,11 @@ def test_load_runtime_context_supports_defaults(monkeypatch, tmp_path):
 
 
 def test_dispatch_command_invokes_executor(runtime_context, command_table_entry):
-    """Given a known command When dispatch_command runs Then its executor is invoked."""
+    """
+    Given a known command 
+    When dispatch_command runs 
+    Then its executor is invoked.
+    """
 
     # Arrange
     command_name, spec = command_table_entry
@@ -227,7 +271,11 @@ def test_dispatch_command_invokes_executor(runtime_context, command_table_entry)
 
 
 def test_dispatch_command_handles_unknown_commands(runtime_context):
-    """Given an unknown command When dispatch_command runs Then KeyError is raised."""
+    """
+    Given an unknown command 
+    When dispatch_command runs 
+    Then KeyError is raised.
+    """
 
     # Arrange
     args = argparse.Namespace(command="unknown")
@@ -238,7 +286,11 @@ def test_dispatch_command_handles_unknown_commands(runtime_context):
 
 
 def test_build_command_table_indexes_specs(command_spec_iterable):
-    """Given command specs When build_command_table executes Then the mapping keys match spec names."""
+    """
+    Given command specs 
+    When build_command_table executes 
+    Then the mapping keys match spec names.
+    """
 
     # Arrange
     specs = command_spec_iterable
@@ -251,7 +303,11 @@ def test_build_command_table_indexes_specs(command_spec_iterable):
 
 
 def test_build_command_table_detects_duplicate_commands():
-    """Given duplicate command specs When build_command_table runs Then ValueError is raised."""
+    """
+    Given duplicate command specs 
+    When build_command_table runs 
+    Then ValueError is raised.
+    """
 
     # Arrange
     specs = [
@@ -275,7 +331,11 @@ def test_build_command_table_detects_duplicate_commands():
     ],
 )
 def test_handle_cli_error_returns_exit_code(error: Exception, expected: int, caplog: pytest.LogCaptureFixture):
-    """Given CLI exceptions When handle_cli_error executes Then the mapped exit code is returned."""
+    """
+    Given CLI exceptions 
+    When handle_cli_error executes 
+    Then the mapped exit code is returned.
+    """
 
     # Arrange
     caplog.set_level("ERROR")
@@ -289,7 +349,11 @@ def test_handle_cli_error_returns_exit_code(error: Exception, expected: int, cap
 
 
 def test_handle_cli_error_logs_human_readable_message(caplog: pytest.LogCaptureFixture):
-    """Given a CLI exception When handle_cli_error runs Then a readable message is logged."""
+    """
+    Given a CLI exception 
+    When handle_cli_error runs 
+    Then a readable message is logged.
+    """
 
     # Arrange
     caplog.set_level("ERROR")
@@ -303,7 +367,11 @@ def test_handle_cli_error_logs_human_readable_message(caplog: pytest.LogCaptureF
 
 
 def test_persist_workbook_saves_changes(runtime_context, monkeypatch):
-    """Given a runtime context When persist_workbook executes Then the BLL persistence helper is called."""
+    """
+    Given a runtime context 
+    When persist_workbook executes 
+    Then the BLL persistence helper is called.
+    """
 
     # Arrange
     called = {}
@@ -321,7 +389,11 @@ def test_persist_workbook_saves_changes(runtime_context, monkeypatch):
 
 
 def test_persist_workbook_handles_read_only_workbooks(runtime_context, monkeypatch):
-    """Given a read-only persistence error When persist_workbook runs Then RuntimeError is raised."""
+    """
+    Given a read-only persistence error 
+    When persist_workbook runs 
+    Then RuntimeError is raised.
+    """
 
     # Arrange
     def fake_persist(_: bll.RuntimeContext) -> None:
@@ -335,7 +407,11 @@ def test_persist_workbook_handles_read_only_workbooks(runtime_context, monkeypat
 
 
 def test_main_executes_specified_command(monkeypatch, runtime_context):
-    """Given CLI arguments When main executes Then the dispatched command runs and persists."""
+    """
+    Given CLI arguments 
+    When main executes 
+    Then the dispatched command runs and persists.
+    """
 
     # Arrange
     parser = _stub_parser(command="sale")
@@ -371,7 +447,11 @@ def test_main_executes_specified_command(monkeypatch, runtime_context):
 
 
 def test_main_handles_bll_errors(monkeypatch, runtime_context):
-    """Given a business rule failure When main executes Then the error handler determines the exit code."""
+    """
+    Given a business rule failure 
+    When main executes 
+    Then the error handler determines the exit code.
+    """
 
     # Arrange
     parser = _stub_parser(command="sale")
@@ -410,7 +490,11 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
 
 
 def test_main_persists_on_success(monkeypatch, runtime_context):
-    """Given a successful command When main executes Then workbook changes are persisted."""
+    """
+    Given a successful command 
+    When main executes 
+    Then workbook changes are persisted.
+    """
 
     # Arrange
     parser = _stub_parser(command="profit")

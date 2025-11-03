@@ -5,7 +5,11 @@ from caad_erp import cli, bll, constants
 
 
 def test_register_sale_command_returns_spec():
-    """Given the sale registration When register_sale_command runs Then a command spec returns."""
+    """
+    Given the sale registration 
+    When register_sale_command runs 
+    Then a command spec returns.
+    """
 
     # Arrange
     # No additional setup required for registration.
@@ -20,7 +24,11 @@ def test_register_sale_command_returns_spec():
 
 
 def test_register_sale_command_configures_arguments():
-    """Given the sale parser When arguments are parsed Then the namespace reflects the inputs."""
+    """
+    Given the sale parser 
+    When arguments are parsed 
+    Then the namespace reflects the inputs.
+    """
 
     # Arrange
     parser = argparse.ArgumentParser(prog="cli")
@@ -57,7 +65,11 @@ def test_register_sale_command_configures_arguments():
 
 
 def test_translate_sale_returns_sale_command():
-    """Given CLI arguments When translate_sale executes Then a SaleCommand is produced."""
+    """
+    Given CLI arguments 
+    When translate_sale executes 
+    Then a SaleCommand is produced.
+    """
 
     # Arrange
     args = argparse.Namespace(
@@ -81,7 +93,11 @@ def test_translate_sale_returns_sale_command():
 
 
 def test_run_sale_invokes_bll(runtime_context, monkeypatch):
-    """Given parsed arguments When run_sale executes Then the BLL sale recorder is called."""
+    """
+    Given parsed arguments 
+    When run_sale executes 
+    Then the BLL sale recorder is called.
+    """
 
     # Arrange
     args = argparse.Namespace()

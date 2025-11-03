@@ -5,7 +5,11 @@ from caad_erp import bll, constants, dal
 
 
 def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
-    """Given restock and sale entries When inventory is calculated Then on-hand quantity reflects both movements."""
+    """
+    Given restock and sale entries 
+    When inventory is calculated 
+    Then on-hand quantity reflects both movements.
+    """
 
     # Arrange
     transactions = [
@@ -47,7 +51,11 @@ def test_calculate_inventory_rolls_up_quantities(monkeypatch, context):
 
 
 def test_calculate_inventory_reuses_transaction_cache(monkeypatch, context):
-    """Given a cached transaction list When calculate_inventory runs again Then no additional DAL reads occur."""
+    """
+    Given a cached transaction list 
+    When calculate_inventory runs again 
+    Then no additional DAL reads occur.
+    """
 
     # Arrange
     transactions = [
@@ -79,7 +87,11 @@ def test_calculate_inventory_reuses_transaction_cache(monkeypatch, context):
 
 
 def test_calculate_profit_summary_returns_totals(monkeypatch, context):
-    """Given sales and restocks When profit summary runs Then totals aggregate revenue and cost."""
+    """
+    Given sales and restocks 
+    When profit summary runs 
+    Then totals aggregate revenue and cost.
+    """
 
     # Arrange
     transactions = [
@@ -125,7 +137,11 @@ def test_calculate_profit_summary_returns_totals(monkeypatch, context):
 
 
 def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context):
-    """Given cached transactions When profit summary recalculates Then DAL iteration happens only once."""
+    """
+    Given cached transactions 
+    When profit summary recalculates 
+    Then DAL iteration happens only once.
+    """
 
     # Arrange
     transactions = [

@@ -6,7 +6,11 @@ from caad_erp import dal, constants
 
 
 def test_open_workbook_returns_openpyxl_instance(master_workbook_path):
-    """Given an existing workbook path When open_workbook executes Then an openpyxl Workbook returns."""
+    """
+    Given an existing workbook path 
+    When open_workbook executes 
+    Then an openpyxl Workbook returns.
+    """
 
     # Arrange
     workbook_path = master_workbook_path
@@ -19,7 +23,11 @@ def test_open_workbook_returns_openpyxl_instance(master_workbook_path):
 
 
 def test_open_workbook_missing_file_raises(tmp_path):
-    """Given a missing workbook path When open_workbook runs Then FileNotFoundError is raised."""
+    """
+    Given a missing workbook path 
+    When open_workbook runs 
+    Then FileNotFoundError is raised.
+    """
 
     # Arrange
     missing_path = tmp_path / "missing.xlsx"
@@ -30,7 +38,11 @@ def test_open_workbook_missing_file_raises(tmp_path):
 
 
 def test_save_workbook_persists_changes(master_workbook_path):
-    """Given workbook mutations When save_workbook persists them Then disk reads include the updates."""
+    """
+    Given workbook mutations 
+    When save_workbook persists them 
+    Then disk reads include the updates.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -50,7 +62,11 @@ def test_save_workbook_persists_changes(master_workbook_path):
 
 
 def test_save_workbook_with_destination_creates_copy(master_workbook_path, tmp_path):
-    """Given a destination path When save_workbook writes to it Then a copied file exists independently."""
+    """
+    Given a destination path 
+    When save_workbook writes to it 
+    Then a copied file exists independently.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -69,7 +85,11 @@ def test_save_workbook_with_destination_creates_copy(master_workbook_path, tmp_p
 
 
 def test_refresh_workbook_returns_new_instance(master_workbook_path):
-    """Given prior workbook changes When refresh_workbook runs Then a new instance reflecting disk state is returned."""
+    """
+    Given prior workbook changes 
+    When refresh_workbook runs 
+    Then a new instance reflecting disk state is returned.
+    """
 
     # Arrange
     original = dal.open_workbook(master_workbook_path)
@@ -90,7 +110,11 @@ def test_refresh_workbook_returns_new_instance(master_workbook_path):
 
 
 def test_locate_row_returns_row_index(master_workbook_path):
-    """Given a matching key When locate_row executes Then the correct worksheet index is returned."""
+    """
+    Given a matching key 
+    When locate_row executes 
+    Then the correct worksheet index is returned.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -112,7 +136,11 @@ def test_locate_row_returns_row_index(master_workbook_path):
 
 
 def test_locate_row_returns_none_when_missing(master_workbook_path):
-    """Given an absent key When locate_row executes Then None is returned."""
+    """
+    Given an absent key 
+    When locate_row executes 
+    Then None is returned.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)

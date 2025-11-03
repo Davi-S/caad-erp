@@ -7,7 +7,11 @@ from caad_erp import bll, constants, dal
 
 
 def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
-    """Given a config path When load_runtime_context runs Then settings and workbook assemble into the context."""
+    """
+    Given a config path 
+    When load_runtime_context runs 
+    Then settings and workbook assemble into the context.
+    """
 
     # Arrange
     config_path = tmp_path / "config.ini"
@@ -42,7 +46,11 @@ def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
 
 
 def test_ensure_schema_version_rejects_mismatch(context):
-    """Given a mismatched schema version When ensure_schema_version runs Then a RuntimeError surfaces."""
+    """
+    Given a mismatched schema version 
+    When ensure_schema_version runs 
+    Then a RuntimeError surfaces.
+    """
 
     # Arrange
     bad_settings = dataclasses.replace(context.settings, schema_version="0.9")
@@ -58,7 +66,11 @@ def test_ensure_schema_version_rejects_mismatch(context):
 
 
 def test_persist_context_writes_to_disk(monkeypatch, context):
-    """Given an in-memory workbook When persist_context runs Then changes flush to disk."""
+    """
+    Given an in-memory workbook 
+    When persist_context runs 
+    Then changes flush to disk.
+    """
 
     # Arrange
     save_mock = Mock()
@@ -73,7 +85,11 @@ def test_persist_context_writes_to_disk(monkeypatch, context):
 
 
 def test_refresh_context_reloads_from_disk(monkeypatch, settings):
-    """Given a runtime context When refresh_context executes Then it reloads workbook state from disk."""
+    """
+    Given a runtime context 
+    When refresh_context executes 
+    Then it reloads workbook state from disk.
+    """
 
     # Arrange
     refreshed_workbook = Mock(name="reloaded")

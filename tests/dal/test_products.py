@@ -6,7 +6,11 @@ from caad_erp import dal, constants
 
 
 def test_iter_products_yields_product_rows(master_workbook_path):
-    """Given a workbook with product data When iter_products runs Then ProductRow instances stream back."""
+    """
+    Given a workbook with product data 
+    When iter_products runs 
+    Then ProductRow instances stream back.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -30,7 +34,11 @@ def test_iter_products_yields_product_rows(master_workbook_path):
 
 
 def test_append_product_adds_row(master_workbook_path):
-    """Given a product record When append_product runs Then the workbook gains the new row."""
+    """
+    Given a product record 
+    When append_product runs 
+    Then the workbook gains the new row.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -53,7 +61,11 @@ def test_append_product_adds_row(master_workbook_path):
 
 
 def test_update_product_modifies_existing_row(master_workbook_path):
-    """Given an existing product When update_product writes new values Then the worksheet reflects the changes."""
+    """
+    Given an existing product 
+    When update_product writes new values 
+    Then the worksheet reflects the changes.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -78,7 +90,11 @@ def test_update_product_modifies_existing_row(master_workbook_path):
 
 
 def test_update_product_missing_raises(master_workbook_path):
-    """Given an unknown product ID When update_product runs Then KeyError is raised."""
+    """
+    Given an unknown product ID 
+    When update_product runs 
+    Then KeyError is raised.
+    """
 
     # Arrange
     workbook = dal.open_workbook(master_workbook_path)
@@ -89,7 +105,11 @@ def test_update_product_missing_raises(master_workbook_path):
 
 
 def test_serialize_product_preserves_order():
-    """Given a ProductRow When serialize_product executes Then the column order remains consistent."""
+    """
+    Given a ProductRow 
+    When serialize_product executes 
+    Then the column order remains consistent.
+    """
 
     # Arrange
     record = dal.ProductRow("P1", "Name", Decimal("1.25"), True)
@@ -102,7 +122,11 @@ def test_serialize_product_preserves_order():
 
 
 def test_deserialize_product_constructs_dataclass():
-    """Given worksheet values When deserialize_product runs Then a ProductRow is created with coerced types."""
+    """
+    Given worksheet values 
+    When deserialize_product runs 
+    Then a ProductRow is created with coerced types.
+    """
 
     # Arrange
     raw_row = ["P9", "Bar", "2.75", True]
