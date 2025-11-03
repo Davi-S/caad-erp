@@ -1,3 +1,11 @@
+"""Reporting helpers that derive analytics from cached transactions.
+
+Utilities in this module consume the read-heavy caches maintained by the
+business logic layer to compute inventory balances and profit summaries without
+touching the workbook on every call. Callers receive plain dictionaries that
+are convenient for CLI formatting or downstream integrations.
+"""
+
 import logging
 import typing as t
 from decimal import Decimal

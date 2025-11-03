@@ -1,3 +1,12 @@
+"""Transaction workflows coordinating validation and persistence.
+
+The module defines command dataclasses that describe user intent for sales,
+restocks, write-offs, credit payments, and inventory snapshots. High-level
+functions transform those commands into normalized transaction rows, enforce
+business rules through centralized validators, and maintain cache coherence so
+reporting modules observe consistent state.
+"""
+
 import logging
 import typing as t
 from dataclasses import dataclass

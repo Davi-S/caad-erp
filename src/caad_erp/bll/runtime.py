@@ -1,3 +1,10 @@
+"""Runtime scaffolding shared by the business logic layer.
+
+This module orchestrates configuration discovery, workbook lifecycle
+management, and in-memory caching. Public helpers expose a single
+``RuntimeContext`` dataclass that callers pass to product, salesman, or
+transaction routines to guarantee consistent state sharing.
+"""
 
 import logging
 import typing as t
