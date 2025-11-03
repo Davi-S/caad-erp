@@ -10,7 +10,7 @@ import logging
 import typing as t
 from pathlib import Path
 
-from caad_erp import core_logic
+from caad_erp import bll, exceptions
 
 from . import commands
 from .command_spec import CommandSpec
@@ -124,14 +124,14 @@ def register_read_commands(
 
 
 def dispatch_command(
-    context: core_logic.RuntimeContext,
+    context: bll.RuntimeContext,
     args: argparse.Namespace,
     command_table: t.Mapping[str, CommandSpec],
 ) -> int:
     """Route parsed CLI arguments to the appropriate command executor.
 
     Args:
-        context (core_logic.RuntimeContext): Live runtime context that holds
+        context (bll.RuntimeContext): Live runtime context that holds
             workbook handles and cached data.
         args (argparse.Namespace): Namespace returned by
             :meth:`argparse.ArgumentParser.parse_args` containing CLI inputs.
@@ -190,7 +190,7 @@ def handle_cli_error(error: Exception) -> int:
             validation issues map to ``2``, missing files to ``3``, and all
             other failures to ``1``.
     """
-    if isinstance(error, core_logic.BusinessRuleViolation):
+    if isinstance(error, exceptions.BusinessRuleViolation):
         logger.error("%s", error)
         return 2
     if isinstance(error, FileNotFoundError):
@@ -200,11 +200,11 @@ def handle_cli_error(error: Exception) -> int:
     return 1
 
 
-def persist_workbook(context: core_logic.RuntimeContext) -> None:
+def persist_workbook(context: bll.RuntimeContext) -> None:
     """Flush pending workbook mutations to disk after a successful run.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context whose workbook
+        context (bll.RuntimeContext): Runtime context whose workbook
             should be persisted.
 
     Raises:
@@ -213,12 +213,12 @@ def persist_workbook(context: core_logic.RuntimeContext) -> None:
             the cause.
     """
     try:
-        core_logic.persist_context(context)
+        bll.persist_context(context)
     except PermissionError as error:
         raise RuntimeError(str(error)) from error
 
 
-def load_runtime_context(config_path: t.Optional[Path] = None) -> core_logic.RuntimeContext:
+def load_runtime_context(config_path: t.Optional[Path] = None) -> bll.RuntimeContext:
     """Load configuration and workbook state for CLI execution.
 
     Args:
@@ -226,7 +226,7 @@ def load_runtime_context(config_path: t.Optional[Path] = None) -> core_logic.Run
             When omitted the search starts in the current working directory.
 
     Returns:
-        core_logic.RuntimeContext: Context object bundling parsed settings,
+        bll.RuntimeContext: Context object bundling parsed settings,
             an open workbook, and cache containers.
 
     Raises:
@@ -236,7 +236,7 @@ def load_runtime_context(config_path: t.Optional[Path] = None) -> core_logic.Run
     """
     target = Path(
         config_path) if config_path is not None else Path.cwd() / "config.ini"
-    return core_logic.load_runtime_context(target)
+    return bll.load_runtime_context(target)
 
 
 def main(argv: t.Sequence[str] | None = None) -> int:

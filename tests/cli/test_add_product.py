@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import cli, core_logic
+from caad_erp import cli, bll
 
 
 def test_register_add_product_command_returns_spec():
@@ -66,11 +66,11 @@ def test_run_add_product_invokes_bll(runtime_context, monkeypatch):
                         "translate_add_product", lambda value: payload)
     called: dict[str, object] = {}
 
-    def fake_add_product(context: core_logic.RuntimeContext, **data: object) -> None:
+    def fake_add_product(context: bll.RuntimeContext, **data: object) -> None:
         called["context"] = context
         called["data"] = data
 
-    monkeypatch.setattr(cli.core_logic, "add_product",
+    monkeypatch.setattr(cli.bll, "add_product",
                         fake_add_product, raising=False)
     result = cli.run_add_product(runtime_context, args)
     assert result == 0

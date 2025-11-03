@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import cli, core_logic
+from caad_erp import cli, bll
 
 
 def test_register_restock_command_returns_spec():
@@ -53,7 +53,7 @@ def test_translate_restock_returns_restock_command():
         notes="Bulk restock",
     )
     command = cli.translate_restock(args)
-    assert isinstance(command, core_logic.RestockCommand)
+    assert isinstance(command, bll.RestockCommand)
     assert command.quantity == Decimal("5")
     assert command.total_cost == Decimal("10.00")
     assert command.salesman_id == "S-DEFAULT"
@@ -64,7 +64,7 @@ def test_run_restock_invokes_bll(runtime_context, monkeypatch):
     """run_restock should delegate to the business logic layer."""
 
     args = argparse.Namespace()
-    command = core_logic.RestockCommand(
+    command = bll.RestockCommand(
         product_id="P1001",
         salesman_id="S-DEFAULT",
         quantity=Decimal("5"),
@@ -74,11 +74,11 @@ def test_run_restock_invokes_bll(runtime_context, monkeypatch):
                         "translate_restock", lambda value: command)
     called = {}
 
-    def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.RestockCommand) -> None:
+    def fake_record(context: bll.RuntimeContext, cmd: bll.RestockCommand) -> None:
         called["context"] = context
         called["cmd"] = cmd
 
-    monkeypatch.setattr(cli.core_logic, "record_restock", fake_record)
+    monkeypatch.setattr(cli.bll, "record_restock", fake_record)
     result = cli.run_restock(runtime_context, args)
     assert result == 0
     assert called["cmd"] is command

@@ -2,7 +2,7 @@ import argparse
 import typing as t
 from decimal import Decimal
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -40,11 +40,11 @@ def register_add_product_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_add_product)
 
 
-def run_add_product(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the add-product workflow through the business logic layer.
 
     Args:
-        context (core_logic.RuntimeContext): Active runtime context containing
+        context (bll.RuntimeContext): Active runtime context containing
             the workbook session to mutate.
         args (argparse.Namespace): Parsed CLI arguments representing user
             input for the ``add-product`` command.
@@ -54,7 +54,7 @@ def run_add_product(context: core_logic.RuntimeContext, args: argparse.Namespace
             handling.
     """
     payload = translate_add_product(args)
-    core_logic.add_product(context, **payload)  # type: ignore[attr-defined]
+    bll.add_product(context, **payload)  # type: ignore[attr-defined]
     return 0
 
 
@@ -67,7 +67,7 @@ def translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
 
     Returns:
         Mapping[str, Any]: Keyword payload compatible with
-            :func:`core_logic.add_product`. Numerical values are coerced to
+            :func:`bll.add_product`. Numerical values are coerced to
             :class:`~decimal.Decimal` and the ``--inactive`` flag is inverted
             into the ``is_active`` boolean expected by the business layer.
 

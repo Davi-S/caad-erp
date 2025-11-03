@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -33,11 +33,11 @@ def register_log_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_log_report)
 
 
-def run_log_report(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the transaction log reporting workflow.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context providing access
+        context (bll.RuntimeContext): Runtime context providing access
             to the transaction log cache.
         args (argparse.Namespace): Parsed CLI arguments for the command. This
             command currently consumes no additional options but is included
@@ -46,5 +46,5 @@ def run_log_report(context: core_logic.RuntimeContext, args: argparse.Namespace)
     Returns:
         int: Exit code ``0`` after retrieving the log entries.
     """
-    core_logic.list_transactions(context)
+    bll.list_transactions(context)
     return 0

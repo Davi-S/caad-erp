@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import cli, core_logic, constants
+from caad_erp import cli, bll, constants
 
 
 def test_register_sale_command_returns_spec():
@@ -57,7 +57,7 @@ def test_translate_sale_returns_sale_command():
         notes="First sale",
     )
     command = cli.translate_sale(args)
-    assert isinstance(command, core_logic.SaleCommand)
+    assert isinstance(command, bll.SaleCommand)
     assert command.quantity == Decimal("2")
     assert command.total_revenue == Decimal("6.00")
     assert command.payment_type == constants.PaymentType.CASH
@@ -68,7 +68,7 @@ def test_run_sale_invokes_bll(runtime_context, monkeypatch):
     """run_sale should delegate to the business logic layer."""
 
     args = argparse.Namespace()
-    command = core_logic.SaleCommand(
+    command = bll.SaleCommand(
         product_id="P1001",
         salesman_id="S100",
         quantity=Decimal("1"),
@@ -79,11 +79,11 @@ def test_run_sale_invokes_bll(runtime_context, monkeypatch):
                         lambda value: command)
     called = {}
 
-    def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.SaleCommand) -> None:
+    def fake_record(context: bll.RuntimeContext, cmd: bll.SaleCommand) -> None:
         called["context"] = context
         called["cmd"] = cmd
 
-    monkeypatch.setattr(cli.core_logic, "record_sale", fake_record)
+    monkeypatch.setattr(cli.bll, "record_sale", fake_record)
     result = cli.run_sale(runtime_context, args)
     assert result == 0
     assert called["context"] is runtime_context

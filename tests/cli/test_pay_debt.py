@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import cli, constants, core_logic
+from caad_erp import cli, constants, bll
 
 
 def test_register_pay_debt_command_returns_spec():
@@ -53,7 +53,7 @@ def test_translate_pay_debt_returns_credit_payment_command():
         notes="Settled",
     )
     command = cli.translate_pay_debt(args)
-    assert isinstance(command, core_logic.CreditPaymentCommand)
+    assert isinstance(command, bll.CreditPaymentCommand)
     assert command.total_revenue == Decimal("6.00")
     assert command.salesman_id == "S-DEFAULT"
     assert command.payment_type == constants.PaymentType.PIX
@@ -64,7 +64,7 @@ def test_run_pay_debt_invokes_bll(runtime_context, monkeypatch):
     """run_pay_debt should delegate to the business logic layer."""
 
     args = argparse.Namespace()
-    command = core_logic.CreditPaymentCommand(
+    command = bll.CreditPaymentCommand(
         linked_transaction_id="T1",
         salesman_id="S-DEFAULT",
         total_revenue=Decimal("6"),
@@ -74,11 +74,11 @@ def test_run_pay_debt_invokes_bll(runtime_context, monkeypatch):
                         "translate_pay_debt", lambda value: command)
     called = {}
 
-    def fake_record(context: core_logic.RuntimeContext, cmd: core_logic.CreditPaymentCommand) -> None:
+    def fake_record(context: bll.RuntimeContext, cmd: bll.CreditPaymentCommand) -> None:
         called["context"] = context
         called["cmd"] = cmd
 
-    monkeypatch.setattr(cli.core_logic, "record_credit_payment", fake_record)
+    monkeypatch.setattr(cli.bll, "record_credit_payment", fake_record)
     result = cli.run_pay_debt(runtime_context, args)
     assert result == 0
     assert called["cmd"] is command

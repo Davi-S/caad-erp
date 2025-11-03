@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -38,7 +38,7 @@ def register_write_off_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_write_off)
 
 
-def translate_write_off(args: argparse.Namespace) -> core_logic.WriteOffCommand:
+def translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:
     """Convert parsed CLI arguments into a ``WriteOffCommand``.
 
     Args:
@@ -46,14 +46,14 @@ def translate_write_off(args: argparse.Namespace) -> core_logic.WriteOffCommand:
             options.
 
     Returns:
-        core_logic.WriteOffCommand: Domain command capturing write-off details.
+        bll.WriteOffCommand: Domain command capturing write-off details.
             Quantity is coerced to :class:`~decimal.Decimal`.
 
     Raises:
         decimal.InvalidOperation: If ``--quantity`` cannot be parsed as a valid
             decimal number.
     """
-    return core_logic.WriteOffCommand(
+    return bll.WriteOffCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
         quantity=Decimal(args.quantity),
@@ -61,11 +61,11 @@ def translate_write_off(args: argparse.Namespace) -> core_logic.WriteOffCommand:
     )
 
 
-def run_write_off(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_write_off(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the write-off workflow through the business logic layer.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context providing access
+        context (bll.RuntimeContext): Runtime context providing access
             to transactional mutations.
         args (argparse.Namespace): Parsed CLI arguments describing the
             write-off operation.
@@ -74,5 +74,5 @@ def run_write_off(context: core_logic.RuntimeContext, args: argparse.Namespace) 
         int: Exit code ``0`` when the write-off is recorded successfully.
     """
     command = translate_write_off(args)
-    core_logic.record_write_off(context, command)
+    bll.record_write_off(context, command)
     return 0

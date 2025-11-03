@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from caad_erp import cli, core_logic
+from caad_erp import cli, bll
 
 WRITE_COMMANDS = {
     "add-product",
@@ -130,7 +130,7 @@ def test_load_runtime_context_uses_provided_path(config_file, monkeypatch):
         assert path == config_file
         return sentinel_context
 
-    monkeypatch.setattr(core_logic, "load_runtime_context", fake_loader)
+    monkeypatch.setattr(bll, "load_runtime_context", fake_loader)
     assert cli.load_runtime_context(config_file) is sentinel_context
 
 
@@ -145,7 +145,7 @@ def test_load_runtime_context_supports_defaults(monkeypatch, tmp_path):
         assert path == config_path
         return sentinel_context
 
-    monkeypatch.setattr(core_logic, "load_runtime_context", fake_loader)
+    monkeypatch.setattr(bll, "load_runtime_context", fake_loader)
     monkeypatch.chdir(tmp_path)
     assert cli.load_runtime_context() is sentinel_context
 
@@ -192,7 +192,7 @@ def test_build_command_table_detects_duplicate_commands():
 @pytest.mark.parametrize(
     "error, expected",
     [
-        (core_logic.BusinessRuleViolation("invalid"), 2),
+        (bll.BusinessRuleViolation("invalid"), 2),
         (FileNotFoundError("missing"), 3),
         (ValueError("bad value"), 1),
     ],
@@ -210,7 +210,7 @@ def test_handle_cli_error_logs_human_readable_message(caplog: pytest.LogCaptureF
     """handle_cli_error should emit a user-friendly log message."""
 
     caplog.set_level("ERROR")
-    error = core_logic.BusinessRuleViolation("invalid")
+    error = bll.BusinessRuleViolation("invalid")
     cli.handle_cli_error(error)
     assert any("invalid" in record.getMessage() for record in caplog.records)
 
@@ -220,10 +220,10 @@ def test_persist_workbook_saves_changes(runtime_context, monkeypatch):
 
     called = {}
 
-    def fake_persist(context: core_logic.RuntimeContext) -> None:
+    def fake_persist(context: bll.RuntimeContext) -> None:
         called["context"] = context
 
-    monkeypatch.setattr(cli.core_logic, "persist_context", fake_persist)
+    monkeypatch.setattr(cli.bll, "persist_context", fake_persist)
     cli.persist_workbook(runtime_context)
     assert called["context"] is runtime_context
 
@@ -231,10 +231,10 @@ def test_persist_workbook_saves_changes(runtime_context, monkeypatch):
 def test_persist_workbook_handles_read_only_workbooks(runtime_context, monkeypatch):
     """persist_workbook should handle read-only workbook scenarios gracefully."""
 
-    def fake_persist(_: core_logic.RuntimeContext) -> None:
+    def fake_persist(_: bll.RuntimeContext) -> None:
         raise PermissionError("read-only")
 
-    monkeypatch.setattr(cli.core_logic, "persist_context", fake_persist)
+    monkeypatch.setattr(cli.bll, "persist_context", fake_persist)
     with pytest.raises(RuntimeError, match="read-only"):
         cli.persist_workbook(runtime_context)
 
@@ -254,7 +254,7 @@ def test_main_executes_specified_command(monkeypatch, runtime_context):
 
     called = {}
 
-    def fake_dispatch(context: core_logic.RuntimeContext, args: argparse.Namespace, table: t.Mapping[str, cli.CommandSpec]) -> int:
+    def fake_dispatch(context: bll.RuntimeContext, args: argparse.Namespace, table: t.Mapping[str, cli.CommandSpec]) -> int:
         called["context"] = context
         called["args"] = args
         called["table"] = table
@@ -285,7 +285,7 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
                         lambda path=None: runtime_context)
 
     def fake_dispatch(*_: object) -> int:
-        raise core_logic.BusinessRuleViolation("invalid")
+        raise bll.BusinessRuleViolation("invalid")
 
     monkeypatch.setattr(cli.parser, "dispatch_command", fake_dispatch)
     monkeypatch.setattr(
@@ -304,7 +304,7 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
     monkeypatch.setattr(cli.parser, "handle_cli_error", fake_handle)
     exit_code = cli.main(["sale"])
     assert exit_code == 99
-    assert isinstance(handled["error"], core_logic.BusinessRuleViolation)
+    assert isinstance(handled["error"], bll.BusinessRuleViolation)
 
 
 def test_main_persists_on_success(monkeypatch, runtime_context):
@@ -323,7 +323,7 @@ def test_main_persists_on_success(monkeypatch, runtime_context):
 
     persisted = {}
 
-    def fake_persist(context: core_logic.RuntimeContext) -> None:
+    def fake_persist(context: bll.RuntimeContext) -> None:
         persisted["context"] = context
 
     monkeypatch.setattr(cli.parser, "persist_workbook", fake_persist)

@@ -1,6 +1,6 @@
 import argparse
 
-from caad_erp import cli, core_logic
+from caad_erp import cli, bll
 
 
 def test_register_log_command_returns_spec():
@@ -29,11 +29,11 @@ def test_run_log_report_invokes_bll(runtime_context, monkeypatch):
     args = argparse.Namespace()
     called = {}
 
-    def fake_list(context: core_logic.RuntimeContext) -> list[object]:
+    def fake_list(context: bll.RuntimeContext) -> list[object]:
         called["context"] = context
         return []
 
-    monkeypatch.setattr(cli.core_logic, "list_transactions", fake_list)
+    monkeypatch.setattr(cli.bll, "list_transactions", fake_list)
     result = cli.run_log_report(runtime_context, args)
     assert result == 0
     assert called["context"] is runtime_context

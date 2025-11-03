@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -39,7 +39,7 @@ def register_restock_command() -> CommandSpec:
     return CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_restock)
 
 
-def translate_restock(args: argparse.Namespace) -> core_logic.RestockCommand:
+def translate_restock(args: argparse.Namespace) -> bll.RestockCommand:
     """Convert parsed CLI arguments into a ``RestockCommand``.
 
     Args:
@@ -47,14 +47,14 @@ def translate_restock(args: argparse.Namespace) -> core_logic.RestockCommand:
             options.
 
     Returns:
-        core_logic.RestockCommand: Domain command capturing restock details.
+        bll.RestockCommand: Domain command capturing restock details.
             Quantity and cost values are coerced to :class:`~decimal.Decimal`.
 
     Raises:
         decimal.InvalidOperation: If ``--quantity`` or ``--total-cost`` cannot
             be parsed as valid decimal numbers.
     """
-    return core_logic.RestockCommand(
+    return bll.RestockCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
         quantity=Decimal(args.quantity),
@@ -63,11 +63,11 @@ def translate_restock(args: argparse.Namespace) -> core_logic.RestockCommand:
     )
 
 
-def run_restock(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_restock(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the restock workflow through the business logic layer.
 
     Args:
-        context (core_logic.RuntimeContext): Runtime context providing access
+        context (bll.RuntimeContext): Runtime context providing access
             to transactional mutations.
         args (argparse.Namespace): Parsed CLI arguments describing the
             restock operation.
@@ -76,5 +76,5 @@ def run_restock(context: core_logic.RuntimeContext, args: argparse.Namespace) ->
         int: Exit code ``0`` when the restock is recorded successfully.
     """
     command = translate_restock(args)
-    core_logic.record_restock(context, command)
+    bll.record_restock(context, command)
     return 0

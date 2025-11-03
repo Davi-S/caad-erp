@@ -1,7 +1,7 @@
 import argparse
 import typing as t
 
-from caad_erp import core_logic
+from caad_erp import bll
 
 from ..command_spec import CommandSpec, SubparserFactory
 
@@ -46,7 +46,7 @@ def translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
             ``add-salesman`` command.
 
     Returns:
-        Mapping[str, Any]: Keyword payload used by :func:`core_logic.add_salesman`.
+        Mapping[str, Any]: Keyword payload used by :func:`bll.add_salesman`.
             The ``--inactive`` option is inverted into the ``is_active`` flag.
     """
     return {
@@ -56,11 +56,11 @@ def translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
     }
 
 
-def run_add_salesman(context: core_logic.RuntimeContext, args: argparse.Namespace) -> int:
+def run_add_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the add-salesman workflow through the business logic layer.
 
     Args:
-        context (core_logic.RuntimeContext): Active runtime context containing
+        context (bll.RuntimeContext): Active runtime context containing
             workbook accessors and caches.
         args (argparse.Namespace): Parsed CLI arguments for the command.
 
@@ -68,5 +68,5 @@ def run_add_salesman(context: core_logic.RuntimeContext, args: argparse.Namespac
         int: Exit code ``0`` when the salesman is successfully recorded.
     """
     payload = translate_add_salesman(args)
-    core_logic.add_salesman(context, **payload)  # type: ignore[attr-defined]
+    bll.add_salesman(context, **payload)  # type: ignore[attr-defined]
     return 0

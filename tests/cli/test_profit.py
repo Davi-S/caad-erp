@@ -2,7 +2,7 @@ import argparse
 import typing as t
 from decimal import Decimal
 
-from caad_erp import cli, core_logic
+from caad_erp import cli, bll
 
 
 def test_register_profit_command_returns_spec():
@@ -31,12 +31,12 @@ def test_run_profit_report_invokes_bll(runtime_context, monkeypatch):
     args = argparse.Namespace()
     called = {}
 
-    def fake_summary(context: core_logic.RuntimeContext) -> t.Mapping[str, Decimal]:
+    def fake_summary(context: bll.RuntimeContext) -> t.Mapping[str, Decimal]:
         called["context"] = context
         return {}
 
     monkeypatch.setattr(
-        cli.core_logic, "calculate_profit_summary", fake_summary)
+        cli.bll, "calculate_profit_summary", fake_summary)
     result = cli.run_profit_report(runtime_context, args)
     assert result == 0
     assert called["context"] is runtime_context
