@@ -1,76 +1,64 @@
 # Contributing to CAAD ERP
 
-Thank you for your interest in improving CAAD ERP! This document lays out the
-expectations for contributors so that changes remain predictable, maintainable,
-and easy to review.
+Thank you for your interest in improving CAAD ERP! We're thrilled to have you here. We appreciate your help in building a reliable system for the student lounge community.
 
-## Prerequisites
+This document lays out the expectations for contributors so that changes remain predictable, maintainable, and easy to review.
 
-- Familiarity with the architectural overview in `docs/DEVELOPER_GUIDE.md`.
+## Quick Links
 
-## Local Environment Setup
+- **Developer Guide:** `docs/DEVELOPER_GUIDE.md`
+- **Issue Tracker:** [issue tracker](https://github.com/Davi-S/caad-erp/issues)
+- **Main README:** `README.md`
 
-```bash
-git clone https://github.com/your-org/caad_erp.git
-cd caad_erp
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
+## Table of Contents
 
-Adjust `config.ini` if you need to point at a local data file.
+- [Contributing to CAAD ERP](#contributing-to-caad-erp)
+  - [Quick Links](#quick-links)
+  - [Table of Contents](#table-of-contents)
+  - [How to Contribute](#how-to-contribute)
+    - [Reporting Bugs](#reporting-bugs)
+    - [Suggesting Enhancements](#suggesting-enhancements)
+    - [Submitting Pull Requests](#submitting-pull-requests)
+      - [Pull Request Checklist](#pull-request-checklist)
+  - [Development Setup](#development-setup)
+    - [Local Environment Setup](#local-environment-setup)
+  - [Style Guides](#style-guides)
 
-## Workflow Expectations
+## How to Contribute
 
-1. **Discuss larger changes first.** Open an issue or join an existing
-   conversation before starting significant work.
-2. **Create a feature branch** off the latest `main`. Use descriptive branch
-   names such as `feature/cli-shell` or `fix/void-validation`.
-3. **Commit early and often** with clear messages. Prefer the imperative mood
-   (e.g., `Add stock reconciliation helper`).
-4. **Keep pull requests focused.** Each PR should solve one problem and include
-   only related changes, tests, and docs.
-5. **Stay synced.** Rebase or merge `main` frequently to reduce conflicts and
-   ensure compatibility with the current code base.
+### Reporting Bugs
 
-## Coding Standards
+If you find a bug, please ensure it hasn't already been reported by searching the [<https://github.com/Davi-S/caad-erp/issues>).
 
-- Follow the three-layer architecture (DAL, BLL, Presentation). Respect module
-  boundaries spelled out in `docs/DEVELOPER_GUIDE.md`.
-- Embrace test-driven development. Add or update tests in `tests/` to describe
-  the behavior you expect before implementing it.
-- Use Google-style docstrings for public functions. Keep inline comments brief
-  and only where logic needs clarification.
-- Default to readable, explicit Python that favors maintainability over clever
-  one-liners.
-- Do not introduce new runtime dependencies without prior discussion.
+When submitting a bug report, please include:
 
-## Running Tests Locally
+- A clear, descriptive title.
+- Your OS and software versions.
+- Steps to reproduce the bug.
+- What you expected to happen.
+- What actually happened.
 
-Before submitting a pull request:
+### Suggesting Enhancements
 
-1. Activate your virtual environment and confirm dependencies are installed:
+If you have an idea for a new feature, please check the [issue tracker](https://github.com/Davi-S/caad-erp/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) to see if it has been suggested. If not, open a new issue with:
 
-   ```bash
-   pip install -e .
-   ```
+- A clear, descriptive title.
+- A detailed description of the proposed feature.
+- The problem it solves or the value it adds.
 
-2. Execute the test suite:
+### Submitting Pull Requests
 
-   ```bash
-   pytest
-   ```
+1. **Fork** the repository.
+2. **Clone** your fork: `git clone https://github.com/YOUR-USERNAME/your-repo.git`
+3. **Create a branch:** `git checkout -b feat/your-new-feature-name`
+4. **Make your changes.**
+5. **Run the tests**.
+6. **Commit** your changes with a clear message.
+7. **Push** your branch: `git push origin feat/your-new-feature-name`
+8. **Open a Pull Request** from your fork to the `main` branch of this repository.
+9. **Link** any relevant issues in your PR description.
 
-3. Verify documentation snippets or examples still execute as written.
-
-## Documentation and Changelog
-
-- Update `README.md` when user-facing behavior or setup steps change.
-- Extend `docs/DEVELOPER_GUIDE.md` if architectural decisions or workflows are
-  adjusted.
-- Note breaking changes or significant additions in the pull request body.
-
-## Pull Request Checklist
+#### Pull Request Checklist
 
 - [ ] New or updated tests cover the change.
 - [ ] All tests pass locally.
@@ -78,8 +66,24 @@ Before submitting a pull request:
 - [ ] Branch is up-to-date with `main`.
 - [ ] PR description explains the motivation, approach, and testing performed.
 
-## Outro
+## Development Setup
 
-By following this guide we keep CAAD ERP approachable for future contributors
-and maintainers. We appreciate your help in building a reliable system for the
-student lounge community!
+### Local Environment Setup
+
+- [`uv`](https://docs.astral.sh/uv/) installed locally for environment and
+dependency management.
+
+```bash
+
+git clone https://github.com/your-org/caad_erp.git
+cd caad_erp
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[test]"
+uv run pytest
+```
+
+## Style Guides
+
+- **Git Commits:** Please follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+- **Docstrings:** Use Google-style docstrings for public functions. Use Given-When-Then pattern for tests docstrings.
