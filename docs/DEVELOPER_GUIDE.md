@@ -204,6 +204,51 @@ We intentionally chose to hard-code the PaymentType list in `constants.py` inste
 
 **Benefit**: By making it a hard-coded Enum, we make our "Sell on Credit" workflow 100% robust and safe from user error, at the minor cost of requiring a developer to add new payment types.
 
+## "Deleting" something
+
+Soft-delete is our method for "removing" an item (like a product or a salesman) without corrupting our database.
+
+Instead of actually deleting the row from the Excel sheet, just flip the `TRUE`/`FALSE` **`IsActive` column** in your `Products` and `Salesmen` sheets.
+
+**The Effect:** The `core_logic` (BLL) is built to ignore inactive items. That product will instantly vanish from the `stock` report and from the list of items you can `sale`. To the user, it's "deleted."
+
+### Why This is Absolutely Needed
+
+The main reason is to **protect our `TransactionLog`'s history**.
+
+Our entire system is built on one rule: the `TransactionLog` is a perfect, immutable, historical record. It contains rows like this:
+
+`T1001 | ... | P1001 | ... | -1 | 1.50 | ...`
+
+This row says we sold "P1001". The system knows "P1001" is "Snickers" by looking it up in the `Products` sheet.
+
+**The "Hard-Delete" Disaster (What we AVOID):**
+
+Imagine we _actually_ deleted the "Snickers" row (`P1001`) from the `Products` sheet.
+
+1. The `T1001` transaction log entry is now **orphaned**.
+2. When you run a profit report for last month, the BLL will find `T1001`, look for `P1001`, and find... nothing.
+3. The entire history of that product is now corrupted. We can't get its name, or any of its historical data. We have permanently broken our "source of truth."
+
+**The "Soft-Delete" Solution (What we DO):**
+
+When we set `P1001`'s `IsActive` to `FALSE`:
+
+1. The item vanishes from the CLI, so you can't sell any more.
+2. The `P1001 | Snickers` row **still exists** in the `Products` sheet.
+3. When you run a profit report for last month, the BLL can still look up `P1001`, find "Snickers," and correctly calculate your historical profit.
+
+### The only case we "Hard-Delete" (Archive Script)
+
+This is the "pruning" or "garbage collection". It happens only when a manager runs the period-end archive script.
+
+When you run that script, it builds a brand new, clean workbook by looking at the old one.
+
+As it copies the Products sheet over, it checks if the product is not active and if the inventory is 0. If
+this is true, then it will actually remove (hard-delete) the product row from the excel file.
+
+It does a similar thing for sellers looking at the debt and any other necessary info
+
 ## Future Work
 
 - **Feat: Implement Period-End Archive Script**
