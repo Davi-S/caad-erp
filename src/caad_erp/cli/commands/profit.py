@@ -1,4 +1,6 @@
 import argparse
+from decimal import Decimal
+import typing as t
 
 from caad_erp import bll
 
@@ -33,18 +35,38 @@ def register_profit_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_profit_report)
 
 
-def run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the profit reporting workflow.
+def display_profit_summary(summary: t.Mapping[str, Decimal]) -> None:
+    """Print the aggregated revenue, cost, and profit metrics.
 
     Args:
-        context (bll.RuntimeContext): Runtime context providing access
-            to cached inventory and transaction data.
-        args (argparse.Namespace): Parsed CLI arguments for the command. This
-            command currently consumes no additional options but is included
-            for API parity.
+        summary (Mapping[str, Decimal]): Output from
+            :func:`bll.calculate_profit_summary` containing the totals to
+            display.
+    """
+
+    total_revenue = summary.get("total_revenue", Decimal("0.00"))
+    total_cost = summary.get("total_cost", Decimal("0.00"))
+    profit = summary.get("profit", total_revenue + total_cost)
+
+    print("Profit summary:")
+    print(f"  Total revenue : {total_revenue}")
+    print(f"  Total cost    : {total_cost}")
+    print(f"  Profit        : {profit}")
+
+
+def run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+    """Compute and display the profit summary for the current workbook.
+
+    Args:
+        context (bll.RuntimeContext): Runtime context providing access to the
+            open workbook and caches.
+        args (argparse.Namespace): Parsed CLI arguments; reserved for future
+            options and currently unused.
 
     Returns:
-        int: Exit code ``0`` after calculating the profit summary.
+        int: ``0`` after the summary has been printed.
     """
-    bll.calculate_profit_summary(context)
+
+    summary = bll.calculate_profit_summary(context)
+    display_profit_summary(summary)
     return 0

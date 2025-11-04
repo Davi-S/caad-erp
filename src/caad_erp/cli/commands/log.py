@@ -1,4 +1,5 @@
 import argparse
+import typing as t
 
 from caad_erp import bll
 
@@ -33,18 +34,56 @@ def register_log_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_log_report)
 
 
-def run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
-    """Execute the transaction log reporting workflow.
+def display_transaction_log(transactions: t.Iterable[object]) -> None:
+    """Print transaction log entries using a concise tabular layout.
 
     Args:
-        context (bll.RuntimeContext): Runtime context providing access
-            to the transaction log cache.
-        args (argparse.Namespace): Parsed CLI arguments for the command. This
-            command currently consumes no additional options but is included
-            for API parity.
+        transactions (Iterable[object]): Sequence of transaction rows returned
+            by :func:`bll.list_transactions`.
+    """
+
+    transactions = list(transactions)
+    if not transactions:
+        print("Transaction log is empty.")
+        return
+
+    print("Transaction log:")
+    header = (
+        f"{'ID':<18} {'Timestamp':<19} {'Type':<12} {'Product':<12}"
+        f" {'Salesman':<12} {'Qty':>8} {'Revenue':>10} {'Cost':>10} Notes"
+    )
+    print(header)
+    print("-" * len(header))
+
+    for transaction in transactions:
+        product = getattr(transaction, "product_id", None) or "-"
+        salesman = getattr(transaction, "salesman_id", None) or "-"
+        timestamp_raw = getattr(transaction, "timestamp_iso", "") or ""
+        timestamp = timestamp_raw[:19]
+        notes = getattr(transaction, "notes", None) or ""
+        if len(notes) > 40:
+            notes = notes[:37] + "..."
+        print(
+            f"{getattr(transaction, 'transaction_id', ''):<18} {timestamp:<19} "
+            f"{getattr(transaction, 'transaction_type', ''):<12} {product:<12} {salesman:<12} "
+            f"{getattr(transaction, 'quantity_change', ''):>8} {getattr(transaction, 'total_revenue', ''):>10} "
+            f"{getattr(transaction, 'total_cost', ''):>10} {notes}"
+        )
+
+
+def run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+    """Fetch the immutable transaction log and display it to the console.
+
+    Args:
+        context (bll.RuntimeContext): Runtime context used to access the
+            workbook and cached data.
+        args (argparse.Namespace): Parsed CLI arguments; maintained for
+            symmetry with other commands and currently unused.
 
     Returns:
-        int: Exit code ``0`` after retrieving the log entries.
+        int: ``0`` after listing the transactions.
     """
-    bll.list_transactions(context)
+
+    transactions = bll.list_transactions(context)
+    display_transaction_log(transactions)
     return 0
