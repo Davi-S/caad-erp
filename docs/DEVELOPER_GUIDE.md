@@ -35,6 +35,7 @@ The "database" lives alongside a user-editable configuration file.
 ### Configuration
 
 The user-editable configuration file is `config.ini`.
+All runtime code should resolve configuration through `caad_erp.settings`.
 
 - `[System]`
   - `DataFile`: Path to the Excel data file.
