@@ -26,8 +26,8 @@ def register_void_command() -> command_spec.CommandSpec:
             argparse.ArgumentParser: Parser configured for the void workflow.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--linked-transaction-id", required=True)
-        parser.add_argument("--notes", dest="notes", default=None)
+        parser.add_argument("-l", "--linked-transaction-id", required=True)
+        parser.add_argument("-n", "--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
 

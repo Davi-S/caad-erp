@@ -29,10 +29,10 @@ def register_add_product_command() -> command_spec.CommandSpec:
                 ``add-product`` options.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--product-id", required=True)
-        parser.add_argument("--product-name", required=True)
-        parser.add_argument("--sell-price", required=True)
-        parser.add_argument("--inactive", action="store_true",
+        parser.add_argument("-i", "--product-id", required=True)
+        parser.add_argument("-n", "--product-name", required=True)
+        parser.add_argument("-p", "--sell-price", required=True)
+        parser.add_argument("-x", "--inactive", action="store_true",
                             help="Mark the product as inactive on creation.")
         parser.set_defaults(command=name)
         return parser

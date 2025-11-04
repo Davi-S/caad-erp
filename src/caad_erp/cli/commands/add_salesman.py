@@ -28,9 +28,9 @@ def register_add_salesman_command() -> command_spec.CommandSpec:
                 ``add-salesman`` options.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--salesman-id", required=True)
-        parser.add_argument("--salesman-name", required=True)
-        parser.add_argument("--inactive", action="store_true",
+        parser.add_argument("-i", "--salesman-id", required=True)
+        parser.add_argument("-n", "--salesman-name", required=True)
+        parser.add_argument("-x", "--inactive", action="store_true",
                             help="Mark the salesman as inactive on creation.")
         parser.set_defaults(command=name)
         return parser

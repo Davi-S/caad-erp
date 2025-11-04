@@ -28,10 +28,10 @@ def register_write_off_command() -> command_spec.CommandSpec:
                 workflow.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--product-id", required=True)
-        parser.add_argument("--quantity", required=True)
-        parser.add_argument("--salesman-id", required=True)
-        parser.add_argument("--notes", dest="notes", default=None)
+        parser.add_argument("-i", "--product-id", required=True)
+        parser.add_argument("-q", "--quantity", required=True)
+        parser.add_argument("-s", "--salesman-id", required=True)
+        parser.add_argument("-n", "--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
 
