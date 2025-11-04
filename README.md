@@ -82,15 +82,15 @@ directory.
 These commands mutate the workbook. Each subcommand provides `--help`
 documentation with full argument details.
 
-- `add-product --product-id <product_id> --product-name <product_name> --sell-price <sell_price> [--inactive]`
-- `add-salesman --salesman-id <salesman_id> --salesman-name <salesman_name> [--inactive]`
-- `deactivate-product --product-id <product_id>`
-- `deactivate-salesman --salesman-id <salesman_id>`
-- `sale --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> --total-revenue <amount> --payment-type {Cash,OnCredit,PIX,Other} [--notes <text>]`
-- `restock --product-id <product_id> --quantity <quantity> --total-cost <amount> --salesman-id <salesman_id> [--notes <text>]`
-- `write-off --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> [--notes <text>]`
-- `pay-debt --linked-transaction-id <transaction_id> --total-revenue <value> --salesman-id <salesman_id> --payment-type {Cash,PIX,Other} [--notes <text>]`
-- `void --linked-transaction-id <transaction_id> [--notes <text>]`
+- `add-product -i <product_id> -n <product_name> -p <sell_price> [-x]`
+- `add-salesman -i <salesman_id> -n <salesman_name> [-x]`
+- `deactivate-product -i <product_id>`
+- `deactivate-salesman -i <salesman_id>`
+- `sale -i <product_id> -q <quantity> -s <salesman_id> -r <amount> -p {Cash,OnCredit,PIX,Other} [-n <text>]`
+- `restock -i <product_id> -q <quantity> -c <amount> -s <salesman_id> [-n <text>]`
+- `write-off -i <product_id> -q <quantity> -s <salesman_id> [-n <text>]`
+- `pay-debt -l <transaction_id> -r <value> -i <salesman_id> -p {Cash,PIX,Other} [-n <text>]`
+- `void -l <transaction_id> [-n <text>]`
 
 ### Read Commands
 
