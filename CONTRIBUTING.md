@@ -26,6 +26,8 @@ This document lays out the expectations for contributors so that changes remain 
 
 ## How to Contribute
 
+Before picking up an issue or proposing a change, take time to read `docs/DEVELOPER_GUIDE.md` so you understand the project architecture, workflows, and coding conventions. A quick refresh on the guide prevents rework, keeps discussions focused, and helps reviewers follow your intent.
+
 ### Reporting Bugs
 
 If you find a bug, please ensure it hasn't already been reported by searching the [<https://github.com/Davi-S/caad-erp/issues>).
@@ -70,11 +72,9 @@ If you have an idea for a new feature, please check the [issue tracker](https://
 
 ### Local Environment Setup
 
-- [`uv`](https://docs.astral.sh/uv/) installed locally for environment and
-dependency management.
+Install [`uv`](https://docs.astral.sh/uv/) for environment and dependency management.
 
 ```bash
-
 git clone https://github.com/your-org/caad_erp.git
 cd caad_erp
 uv venv
