@@ -237,7 +237,7 @@ def test_load_runtime_context_supports_defaults(monkeypatch, tmp_path):
     sentinel_context = object()
 
     def fake_loader(path: Path | None) -> object:
-        assert path == config_path
+        assert path is None
         return sentinel_context
 
     monkeypatch.setattr(bll, "load_runtime_context", fake_loader)

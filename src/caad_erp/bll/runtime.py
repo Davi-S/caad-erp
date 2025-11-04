@@ -13,7 +13,7 @@ from pathlib import Path
 
 from openpyxl.workbook import Workbook
 
-from caad_erp import constants, dal
+from caad_erp import constants, dal, settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class RuntimeContext:
     """Container for configuration and workbook references used by the BLL."""
 
-    settings: dal.ConfigSettings
+    settings: settings.AppSettings
     workbook: Workbook
     _cache: t.Dict[str, t.Dict[str, t.Any]] = dataclasses.field(
         default_factory=dict, repr=False, compare=False)
@@ -121,35 +121,38 @@ def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
 
 
 def load_runtime_context(config_path: t.Optional[Path] = None) -> RuntimeContext:
-    """Load configuration settings and a live workbook for the BLL.
+    """Build a runtime context from configuration and workbook resources.
 
-    The helper forms the foundation for all business logic calls by resolving
-    ``config.ini``, parsing settings, and opening the Excel workbook that
-    stores transactional data. The resulting :class:`RuntimeContext` bundles the
-    immutable settings with a mutable workbook handle and an empty cache store.
+    This helper obtains immutable configuration data via
+    :func:`caad_erp.settings.get_settings`, opens the configured workbook, and
+    returns the aggregated :class:`RuntimeContext`. Callers may supply an
+    explicit ``config_path`` to bypass automatic discovery; otherwise the
+    settings package searches upward from the current working directory for the
+    canonical ``config.ini``.
 
     Args:
-        config_path (Path | None): Optional override path for the configuration
-            file. When omitted the data layer performs its upward search from
-            the current working directory.
+        config_path: Optional path to the configuration file. When ``None`` the
+            settings loader performs its default discovery logic.
 
     Returns:
-        RuntimeContext: Fully populated context ready for orchestration
-            functions.
+        RuntimeContext: Contains the resolved :class:`AppSettings`, an open
+        ``Workbook`` instance, and an empty cache for downstream operations.
 
     Raises:
-        FileNotFoundError: If the configuration file or workbook cannot be
-            located.
-        KeyError: When mandatory configuration options are missing.
+        FileNotFoundError: Propagated when the configuration file or workbook
+            cannot be located at the resolved path.
+        KeyError: Raised if the configuration file is missing required
+            sections or options.
+        PermissionError: Bubble-up from :func:`dal.open_workbook` when the
+            workbook file exists but cannot be opened due to filesystem
+            restrictions.
     """
-    located_config = dal.find_config_file(config_path)
-    resolved_config = Path(located_config).expanduser().resolve()
-    parser = dal.read_config(resolved_config)
-    settings = dal.parse_settings(
-        parser, base_path=resolved_config.parent)
-    workbook = dal.open_workbook(settings.data_file)
-    logger.info("Loaded runtime context for workbook '%s'", settings.data_file)
-    return RuntimeContext(settings=settings, workbook=workbook)
+
+    app_settings = settings.get_settings(config_path)
+    workbook = dal.open_workbook(app_settings.data_file)
+    logger.info("Loaded runtime context for workbook '%s'",
+                app_settings.data_file)
+    return RuntimeContext(settings=app_settings, workbook=workbook)
 
 
 def ensure_schema_version(context: RuntimeContext) -> None:

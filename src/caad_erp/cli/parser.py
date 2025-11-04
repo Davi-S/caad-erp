@@ -233,9 +233,7 @@ def load_runtime_context(config_path: t.Optional[Path] = None) -> bll.RuntimeCon
             located.
         KeyError: When required configuration options are missing.
     """
-    target = Path(
-        config_path) if config_path is not None else Path.cwd() / "config.ini"
-    return bll.load_runtime_context(target)
+    return bll.load_runtime_context(config_path)
 
 
 def main(argv: t.Sequence[str] | None = None) -> int:

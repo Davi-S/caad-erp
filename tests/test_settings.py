@@ -3,13 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from caad_erp import dal
+from caad_erp import settings
 
 
-def test_find_config_file_respects_explicit_path(config_file: Path):
+def test_discover_config_file_respects_explicit_path(config_file: Path):
     """
     Given an explicit config path 
-    When find_config_file executes 
+    When discover_config_file executes 
     Then the same path is returned.
     """
 
@@ -17,16 +17,16 @@ def test_find_config_file_respects_explicit_path(config_file: Path):
     explicit_path = config_file
 
     # Act
-    result = dal.find_config_file(explicit_path)
+    result = settings.discover_config_file(explicit_path)
 
     # Assert
     assert result == explicit_path
 
 
-def test_find_config_file_discovers_in_cwd(tmp_path, monkeypatch):
+def test_discover_config_file_discovers_in_cwd(tmp_path, monkeypatch):
     """
     Given a directory containing config.ini 
-    When find_config_file auto-discovers 
+    When discover_config_file auto-discovers 
     Then the config path resolves.
     """
 
@@ -38,16 +38,16 @@ def test_find_config_file_discovers_in_cwd(tmp_path, monkeypatch):
     monkeypatch.chdir(config_dir)
 
     # Act
-    result = dal.find_config_file()
+    result = settings.discover_config_file()
 
     # Assert
     assert result == config_file
 
 
-def test_find_config_file_raises_when_missing(tmp_path, monkeypatch):
+def test_discover_config_file_raises_when_missing(tmp_path, monkeypatch):
     """
     Given no config files present 
-    When find_config_file runs 
+    When discover_config_file runs 
     Then FileNotFoundError surfaces.
     """
 
@@ -56,7 +56,7 @@ def test_find_config_file_raises_when_missing(tmp_path, monkeypatch):
 
     # Act / Assert
     with pytest.raises(FileNotFoundError):
-        dal.find_config_file()
+        settings.discover_config_file()
 
 
 def test_read_config_loads_sections(config_file: Path):
@@ -70,7 +70,7 @@ def test_read_config_loads_sections(config_file: Path):
     target_path = config_file
 
     # Act
-    parser = dal.read_config(target_path)
+    parser = settings.read_config(target_path)
 
     # Assert
     assert parser.get("System", "LoungeName") == "Test Lounge"
@@ -89,7 +89,7 @@ def test_read_config_missing_file_raises(tmp_path):
 
     # Act / Assert
     with pytest.raises(FileNotFoundError):
-        dal.read_config(missing_path)
+        settings.read_config(missing_path)
 
 
 def test_parse_settings_resolves_relative_paths(config_factory):
@@ -105,12 +105,13 @@ def test_parse_settings_resolves_relative_paths(config_factory):
     parser.read(bundle.config_path)
 
     # Act
-    settings = dal.parse_settings(parser, base_path=bundle.config_path.parent)
+    loaded = settings.parse_settings(
+        parser, base_path=bundle.config_path.parent)
 
     # Assert
-    assert settings.data_file == (
+    assert loaded.data_file == (
         bundle.config_path.parent / bundle.workbook_path.name).resolve()
-    assert settings.default_salesman_id == "S-DEFAULT"
+    assert loaded.default_salesman_id == "S-DEFAULT"
 
 
 def test_parse_settings_requires_expected_sections(tmp_path):
@@ -126,4 +127,7 @@ def test_parse_settings_requires_expected_sections(tmp_path):
 
     # Act / Assert
     with pytest.raises(KeyError):
-        dal.parse_settings(parser, base_path=tmp_path)
+        settings.parse_settings(parser, base_path=tmp_path)
+
+
+def test_load_settings_reads_and_caches(config_file: Path, monkeypatch):

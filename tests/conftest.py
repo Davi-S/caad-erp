@@ -20,7 +20,7 @@ for candidate in (SRC_DIR, PROJECT_ROOT):
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
 
-from caad_erp import bll, cli, constants, dal  # noqa: E402
+from caad_erp import bll, cli, constants, settings as app_settings  # noqa: E402
 from setup_excel import create_master_workbook  # noqa: E402
 
 DEFAULT_SCHEMA_VERSION = constants.EXPECTED_SCHEMA_VERSION
@@ -224,10 +224,10 @@ def command_spec_iterable() -> list[cli.CommandSpec]:
 
 
 @pytest.fixture
-def settings(tmp_path: Path) -> dal.ConfigSettings:
+def settings(tmp_path: Path) -> app_settings.AppSettings:
     """Provide default configuration settings for runtime context tests."""
 
-    return dal.ConfigSettings(
+    return app_settings.AppSettings(
         data_file=tmp_path / "master_workbook.xlsx",
         lounge_name="Test Lounge",
         schema_version=constants.EXPECTED_SCHEMA_VERSION,
@@ -243,7 +243,7 @@ def workbook() -> Mock:
 
 
 @pytest.fixture
-def context(settings: dal.ConfigSettings, workbook: Mock) -> bll.RuntimeContext:
+def context(settings: app_settings.AppSettings, workbook: Mock) -> bll.RuntimeContext:
     """Assemble a runtime context from injected settings and workbook mocks."""
 
     return bll.RuntimeContext(settings=settings, workbook=workbook)
