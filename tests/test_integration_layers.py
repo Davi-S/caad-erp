@@ -156,17 +156,18 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
     payment_transaction = bll.record_credit_payment(context, payment_command)
     void_command = bll.VoidCommand(
         linked_transaction_id=credit_sale.transaction_id,
-        replacement_command=bll.SaleCommand(
-            product_id="P2001",
-            salesman_id=context.settings.default_salesman_id,
-            quantity=Decimal("1"),
-            total_revenue=Decimal("0.00"),
-            payment_type=constants.PaymentType.ON_CREDIT,
-            notes="Corrected quantity",
-        ),
         notes="Fix quantity",
     )
-    void_transactions = bll.record_void(context, void_command)
+    void_transaction = bll.record_void(context, void_command)
+    corrected_sale_command = bll.SaleCommand(
+        product_id="P2001",
+        salesman_id=context.settings.default_salesman_id,
+        quantity=Decimal("1"),
+        total_revenue=Decimal("0.00"),
+        payment_type=constants.PaymentType.ON_CREDIT,
+        notes="Corrected quantity",
+    )
+    corrected_sale = bll.record_sale(context, corrected_sale_command)
     bll.persist_context(context)
 
     # Assert
@@ -176,9 +177,7 @@ def test_credit_sale_payment_and_void_flow(runtime_context):
     assert summary["total_revenue"] == Decimal("6.00")
     assert summary["total_cost"] == Decimal("-3.75")
     assert summary["profit"] == Decimal("2.25")
-    assert len(void_transactions) == 2
-    void_txn, corrected_sale = void_transactions
-    assert void_txn.transaction_type == constants.TransactionType.VOID.value
+    assert void_transaction.transaction_type == constants.TransactionType.VOID.value
     assert corrected_sale.transaction_type == constants.TransactionType.SALE.value
     assert payment_transaction.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
 
@@ -419,15 +418,13 @@ def test_void_without_replacement_flow(runtime_context):
     sale_txn = bll.record_sale(context, sale_command)
     void_command = bll.VoidCommand(
         linked_transaction_id=sale_txn.transaction_id,
-        replacement_command=None,
         notes="Customer cancelled",
     )
-    void_results = bll.record_void(context, void_command)
+    void_transaction = bll.record_void(context, void_command)
     bll.persist_context(context)
 
     # Assert
-    assert len(void_results) == 1
-    assert void_results[0].transaction_type == constants.TransactionType.VOID.value
+    assert void_transaction.transaction_type == constants.TransactionType.VOID.value
     inventory = bll.calculate_inventory(context)
     assert inventory["P3004"] == Decimal("4")
     summary = bll.calculate_profit_summary(context)
@@ -732,11 +729,11 @@ def test_cli_credit_sale_and_debt_report_flow(config_factory, monkeypatch):
     assert captured["summary"] == {sale_txn.transaction_id: expected_due}
 
 
-def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
+def test_void_via_cli_flow(config_factory, monkeypatch):
     """
-    Given a CLI void with replacement 
+    Given a CLI void request 
     When executed 
-    Then new transactions and balances reflect the correction.
+    Then the reversal is recorded through the BLL.
     """
 
     # Arrange
@@ -768,19 +765,10 @@ def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
         notes="Original sale",
     )
     sale_txn = bll.record_sale(context, sale_command)
-    replacement_sale = bll.SaleCommand(
-        product_id="CLI-PVOID",
-        salesman_id=context.settings.default_salesman_id,
-        quantity=Decimal("2"),
-        total_revenue=Decimal("10.00"),
-        payment_type=constants.PaymentType.CASH,
-        notes="Adjusted sale",
-    )
 
     def fake_translate(args: argparse.Namespace) -> bll.VoidCommand:
         return bll.VoidCommand(
             linked_transaction_id=sale_txn.transaction_id,
-            replacement_command=replacement_sale,
             notes="Quantity correction",
         )
 
@@ -793,13 +781,12 @@ def test_void_with_replacement_via_cli_flow(config_factory, monkeypatch):
     # Assert
     assert exit_code == 0
     transactions = bll.list_transactions(context)
-    void_txn, replacement_txn = transactions[-2:]
+    void_txn = transactions[-1]
     assert void_txn.transaction_type == constants.TransactionType.VOID.value
     assert void_txn.linked_transaction_id == sale_txn.transaction_id
-    assert replacement_txn.transaction_type == constants.TransactionType.SALE.value
     inventory = bll.calculate_inventory(context)
-    assert inventory["CLI-PVOID"] == Decimal("3")
+    assert inventory["CLI-PVOID"] == Decimal("5")
     summary = bll.calculate_profit_summary(context)
-    assert summary["total_revenue"] == Decimal("10.00")
+    assert summary["total_revenue"] == Decimal("0.00")
     assert summary["total_cost"] == Decimal("-12.50")
-    assert summary["profit"] == Decimal("-2.50")
+    assert summary["profit"] == Decimal("-12.50")
