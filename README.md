@@ -52,6 +52,15 @@ over complex infrastructure.
 
 ## Usage
 
+Run the bootstrap script once to create the initial Excel workbook with the
+required sheets, headers, and default salesperson defined in `config.ini`:
+
+```bash
+python setup_excel.py --config config.ini
+```
+
+Add `--force` if you need to overwrite an existing workbook.
+
 The project ships with a thin command-line interface. Invoke it with the
 console script or directly through Python:
 
