@@ -187,3 +187,160 @@ def test_calculate_profit_summary_reuses_transaction_cache(monkeypatch, context)
     }
     assert second == first
     iter_mock.assert_called_once_with(context.workbook)
+
+
+def test_calculate_outstanding_debts_returns_balances(monkeypatch, context):
+    """
+    Given credit sales with partial payments 
+    When outstanding debts are calculated 
+    Then balances reflect remaining credit per sale.
+    """
+
+    # Arrange
+    sale = dal.TransactionRow(
+        transaction_id="T-credit",
+        timestamp_iso="2025-10-30T04:00:00",
+        transaction_type=constants.TransactionType.SALE.value,
+        product_id="P-credit",
+        salesman_id="S-DEFAULT",
+        payment_type=constants.PaymentType.ON_CREDIT.value,
+        quantity_change=Decimal("-2"),
+        total_revenue=Decimal("0.00"),
+        total_cost=Decimal("0.00"),
+        linked_transaction_id=None,
+        notes=None,
+    )
+    payment = dal.TransactionRow(
+        transaction_id="T-payment",
+        timestamp_iso="2025-10-30T05:00:00",
+        transaction_type=constants.TransactionType.CREDIT_PAYMENT.value,
+        product_id="P-credit",
+        salesman_id="S-DEFAULT",
+        payment_type=constants.PaymentType.PIX.value,
+        quantity_change=Decimal("0"),
+        total_revenue=Decimal("5.00"),
+        total_cost=Decimal("0.00"),
+        linked_transaction_id="T-credit",
+        notes=None,
+    )
+    product = dal.ProductRow(
+        product_id="P-credit",
+        product_name="Snack",
+        sell_price=Decimal("3.00"),
+        is_active=True,
+    )
+    monkeypatch.setattr(dal, "iter_transactions",
+                        Mock(return_value=[sale, payment]))
+    monkeypatch.setattr(dal, "iter_products", Mock(return_value=[product]))
+
+    # Act
+    report = bll.calculate_outstanding_debts(context)
+
+    # Assert
+    assert report["total_outstanding"] == Decimal("1.00")
+    assert report["balances"] == [
+        bll.OutstandingDebt(
+            transaction_id="T-credit",
+            timestamp_iso="2025-10-30T04:00:00",
+            product_id="P-credit",
+            salesman_id="S-DEFAULT",
+            quantity=Decimal("2"),
+            expected_amount=Decimal("6.00"),
+            amount_paid=Decimal("5.00"),
+            balance=Decimal("1.00"),
+        )
+    ]
+
+
+def test_calculate_outstanding_debts_ignores_voided_sales(monkeypatch, context):
+    """
+    Given a credit sale and a void 
+    When debts are calculated 
+    Then the voided sale is excluded.
+    """
+
+    # Arrange
+    sale = dal.TransactionRow(
+        transaction_id="T-credit",
+        timestamp_iso="2025-10-30T04:00:00",
+        transaction_type=constants.TransactionType.SALE.value,
+        product_id="P-credit",
+        salesman_id="S-DEFAULT",
+        payment_type=constants.PaymentType.ON_CREDIT.value,
+        quantity_change=Decimal("-2"),
+        total_revenue=Decimal("0.00"),
+        total_cost=Decimal("0.00"),
+        linked_transaction_id=None,
+        notes=None,
+    )
+    void = dal.TransactionRow(
+        transaction_id="T-void",
+        timestamp_iso="2025-10-30T04:30:00",
+        transaction_type=constants.TransactionType.VOID.value,
+        product_id="P-credit",
+        salesman_id="S-DEFAULT",
+        payment_type=constants.PaymentType.ON_CREDIT.value,
+        quantity_change=Decimal("2"),
+        total_revenue=Decimal("0.00"),
+        total_cost=Decimal("0.00"),
+        linked_transaction_id="T-credit",
+        notes=None,
+    )
+    product = dal.ProductRow(
+        product_id="P-credit",
+        product_name="Snack",
+        sell_price=Decimal("3.00"),
+        is_active=True,
+    )
+    monkeypatch.setattr(dal, "iter_transactions",
+                        Mock(return_value=[sale, void]))
+    monkeypatch.setattr(dal, "iter_products", Mock(return_value=[product]))
+
+    # Act
+    report = bll.calculate_outstanding_debts(context)
+
+    # Assert
+    assert report["balances"] == []
+    assert report["total_outstanding"] == Decimal("0.00")
+
+
+def test_calculate_outstanding_debts_reuses_caches(monkeypatch, context):
+    """
+    Given cached transactions and products 
+    When debts are recalculated 
+    Then DAL lookups occur only once per sheet.
+    """
+
+    # Arrange
+    sale = dal.TransactionRow(
+        transaction_id="T-credit",
+        timestamp_iso="2025-10-30T04:00:00",
+        transaction_type=constants.TransactionType.SALE.value,
+        product_id="P-credit",
+        salesman_id="S-DEFAULT",
+        payment_type=constants.PaymentType.ON_CREDIT.value,
+        quantity_change=Decimal("-1"),
+        total_revenue=Decimal("0.00"),
+        total_cost=Decimal("0.00"),
+        linked_transaction_id=None,
+        notes=None,
+    )
+    product = dal.ProductRow(
+        product_id="P-credit",
+        product_name="Snack",
+        sell_price=Decimal("2.50"),
+        is_active=True,
+    )
+    iter_transactions_mock = Mock(return_value=[sale])
+    iter_products_mock = Mock(return_value=[product])
+    monkeypatch.setattr(dal, "iter_transactions", iter_transactions_mock)
+    monkeypatch.setattr(dal, "iter_products", iter_products_mock)
+
+    # Act
+    first = bll.calculate_outstanding_debts(context)
+    second = bll.calculate_outstanding_debts(context)
+
+    # Assert
+    assert first == second
+    iter_transactions_mock.assert_called_once_with(context.workbook)
+    iter_products_mock.assert_called_once_with(context.workbook)
