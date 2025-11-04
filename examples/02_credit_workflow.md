@@ -11,7 +11,7 @@ Follow this sequence to handle a sale on credit through settlement. Replace
        --quantity 6 \
        --salesman-id ALICE \
        --total-revenue 0 \
-       --payment-type "On Credit" \
+       --payment-type "OnCredit" \
        --notes "Jordan opened a tab"
    ```
 
