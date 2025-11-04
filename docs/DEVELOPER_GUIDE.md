@@ -127,7 +127,7 @@ from the product's sell price.
 
 #### Sell on Credit
 
-Logged as a `SALE` with `PaymentType="On Credit"` and zero revenue, paired
+Logged as a `SALE` with `PaymentType="OnCredit"` and zero revenue, paired
 with a subsequent `CREDIT_PAYMENT` that references the original
 transaction via `LinkedTransactionID`. Credit payment entries capture the
 actual settlement method (`PaymentType` on the command), so the ledger can
@@ -177,23 +177,25 @@ the “N+1” read pattern during domain operations.
 
 ## Development Workflow
 
-### Test-Driven Development
+### Test-Driven Development (TDD)
 
 New functionality should be driven by `pytest`-based tests under `tests/`.
 
 ### Testing Strategy
 
-The test suite follows a pyramid structure to keep fast feedback at the unit
-level while retaining confidence in the full stack:
+The test suite follows a pyramid structure to keep fast feedback at the unit level while retaining confidence in the full stack:
 
-- `tests/test_dal.py` – Integration coverage for the DAL that exercises
-  real `openpyxl` reads and writes.
-- `tests/test_core_logic.py` – Unit coverage for the BLL with the entire data
-  layer mocked.
-- `tests/test_cli.py` – Unit coverage for the CLI with the business logic layer
-  mocked.
-- `tests/test_integration_layers.py` – Cross-layer integration without mocks,
-  verifying the complete workflow from CLI through the DAL.
+- **`tests/dal/`** – Integration coverage for the DAL that exercises real `openpyxl` reads and writes.
+- **`tests/bll/`** – Unit coverage for the BLL with the entire data layer (`data_manager`) mocked.
+- **`tests/cli/`** – Unit coverage for the CLI with the business logic layer (`core_logic`) mocked.
+- **`tests/test_integration_layers.py`** – Cross-layer integration without mocks, verifying the complete workflow from CLI through the DAL.
+
+### Test Structure and Standards
+
+To ensure our tests are readable and maintainable by new developers, all test functions **must** adhere to the following standards:
+
+- **Arrange-Act-Assert (AAA) Pattern:** The body of every test function must be explicitly divided by comments to make its logic clear.
+- **Given/When/Then (GWT) Docstrings:** All test functions must have a docstring in the GWT format to describe the *intent* of the test.
 
 ### Logging
 

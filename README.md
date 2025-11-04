@@ -18,9 +18,8 @@ over complex infrastructure.
 ## Core Features
 
 - Append-only `TransactionLog` ledger that guarantees an auditable history.
-- Excel workbook as the authoritative data store plus export-friendly reports.
+- Excel workbook as the authoritative data storage.
 - Inventory, sales, discounts, and credit payments handled in one workflow.
-- Archiving script (planned) to roll periods forward with clean opening stock.
 
 ## Installation
 
@@ -28,32 +27,39 @@ over complex infrastructure.
    is not already available on your computer.
 2. Download the latest CAAD ERP source code (clone the repository or grab a
    release archive) and open a terminal inside the project folder.
-3. Create a dedicated environment so the dependencies stay isolated:
+3. Install [`uv`](https://docs.astral.sh/uv/) if it is not already available:
 
    ```bash
-   python -m venv .venv
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+4. Create a dedicated environment and activate it so the dependencies stay isolated:
+
+   ```bash
+   uv venv
    source .venv/bin/activate
    ```
 
-4. Install the application and its dependencies:
+5. Install the application and its dependencies with `uv`:
 
    ```bash
-   pip install -e .
+   uv pip install -e .
    ```
 
-5. Update `config.ini` so the `DataFile` entry points at your locked Excel
+6. Update `config.ini` so the `DataFile` entry points at your locked Excel
    workbook, the file that will hold products, salespeople, and the immutable
    transaction log.
 
-Once configured, you can run the existing Python workflows (for example, the
-data export utilities) while we build the user interface.
-
 ## Usage
 
-The project ships with a thin command-line interface that delegates all work to
-the business logic layer. Run it with:
+The project ships with a thin command-line interface. Invoke it with the
+console script or directly through Python:
 
 ```bash
+# Console script entry point installed via pip/uv
+caad-erp-cli --help
+
+# Module execution for development checkouts
 python -m caad_erp.cli --help
 ```
 
@@ -71,13 +77,11 @@ documentation with full argument details.
 - `add-salesman --salesman-id <salesman_id> --salesman-name <salesman_name> [--inactive]`
 - `deactivate-product --product-id <product_id>`
 - `deactivate-salesman --salesman-id <salesman_id>`
-- `sale --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> --total-revenue <amount> --payment-type {Cash,Debit,Credit}`
-- `restock --product-id <product_id> --quantity <quantity> --total-cost <amount> --salesman-id <salesman_id>`
-- `write-off --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id>`
-- `pay-debt --linked-transaction-id <transaction_id> --total-revenue <value> --salesman-id <salesman_id> --payment-type <payment_type>`
-- `void --linked-transaction-id <transaction_id>`
-
-All mutating commands accept `--notes` for free-form context.
+- `sale --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> --total-revenue <amount> --payment-type {Cash,OnCredit,PIX,Other} [--notes <text>]`
+- `restock --product-id <product_id> --quantity <quantity> --total-cost <amount> --salesman-id <salesman_id> [--notes <text>]`
+- `write-off --product-id <product_id> --quantity <quantity> --salesman-id <salesman_id> [--notes <text>]`
+- `pay-debt --linked-transaction-id <transaction_id> --total-revenue <value> --salesman-id <salesman_id> --payment-type {Cash,PIX,Other} [--notes <text>]`
+- `void --linked-transaction-id <transaction_id> [--notes <text>]`
 
 ### Read Commands
 

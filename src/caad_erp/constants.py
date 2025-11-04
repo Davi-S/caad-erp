@@ -14,9 +14,9 @@ class PaymentType(str, Enum):
     """Enumerate supported payment mechanisms for sales."""
 
     CASH = "Cash"
-    ON_CREDIT = "On Credit"
+    ON_CREDIT = "OnCredit"
     PIX = "PIX"
-    OTHER = "OTHER"
+    OTHER = "Other"
 
 
 class TransactionType(str, Enum):
