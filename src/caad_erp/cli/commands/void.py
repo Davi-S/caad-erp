@@ -43,13 +43,10 @@ def translate_void(
         args (argparse.Namespace): Namespace populated with ``void`` options.
 
     Returns:
-        bll.VoidCommand: Domain command capturing void details. The
-            CLI does not support replacement commands, so ``replacement_command``
-            is set to ``None``.
+        bll.VoidCommand: Domain command capturing void details.
     """
     return bll.VoidCommand(
         linked_transaction_id=args.linked_transaction_id,
-        replacement_command=None,
         notes=args.notes,
     )
 

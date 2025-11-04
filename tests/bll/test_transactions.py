@@ -832,11 +832,11 @@ def test_record_open_stock_refreshes_transaction_cache(monkeypatch, context, set
     assert again[-1] is transaction
 
 
-def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
+def test_record_void_creates_reversal(monkeypatch, context):
     """
-    Given a voidable sale with replacement 
+    Given a voidable sale 
     When record_void executes 
-    Then a reversal and replacement return in order.
+    Then the reversal transaction is recorded and returned.
     """
 
     # Arrange
@@ -866,53 +866,29 @@ def test_record_void_creates_reversal_and_replacement(monkeypatch, context):
         linked_transaction_id="T-original",
         notes="Fix entry",
     )
-    replacement_result = dal.TransactionRow(
-        transaction_id="T-replacement",
-        timestamp_iso="2025-10-30T05:10:30",
-        transaction_type=constants.TransactionType.SALE.value,
-        product_id="P205",
-        salesman_id="S-DEFAULT",
-        payment_type=constants.PaymentType.CASH.value,
-        quantity_change=Decimal("-1"),
-        total_revenue=Decimal("2.00"),
-        total_cost=Decimal("0.00"),
-        linked_transaction_id=None,
-        notes="Corrected",
-    )
     get_transaction = Mock(return_value=target)
     validate_void_target = Mock()
     build_void_reversal = Mock(return_value=reversal)
     append_mock = Mock()
-    record_sale = Mock(return_value=replacement_result)
     monkeypatch.setattr(bll.transactions, "get_transaction", get_transaction)
     monkeypatch.setattr(
         bll.transactions, "validate_void_target", validate_void_target)
     monkeypatch.setattr(
         bll.transactions, "build_void_transaction", build_void_reversal)
     monkeypatch.setattr(dal, "append_transaction", append_mock)
-    monkeypatch.setattr(bll.transactions, "record_sale", record_sale)
     command = bll.VoidCommand(
         linked_transaction_id="T-original",
-        replacement_command=bll.SaleCommand(
-            product_id="P205",
-            salesman_id="S-DEFAULT",
-            quantity=Decimal("1"),
-            total_revenue=Decimal("2.00"),
-            payment_type=constants.PaymentType.CASH,
-            notes="Corrected",
-        ),
         notes="Fix entry",
     )
 
     # Act
-    results = bll.record_void(context, command)
+    result = bll.record_void(context, command)
 
     # Assert
     get_transaction.assert_called_once_with(context, "T-original")
     validate_void_target.assert_called_once_with(target)
     append_mock.assert_called_once_with(context.workbook, reversal)
-    record_sale.assert_called_once_with(context, command.replacement_command)
-    assert results == [reversal, replacement_result]
+    assert result is reversal
 
 
 def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed_datetime):
@@ -958,16 +934,13 @@ def test_record_void_refreshes_transaction_cache(monkeypatch, context, set_fixed
     set_fixed_datetime(fixed_now)
     command = bll.VoidCommand(
         linked_transaction_id="T-target",
-        replacement_command=None,
         notes="Cache refresh",
     )
 
     # Act
-    results = bll.record_void(context, command)
+    reversal = bll.record_void(context, command)
 
     # Assert
-    assert len(results) == 1
-    reversal = results[0]
     append_mock.assert_called_once_with(context.workbook, reversal)
     generate_mock.assert_called_once_with(when=fixed_now)
     assert append_calls == [(context.workbook, reversal)]

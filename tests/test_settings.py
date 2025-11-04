@@ -128,6 +128,3 @@ def test_parse_settings_requires_expected_sections(tmp_path):
     # Act / Assert
     with pytest.raises(KeyError):
         settings.parse_settings(parser, base_path=tmp_path)
-
-
-def test_load_settings_reads_and_caches(config_file: Path, monkeypatch):

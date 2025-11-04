@@ -71,7 +71,6 @@ def test_translate_void_returns_void_command():
     assert isinstance(command, bll.VoidCommand)
     assert command.linked_transaction_id == "T20250101010101000000"
     assert command.notes == "Mistake"
-    assert command.replacement_command is None
 
 
 def test_run_void_invokes_bll(runtime_context, monkeypatch):
@@ -83,8 +82,7 @@ def test_run_void_invokes_bll(runtime_context, monkeypatch):
 
     # Arrange
     args = argparse.Namespace()
-    command = bll.VoidCommand(
-        linked_transaction_id="T1", replacement_command=None)
+    command = bll.VoidCommand(linked_transaction_id="T1")
     monkeypatch.setattr(cli.commands.void, "translate_void",
                         lambda value: command)
     called = {}

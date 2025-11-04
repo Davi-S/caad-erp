@@ -74,21 +74,11 @@ class OpenStockCommand:
     total_revenue: Decimal
 
 
-TransactionCommand = t.Union[
-    SaleCommand,
-    RestockCommand,
-    WriteOffCommand,
-    CreditPaymentCommand,
-    OpenStockCommand,
-]
-
-
 @dataclasses.dataclass(frozen=True)
 class VoidCommand:
     """User intent for voiding a prior transaction."""
 
     linked_transaction_id: str
-    replacement_command: t.Optional[TransactionCommand]
     notes: t.Optional[str] = None
 
 
@@ -706,28 +696,24 @@ def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: s
     )
 
 
-def record_void(context: runtime.RuntimeContext, command: VoidCommand) -> t.List[dal.TransactionRow]:
-    """Record a ``VOID`` reversal and optional replacement transactions.
+def record_void(context: runtime.RuntimeContext, command: VoidCommand) -> dal.TransactionRow:
+    """Record a ``VOID`` reversal negating a prior transaction.
 
-    The function first writes the reversal entry that negates the target
-    transaction, then optionally records a replacement command provided by the
-    caller, chaining through the appropriate ``record_*`` function. Transaction
-    caches are invalidated before each write to ensure consistency, so any
-    subsequent reads or balance calculations reflect the updated logger.
+    The function writes a reversal entry that mirrors the target transaction
+    with inverted deltas, ensuring downstream calculations observe the
+    correction. Transaction caches are invalidated before returning so
+    subsequent readers consume the updated state.
 
     Args:
         context (RuntimeContext): Runtime context providing workbook access and
             caches.
-        command (VoidCommand): Structured void intent including optional
-            replacement data.
+        command (VoidCommand): Structured void intent describing the target.
 
     Returns:
-        list[dal.TransactionRow]: Sequence containing the reversal and
-            any replacement transactions appended as part of the operation.
+        dal.TransactionRow: Reversal transaction recorded in the log.
 
     Raises:
-        BusinessRuleViolation: If the target transaction cannot be voided or
-            the replacement command type is unsupported.
+        BusinessRuleViolation: If the target transaction cannot be voided.
         MissingReferenceError: When the referenced transaction is unknown.
     """
     now = datetime.datetime.now(datetime.UTC)
@@ -745,27 +731,7 @@ def record_void(context: runtime.RuntimeContext, command: VoidCommand) -> t.List
         reversal.transaction_id,
         target.transaction_id,
     )
-
-    results: t.List[dal.TransactionRow] = [reversal]
-    replacement = command.replacement_command
-    if replacement is None:
-        return results
-
-    if isinstance(replacement, SaleCommand):
-        results.append(record_sale(context, replacement))
-    elif isinstance(replacement, RestockCommand):
-        results.append(record_restock(context, replacement))
-    elif isinstance(replacement, WriteOffCommand):
-        results.append(record_write_off(context, replacement))
-    elif isinstance(replacement, CreditPaymentCommand):
-        results.append(record_credit_payment(context, replacement))
-    elif isinstance(replacement, OpenStockCommand):
-        results.append(record_open_stock(context, replacement))
-    else:
-        raise exceptions.BusinessRuleViolation(
-            "Unsupported replacement command type")
-
-    return results
+    return reversal
 
 
 def build_void_transaction(transaction: dal.TransactionRow, *, timestamp: datetime.datetime, notes: t.Optional[str]) -> dal.TransactionRow:
