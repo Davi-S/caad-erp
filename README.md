@@ -56,10 +56,8 @@ Run the bootstrap script once to create the initial Excel workbook with the
 required sheets, headers, and default salesperson defined in `config.ini`:
 
 ```bash
-python setup_excel.py --config config.ini
+python setup_excel.py
 ```
-
-Add `--force` if you need to overwrite an existing workbook.
 
 The project ships with a thin command-line interface. Invoke it with the
 console script or directly through Python:
@@ -69,13 +67,13 @@ console script or directly through Python:
 caad-erp-cli --help
 
 # Module execution for development checkouts
-python -m caad_erp.cli --help
+uv run --with-editable . caad-erp-cli
 ```
 
 By default the CLI looks for a `config.ini` in the current working directory.
-Pass `--config /path/to/config.ini` if your configuration lives elsewhere. For
-copy-paste walkthroughs, head over to the [examples/](./examples/)
-directory.
+Pass `--config /path/to/config.ini` if your configuration lives elsewhere.
+
+**For copy-paste walkthroughs, head over to the [examples/](./examples/) directory.**
 
 ### Write Commands
 
