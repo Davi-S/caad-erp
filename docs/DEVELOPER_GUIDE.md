@@ -16,18 +16,17 @@ developers who maintain or extend the codebase.
 
 The code follows a three-layer design:
 
-1. **Data Access Layer (DAL) – `dal.py`:**
+1. **Data Access Layer (DAL)**
    Handles Excel I/O, implemented with `openpyxl`.
-2. **Business Logic Layer (BLL) – `core_logic.py`:**
+2. **Business Logic Layer (BLL)**
    Encapsulates rules and workflows, calling into the DAL without caring about
    presentation concerns.
 3. **Presentation Layer (UI):**
-  Implemented as a command-line interface in `cli.py`. The module keeps the UI
-  intentionally thin: it parses arguments, converts them into the command
-  objects defined by the BLL, and delegates execution. All user input is
-  expressed through explicit long-form options, and the CLI never accepts a
-  manual timestamp override because the business layer assigns those values.
-  No business rules live in the CLI; everything flows through `core_logic`.
+   Implemented as a command-line interface in `src/caad_erp/cli`. The module keeps the UI
+   intentionally thin: it parses arguments, converts them into the command
+   objects defined by the BLL, and delegates execution. All user input is
+   expressed through explicit long-form options. No business rules live in the CLI;
+   everything flows through `core_logic`.
 
 ## Data Model
 
@@ -61,32 +60,40 @@ application. It contains three sheets:
 
 #### Separate Revenue and Cost Columns
 
-`TotalRevenue` tracks money received; `TotalCost` tracks money spent on
-inventory. Using two columns keeps Excel analysis simple:
+`TotalRevenue` tracks money received; `TotalCost` tracks money spent. Using two columns keeps
+Excel analysis simple:
 
 - Total sales: `SUM(TotalRevenue)`
 - Cost of stock: `SUM(TotalCost)`
 - Profit: `SUM(TotalRevenue) + SUM(TotalCost)`
 
-#### Stock levels
+#### Stock Levels
 
 `SUM(TransactionLog.QuantityChange)` derives real-time stock levels.
 
+#### Sell Price
+
+This is a convenience/esthetic value. It is a default or suggested price for the user interface.
+
+The real sell price of the product is calculated by the `TotalRevenue` of a transaction log; this
+is the actual amount of money collected for the sale.
+
 #### Foreign Keys and Integrity
 
-- `TransactionLog.ProductID` must match a `ProductID` in the `Products` sheet whenever it is populated.
-- `TransactionLog.SalesmanID` points at `Salesmen.SalesmanID` for user-driven activity. The business layer requires every mutating command (sale, restock, write-off, credit payment, open stock) to supply a salesman identifier and rejects inactive entries so ledger rows cannot reference retired users inadvertently.
-- `TransactionLog.LinkedTransactionID` links reversal flows. `CREDIT_PAYMENT` rows link back to the originating credit sale, and `VOID` rows reference the transaction they negate.
+`TransactionLog.ProductID` match a `ProductID` in the `Products` sheet.
 
-#### Column Types and Formatting
+`TransactionLog.SalesmanID` points at `Salesmen.SalesmanID`.
 
-- Identifier columns (`ProductID`, `SalesmanID`, `TransactionID`, `LinkedTransactionID`) stay as text. Transaction identifiers are generated via `core_logic.generate_transaction_id` (`TYYYYMMDDHHMMSSffffff`, `V...` for voids) so Excel preserves chronological ordering.
-- `Timestamp` cells store ISO 8601 strings captured by the business layer. Each
-  `record_*` function captures `datetime.now(UTC)` once per command and reuses
-  that moment for both the transaction identifier and the persisted row, so
-  callers cannot desynchronize the values or supply custom timestamps.
+#### Linked IDs
+
+`TransactionLog.LinkedTransactionID` links reversal flows. `CREDIT_PAYMENT` rows link back to the originating credit sale, and `VOID` rows reference the transaction they negate.
+
+#### Column Types
+
+- Identifier columns (`ProductID`, `SalesmanID`, `TransactionID`, `LinkedTransactionID`) stay as text.
+- `Timestamp` cells store ISO 8601 strings captured by the business layer.
 - `QuantityChange` uses signed decimals
-- Monetary columns are written as `Decimal` instances. Revenue entries stay positive, while `build_restock_transaction` and `build_void_reversal` ensure costs are stored as negative numbers so `SUM(TotalRevenue) + SUM(TotalCost)` yields profit without extra formulas.
+- Monetary columns are written as `Decimal` instances. Revenue entries stay positive, while costs are stored as negative numbers.
 - Boolean columns (`Products.IsActive`, `Salesmen.IsActive`) store Excel booleans; the DAL coerces them back to `bool` on read.
 - `PaymentType` stores one of the enum strings.
 - `Notes` is free-form text that can remain blank.
@@ -97,53 +104,35 @@ The project uses an append-only `TransactionLog` stored in Excel. Data is never
 deleted or edited. Business logic adds new rows for every event, including
 corrections.
 
-## Core Business Logic
-
-### Transaction Types
+## Transaction Types
 
 1. `OPEN_STOCK`: Created by the archive script to seed a new period.
 2. `SALE`: Reduces stock and logs revenue.
 3. `RESTOCK`: Increases stock and records inventory spend.
-4. `WRITE_OFF`: Reduces stock without revenue (spoilage, theft, etc.).
+4. `WRITE_OFF`: Reduces stock without revenue (spoilage, theft, lost, etc.).
 5. `CREDIT_PAYMENT`: Captures the payment received for an earlier credit sale.
 6. `VOID`: Perfect reversal of an incorrect transaction, linked to the original
    entry.
 
-### Workflows
+## Workflows
 
-#### Catalog Maintenance
-
-Administrative flows that extend the product or salesman catalog run through
-`core_logic.add_product` and `core_logic.add_salesman`. Both helpers validate
-identifier uniqueness, enforce non-empty names, require non-negative monetary
-values, delegate the actual insert to the DAL, and invalidate the relevant
-cache bucket. Prefer these entry points over calling the DAL directly so
-runtime caches stay coherent and business rules remain centralized.
-
-#### Discounts
+### Discounts
 
 Handled by allowing any `TotalRevenue` during a sale, even if it will differ
 from the product's sell price.
 
-#### Sell on Credit
+### Sell on Credit
 
 Logged as a `SALE` with `PaymentType="OnCredit"` and zero revenue, paired
 with a subsequent `CREDIT_PAYMENT` that references the original
 transaction via `LinkedTransactionID`. Credit payment entries capture the
-actual settlement method (`PaymentType` on the command), so the ledger can
-distinguish settlement approaches when a debt is cleared.
+actual settlement method (`PaymentType` on the command) and the value paid.
 
-#### Error Correction
+### Error Correction
 
 Uses the "Reversal and Re-entry" method. A `VOID` transaction reverses the mistake,
 followed by a new entry with the correct data.
 The correct data is optional if only want to delete the mistake.
-
-#### Archiving
-
-In the end of a period, a script recalculates inventory, seeds
-`OPEN_STOCK` entries in a new workbook, prunes inactive products or salesmen with no
-activity, and renames the old file.
 
 ## Runtime Caching in the BLL
 
@@ -169,51 +158,59 @@ Guidelines:
   `_invalidate_cache(context, "products")` or `_invalidate_cache(context,
 "salesmen")` right after the DAL operation.
 - Avoid mutating the workbook directly from outside the BLL. Doing so bypasses
-  the invalidation hook and can leave cached data stale. If you absolutely need
-  to touch the workbook, invalidate the affected bucket beforehand.
+  the invalidation hook and can leave cached data stale.
 
 This approach keeps memory usage low (only one workbook copy) while eliminating
-the “N+1” read pattern during domain operations.
+the "N+1" read pattern during operations.
 
-## Development Workflow
+## Tests
 
 ### Test-Driven Development (TDD)
 
 New functionality should be driven by `pytest`-based tests under `tests/`.
 
-### Testing Strategy
+### Testing Files Structure
 
 The test suite follows a pyramid structure to keep fast feedback at the unit level while retaining confidence in the full stack:
 
 - **`tests/dal/`** – Integration coverage for the DAL that exercises real `openpyxl` reads and writes.
-- **`tests/bll/`** – Unit coverage for the BLL with the entire data layer (`data_manager`) mocked.
-- **`tests/cli/`** – Unit coverage for the CLI with the business logic layer (`core_logic`) mocked.
+- **`tests/bll/`** – Unit coverage for the BLL with the entire data access layer (DAL) mocked.
+- **`tests/cli/`** – Unit coverage for the CLI (Presentation Layer) with the business logic layer (BLL) mocked.
 - **`tests/test_integration_layers.py`** – Cross-layer integration without mocks, verifying the complete workflow from CLI through the DAL.
 
-### Test Structure and Standards
+### Test Structure Standards
 
-To ensure our tests are readable and maintainable by new developers, all test functions **must** adhere to the following standards:
+To ensure our tests are readable and maintainable by new developers, all test functions must adhere to the following standards:
 
 - **Arrange-Act-Assert (AAA) Pattern:** The body of every test function must be explicitly divided by comments to make its logic clear.
-- **Given/When/Then (GWT) Docstrings:** All test functions must have a docstring in the GWT format to describe the *intent* of the test.
+- **Given/When/Then (GWT) Docstrings:** All test functions must have a docstring in the GWT format to describe the intent of the test.
 
-### Logging
+## Logging
 
 Python's `logging` module is configured in `src/caad_erp/__init__.py`;
 modules acquire a logger with `logging.getLogger(__name__)`.
 
-Use the logger with wisdom and not exaggeration.
+## Key Design Rationale (Q&A)
 
-### Docstrings
+This section clarifies the "why" behind a few key architectural decisions that were made to prioritize robustness and maintainability.
 
-Use Google-style docstrings for clarity and compatibility with automated
-documentation tools.
+### Why is PaymentType a hard-coded Enum?
+
+We intentionally chose to hard-code the PaymentType list in `constants.py` instead of creating a separate `PaymentTypes` sheet in Excel.
+
+**Reason**: The value "On Credit" is a critical business rule, not just user data.
+
+**Risk**: If it were in an Excel sheet, a user could accidentally delete or rename it, which would fatally break all logic for tracking and paying debts.
+
+**Benefit**: By making it a hard-coded Enum, we make our "Sell on Credit" workflow 100% robust and safe from user error, at the minor cost of requiring a developer to add new payment types.
 
 ## Future Work
 
-- Enhance the CLI UX (for example, rich table output) while keeping it thin.
-- Document the archive workflow as part of operational runbooks.
-- Expand automated tests to cover end-to-end scenarios once the UI exists.
+- Enhance the CLI UX (for example, rich table output).
+- Expand automated tests to cover end-to-end scenarios.
 - Create a period-end script that recalculates inventory, seeds `OPEN_STOCK`
   entries in a new workbook, prunes inactive products or salesmen with no activity,
   and renames the old file.
+- Add automatic ID for products and salesman using hash
+- Optional revenue on cli for using the product sellprice (decide if this is good)
+- Create a WebUI
