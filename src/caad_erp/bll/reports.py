@@ -6,13 +6,31 @@ touching the workbook on every call. Callers receive plain dictionaries that
 are convenient for CLI formatting or downstream integrations.
 """
 
+import dataclasses
 import logging
 import typing as t
+import collections
 from decimal import Decimal
 
-from . import runtime, transactions
+from caad_erp import constants, exceptions
+
+from . import products, runtime, transactions
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(frozen=True)
+class OutstandingDebt:
+    """Snapshot describing an outstanding credit balance."""
+
+    transaction_id: str
+    timestamp_iso: str
+    product_id: t.Optional[str]
+    salesman_id: t.Optional[str]
+    quantity: Decimal
+    expected_amount: Decimal
+    amount_paid: Decimal
+    balance: Decimal
 
 
 def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, Decimal]:
@@ -75,4 +93,110 @@ def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, Dec
         "total_revenue": total_revenue,
         "total_cost": total_cost,
         "profit": profit,
+    }
+
+
+def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
+    """Compute outstanding balances for credit sales.
+
+    The report inspects cached transactions to locate ``SALE`` entries logged
+    with ``PaymentType`` ``OnCredit`` that have not been voided and determines
+    how much remains unpaid after credit payments are applied. Expected amounts
+    come from either explicitly recorded negative revenue on the sale or, when
+    absent, the product's current ``SellPrice`` multiplied by the sale quantity.
+
+    Args:
+        context (RuntimeContext): Runtime context providing workbook access and
+            caches.
+
+    Returns:
+        dict[str, Any]: Mapping containing ``balances``, a list of
+            :class:`OutstandingDebt`, and ``total_outstanding`` summarising the
+            remaining credit across all sales.
+    """
+
+    cache = transactions._ensure_transactions_cache(context)
+    all_transactions = cache["all"]
+
+    payments_by_sale: dict[str, Decimal] = collections.defaultdict(lambda: Decimal("0.00"))
+    voided_sales: set[str] = set()
+
+    for entry in all_transactions:
+        if (
+            entry.transaction_type
+            == constants.TransactionType.CREDIT_PAYMENT.value
+            and entry.linked_transaction_id
+        ):
+            payments_by_sale[entry.linked_transaction_id] += entry.total_revenue
+        elif (
+            entry.transaction_type == constants.TransactionType.VOID.value
+            and entry.linked_transaction_id
+        ):
+            voided_sales.add(entry.linked_transaction_id)
+
+    balances: list[OutstandingDebt] = []
+    total_balance = Decimal("0.00")
+
+    for entry in all_transactions:
+        if entry.transaction_type != constants.TransactionType.SALE.value:
+            continue
+        if entry.payment_type != constants.PaymentType.ON_CREDIT.value:
+            continue
+        if entry.transaction_id in voided_sales:
+            continue
+
+        quantity = abs(entry.quantity_change)
+        expected_from_transaction = (
+            -entry.total_revenue if entry.total_revenue < Decimal("0") else Decimal("0.00")
+        )
+
+        expected_from_price = Decimal("0.00")
+        if entry.product_id is not None:
+            try:
+                product = products.get_product(context, entry.product_id)
+            except exceptions.MissingReferenceError:
+                logger.warning(
+                    "Skipping price lookup for missing product '%s' referenced by credit sale '%s'",
+                    entry.product_id,
+                    entry.transaction_id,
+                )
+            else:
+                expected_from_price = product.sell_price * quantity
+
+        expected_amount = (
+            expected_from_transaction
+            if expected_from_transaction > Decimal("0.00")
+            else expected_from_price
+        )
+
+        if expected_amount <= Decimal("0.00"):
+            continue
+
+        amount_paid = payments_by_sale.get(
+            entry.transaction_id, Decimal("0.00"))
+        balance = expected_amount - amount_paid
+        if balance <= Decimal("0.00"):
+            continue
+
+        debt = OutstandingDebt(
+            transaction_id=entry.transaction_id,
+            timestamp_iso=entry.timestamp_iso,
+            product_id=entry.product_id,
+            salesman_id=entry.salesman_id,
+            quantity=quantity,
+            expected_amount=expected_amount,
+            amount_paid=amount_paid,
+            balance=balance,
+        )
+        balances.append(debt)
+        total_balance += balance
+
+    logger.debug(
+        "Calculated outstanding debts for %d credit sales (total=%s)",
+        len(balances),
+        total_balance,
+    )
+    return {
+        "balances": balances,
+        "total_outstanding": total_balance,
     }

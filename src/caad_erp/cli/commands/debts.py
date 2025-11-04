@@ -46,7 +46,5 @@ def run_debts_report(context: bll.RuntimeContext, args: argparse.Namespace) -> i
     Returns:
         int: Exit code ``0`` after triggering the calculation.
     """
-    bll.calculate_outstanding_debts(  # type: ignore[attr-defined]
-        context
-    )
+    bll.calculate_outstanding_debts(context)
     return 0
