@@ -28,7 +28,7 @@ def register_deactivate_product_command() -> command_spec.CommandSpec:
                 deactivation inputs.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--product-id", required=True)
+        parser.add_argument("-i", "--product-id", required=True)
         parser.set_defaults(command=name)
         return parser
 

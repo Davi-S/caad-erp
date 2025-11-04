@@ -27,16 +27,16 @@ def register_sale_command() -> command_spec.CommandSpec:
             argparse.ArgumentParser: Parser configured for the sale workflow.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--product-id", required=True)
-        parser.add_argument("--quantity", required=True)
-        parser.add_argument("--salesman-id", required=True)
-        parser.add_argument("--total-revenue", required=True)
+        parser.add_argument("-i", "--product-id", required=True)
+        parser.add_argument("-q", "--quantity", required=True)
+        parser.add_argument("-s", "--salesman-id", required=True)
+        parser.add_argument("-r", "--total-revenue", required=True)
         parser.add_argument(
-            "--payment-type",
+            "-p", "--payment-type",
             choices=[member.value for member in constants.PaymentType],
             required=True,
         )
-        parser.add_argument("--notes", dest="notes", default=None)
+        parser.add_argument("-n", "--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
 

@@ -28,7 +28,7 @@ def register_deactivate_salesman_command() -> command_spec.CommandSpec:
                 deactivation inputs.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--salesman-id", required=True)
+        parser.add_argument("-i", "--salesman-id", required=True)
         parser.set_defaults(command=name)
         return parser
 

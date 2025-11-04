@@ -28,16 +28,16 @@ def register_pay_debt_command() -> command_spec.CommandSpec:
                 workflow.
         """
         parser = action.add_parser(name, help=help_text)
-        parser.add_argument("--linked-transaction-id", required=True)
-        parser.add_argument("--total-revenue", required=True)
-        parser.add_argument("--salesman-id", required=True)
+        parser.add_argument("-l", "--linked-transaction-id", required=True)
+        parser.add_argument("-r", "--total-revenue", required=True)
+        parser.add_argument("-i", "--salesman-id", required=True)
         parser.add_argument(
-            "--payment-type",
+            "-p", "--payment-type",
             choices=[member.value for member in constants.PaymentType if member !=
                      constants.PaymentType.ON_CREDIT],
             required=True,
         )
-        parser.add_argument("--notes", dest="notes", default=None)
+        parser.add_argument("-n", "--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
 
