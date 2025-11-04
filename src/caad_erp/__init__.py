@@ -37,12 +37,6 @@ def _configure_logging() -> logging.Logger:
             f"Warning: unable to initialize log file at '{LOG_FILE}': {exc}",
             file=sys.stderr,
         )
-
-    console_handler = logging.StreamHandler(sys.stderr)
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
     return logger
 
 
