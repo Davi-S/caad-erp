@@ -206,11 +206,29 @@ We intentionally chose to hard-code the PaymentType list in `constants.py` inste
 
 ## Future Work
 
-- Enhance the CLI UX (for example, rich table output).
-- Expand automated tests to cover end-to-end scenarios.
-- Create a period-end script that recalculates inventory, seeds `OPEN_STOCK`
-  entries in a new workbook, prunes inactive products or salesmen with no activity,
-  and renames the old file.
-- Add automatic ID for products and salesman using hash
-- Optional revenue on cli for using the product sellprice (decide if this is good)
-- Create a WebUI
+- **Feat: Implement Period-End Archive Script**
+  - **Task:** Create the `archive.py` script as defined in the guide.
+  - **Logic:** It will calculate final stock, prune inactive/empty products, and generate `OPEN_STOCK` entries in a new, clean workbook for the next period.
+- **Feat: Implement Automatic ID Generation**
+  - **Task:** make `--product-id` and `--salesman-id` arguments from the `add-product` and `add-salesman` commands optional. Or add a special value that will generate a hash
+  - **Logic:** The BLL (`products.py`, `salesmen.py`) should generate a new, unique ID (e.g., using a short hash or UUID) for the new entry. This is much more user-friendly.
+- **Refactor (BLL/CLI): Simplify the `void` workflow**
+  - Change the `VoidCommand` dataclass to _remove_ the `replacement_command` field.
+  - Update `core_logic.record_void` so it _only_ performs the reversal.
+- **Feat: Create a new `fix` command in the CLI for the "Reversal and Re-entry" workflow.**
+  - Create a _new_ `FixCommand` dataclass that _does_ take a `linked_transaction_id` and a `replacement_command`.
+  - Add a cli command to that
+- **Feat (CLI): Make `--total-revenue` optional for `sale`**
+  - **Logic:** If it's _omitted_, The BLL (`transactions.py`) will then fetch the `Product.SellPrice` and calculate the revenue automatically (`quantity * sell_price`). If the argument _is_ provided, it overrides this calculation (this is how we handle discounts).
+- **Feat (CLI): Enhance UX with Rich Table Output**
+  - **Task:** Install a library like `rich` or `tabulate` (in the `[project.optional-dependencies.cli]` group).
+  - **Logic:** Update the "read-only" commands (`stock`, `profit`, `log`, `debts`) to print their results in clean, formatted console tables instead of simple text.
+- **Test (CLI): Add End-to-End CLI Tests**
+  - **Task:** Our `test_integration_layers.py` is great for the BLL/DAL. We need tests for the _full application_.
+  - **Logic:** Use a tool like `pytester` (a pytest plugin) or the `subprocess` module to write tests that _actually run_ `lounge-cli sale...` and assert that the `stdout`/`stderr` and exit codes are correct.
+- **Docs: Create a detailed `USAGE.md` file**
+  - **Task:** Our `examples/` directory is good, but a formal, task-oriented `USAGE.md` file would be better.
+  - **Logic:** This file would have sections like "How to handle a spoiled item," "How to pay a debt," or "How to fix a mistaken sale," and show the exact commands to run.
+- **Feat (UI): Develop a Web-Based User Interface**
+  - **Task:** Create a new "presentation layer" by building a simple web app (e.g., using Streamlit or Flask).
+  - **Logic:** This web app will `import caad_erp.bll` and call the exact same functions (`record_sale`, `calculate_inventory`, etc.) that the CLI does. This will prove the power of our 3-layer architecture.
