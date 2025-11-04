@@ -67,3 +67,35 @@ def test_run_profit_report_invokes_bll(runtime_context, monkeypatch):
     # Assert
     assert result == 0
     assert called["context"] is runtime_context
+
+
+def test_run_profit_report_prints_summary(runtime_context, monkeypatch, capsys):
+    """
+    Given calculated totals 
+    When run_profit_report executes 
+    Then the CLI prints the summary values.
+    """
+
+    # Arrange
+    args = argparse.Namespace()
+
+    def fake_summary(context: bll.RuntimeContext) -> t.Mapping[str, Decimal]:
+        assert context is runtime_context
+        return {
+            "total_revenue": Decimal("120.50"),
+            "total_cost": Decimal("-45.30"),
+            "profit": Decimal("75.20"),
+        }
+
+    monkeypatch.setattr(cli.bll, "calculate_profit_summary", fake_summary)
+
+    # Act
+    result = cli.run_profit_report(runtime_context, args)
+    captured = capsys.readouterr().out
+
+    # Assert
+    assert result == 0
+    assert "Profit summary:" in captured
+    assert "120.50" in captured
+    assert "-45.30" in captured
+    assert "75.20" in captured
