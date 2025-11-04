@@ -1,10 +1,16 @@
 # 01 Basic Workflow
 
-Follow these steps to capture a straightforward cash sale from start to finish.
-Replace `/path/to/config.ini` with your own configuration path or drop the
-flag when the file sits beside your terminal session.
+Follow these steps to capture a straightforward cash sale from zero to finish.
 
-1. Register the product catalog entry.
+1. Register the salesperson who will handle the sale.
+
+   ```text
+   caad-erp-cli add-salesman \
+      --salesman-id ALICE \
+      --salesman-name "Alice Johnson"
+   ```
+
+2. Register the product catalog entry.
 
    ```text
    caad-erp-cli add-product \
@@ -13,7 +19,7 @@ flag when the file sits beside your terminal session.
        --sell-price 1.25
    ```
 
-2. Record the incoming stock so inventory increases.
+3. Record the incoming stock so inventory increases.
 
    ```text
    caad-erp-cli restock \
@@ -24,13 +30,13 @@ flag when the file sits beside your terminal session.
        --notes "Opening delivery from supplier"
    ```
 
-3. Check the inventory position.
+4. Check the inventory position.
 
    ```text
    caad-erp-cli stock
    ```
 
-4. Record the cash sale.
+5. Record the cash sale.
 
    ```text
    caad-erp-cli sale \
@@ -42,7 +48,13 @@ flag when the file sits beside your terminal session.
        --notes "Lunch rush"
    ```
 
-5. Review the profit summary after the transaction.
+6. Check the inventory position again to confirm the sale reduced stock.
+
+   ```text
+   caad-erp-cli stock
+   ```
+
+7. Review the profit summary after the transaction.
 
    ```text
    caad-erp-cli profit

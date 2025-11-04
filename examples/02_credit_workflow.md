@@ -1,7 +1,6 @@
 # 02 Credit Workflow
 
-Follow this sequence to handle a sale on credit through settlement. Replace
-`/path/to/config.ini` and `<TRANSACTION_ID>` with values from your own ledger.
+Follow this sequence to handle a sale on credit through settlement. Replace `<TRANSACTION_ID>` with values from your own ledger.
 
 1. Record the credit sale. Revenue stays at zero until the payment arrives.
 
@@ -21,8 +20,7 @@ Follow this sequence to handle a sale on credit through settlement. Replace
    caad-erp-cli debts
    ```
 
-   Write down the `TransactionID` associated with the new credit sale (for
-   example `T202501021530000001`).
+   Note the `TransactionID` associated with the new credit sale.
 
 3. Log the payment once the customer settles the balance.
 

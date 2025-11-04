@@ -1,8 +1,9 @@
 # 03 Fix Mistake Workflow
 
 Use this playbook to void an incorrect sale and replace it with the right
-entry. Substitute `/path/to/config.ini` and `<BAD_TRANSACTION_ID>` with values
-from your environment.
+entry. Substitute `<BAD_TRANSACTION_ID>` with values from your environment.
+
+> WARNING: Never delete rows from the workbook unless you are absolutely certain about the downstream impact. Always use the CLI flows below so audit history stays intact.
 
 1. Capture the mistaken sale (for example, a typo in the quantity).
 
@@ -12,8 +13,7 @@ from your environment.
        --quantity 12 \
        --salesman-id ALICE \
        --total-revenue 15.00 \
-       --payment-type "Cash" \
-       --notes "Mistyped quantity during rush"
+       --payment-type "Cash"
    ```
 
 2. List the transaction log and note the identifier of the incorrect entry.
@@ -22,7 +22,7 @@ from your environment.
    caad-erp-cli log
    ```
 
-   Record the `TransactionID` you need to void (for example `T202501021600000002`).
+   Record the `TransactionID` you need to void (this is the `<BAD_TRANSACTION_ID>`).
 
 3. Void the mistaken transaction so the ledger reflects the reversal.
 
@@ -44,8 +44,7 @@ from your environment.
        --notes "Replacement after void"
    ```
 
-5. Run the log again to confirm the original, void, and replacement entries
-   appear in order.
+5. Run the log again to confirm the original, void, and replacement entries.
 
    ```text
    caad-erp-cli log
