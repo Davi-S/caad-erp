@@ -6,7 +6,6 @@ provides typed adapters for working with a specific portion of the workbook or
 configuration stack, and those names are re-exported here for convenience.
 """
 
-from .config import *
 from .products import *
 from .salesmen import *
 from .transactions import *

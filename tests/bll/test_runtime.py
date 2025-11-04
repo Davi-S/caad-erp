@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants, dal, settings
 
 
 def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
@@ -15,21 +15,16 @@ def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
 
     # Arrange
     config_path = tmp_path / "config.ini"
-    parser = Mock(name="parser")
-    parsed_settings = dal.ConfigSettings(
+    parsed_settings = settings.AppSettings(
         data_file=tmp_path / "master.xlsx",
         lounge_name="Lounge",
         schema_version=constants.EXPECTED_SCHEMA_VERSION,
         default_salesman_id="S-DEFAULT",
     )
     workbook = Mock(name="workbook")
-    find_config_file = Mock(return_value=config_path)
-    read_config = Mock(return_value=parser)
-    parse_settings = Mock(return_value=parsed_settings)
+    get_settings = Mock(return_value=parsed_settings)
     open_workbook = Mock(return_value=workbook)
-    monkeypatch.setattr(dal, "find_config_file", find_config_file)
-    monkeypatch.setattr(dal, "read_config", read_config)
-    monkeypatch.setattr(dal, "parse_settings", parse_settings)
+    monkeypatch.setattr(settings, "get_settings", get_settings)
     monkeypatch.setattr(dal, "open_workbook", open_workbook)
 
     # Act
@@ -38,10 +33,7 @@ def test_load_runtime_context_returns_context(monkeypatch, tmp_path):
     # Assert
     assert context.settings is parsed_settings
     assert context.workbook is workbook
-    find_config_file.assert_called_once_with(config_path)
-    read_config.assert_called_once_with(config_path.resolve())
-    parse_settings.assert_called_once_with(
-        parser, base_path=config_path.resolve().parent)
+    get_settings.assert_called_once_with(config_path)
     open_workbook.assert_called_once_with(parsed_settings.data_file)
 
 
