@@ -6,7 +6,7 @@ the FastAPI server using uvicorn.
 
 import uvicorn
 
-from .app import create_app
+from . import app
 
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8000
@@ -23,8 +23,8 @@ def run_server(
               connections from other devices on the local network.
         port: The port to listen on. Defaults to 8000.
     """
-    app = create_app()
-    uvicorn.run(app, host=host, port=port)
+    application = app.create_app()
+    uvicorn.run(application, host=host, port=port)
 
 
 def main() -> None:

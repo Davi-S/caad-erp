@@ -1,9 +1,8 @@
 """Tests for the CAAD ERP API application factory."""
 
-import pytest
+import fastapi
 
-from caad_erp.api import create_app
-from caad_erp.api.app import APP_TITLE, APP_DESCRIPTION
+from caad_erp import api
 
 
 def test_create_app_returns_fastapi_instance():
@@ -17,11 +16,10 @@ def test_create_app_returns_fastapi_instance():
     # (no setup needed)
 
     # Act
-    app = create_app()
+    app = api.create_app()
 
     # Assert
-    from fastapi import FastAPI
-    assert isinstance(app, FastAPI)
+    assert isinstance(app, fastapi.FastAPI)
 
 
 def test_create_app_sets_metadata():
@@ -35,11 +33,11 @@ def test_create_app_sets_metadata():
     # (no setup needed)
 
     # Act
-    app = create_app()
+    app = api.create_app()
 
     # Assert
-    assert app.title == APP_TITLE
-    assert app.description == APP_DESCRIPTION
+    assert app.title == api.APP_TITLE
+    assert app.description == api.APP_DESCRIPTION
     # Version is dynamically loaded from package metadata
     assert isinstance(app.version, str)
     assert len(app.version) > 0
@@ -56,7 +54,7 @@ def test_create_app_includes_health_route():
     # (no setup needed)
 
     # Act
-    app = create_app()
+    app = api.create_app()
 
     # Assert
     routes = [route.path for route in app.routes]
@@ -74,7 +72,7 @@ def test_create_app_configures_cors():
     # (no setup needed)
 
     # Act
-    app = create_app()
+    app = api.create_app()
 
     # Assert
     middleware_classes = [m.cls.__name__ for m in app.user_middleware]
