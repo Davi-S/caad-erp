@@ -4,6 +4,8 @@ This module provides the ``create_app`` factory function that builds the
 FastAPI application instance with all middleware and routes configured.
 """
 
+from importlib.metadata import version
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,7 +16,14 @@ APP_DESCRIPTION = (
     "A headless HTTP API for the CAAD ERP system. "
     "Intended for local network operation only."
 )
-APP_VERSION = "0.1.0"
+
+
+def _get_app_version() -> str:
+    """Get the application version from package metadata."""
+    try:
+        return version("caad-erp")
+    except Exception:
+        return "0.0.0"
 
 
 def create_app() -> FastAPI:
@@ -26,15 +35,16 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=APP_TITLE,
         description=APP_DESCRIPTION,
-        version=APP_VERSION,
+        version=_get_app_version(),
     )
 
-    # Configure CORS for local development
-    # Allow all origins for local network use cases
+    # Configure CORS for local development/local network use
+    # Allow all origins without credentials for maximum compatibility
+    # Since this API is intended for local network only, this is acceptable
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
