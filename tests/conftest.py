@@ -9,6 +9,7 @@ import uuid
 from pathlib import Path
 from unittest.mock import Mock
 
+import fastapi.testclient
 import pytest
 
 # Ensure source packages are importable without installation.
@@ -274,7 +275,6 @@ def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[datetime.
 @pytest.fixture
 def api_client():
     """Return a test client for the API application."""
-    import fastapi.testclient
     from caad_erp import api
 
     app = api.create_app()

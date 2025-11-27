@@ -11,4 +11,5 @@ use cases are:
 """
 
 from .app import *
+from .routes import *
 from .server import *
