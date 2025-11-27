@@ -1,3 +1,3 @@
 """API route modules for the CAAD ERP system."""
 
-from . import health
+from .health import *

@@ -1,9 +1,5 @@
 """Tests for the CAAD ERP API health check endpoint."""
 
-import fastapi.testclient
-
-from caad_erp import api
-
 
 def test_health_check_returns_healthy_status(api_client):
     """
