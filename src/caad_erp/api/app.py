@@ -50,6 +50,6 @@ def create_app() -> fastapi.FastAPI:
     )
 
     # Register routes
-    app.include_router(routes.health.router)
+    app.include_router(routes.router)
 
     return app
