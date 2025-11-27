@@ -264,3 +264,18 @@ def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[datetime.
         return moment
 
     return _apply
+
+
+# ---------------------------------------------------------------------------
+# API layer fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def api_client():
+    """Return a test client for the API application."""
+    import fastapi.testclient
+    from caad_erp import api
+
+    app = api.create_app()
+    return fastapi.testclient.TestClient(app)

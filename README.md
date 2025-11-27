@@ -1,6 +1,6 @@
 # CAAD ERP
 
-[![Python 3.13+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![Tests Passing](https://img.shields.io/badge/tests-pytest-success)](./tests)
 
 ## Motivation
