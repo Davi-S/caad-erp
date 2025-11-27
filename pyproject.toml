@@ -3,7 +3,7 @@ name = "caad-erp"
 version = "0.1.0"
 description = "Excel-backed inventory and sales tracker for student lounges"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 # Core dependencies needed for the library to run
 dependencies = [
     "openpyxl>=3.1.5",
@@ -13,15 +13,19 @@ dependencies = [
 # Dependencies for running the test suite
 test = [
     "pytest>=8.4.2",
+    "httpx>=0.27.0",
 ]
 
 # Dependencies for the CLI
 cli = [
 ]
 
-# Dependencies for the Web UI
-web = [
+# Dependencies for the API server
+api = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
 ]
 
 [project.scripts]
 caad-erp-cli = "caad_erp.cli:main"
+caad-erp-api = "caad_erp.api:main"

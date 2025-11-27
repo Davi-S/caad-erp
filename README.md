@@ -1,6 +1,6 @@
 # CAAD ERP
 
-[![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![Tests Passing](https://img.shields.io/badge/tests-pytest-success)](./tests)
 
 ## Motivation
@@ -23,7 +23,7 @@ over complex infrastructure.
 
 ## Installation
 
-1. Install Python 3.13 or newer from [python.org](https://www.python.org/) if it
+1. Install Python 3.12 or newer from [python.org](https://www.python.org/) if it
    is not already available on your computer.
 2. Download the latest CAAD ERP source code (clone the repository or grab a
    release archive) and open a terminal inside the project folder.
@@ -102,6 +102,39 @@ Reporting commands return calculated information without mutating the workbook:
 Each command exits with `0` on success, `2` for business rule violations, `3`
 when the configuration or data file cannot be found, and `1` for unexpected
 errors.
+
+## API Server
+
+CAAD ERP also provides a FastAPI-based headless API server for integration with
+web-based user interfaces or other applications. The API is intended for local
+network operation only.
+
+### Installing API Dependencies
+
+```bash
+uv pip install -e ".[api]"
+```
+
+### Running the API Server
+
+```bash
+# Console script entry point
+caad-erp-api
+
+# Or run directly through Python
+python -m caad_erp.api
+```
+
+By default, the server starts on `http://0.0.0.0:8000`, making it accessible
+from other devices on the local network. The `/health` endpoint can be used to
+verify the server is running:
+
+```bash
+curl http://localhost:8000/health
+# Returns: {"status":"healthy","message":"CAAD ERP API is running"}
+```
+
+Interactive API documentation is available at `http://localhost:8000/docs`.
 
 ## Contributing
 

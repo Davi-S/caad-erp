@@ -9,6 +9,7 @@ import uuid
 from pathlib import Path
 from unittest.mock import Mock
 
+import fastapi.testclient
 import pytest
 
 # Ensure source packages are importable without installation.
@@ -20,7 +21,7 @@ for candidate in (SRC_DIR, PROJECT_ROOT):
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
 
-from caad_erp import bll, cli, constants, settings as app_settings  # noqa: E402
+from caad_erp import api, bll, cli, constants, settings as app_settings  # noqa: E402
 from setup_excel import create_master_workbook  # noqa: E402
 
 DEFAULT_SCHEMA_VERSION = constants.EXPECTED_SCHEMA_VERSION
@@ -264,3 +265,15 @@ def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[datetime.
         return moment
 
     return _apply
+
+
+# ---------------------------------------------------------------------------
+# API layer fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def api_client():
+    """Return a test client for the API application."""
+    app = api.create_app()
+    return fastapi.testclient.TestClient(app)
