@@ -20,10 +20,6 @@ test = [
 cli = [
 ]
 
-# Dependencies for the Web UI
-web = [
-]
-
 # Dependencies for the API server
 api = [
     "fastapi>=0.115.0",

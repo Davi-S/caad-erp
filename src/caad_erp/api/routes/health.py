@@ -4,13 +4,13 @@ This module provides a simple health check endpoint to verify that the
 API server is running and responding to requests.
 """
 
-from fastapi import APIRouter
-from pydantic import BaseModel
+import fastapi
+import pydantic
 
-router = APIRouter(tags=["Health"])
+router = fastapi.APIRouter(tags=["Health"])
 
 
-class HealthResponse(BaseModel):
+class HealthResponse(pydantic.BaseModel):
     """Response model for the health check endpoint."""
 
     status: str
