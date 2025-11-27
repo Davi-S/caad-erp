@@ -3,7 +3,7 @@
 import pytest
 
 from caad_erp.api import create_app
-from caad_erp.api.app import APP_TITLE, APP_DESCRIPTION, APP_VERSION
+from caad_erp.api.app import APP_TITLE, APP_DESCRIPTION
 
 
 def test_create_app_returns_fastapi_instance():
@@ -40,7 +40,9 @@ def test_create_app_sets_metadata():
     # Assert
     assert app.title == APP_TITLE
     assert app.description == APP_DESCRIPTION
-    assert app.version == APP_VERSION
+    # Version is dynamically loaded from package metadata
+    assert isinstance(app.version, str)
+    assert len(app.version) > 0
 
 
 def test_create_app_includes_health_route():
