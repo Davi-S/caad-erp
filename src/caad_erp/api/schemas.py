@@ -20,7 +20,12 @@ from caad_erp import constants
 
 
 class StandardResponse(pydantic.BaseModel):
-    """Standard wrapper for mutation endpoint responses."""
+    """Standard wrapper for mutation endpoint responses.
+    
+    The `data` field uses `Any` to allow flexibility across different entity
+    types (Product, Salesman, Transaction). Individual endpoints ensure type
+    safety by constructing specific response DTOs before wrapping them.
+    """
 
     detail: str
     data: t.Optional[t.Any] = None

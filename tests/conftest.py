@@ -288,6 +288,10 @@ def api_client_with_context(config_file: Path):
     
     This fixture provides a full-featured test client with the RuntimeContext
     singleton properly configured for integration testing of endpoints.
+    
+    Note: The RuntimeContext holds an in-memory workbook reference that does
+    not require explicit cleanup. The clear_runtime_context() call ensures the
+    singleton is reset between tests.
     """
     context = bll.load_runtime_context(config_file)
     bll.ensure_schema_version(context)
@@ -298,5 +302,5 @@ def api_client_with_context(config_file: Path):
     
     yield client
     
-    # Clean up the context after the test
+    # Clean up the singleton reference after the test
     api.clear_runtime_context()

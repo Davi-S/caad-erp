@@ -179,6 +179,8 @@ def record_void(
         raise fastapi.HTTPException(status_code=404, detail=str(exc)) from exc
     except exceptions.BusinessRuleViolation as exc:
         raise fastapi.HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise fastapi.HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/pay-debt", response_model=schemas.StandardResponse, status_code=201)
