@@ -15,7 +15,6 @@ DEFAULT_PORT = 8000
 def run_server(
     host: str = DEFAULT_HOST,
     port: int = DEFAULT_PORT,
-    reload: bool = False,
 ) -> None:
     """Start the API server.
 
@@ -23,7 +22,6 @@ def run_server(
         host: The host address to bind to. Defaults to "0.0.0.0" to allow
               connections from other devices on the local network.
         port: The port to listen on. Defaults to 8000.
-        reload: Whether to enable auto-reload for development. Defaults to False.
     """
     app = create_app()
     uvicorn.run(app, host=host, port=port)
