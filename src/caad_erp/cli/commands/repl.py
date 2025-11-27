@@ -9,7 +9,7 @@ import argparse
 import shlex
 import typing as t
 
-from caad_erp import bll, exceptions
+from caad_erp import bll
 
 from .. import command_spec
 
@@ -127,7 +127,8 @@ def repl_loop(
             return 0
 
         # Skip the 'repl' command itself to prevent nested REPLs
-        if line.split()[0].lower() == "repl":
+        first_word = line.split()[0] if line else ""
+        if first_word.lower() == "repl":
             print("Cannot start nested REPL session.")
             continue
 
