@@ -44,6 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def configure_subcommands(
     parser: argparse.ArgumentParser,
+    include_repl: bool = True,
 ) -> t.Mapping[str, command_spec.CommandSpec]:
     """Attach read and write sub-commands to the base parser.
 
@@ -55,16 +56,26 @@ def configure_subcommands(
     Args:
         parser (argparse.ArgumentParser): Parser produced by
             :func:`build_parser` that should receive sub-command definitions.
+        include_repl (bool): Whether to include the REPL command. Defaults to
+            True. Set to False when building the inner parser for REPL mode.
 
     Returns:
         Mapping[str, CommandSpec]: Immutable view mapping command names to
             their registered specifications.
     """
+    # When no command is provided, we default to REPL mode
     subparsers = parser.add_subparsers(
-        dest="command", required=True, title="commands")
+        dest="command", required=False, title="commands")
     write_specs = register_write_commands(subparsers)
     read_specs = register_read_commands(subparsers)
-    return build_command_table([*write_specs.values(), *read_specs.values()])
+    all_specs = [*write_specs.values(), *read_specs.values()]
+
+    if include_repl:
+        repl_spec = commands.register_repl_command()
+        repl_spec.register(subparsers)
+        all_specs.append(repl_spec)
+
+    return build_command_table(all_specs)
 
 
 def register_write_commands(
@@ -239,6 +250,10 @@ def load_runtime_context(config_path: t.Optional[Path] = None) -> bll.RuntimeCon
 def main(argv: t.Sequence[str] | None = None) -> int:
     """Parse arguments, execute the selected command, and persist changes.
 
+    When invoked without a command or with the ``repl`` command, an interactive
+    REPL session is started. The REPL loads the RuntimeContext once and reuses
+    it across multiple commands for improved performance.
+
     Args:
         argv (Sequence[str] | None): Optional argument vector to parse. When
             ``None`` the default ``sys.argv`` semantics apply.
@@ -249,10 +264,25 @@ def main(argv: t.Sequence[str] | None = None) -> int:
     parse = build_parser()
     command_table = configure_subcommands(parse)
     args = parse.parse_args(argv)
+
+    # If no command is specified, default to REPL mode
+    is_repl_mode = args.command is None or args.command == "repl"
+
+    if is_repl_mode:
+        # Build a separate parser for REPL mode (without the repl command)
+        repl_parser = build_parser()
+        repl_command_table = configure_subcommands(repl_parser, include_repl=False)
+        args.repl_parser = repl_parser
+        args.repl_command_table = repl_command_table
+        args.repl_persist_fn = persist_workbook
+        args.repl_error_handler = handle_cli_error
+        args.command = "repl"  # Ensure command is set for dispatch
+
     try:
         context = load_runtime_context(getattr(args, "config", None))
         exit_code = dispatch_command(context, args, command_table)
-        if exit_code == 0:
+        # Only persist for non-REPL commands; REPL handles its own persistence
+        if exit_code == 0 and not is_repl_mode:
             persist_workbook(context)
         return exit_code
     except Exception as error:
