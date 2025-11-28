@@ -32,6 +32,25 @@ The code follows a three-layer design:
      that translates HTTP requests into BLL calls. Intended for local network
      operation only, enabling web-based UIs to interact with the system.
 
+### CLI-First Parity
+
+The project follows a **CLI-First** development strategy. The CLI is the primary
+presentation layer, and the API serves as a secondary layer that maintains
+strict functional parity with the CLI.
+
+This means:
+
+- **Feature parity:** Every operation available in the CLI must also be
+  available in the API. The API endpoints mirror CLI commands as REST-ish routes
+  grouped by domain resource.
+- **Same BLL calls:** Both the CLI and API call the exact same BLL functions.
+  Neither layer contains business logic—all rules and workflows live in the BLL.
+- **Consistent behavior:** Given the same inputs, both interfaces produce
+  identical outcomes because they delegate to the same underlying logic.
+
+This strategy ensures the API never drifts out of sync with the CLI and
+simplifies maintenance by having a single source of truth for business rules.
+
 ## Data Model
 
 The "database" lives alongside a user-editable configuration file.
