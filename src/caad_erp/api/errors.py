@@ -7,7 +7,7 @@ to appropriate HTTP status codes and response formats.
 import logging
 
 import fastapi
-from fastapi.responses import JSONResponse
+import fastapi.responses
 
 from caad_erp import exceptions
 
@@ -23,7 +23,7 @@ EXCEPTION_STATUS_MAP: list[tuple[type[Exception], int]] = [
 ]
 
 
-def _create_error_response(status_code: int, detail: str) -> JSONResponse:
+def _create_error_response(status_code: int, detail: str) -> fastapi.responses.JSONResponse:
     """Create a standardized JSON error response.
 
     Args:
@@ -33,7 +33,7 @@ def _create_error_response(status_code: int, detail: str) -> JSONResponse:
     Returns:
         JSONResponse with the standard error format.
     """
-    return JSONResponse(
+    return fastapi.responses.JSONResponse(
         status_code=status_code,
         content={"detail": detail},
     )
@@ -42,7 +42,7 @@ def _create_error_response(status_code: int, detail: str) -> JSONResponse:
 async def business_rule_violation_handler(
     request: fastapi.Request,
     exc: exceptions.BusinessRuleViolation,
-) -> JSONResponse:
+) -> fastapi.responses.JSONResponse:
     """Handle BusinessRuleViolation exceptions.
 
     Maps to 409 Conflict for general business rule violations,
@@ -55,7 +55,7 @@ async def business_rule_violation_handler(
 async def missing_reference_error_handler(
     request: fastapi.Request,
     exc: exceptions.MissingReferenceError,
-) -> JSONResponse:
+) -> fastapi.responses.JSONResponse:
     """Handle MissingReferenceError exceptions.
 
     Maps to 404 Not Found when referenced entities don't exist.
@@ -67,7 +67,7 @@ async def missing_reference_error_handler(
 async def value_error_handler(
     request: fastapi.Request,
     exc: ValueError,
-) -> JSONResponse:
+) -> fastapi.responses.JSONResponse:
     """Handle ValueError exceptions.
 
     Maps to 400 Bad Request for invalid input values.
