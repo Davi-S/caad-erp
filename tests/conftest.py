@@ -274,6 +274,33 @@ def set_fixed_datetime(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[datetime.
 
 @pytest.fixture
 def api_client():
-    """Return a test client for the API application."""
-    app = api.create_app()
+    """Return a test client for the API application.
+    
+    Uses skip_lifespan=True to avoid requiring a config file for basic tests.
+    """
+    app = api.create_app(skip_lifespan=True)
     return fastapi.testclient.TestClient(app)
+
+
+@pytest.fixture
+def api_client_with_context(config_file: Path):
+    """Return a test client with RuntimeContext properly initialized.
+    
+    This fixture provides a full-featured test client with the RuntimeContext
+    singleton properly configured for integration testing of endpoints.
+    
+    Note: The RuntimeContext holds an in-memory workbook reference that does
+    not require explicit cleanup. The clear_runtime_context() call ensures the
+    singleton is reset between tests.
+    """
+    context = bll.load_runtime_context(config_file)
+    bll.ensure_schema_version(context)
+    api.set_runtime_context(context)
+    
+    app = api.create_app(skip_lifespan=True)
+    client = fastapi.testclient.TestClient(app)
+    
+    yield client
+    
+    # Clean up the singleton reference after the test
+    api.clear_runtime_context()
