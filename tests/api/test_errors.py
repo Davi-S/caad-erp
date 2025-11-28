@@ -4,6 +4,7 @@ This module tests the exception handler functions defined in
 src/caad_erp/api/errors.py directly.
 """
 
+import json
 from unittest.mock import Mock
 
 import pytest
@@ -43,7 +44,8 @@ class TestCreateErrorResponse:
         response = errors._create_error_response(400, "Bad request message")
 
         # Assert
-        assert response.body == b'{"detail":"Bad request message"}'
+        data = json.loads(response.body)
+        assert data["detail"] == "Bad request message"
 
 
 class TestBusinessRuleViolationHandler:
@@ -79,7 +81,8 @@ class TestBusinessRuleViolationHandler:
         response = await errors.business_rule_violation_handler(mock_request, exc)
 
         # Assert
-        assert b"Product already exists" in response.body
+        data = json.loads(response.body)
+        assert data["detail"] == "Product already exists"
 
 
 class TestMissingReferenceErrorHandler:
@@ -115,7 +118,8 @@ class TestMissingReferenceErrorHandler:
         response = await errors.missing_reference_error_handler(mock_request, exc)
 
         # Assert
-        assert b"Unknown product ID: P-123" in response.body
+        data = json.loads(response.body)
+        assert data["detail"] == "Unknown product ID: P-123"
 
 
 class TestValueErrorHandler:
@@ -151,7 +155,8 @@ class TestValueErrorHandler:
         response = await errors.value_error_handler(mock_request, exc)
 
         # Assert
-        assert b"Quantity must be positive" in response.body
+        data = json.loads(response.body)
+        assert data["detail"] == "Quantity must be positive"
 
 
 class TestRegisterHandlers:
