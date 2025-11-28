@@ -237,3 +237,166 @@ def test_void_nonexistent_transaction_returns_404(api_client_with_context):
 
     # Assert
     assert response.status_code == 404
+
+
+def test_sale_with_nonexistent_product_error_response_format(api_client_with_context):
+    """
+    Given a sale with nonexistent product
+    When POST /transactions/sale is called
+    Then it returns 404 with a JSON detail message.
+    """
+    # Arrange - create salesman only
+    api_client_with_context.post("/salesmen", json={
+        "salesman_id": "S-ERR-SALE",
+        "salesman_name": "Error Sale Salesman",
+    })
+    payload = {
+        "product_id": "P-MISSING-PRODUCT",
+        "salesman_id": "S-ERR-SALE",
+        "quantity": "1",
+        "total_revenue": "10.00",
+        "payment_type": "Cash",
+    }
+
+    # Act
+    response = api_client_with_context.post("/transactions/sale", json=payload)
+
+    # Assert
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+
+
+def test_sale_with_nonexistent_salesman_error_response_format(api_client_with_context):
+    """
+    Given a sale with nonexistent salesman
+    When POST /transactions/sale is called
+    Then it returns 404 with a JSON detail message.
+    """
+    # Arrange - create product only
+    api_client_with_context.post("/products", json={
+        "product_id": "P-ERR-SALE",
+        "product_name": "Error Sale Product",
+        "sell_price": "10.00",
+    })
+    payload = {
+        "product_id": "P-ERR-SALE",
+        "salesman_id": "S-MISSING-SALESMAN",
+        "quantity": "1",
+        "total_revenue": "10.00",
+        "payment_type": "Cash",
+    }
+
+    # Act
+    response = api_client_with_context.post("/transactions/sale", json=payload)
+
+    # Assert
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+
+
+def test_restock_with_nonexistent_product_error_response_format(api_client_with_context):
+    """
+    Given a restock with nonexistent product
+    When POST /transactions/restock is called
+    Then it returns 404 with a JSON detail message.
+    """
+    # Arrange - create salesman only
+    api_client_with_context.post("/salesmen", json={
+        "salesman_id": "S-ERR-RESTOCK",
+        "salesman_name": "Error Restock Salesman",
+    })
+    payload = {
+        "product_id": "P-MISSING-FOR-RESTOCK",
+        "salesman_id": "S-ERR-RESTOCK",
+        "quantity": "5",
+        "total_cost": "25.00",
+    }
+
+    # Act
+    response = api_client_with_context.post("/transactions/restock", json=payload)
+
+    # Assert
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+
+
+def test_write_off_with_nonexistent_product_error_response_format(api_client_with_context):
+    """
+    Given a write-off with nonexistent product
+    When POST /transactions/write-off is called
+    Then it returns 404 with a JSON detail message.
+    """
+    # Arrange - create salesman only
+    api_client_with_context.post("/salesmen", json={
+        "salesman_id": "S-ERR-WRITEOFF",
+        "salesman_name": "Error WriteOff Salesman",
+    })
+    payload = {
+        "product_id": "P-MISSING-FOR-WRITEOFF",
+        "salesman_id": "S-ERR-WRITEOFF",
+        "quantity": "1",
+    }
+
+    # Act
+    response = api_client_with_context.post("/transactions/write-off", json=payload)
+
+    # Assert
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+
+
+def test_void_nonexistent_transaction_error_response_format(api_client_with_context):
+    """
+    Given a nonexistent transaction ID
+    When POST /transactions/void is called
+    Then it returns 404 with a JSON detail message.
+    """
+    # Arrange
+    payload = {
+        "linked_transaction_id": "TX-NONEXISTENT-123",
+    }
+
+    # Act
+    response = api_client_with_context.post("/transactions/void", json=payload)
+
+    # Assert
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+
+
+def test_pay_debt_nonexistent_transaction_error_response_format(api_client_with_context):
+    """
+    Given a nonexistent linked transaction ID
+    When POST /transactions/pay-debt is called
+    Then it returns 404 with a JSON detail message.
+    """
+    # Arrange
+    api_client_with_context.post("/salesmen", json={
+        "salesman_id": "S-ERR-PAYDEBT",
+        "salesman_name": "Error PayDebt Salesman",
+    })
+    payload = {
+        "linked_transaction_id": "TX-NONEXISTENT-DEBT",
+        "salesman_id": "S-ERR-PAYDEBT",
+        "total_revenue": "10.00",
+        "payment_type": "Cash",
+    }
+
+    # Act
+    response = api_client_with_context.post("/transactions/pay-debt", json=payload)
+
+    # Assert
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
