@@ -22,11 +22,34 @@ The code follows a three-layer design:
    Encapsulates rules and workflows, calling into the DAL without caring about
    presentation concerns.
 3. **Presentation Layer (UI):**
-   Implemented as a command-line interface in `src/caad_erp/cli`. The module keeps the UI
-   intentionally thin: it parses arguments, converts them into the command
-   objects defined by the BLL, and delegates execution. All user input is
-   expressed through explicit long-form options. No business rules live in the CLI;
-   everything flows through `core_logic`.
+   Multiple presentation layers are available:
+   - **CLI** (`src/caad_erp/cli`): A command-line interface that parses
+     arguments, converts them into command objects defined by the BLL, and
+     delegates execution. All user input is expressed through explicit long-form
+     options. No business rules live in the CLI; everything flows through
+     `core_logic`.
+   - **API** (`src/caad_erp/api`): A FastAPI-based headless HTTP API server
+     that translates HTTP requests into BLL calls. Intended for local network
+     operation only, enabling web-based UIs to interact with the system.
+
+### CLI-First Parity
+
+The project follows a **CLI-First** development strategy. The CLI is the primary
+presentation layer, and the API serves as a secondary layer that maintains
+strict functional parity with the CLI.
+
+This means:
+
+- **Feature parity:** Every operation available in the CLI must also be
+  available in the API. The API endpoints mirror CLI commands as REST-ish routes
+  grouped by domain resource.
+- **Same BLL calls:** Both the CLI and API call the exact same BLL functions.
+  Neither layer contains business logic—all rules and workflows live in the BLL.
+- **Consistent behavior:** Given the same inputs, both interfaces produce
+  identical outcomes because they delegate to the same underlying logic.
+
+This strategy ensures the API never drifts out of sync with the CLI and
+simplifies maintenance by having a single source of truth for business rules.
 
 ## Data Model
 
@@ -177,6 +200,7 @@ The test suite follows a pyramid structure to keep fast feedback at the unit lev
 - **`tests/dal/`** – Integration coverage for the DAL that exercises real `openpyxl` reads and writes.
 - **`tests/bll/`** – Unit coverage for the BLL with the entire data access layer (DAL) mocked.
 - **`tests/cli/`** – Unit coverage for the CLI (Presentation Layer) with the business logic layer (BLL) mocked.
+- **`tests/api/`** – Unit coverage for the API (Presentation Layer) using FastAPI's TestClient.
 - **`tests/test_integration_layers.py`** – Cross-layer integration without mocks, verifying the complete workflow from CLI through the DAL.
 
 ### Test Structure Standards
