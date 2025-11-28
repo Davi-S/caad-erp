@@ -14,7 +14,7 @@ import fastapi.middleware.cors
 
 from caad_erp import bll
 
-from . import dependencies, routes
+from . import dependencies, errors, routes
 
 logger = logging.getLogger(__name__)
 
@@ -89,5 +89,8 @@ def create_app(*, skip_lifespan: bool = False) -> fastapi.FastAPI:
 
     # Register routes
     app.include_router(routes.router)
+
+    # Register global exception handlers
+    errors.register_handlers(app)
 
     return app

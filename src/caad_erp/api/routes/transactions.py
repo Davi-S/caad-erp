@@ -6,7 +6,7 @@ mirroring the CLI commands sale, restock, write-off, void, and pay-debt.
 
 import fastapi
 
-from caad_erp import bll, dal, exceptions
+from caad_erp import bll, dal
 
 from .. import dependencies, schemas
 
@@ -47,26 +47,19 @@ def record_sale(
     Raises:
         HTTPException: 409 for business rule violations, 404 for missing references.
     """
-    try:
-        command = bll.SaleCommand(
-            product_id=request.product_id,
-            salesman_id=request.salesman_id,
-            quantity=request.quantity,
-            total_revenue=request.total_revenue,
-            payment_type=request.payment_type,
-            notes=request.notes,
-        )
-        transaction = bll.record_sale(context, command)
-        return schemas.StandardResponse(
-            detail="Sale recorded successfully",
-            data=_transaction_to_response(transaction),
-        )
-    except exceptions.MissingReferenceError as exc:
-        raise fastapi.HTTPException(status_code=404, detail=str(exc)) from exc
-    except exceptions.BusinessRuleViolation as exc:
-        raise fastapi.HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise fastapi.HTTPException(status_code=400, detail=str(exc)) from exc
+    command = bll.SaleCommand(
+        product_id=request.product_id,
+        salesman_id=request.salesman_id,
+        quantity=request.quantity,
+        total_revenue=request.total_revenue,
+        payment_type=request.payment_type,
+        notes=request.notes,
+    )
+    transaction = bll.record_sale(context, command)
+    return schemas.StandardResponse(
+        detail="Sale recorded successfully",
+        data=_transaction_to_response(transaction),
+    )
 
 
 @router.post("/restock", response_model=schemas.StandardResponse, status_code=201)
@@ -86,25 +79,18 @@ def record_restock(
     Raises:
         HTTPException: 409 for business rule violations, 404 for missing references.
     """
-    try:
-        command = bll.RestockCommand(
-            product_id=request.product_id,
-            salesman_id=request.salesman_id,
-            quantity=request.quantity,
-            total_cost=request.total_cost,
-            notes=request.notes,
-        )
-        transaction = bll.record_restock(context, command)
-        return schemas.StandardResponse(
-            detail="Restock recorded successfully",
-            data=_transaction_to_response(transaction),
-        )
-    except exceptions.MissingReferenceError as exc:
-        raise fastapi.HTTPException(status_code=404, detail=str(exc)) from exc
-    except exceptions.BusinessRuleViolation as exc:
-        raise fastapi.HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise fastapi.HTTPException(status_code=400, detail=str(exc)) from exc
+    command = bll.RestockCommand(
+        product_id=request.product_id,
+        salesman_id=request.salesman_id,
+        quantity=request.quantity,
+        total_cost=request.total_cost,
+        notes=request.notes,
+    )
+    transaction = bll.record_restock(context, command)
+    return schemas.StandardResponse(
+        detail="Restock recorded successfully",
+        data=_transaction_to_response(transaction),
+    )
 
 
 @router.post("/write-off", response_model=schemas.StandardResponse, status_code=201)
@@ -124,24 +110,17 @@ def record_write_off(
     Raises:
         HTTPException: 409 for business rule violations, 404 for missing references.
     """
-    try:
-        command = bll.WriteOffCommand(
-            product_id=request.product_id,
-            salesman_id=request.salesman_id,
-            quantity=request.quantity,
-            notes=request.notes,
-        )
-        transaction = bll.record_write_off(context, command)
-        return schemas.StandardResponse(
-            detail="Write-off recorded successfully",
-            data=_transaction_to_response(transaction),
-        )
-    except exceptions.MissingReferenceError as exc:
-        raise fastapi.HTTPException(status_code=404, detail=str(exc)) from exc
-    except exceptions.BusinessRuleViolation as exc:
-        raise fastapi.HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise fastapi.HTTPException(status_code=400, detail=str(exc)) from exc
+    command = bll.WriteOffCommand(
+        product_id=request.product_id,
+        salesman_id=request.salesman_id,
+        quantity=request.quantity,
+        notes=request.notes,
+    )
+    transaction = bll.record_write_off(context, command)
+    return schemas.StandardResponse(
+        detail="Write-off recorded successfully",
+        data=_transaction_to_response(transaction),
+    )
 
 
 @router.post("/void", response_model=schemas.StandardResponse, status_code=201)
@@ -161,22 +140,15 @@ def record_void(
     Raises:
         HTTPException: 409 for business rule violations, 404 for missing references.
     """
-    try:
-        command = bll.VoidCommand(
-            linked_transaction_id=request.linked_transaction_id,
-            notes=request.notes,
-        )
-        transaction = bll.record_void(context, command)
-        return schemas.StandardResponse(
-            detail="Transaction voided successfully",
-            data=_transaction_to_response(transaction),
-        )
-    except exceptions.MissingReferenceError as exc:
-        raise fastapi.HTTPException(status_code=404, detail=str(exc)) from exc
-    except exceptions.BusinessRuleViolation as exc:
-        raise fastapi.HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise fastapi.HTTPException(status_code=400, detail=str(exc)) from exc
+    command = bll.VoidCommand(
+        linked_transaction_id=request.linked_transaction_id,
+        notes=request.notes,
+    )
+    transaction = bll.record_void(context, command)
+    return schemas.StandardResponse(
+        detail="Transaction voided successfully",
+        data=_transaction_to_response(transaction),
+    )
 
 
 @router.post("/pay-debt", response_model=schemas.StandardResponse, status_code=201)
@@ -196,22 +168,15 @@ def record_pay_debt(
     Raises:
         HTTPException: 409 for business rule violations, 404 for missing references.
     """
-    try:
-        command = bll.CreditPaymentCommand(
-            linked_transaction_id=request.linked_transaction_id,
-            salesman_id=request.salesman_id,
-            total_revenue=request.total_revenue,
-            payment_type=request.payment_type,
-            notes=request.notes,
-        )
-        transaction = bll.record_credit_payment(context, command)
-        return schemas.StandardResponse(
-            detail="Credit payment recorded successfully",
-            data=_transaction_to_response(transaction),
-        )
-    except exceptions.MissingReferenceError as exc:
-        raise fastapi.HTTPException(status_code=404, detail=str(exc)) from exc
-    except exceptions.BusinessRuleViolation as exc:
-        raise fastapi.HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise fastapi.HTTPException(status_code=400, detail=str(exc)) from exc
+    command = bll.CreditPaymentCommand(
+        linked_transaction_id=request.linked_transaction_id,
+        salesman_id=request.salesman_id,
+        total_revenue=request.total_revenue,
+        payment_type=request.payment_type,
+        notes=request.notes,
+    )
+    transaction = bll.record_credit_payment(context, command)
+    return schemas.StandardResponse(
+        detail="Credit payment recorded successfully",
+        data=_transaction_to_response(transaction),
+    )
