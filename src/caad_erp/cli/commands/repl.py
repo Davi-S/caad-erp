@@ -69,6 +69,7 @@ def run_repl(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     repl_command_table = getattr(args, "repl_command_table", None)
     persist_fn = getattr(args, "repl_persist_fn", None)
     error_handler = getattr(args, "repl_error_handler", None)
+    write_commands = getattr(args, "repl_write_commands", None)
 
     if repl_parser is None or repl_command_table is None:
         print("REPL mode is not properly configured.")
@@ -80,6 +81,7 @@ def run_repl(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
         command_table=repl_command_table,
         persist_fn=persist_fn,
         error_handler=error_handler,
+        write_commands=write_commands,
     )
 
 
@@ -90,6 +92,7 @@ def repl_loop(
     persist_fn: t.Callable[[bll.RuntimeContext], None] | None = None,
     error_handler: t.Callable[[Exception], int] | None = None,
     input_fn: t.Callable[[str], str] = input,
+    write_commands: t.FrozenSet[str] | None = None,
 ) -> int:
     """Core REPL loop implementation.
 
@@ -105,6 +108,9 @@ def repl_loop(
         error_handler: Optional callback to handle exceptions and return
             appropriate exit codes. If None, errors are printed directly.
         input_fn: Callable for reading user input (allows testing).
+        write_commands: Set of command names that mutate state and require
+            persistence after successful execution. If None, no persistence
+            occurs.
 
     Returns:
         int: ``0`` on normal exit.
@@ -127,7 +133,7 @@ def repl_loop(
             return 0
 
         # Skip the 'repl' command itself to prevent nested REPLs
-        first_word = line.split()[0] if line else ""
+        first_word = line.split()[0]
         if first_word.lower() == "repl":
             print("Cannot start nested REPL session.")
             continue
@@ -151,7 +157,8 @@ def repl_loop(
                 continue
 
             exit_code = spec.execute(context, cmd_args)
-            if exit_code == 0 and persist_fn is not None:
+            is_write_command = write_commands is not None and cmd_args.command in write_commands
+            if exit_code == 0 and persist_fn is not None and is_write_command:
                 persist_fn(context)
         except Exception as error:
             if error_handler is not None:

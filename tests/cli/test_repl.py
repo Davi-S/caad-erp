@@ -1,12 +1,9 @@
 """Tests for the REPL command module."""
 
 import argparse
-import typing as t
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-import pytest
-
-from caad_erp import bll, cli
+from caad_erp import cli
 from caad_erp.cli.commands.repl import (
     EXIT_COMMANDS,
     PROMPT,
@@ -266,11 +263,56 @@ def test_repl_loop_executes_command(runtime_context, cli_parser, subparsers_acti
     assert executed["called"] is True
 
 
-def test_repl_loop_persists_on_successful_command(runtime_context, cli_parser, subparsers_action):
+def test_repl_loop_persists_on_successful_write_command(runtime_context, cli_parser, subparsers_action):
     """
-    Given a REPL session with a persist function
-    When a command succeeds
+    Given a REPL session with a persist function and write commands
+    When a write command succeeds
     Then persistence is triggered.
+    """
+
+    # Arrange
+    persisted = {"called": False}
+
+    def persist_mock(ctx):
+        persisted["called"] = True
+
+    def execute_mock(ctx, args):
+        return 0
+
+    # Register the sale command with argparse
+    sale_parser = subparsers_action.add_parser("sale")
+    sale_parser.set_defaults(command="sale")
+
+    sale_spec = cli.CommandSpec(
+        name="sale",
+        help_text="Sale",
+        register=lambda s: s.add_parser("sale"),
+        execute=execute_mock,
+    )
+    command_table = {"sale": sale_spec}
+    inputs = iter(["sale", "exit"])
+    write_commands = frozenset({"sale"})
+
+    # Act
+    result = repl_loop(
+        context=runtime_context,
+        parser=cli_parser,
+        command_table=command_table,
+        persist_fn=persist_mock,
+        write_commands=write_commands,
+        input_fn=lambda _: next(inputs),
+    )
+
+    # Assert
+    assert result == 0
+    assert persisted["called"] is True
+
+
+def test_repl_loop_does_not_persist_on_read_command(runtime_context, cli_parser, subparsers_action):
+    """
+    Given a REPL session with a persist function and write commands
+    When a read command succeeds
+    Then persistence is NOT triggered.
     """
 
     # Arrange
@@ -291,6 +333,7 @@ def test_repl_loop_persists_on_successful_command(runtime_context, cli_parser, s
     )
     command_table = {"stock": stock_spec}
     inputs = iter(["stock", "exit"])
+    write_commands = frozenset({"sale"})  # stock is not a write command
 
     # Act
     result = repl_loop(
@@ -298,12 +341,13 @@ def test_repl_loop_persists_on_successful_command(runtime_context, cli_parser, s
         parser=cli_parser,
         command_table=command_table,
         persist_fn=persist_mock,
+        write_commands=write_commands,
         input_fn=lambda _: next(inputs),
     )
 
     # Assert
     assert result == 0
-    assert persisted["called"] is True
+    assert persisted["called"] is False
 
 
 def test_repl_loop_handles_command_errors(runtime_context, cli_parser, subparsers_action):

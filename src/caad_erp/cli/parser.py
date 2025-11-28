@@ -16,6 +16,19 @@ from . import command_spec, commands
 
 logger = logging.getLogger(__name__)
 
+# Commands that mutate the workbook and require persistence
+WRITE_COMMANDS: t.FrozenSet[str] = frozenset({
+    "add-product",
+    "add-salesman",
+    "deactivate-product",
+    "deactivate-salesman",
+    "sale",
+    "restock",
+    "write-off",
+    "pay-debt",
+    "void",
+})
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Construct the root parser for all CLI entry points.
@@ -276,6 +289,7 @@ def main(argv: t.Sequence[str] | None = None) -> int:
         args.repl_command_table = repl_command_table
         args.repl_persist_fn = persist_workbook
         args.repl_error_handler = handle_cli_error
+        args.repl_write_commands = WRITE_COMMANDS
         args.command = "repl"  # Ensure command is set for dispatch
 
     try:
