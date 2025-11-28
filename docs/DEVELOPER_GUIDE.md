@@ -295,8 +295,7 @@ It does a similar thing for sellers looking at the debt and any other necessary 
   - **Task:** Our `examples/` directory is good, but a formal, task-oriented `USAGE.md` file would be better.
   - **Logic:** This file would have sections like "How to handle a spoiled item," "How to pay a debt," or "How to fix a mistaken sale," and show the exact commands to run.
 - **Feat (UI): Develop a Web-Based User Interface**
-  - **Task:** Create a new "presentation layer" by building a simple web app (e.g., using Streamlit or Flask).
-  - **Logic:** This web app will `import caad_erp.bll` and call the exact same functions (`record_sale`, `calculate_inventory`, etc.) that the CLI does. This will prove the power of our 3-layer architecture.
-- Add options to pass id to read commands to read specific information only
+  - **Task:** Create a new "presentation layer" by building a simple web app 
+- Add options to pass id to read-commands to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
-- Improve exceptions
+- Improve exceptions and error handling
