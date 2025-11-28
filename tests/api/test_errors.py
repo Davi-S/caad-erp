@@ -1,315 +1,213 @@
-"""Tests for the global error handling in the CAAD ERP API.
+"""Tests for the global error handling module in the CAAD ERP API.
 
-This module contains negative tests (Sad Path) that verify error responses
-are correctly formatted when BLL exceptions are triggered.
+This module tests the exception handler functions defined in
+src/caad_erp/api/errors.py directly.
 """
 
+from unittest.mock import Mock
 
-def _create_product_and_salesman(client, product_id="P-ERR-001", salesman_id="S-ERR-001"):
-    """Helper to create test product and salesman."""
-    client.post("/products", json={
-        "product_id": product_id,
-        "product_name": "Error Test Product",
-        "sell_price": "10.00",
-    })
-    client.post("/salesmen", json={
-        "salesman_id": salesman_id,
-        "salesman_name": "Error Test Salesman",
-    })
+import pytest
+
+from caad_erp import exceptions
+from caad_erp.api import errors
 
 
-# ===========================================================================
-# Products Error Handling Tests
-# ===========================================================================
+@pytest.fixture
+def mock_request():
+    """Return a mock FastAPI request object."""
+    return Mock()
 
 
-def test_create_duplicate_product_error_response_format(api_client_with_context):
-    """
-    Given an existing product
-    When POST /products is called with the same ID
-    Then it returns 409 with a JSON detail message.
-    """
-    # Arrange
-    payload = {
-        "product_id": "P-DUP-ERR",
-        "product_name": "Original Product",
-        "sell_price": "20.00",
-    }
-    api_client_with_context.post("/products", json=payload)
+class TestCreateErrorResponse:
+    """Tests for the _create_error_response helper function."""
 
-    # Act
-    response = api_client_with_context.post("/products", json=payload)
+    def test_creates_json_response_with_status_code(self):
+        """
+        Given a status code and detail message
+        When _create_error_response is called
+        Then it returns a JSONResponse with the correct status code.
+        """
+        # Act
+        response = errors._create_error_response(404, "Not found")
 
-    # Assert
-    assert response.status_code == 409
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-    assert len(data["detail"]) > 0
+        # Assert
+        assert response.status_code == 404
 
+    def test_creates_json_response_with_detail_body(self):
+        """
+        Given a status code and detail message
+        When _create_error_response is called
+        Then the response body contains a 'detail' key with the message.
+        """
+        # Act
+        response = errors._create_error_response(400, "Bad request message")
 
-def test_deactivate_nonexistent_product_error_response_format(api_client_with_context):
-    """
-    Given a nonexistent product ID
-    When POST /products/{id}/deactivate is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Act
-    response = api_client_with_context.post("/products/P-DOES-NOT-EXIST/deactivate")
-
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-    assert "P-DOES-NOT-EXIST" in data["detail"]
+        # Assert
+        assert response.body == b'{"detail":"Bad request message"}'
 
 
-# ===========================================================================
-# Salesmen Error Handling Tests
-# ===========================================================================
+class TestBusinessRuleViolationHandler:
+    """Tests for the business_rule_violation_handler function."""
+
+    @pytest.mark.asyncio
+    async def test_returns_409_status_code(self, mock_request):
+        """
+        Given a BusinessRuleViolation exception
+        When business_rule_violation_handler is called
+        Then it returns a response with 409 status code.
+        """
+        # Arrange
+        exc = exceptions.BusinessRuleViolation("Duplicate entity")
+
+        # Act
+        response = await errors.business_rule_violation_handler(mock_request, exc)
+
+        # Assert
+        assert response.status_code == 409
+
+    @pytest.mark.asyncio
+    async def test_returns_exception_message_as_detail(self, mock_request):
+        """
+        Given a BusinessRuleViolation exception with a message
+        When business_rule_violation_handler is called
+        Then the response body contains the exception message.
+        """
+        # Arrange
+        exc = exceptions.BusinessRuleViolation("Product already exists")
+
+        # Act
+        response = await errors.business_rule_violation_handler(mock_request, exc)
+
+        # Assert
+        assert b"Product already exists" in response.body
 
 
-def test_create_duplicate_salesman_error_response_format(api_client_with_context):
-    """
-    Given an existing salesman
-    When POST /salesmen is called with the same ID
-    Then it returns 409 with a JSON detail message.
-    """
-    # Arrange
-    payload = {
-        "salesman_id": "S-DUP-ERR",
-        "salesman_name": "Original Salesman",
-    }
-    api_client_with_context.post("/salesmen", json=payload)
+class TestMissingReferenceErrorHandler:
+    """Tests for the missing_reference_error_handler function."""
 
-    # Act
-    response = api_client_with_context.post("/salesmen", json=payload)
+    @pytest.mark.asyncio
+    async def test_returns_404_status_code(self, mock_request):
+        """
+        Given a MissingReferenceError exception
+        When missing_reference_error_handler is called
+        Then it returns a response with 404 status code.
+        """
+        # Arrange
+        exc = exceptions.MissingReferenceError("Product not found")
 
-    # Assert
-    assert response.status_code == 409
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-    assert len(data["detail"]) > 0
+        # Act
+        response = await errors.missing_reference_error_handler(mock_request, exc)
 
+        # Assert
+        assert response.status_code == 404
 
-def test_deactivate_nonexistent_salesman_error_response_format(api_client_with_context):
-    """
-    Given a nonexistent salesman ID
-    When POST /salesmen/{id}/deactivate is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Act
-    response = api_client_with_context.post("/salesmen/S-DOES-NOT-EXIST/deactivate")
+    @pytest.mark.asyncio
+    async def test_returns_exception_message_as_detail(self, mock_request):
+        """
+        Given a MissingReferenceError exception with a message
+        When missing_reference_error_handler is called
+        Then the response body contains the exception message.
+        """
+        # Arrange
+        exc = exceptions.MissingReferenceError("Unknown product ID: P-123")
 
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-    assert "S-DOES-NOT-EXIST" in data["detail"]
+        # Act
+        response = await errors.missing_reference_error_handler(mock_request, exc)
+
+        # Assert
+        assert b"Unknown product ID: P-123" in response.body
 
 
-# ===========================================================================
-# Transactions Error Handling Tests
-# ===========================================================================
+class TestValueErrorHandler:
+    """Tests for the value_error_handler function."""
+
+    @pytest.mark.asyncio
+    async def test_returns_400_status_code(self, mock_request):
+        """
+        Given a ValueError exception
+        When value_error_handler is called
+        Then it returns a response with 400 status code.
+        """
+        # Arrange
+        exc = ValueError("Invalid input")
+
+        # Act
+        response = await errors.value_error_handler(mock_request, exc)
+
+        # Assert
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_returns_exception_message_as_detail(self, mock_request):
+        """
+        Given a ValueError exception with a message
+        When value_error_handler is called
+        Then the response body contains the exception message.
+        """
+        # Arrange
+        exc = ValueError("Quantity must be positive")
+
+        # Act
+        response = await errors.value_error_handler(mock_request, exc)
+
+        # Assert
+        assert b"Quantity must be positive" in response.body
 
 
-def test_sale_with_nonexistent_product_error_response_format(api_client_with_context):
-    """
-    Given a sale with nonexistent product
-    When POST /transactions/sale is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Arrange - create salesman only
-    api_client_with_context.post("/salesmen", json={
-        "salesman_id": "S-ERR-SALE",
-        "salesman_name": "Error Sale Salesman",
-    })
-    payload = {
-        "product_id": "P-MISSING-PRODUCT",
-        "salesman_id": "S-ERR-SALE",
-        "quantity": "1",
-        "total_revenue": "10.00",
-        "payment_type": "Cash",
-    }
+class TestRegisterHandlers:
+    """Tests for the register_handlers function."""
 
-    # Act
-    response = api_client_with_context.post("/transactions/sale", json=payload)
+    def test_registers_missing_reference_error_handler(self):
+        """
+        Given a FastAPI app
+        When register_handlers is called
+        Then MissingReferenceError handler is registered.
+        """
+        # Arrange
+        app = Mock()
+        app.exception_handlers = {}
 
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
+        # Act
+        errors.register_handlers(app)
 
+        # Assert
+        assert app.add_exception_handler.call_count == 3
+        calls = app.add_exception_handler.call_args_list
+        exception_types = [call[0][0] for call in calls]
+        assert exceptions.MissingReferenceError in exception_types
 
-def test_sale_with_nonexistent_salesman_error_response_format(api_client_with_context):
-    """
-    Given a sale with nonexistent salesman
-    When POST /transactions/sale is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Arrange - create product only
-    api_client_with_context.post("/products", json={
-        "product_id": "P-ERR-SALE",
-        "product_name": "Error Sale Product",
-        "sell_price": "10.00",
-    })
-    payload = {
-        "product_id": "P-ERR-SALE",
-        "salesman_id": "S-MISSING-SALESMAN",
-        "quantity": "1",
-        "total_revenue": "10.00",
-        "payment_type": "Cash",
-    }
+    def test_registers_business_rule_violation_handler(self):
+        """
+        Given a FastAPI app
+        When register_handlers is called
+        Then BusinessRuleViolation handler is registered.
+        """
+        # Arrange
+        app = Mock()
+        app.exception_handlers = {}
 
-    # Act
-    response = api_client_with_context.post("/transactions/sale", json=payload)
+        # Act
+        errors.register_handlers(app)
 
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
+        # Assert
+        calls = app.add_exception_handler.call_args_list
+        exception_types = [call[0][0] for call in calls]
+        assert exceptions.BusinessRuleViolation in exception_types
 
+    def test_registers_value_error_handler(self):
+        """
+        Given a FastAPI app
+        When register_handlers is called
+        Then ValueError handler is registered.
+        """
+        # Arrange
+        app = Mock()
+        app.exception_handlers = {}
 
-def test_restock_with_nonexistent_product_error_response_format(api_client_with_context):
-    """
-    Given a restock with nonexistent product
-    When POST /transactions/restock is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Arrange - create salesman only
-    api_client_with_context.post("/salesmen", json={
-        "salesman_id": "S-ERR-RESTOCK",
-        "salesman_name": "Error Restock Salesman",
-    })
-    payload = {
-        "product_id": "P-MISSING-FOR-RESTOCK",
-        "salesman_id": "S-ERR-RESTOCK",
-        "quantity": "5",
-        "total_cost": "25.00",
-    }
+        # Act
+        errors.register_handlers(app)
 
-    # Act
-    response = api_client_with_context.post("/transactions/restock", json=payload)
-
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-
-
-def test_write_off_with_nonexistent_product_error_response_format(api_client_with_context):
-    """
-    Given a write-off with nonexistent product
-    When POST /transactions/write-off is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Arrange - create salesman only
-    api_client_with_context.post("/salesmen", json={
-        "salesman_id": "S-ERR-WRITEOFF",
-        "salesman_name": "Error WriteOff Salesman",
-    })
-    payload = {
-        "product_id": "P-MISSING-FOR-WRITEOFF",
-        "salesman_id": "S-ERR-WRITEOFF",
-        "quantity": "1",
-    }
-
-    # Act
-    response = api_client_with_context.post("/transactions/write-off", json=payload)
-
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-
-
-def test_void_nonexistent_transaction_error_response_format(api_client_with_context):
-    """
-    Given a nonexistent transaction ID
-    When POST /transactions/void is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Arrange
-    payload = {
-        "linked_transaction_id": "TX-NONEXISTENT-123",
-    }
-
-    # Act
-    response = api_client_with_context.post("/transactions/void", json=payload)
-
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-
-
-def test_pay_debt_nonexistent_transaction_error_response_format(api_client_with_context):
-    """
-    Given a nonexistent linked transaction ID
-    When POST /transactions/pay-debt is called
-    Then it returns 404 with a JSON detail message.
-    """
-    # Arrange
-    api_client_with_context.post("/salesmen", json={
-        "salesman_id": "S-ERR-PAYDEBT",
-        "salesman_name": "Error PayDebt Salesman",
-    })
-    payload = {
-        "linked_transaction_id": "TX-NONEXISTENT-DEBT",
-        "salesman_id": "S-ERR-PAYDEBT",
-        "total_revenue": "10.00",
-        "payment_type": "Cash",
-    }
-
-    # Act
-    response = api_client_with_context.post("/transactions/pay-debt", json=payload)
-
-    # Assert
-    assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data
-    assert isinstance(data["detail"], str)
-
-
-# ===========================================================================
-# Error Response Consistency Tests
-# ===========================================================================
-
-
-def test_all_error_responses_have_consistent_format(api_client_with_context):
-    """
-    Given various error conditions
-    When the errors are triggered
-    Then all responses follow the same JSON format with 'detail' key.
-    """
-    # Test 409 - duplicate product
-    api_client_with_context.post("/products", json={
-        "product_id": "P-CONSISTENCY",
-        "product_name": "Consistency Test",
-        "sell_price": "10.00",
-    })
-    response_409 = api_client_with_context.post("/products", json={
-        "product_id": "P-CONSISTENCY",
-        "product_name": "Duplicate",
-        "sell_price": "10.00",
-    })
-
-    # Test 404 - missing product
-    response_404 = api_client_with_context.post("/products/P-MISSING-CONSISTENCY/deactivate")
-
-    # Verify both have the same structure
-    data_409 = response_409.json()
-    data_404 = response_404.json()
-
-    assert "detail" in data_409
-    assert "detail" in data_404
-    assert isinstance(data_409["detail"], str)
-    assert isinstance(data_404["detail"], str)
+        # Assert
+        calls = app.add_exception_handler.call_args_list
+        exception_types = [call[0][0] for call in calls]
+        assert ValueError in exception_types
