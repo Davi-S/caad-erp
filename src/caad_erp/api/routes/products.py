@@ -38,7 +38,6 @@ def create_product(
             sell_price=request.sell_price,
             is_active=request.is_active,
         )
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Product created successfully",
             data=schemas.ProductResponse(
@@ -73,7 +72,6 @@ def deactivate_product(
     """
     try:
         product = bll.update_product(context, product_id, is_active=False)
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Product deactivated successfully",
             data=schemas.ProductResponse(
