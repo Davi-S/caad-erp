@@ -4,7 +4,6 @@ This module provides centralized exception handling to map BLL exceptions
 to appropriate HTTP status codes and response formats.
 """
 
-import functools
 import logging
 import typing as t
 
