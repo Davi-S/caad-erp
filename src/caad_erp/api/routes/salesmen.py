@@ -37,7 +37,6 @@ def create_salesman(
             salesman_name=request.salesman_name,
             is_active=request.is_active,
         )
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Salesman created successfully",
             data=schemas.SalesmanResponse(
@@ -71,7 +70,6 @@ def deactivate_salesman(
     """
     try:
         salesman = bll.update_salesman(context, salesman_id, is_active=False)
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Salesman deactivated successfully",
             data=schemas.SalesmanResponse(

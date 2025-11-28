@@ -57,7 +57,6 @@ def record_sale(
             notes=request.notes,
         )
         transaction = bll.record_sale(context, command)
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Sale recorded successfully",
             data=_transaction_to_response(transaction),
@@ -96,7 +95,6 @@ def record_restock(
             notes=request.notes,
         )
         transaction = bll.record_restock(context, command)
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Restock recorded successfully",
             data=_transaction_to_response(transaction),
@@ -134,7 +132,6 @@ def record_write_off(
             notes=request.notes,
         )
         transaction = bll.record_write_off(context, command)
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Write-off recorded successfully",
             data=_transaction_to_response(transaction),
@@ -170,7 +167,6 @@ def record_void(
             notes=request.notes,
         )
         transaction = bll.record_void(context, command)
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Transaction voided successfully",
             data=_transaction_to_response(transaction),
@@ -209,7 +205,6 @@ def record_pay_debt(
             notes=request.notes,
         )
         transaction = bll.record_credit_payment(context, command)
-        bll.persist_context(context)
         return schemas.StandardResponse(
             detail="Credit payment recorded successfully",
             data=_transaction_to_response(transaction),
