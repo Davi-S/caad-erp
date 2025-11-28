@@ -6,7 +6,7 @@ mirroring the CLI commands add-product and deactivate-product.
 
 import fastapi
 
-from caad_erp import bll, exceptions
+from caad_erp import bll
 
 from .. import dependencies, schemas
 
@@ -30,27 +30,22 @@ def create_product(
     Raises:
         HTTPException: 409 if product already exists, 400 for validation errors.
     """
-    try:
-        product = bll.add_product(
-            context,
-            product_id=request.product_id,
-            product_name=request.product_name,
-            sell_price=request.sell_price,
-            is_active=request.is_active,
-        )
-        return schemas.StandardResponse(
-            detail="Product created successfully",
-            data=schemas.ProductResponse(
-                product_id=product.product_id,
-                product_name=product.product_name,
-                sell_price=product.sell_price,
-                is_active=product.is_active,
-            ),
-        )
-    except exceptions.BusinessRuleViolation as exc:
-        raise fastapi.HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise fastapi.HTTPException(status_code=400, detail=str(exc)) from exc
+    product = bll.add_product(
+        context,
+        product_id=request.product_id,
+        product_name=request.product_name,
+        sell_price=request.sell_price,
+        is_active=request.is_active,
+    )
+    return schemas.StandardResponse(
+        detail="Product created successfully",
+        data=schemas.ProductResponse(
+            product_id=product.product_id,
+            product_name=product.product_name,
+            sell_price=product.sell_price,
+            is_active=product.is_active,
+        ),
+    )
 
 
 @router.post("/{product_id}/deactivate", response_model=schemas.StandardResponse)
@@ -70,16 +65,13 @@ def deactivate_product(
     Raises:
         HTTPException: 404 if product not found.
     """
-    try:
-        product = bll.update_product(context, product_id, is_active=False)
-        return schemas.StandardResponse(
-            detail="Product deactivated successfully",
-            data=schemas.ProductResponse(
-                product_id=product.product_id,
-                product_name=product.product_name,
-                sell_price=product.sell_price,
-                is_active=product.is_active,
-            ),
-        )
-    except exceptions.MissingReferenceError as exc:
-        raise fastapi.HTTPException(status_code=404, detail=str(exc)) from exc
+    product = bll.update_product(context, product_id, is_active=False)
+    return schemas.StandardResponse(
+        detail="Product deactivated successfully",
+        data=schemas.ProductResponse(
+            product_id=product.product_id,
+            product_name=product.product_name,
+            sell_price=product.sell_price,
+            is_active=product.is_active,
+        ),
+    )
