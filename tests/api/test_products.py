@@ -129,3 +129,45 @@ def test_deactivate_nonexistent_product_returns_404(api_client_with_context):
 
     # Assert
     assert response.status_code == 404
+
+
+def test_create_duplicate_product_error_response_format(api_client_with_context):
+    """
+    Given an existing product
+    When POST /products is called with the same ID
+    Then it returns 409 with a JSON detail message.
+    """
+    # Arrange
+    payload = {
+        "product_id": "P-DUP-ERR",
+        "product_name": "Original Product",
+        "sell_price": "20.00",
+    }
+    api_client_with_context.post("/products", json=payload)
+
+    # Act
+    response = api_client_with_context.post("/products", json=payload)
+
+    # Assert
+    assert response.status_code == 409
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+    assert len(data["detail"]) > 0
+
+
+def test_deactivate_nonexistent_product_error_response_format(api_client_with_context):
+    """
+    Given a nonexistent product ID
+    When POST /products/{id}/deactivate is called
+    Then it returns 404 with a JSON detail message.
+    """
+    # Act
+    response = api_client_with_context.post("/products/P-DOES-NOT-EXIST/deactivate")
+
+    # Assert
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+    assert "P-DOES-NOT-EXIST" in data["detail"]
