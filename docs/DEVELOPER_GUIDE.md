@@ -252,6 +252,7 @@ It does a similar thing for sellers looking at the debt and any other necessary 
 
 ## Future Work
 
+- Currently, the layers are exposing all their functions. We need to expose only the public methods. Private methods (even if not explicited by the "underscore notation" should not be exposed.
 - **Feat: Implement Period-End Archive Script**
   - **Task:** Create the `archive.py` script as defined in the guide.
   - **Logic:** It will calculate final stock, prune inactive/empty products, and generate `OPEN_STOCK` entries in a new, clean workbook for the next period.
