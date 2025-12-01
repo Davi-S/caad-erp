@@ -191,9 +191,10 @@ def run_repl(
         if not tokens:
             continue
 
-        # Build a fresh parser for each command to parse the REPL input
+        # Build a fresh parser for each command as argparse may retain state
+        # from previous parse_args calls. Reuse the command_table passed in.
         repl_parser = build_parser()
-        repl_command_table = configure_subcommands(repl_parser, required=True)
+        configure_subcommands(repl_parser, required=True)
 
         try:
             args = repl_parser.parse_args(tokens)
@@ -207,10 +208,11 @@ def run_repl(
             continue
 
         try:
-            exit_code = dispatch_command(context, args, repl_command_table)
+            exit_code = dispatch_command(context, args, command_table)
             if exit_code == 0:
                 persist_workbook(context)
         except Exception as error:
+            # Log the error but continue the REPL session
             handle_cli_error(error)
 
     return 0
