@@ -59,6 +59,8 @@ required sheets, headers, and default salesperson defined in `config.ini`:
 python setup_excel.py
 ```
 
+### CLI
+
 The project ships with a thin command-line interface. Invoke it with the
 console script or directly through Python:
 
@@ -75,47 +77,43 @@ Pass `--config /path/to/config.ini` if your configuration lives elsewhere.
 
 **For copy-paste walkthroughs, head over to the [examples/](./examples/) directory.**
 
-### Write Commands
+#### Write Commands
 
 These commands mutate the workbook. Each subcommand provides `--help`
 documentation with full argument details.
 
-- `add-product -i <product_id> -n <product_name> -p <sell_price> [-x]`
-- `add-salesman -i <salesman_id> -n <salesman_name> [-x]`
-- `deactivate-product -i <product_id>`
-- `deactivate-salesman -i <salesman_id>`
-- `sale -i <product_id> -q <quantity> -s <salesman_id> -r <amount> -p {Cash,OnCredit,PIX,Other} [-n <text>]`
-- `restock -i <product_id> -q <quantity> -c <amount> -s <salesman_id> [-n <text>]`
-- `write-off -i <product_id> -q <quantity> -s <salesman_id> [-n <text>]`
-- `pay-debt -l <transaction_id> -r <value> -i <salesman_id> -p {Cash,PIX,Other} [-n <text>]`
-- `void -l <transaction_id> [-n <text>]`
+- `add-product`
+- `deactivate-product`
+- `add-salesman`
+- `deactivate-salesman`
+- `sale`
+- `restock`
+- `write-off`
+- `pay-debt`
+- `void`
 
-### Read Commands
+#### Read Commands
 
 Reporting commands return calculated information without mutating the workbook:
 
-- `stock` – current inventory levels.
-- `profit` – aggregated revenue, cost, and profit metrics.
-- `debts` – outstanding balances from credit sales.
-- `log` – the transaction ledger.
+- `stock`
+- `profit`
+- `debts`
+- `log`
 
-Each command exits with `0` on success, `2` for business rule violations, `3`
-when the configuration or data file cannot be found, and `1` for unexpected
-errors.
-
-## API Server
+### API Server
 
 CAAD ERP also provides a FastAPI-based headless API server for integration with
 web-based user interfaces or other applications. The API is intended for local
 network operation only.
 
-### Installing API Dependencies
+#### Installing API Dependencies
 
 ```bash
 uv pip install -e ".[api]"
 ```
 
-### Running the API Server
+#### Running the API Server
 
 ```bash
 # Console script entry point
