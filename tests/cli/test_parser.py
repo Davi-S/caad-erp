@@ -419,7 +419,7 @@ def test_main_executes_specified_command(monkeypatch, runtime_context):
         "sale", "help", lambda _: parser, lambda *_: 0)}
     monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
     monkeypatch.setattr(cli.parser, "configure_subcommands",
-                        lambda _: command_table)
+                        lambda _, required=True: command_table)
     monkeypatch.setattr(cli.parser, "load_runtime_context",
                         lambda path=None: runtime_context)
     called = {}
@@ -459,7 +459,7 @@ def test_main_handles_bll_errors(monkeypatch, runtime_context):
         "sale", "help", lambda _: parser, lambda *_: 0)}
     monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
     monkeypatch.setattr(cli.parser, "configure_subcommands",
-                        lambda _: command_table)
+                        lambda _, required=True: command_table)
     monkeypatch.setattr(cli.parser, "load_runtime_context",
                         lambda path=None: runtime_context)
 
@@ -502,7 +502,7 @@ def test_main_persists_on_success(monkeypatch, runtime_context):
         "profit", "help", lambda _: parser, lambda *_: 0)}
     monkeypatch.setattr(cli.parser, "build_parser", lambda: parser)
     monkeypatch.setattr(cli.parser, "configure_subcommands",
-                        lambda _: command_table)
+                        lambda _, required=True: command_table)
     monkeypatch.setattr(cli.parser, "load_runtime_context",
                         lambda path=None: runtime_context)
     monkeypatch.setattr(cli.parser, "dispatch_command", lambda *_: 0)
@@ -519,3 +519,275 @@ def test_main_persists_on_success(monkeypatch, runtime_context):
     # Assert
     assert exit_code == 0
     assert persisted["context"] is runtime_context
+
+
+# ---------------------------------------------------------------------------
+# REPL tests
+# ---------------------------------------------------------------------------
+
+
+def test_register_repl_command_adds_repl_choice(subparsers_action):
+    """
+    Given subparser actions
+    When register_repl_command executes
+    Then the 'repl' command is added.
+    """
+
+    # Arrange
+    action = subparsers_action
+
+    # Act
+    cli.register_repl_command(action)
+
+    # Assert
+    assert "repl" in action.choices
+
+
+def test_configure_subcommands_registers_repl_command(cli_parser):
+    """
+    Given a base parser
+    When configure_subcommands runs
+    Then the 'repl' command is registered.
+    """
+
+    # Arrange
+    parser = cli_parser
+
+    # Act
+    cli.configure_subcommands(parser)
+    choices = _registered_choices(parser)
+
+    # Assert
+    assert "repl" in choices
+
+
+def test_configure_subcommands_respects_required_parameter(cli_parser):
+    """
+    Given a base parser
+    When configure_subcommands is called with required=False
+    Then subcommands are optional.
+    """
+
+    # Arrange
+    parser = cli_parser
+
+    # Act
+    cli.configure_subcommands(parser, required=False)
+    # Parse with no command should work
+    args = parser.parse_args([])
+
+    # Assert
+    assert args.command is None
+
+
+def test_run_repl_exits_on_exit_command(runtime_context, monkeypatch):
+    """
+    Given a running REPL
+    When user types 'exit'
+    Then the REPL terminates with exit code 0.
+    """
+
+    # Arrange
+    inputs = iter(["exit"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+
+    parser = cli.build_parser()
+    command_table = cli.configure_subcommands(parser, required=True)
+
+    # Act
+    exit_code = cli.run_repl(runtime_context, command_table)
+
+    # Assert
+    assert exit_code == 0
+
+
+def test_run_repl_exits_on_quit_command(runtime_context, monkeypatch):
+    """
+    Given a running REPL
+    When user types 'quit'
+    Then the REPL terminates with exit code 0.
+    """
+
+    # Arrange
+    inputs = iter(["quit"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+
+    parser = cli.build_parser()
+    command_table = cli.configure_subcommands(parser, required=True)
+
+    # Act
+    exit_code = cli.run_repl(runtime_context, command_table)
+
+    # Assert
+    assert exit_code == 0
+
+
+def test_run_repl_exits_on_eof(runtime_context, monkeypatch, capsys):
+    """
+    Given a running REPL
+    When user sends EOF (Ctrl+D)
+    Then the REPL terminates with exit code 0.
+    """
+
+    # Arrange
+    def raise_eof(prompt):
+        raise EOFError()
+
+    monkeypatch.setattr("builtins.input", raise_eof)
+
+    parser = cli.build_parser()
+    command_table = cli.configure_subcommands(parser, required=True)
+
+    # Act
+    exit_code = cli.run_repl(runtime_context, command_table)
+
+    # Assert
+    assert exit_code == 0
+
+
+def test_run_repl_continues_on_keyboard_interrupt(runtime_context, monkeypatch):
+    """
+    Given a running REPL
+    When user sends KeyboardInterrupt (Ctrl+C)
+    Then the REPL continues and waits for next input.
+    """
+
+    # Arrange
+    call_count = {"count": 0}
+
+    def mock_input(prompt):
+        call_count["count"] += 1
+        if call_count["count"] == 1:
+            raise KeyboardInterrupt()
+        return "exit"
+
+    monkeypatch.setattr("builtins.input", mock_input)
+
+    parser = cli.build_parser()
+    command_table = cli.configure_subcommands(parser, required=True)
+
+    # Act
+    exit_code = cli.run_repl(runtime_context, command_table)
+
+    # Assert
+    assert exit_code == 0
+    assert call_count["count"] == 2
+
+
+def test_run_repl_executes_valid_commands(runtime_context, monkeypatch, capsys):
+    """
+    Given a running REPL
+    When user types a valid command like 'stock'
+    Then the command is executed.
+    """
+
+    # Arrange
+    inputs = iter(["stock", "exit"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+
+    parser = cli.build_parser()
+    command_table = cli.configure_subcommands(parser, required=True)
+
+    # Act
+    exit_code = cli.run_repl(runtime_context, command_table)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert exit_code == 0
+    assert "stock" in captured.out.lower() or "No stock data" in captured.out
+
+
+def test_run_repl_shows_message_for_repl_within_repl(runtime_context, monkeypatch, capsys):
+    """
+    Given a running REPL
+    When user types 'repl'
+    Then a message is shown that we're already in REPL mode.
+    """
+
+    # Arrange
+    inputs = iter(["repl", "exit"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+
+    parser = cli.build_parser()
+    command_table = cli.configure_subcommands(parser, required=True)
+
+    # Act
+    exit_code = cli.run_repl(runtime_context, command_table)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert exit_code == 0
+    assert "Already in REPL mode" in captured.out
+
+
+def test_run_repl_skips_empty_lines(runtime_context, monkeypatch):
+    """
+    Given a running REPL
+    When user types empty lines
+    Then the REPL continues without error.
+    """
+
+    # Arrange
+    inputs = iter(["", "   ", "exit"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+
+    parser = cli.build_parser()
+    command_table = cli.configure_subcommands(parser, required=True)
+
+    # Act
+    exit_code = cli.run_repl(runtime_context, command_table)
+
+    # Assert
+    assert exit_code == 0
+
+
+def test_main_enters_repl_when_no_command_given(runtime_context, monkeypatch):
+    """
+    Given no command argument
+    When main executes
+    Then REPL mode is entered.
+    """
+
+    # Arrange
+    repl_called = {"called": False}
+
+    def mock_run_repl(context, command_table):
+        repl_called["called"] = True
+        return 0
+
+    monkeypatch.setattr(cli.parser, "load_runtime_context",
+                        lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "run_repl", mock_run_repl)
+
+    # Act
+    exit_code = cli.main([])
+
+    # Assert
+    assert exit_code == 0
+    assert repl_called["called"] is True
+
+
+def test_main_enters_repl_when_repl_command_given(runtime_context, monkeypatch):
+    """
+    Given 'repl' command argument
+    When main executes
+    Then REPL mode is entered.
+    """
+
+    # Arrange
+    repl_called = {"called": False}
+
+    def mock_run_repl(context, command_table):
+        repl_called["called"] = True
+        return 0
+
+    monkeypatch.setattr(cli.parser, "load_runtime_context",
+                        lambda path=None: runtime_context)
+    monkeypatch.setattr(cli.parser, "run_repl", mock_run_repl)
+
+    # Act
+    exit_code = cli.main(["repl"])
+
+    # Assert
+    assert exit_code == 0
+    assert repl_called["called"] is True

@@ -7,6 +7,7 @@ low-level exceptions into exit codes suitable for shell automation.
 
 import argparse
 import logging
+import shlex
 import typing as t
 from pathlib import Path
 
@@ -15,6 +16,9 @@ from caad_erp import bll, exceptions
 from . import command_spec, commands
 
 logger = logging.getLogger(__name__)
+
+REPL_PROMPT = "(caad-erp) > "
+EXIT_COMMANDS = frozenset({"exit", "quit"})
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,6 +48,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def configure_subcommands(
     parser: argparse.ArgumentParser,
+    *,
+    required: bool = True,
 ) -> t.Mapping[str, command_spec.CommandSpec]:
     """Attach read and write sub-commands to the base parser.
 
@@ -55,15 +61,18 @@ def configure_subcommands(
     Args:
         parser (argparse.ArgumentParser): Parser produced by
             :func:`build_parser` that should receive sub-command definitions.
+        required (bool): Whether a subcommand is required. Set to ``False``
+            to allow entering REPL mode when no command is given.
 
     Returns:
         Mapping[str, CommandSpec]: Immutable view mapping command names to
             their registered specifications.
     """
     subparsers = parser.add_subparsers(
-        dest="command", required=True, title="commands")
+        dest="command", required=required, title="commands")
     write_specs = register_write_commands(subparsers)
     read_specs = register_read_commands(subparsers)
+    register_repl_command(subparsers)
     return build_command_table([*write_specs.values(), *read_specs.values()])
 
 
@@ -120,6 +129,91 @@ def register_read_commands(
     for spec in specs.values():
         spec.register(subparsers)
     return specs
+
+
+def register_repl_command(subparsers: argparse._SubParsersAction) -> None:
+    """Register the ``repl`` command that enters interactive mode.
+
+    Args:
+        subparsers (argparse._SubParsersAction): Sub-parser collection created
+            by :meth:`argparse.ArgumentParser.add_subparsers` that is used to
+            install the REPL command.
+
+    The ``repl`` command is a special entry point that does not execute any
+    business logic directly. Instead, it signals to :func:`main` that the
+    interactive loop should be started.
+    """
+    subparsers.add_parser(
+        "repl",
+        help="Start an interactive REPL session.",
+    )
+
+
+def run_repl(
+    context: bll.RuntimeContext,
+    command_table: t.Mapping[str, command_spec.CommandSpec],
+) -> int:
+    """Run an interactive REPL loop reusing the same runtime context.
+
+    Args:
+        context (bll.RuntimeContext): Live runtime context that holds
+            workbook handles and cached data. This context is reused across
+            all commands executed in the REPL session.
+        command_table (Mapping[str, CommandSpec]): Lookup table produced by
+            :func:`build_command_table` describing all registered commands.
+
+    Returns:
+        int: Exit status. Returns ``0`` when the user exits normally.
+    """
+    while True:
+        try:
+            line = input(REPL_PROMPT)
+        except EOFError:
+            print()
+            break
+        except KeyboardInterrupt:
+            print()
+            continue
+
+        line = line.strip()
+        if not line:
+            continue
+
+        if line.lower() in EXIT_COMMANDS:
+            break
+
+        try:
+            tokens = shlex.split(line)
+        except ValueError as error:
+            print(f"Error parsing command: {error}")
+            continue
+
+        if not tokens:
+            continue
+
+        # Build a fresh parser for each command to parse the REPL input
+        repl_parser = build_parser()
+        repl_command_table = configure_subcommands(repl_parser, required=True)
+
+        try:
+            args = repl_parser.parse_args(tokens)
+        except SystemExit:
+            # argparse calls sys.exit on errors; catch it so REPL continues
+            continue
+
+        # Check for repl command within REPL (not useful, just ignore)
+        if getattr(args, "command", None) == "repl":
+            print("Already in REPL mode.")
+            continue
+
+        try:
+            exit_code = dispatch_command(context, args, repl_command_table)
+            if exit_code == 0:
+                persist_workbook(context)
+        except Exception as error:
+            handle_cli_error(error)
+
+    return 0
 
 
 def dispatch_command(
@@ -239,6 +333,10 @@ def load_runtime_context(config_path: t.Optional[Path] = None) -> bll.RuntimeCon
 def main(argv: t.Sequence[str] | None = None) -> int:
     """Parse arguments, execute the selected command, and persist changes.
 
+    When no command is given or the ``repl`` command is specified, the CLI
+    enters an interactive REPL mode that reuses the same runtime context
+    across multiple commands.
+
     Args:
         argv (Sequence[str] | None): Optional argument vector to parse. When
             ``None`` the default ``sys.argv`` semantics apply.
@@ -247,10 +345,13 @@ def main(argv: t.Sequence[str] | None = None) -> int:
         int: Exit status emitted by the invoked command or error handler.
     """
     parse = build_parser()
-    command_table = configure_subcommands(parse)
+    command_table = configure_subcommands(parse, required=False)
     args = parse.parse_args(argv)
     try:
         context = load_runtime_context(getattr(args, "config", None))
+        command = getattr(args, "command", None)
+        if command is None or command == "repl":
+            return run_repl(context, command_table)
         exit_code = dispatch_command(context, args, command_table)
         if exit_code == 0:
             persist_workbook(context)
