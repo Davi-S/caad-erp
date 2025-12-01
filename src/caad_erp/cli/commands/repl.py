@@ -67,9 +67,7 @@ def run_repl(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """
     repl_parser = getattr(args, "repl_parser", None)
     repl_command_table = getattr(args, "repl_command_table", None)
-    persist_fn = getattr(args, "repl_persist_fn", None)
     error_handler = getattr(args, "repl_error_handler", None)
-    write_commands = getattr(args, "repl_write_commands", None)
 
     if repl_parser is None or repl_command_table is None:
         print("REPL mode is not properly configured.")
@@ -79,9 +77,7 @@ def run_repl(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
         context=context,
         parser=repl_parser,
         command_table=repl_command_table,
-        persist_fn=persist_fn,
         error_handler=error_handler,
-        write_commands=write_commands,
     )
 
 
@@ -89,28 +85,21 @@ def repl_loop(
     context: bll.RuntimeContext,
     parser: argparse.ArgumentParser,
     command_table: t.Mapping[str, command_spec.CommandSpec],
-    persist_fn: t.Callable[[bll.RuntimeContext], None] | None = None,
     error_handler: t.Callable[[Exception], int] | None = None,
     input_fn: t.Callable[[str], str] = input,
-    write_commands: t.FrozenSet[str] | None = None,
 ) -> int:
     """Core REPL loop implementation.
 
     This function handles the interactive command loop, reading user input,
-    parsing commands, executing them, and persisting changes on success.
+    parsing commands, and executing them.
 
     Args:
         context: Runtime context shared across all commands.
         parser: Argument parser for parsing REPL input lines.
         command_table: Mapping of command names to their specifications.
-        persist_fn: Optional callback to persist workbook after successful
-            write commands. If None, no persistence occurs.
         error_handler: Optional callback to handle exceptions and return
             appropriate exit codes. If None, errors are printed directly.
         input_fn: Callable for reading user input (allows testing).
-        write_commands: Set of command names that mutate state and require
-            persistence after successful execution. If None, no persistence
-            occurs.
 
     Returns:
         int: ``0`` on normal exit.
@@ -156,10 +145,7 @@ def repl_loop(
                 print(f"Unknown command: {cmd_args.command}")
                 continue
 
-            exit_code = spec.execute(context, cmd_args)
-            is_write_command = write_commands is not None and cmd_args.command in write_commands
-            if exit_code == 0 and persist_fn is not None and is_write_command:
-                persist_fn(context)
+            spec.execute(context, cmd_args)
         except Exception as error:
             if error_handler is not None:
                 error_handler(error)

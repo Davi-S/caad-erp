@@ -16,19 +16,6 @@ from . import command_spec, commands
 
 logger = logging.getLogger(__name__)
 
-# Commands that mutate the workbook and require persistence
-WRITE_COMMANDS: t.FrozenSet[str] = frozenset({
-    "add-product",
-    "add-salesman",
-    "deactivate-product",
-    "deactivate-salesman",
-    "sale",
-    "restock",
-    "write-off",
-    "pay-debt",
-    "void",
-})
-
 
 def build_parser() -> argparse.ArgumentParser:
     """Construct the root parser for all CLI entry points.
@@ -287,15 +274,13 @@ def main(argv: t.Sequence[str] | None = None) -> int:
         repl_command_table = configure_subcommands(repl_parser, include_repl=False)
         args.repl_parser = repl_parser
         args.repl_command_table = repl_command_table
-        args.repl_persist_fn = persist_workbook
         args.repl_error_handler = handle_cli_error
-        args.repl_write_commands = WRITE_COMMANDS
         args.command = "repl"  # Ensure command is set for dispatch
 
     try:
         context = load_runtime_context(getattr(args, "config", None))
         exit_code = dispatch_command(context, args, command_table)
-        # Only persist for non-REPL commands; REPL handles its own persistence
+        # Only persist for non-REPL commands; REPL does not need persistence
         if exit_code == 0 and not is_repl_mode:
             persist_workbook(context)
         return exit_code
