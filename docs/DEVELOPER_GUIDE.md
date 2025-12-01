@@ -187,6 +187,12 @@ Guidelines:
 This approach keeps memory usage low (only one workbook copy) while eliminating
 the "N+1" read pattern during operations.
 
+## Error handling in the CLI
+
+Each command exits with `0` on success, `2` for business rule violations, `3`
+when the configuration or data file cannot be found, and `1` for unexpected
+errors.
+
 ## Tests
 
 ### Test-Driven Development (TDD)
