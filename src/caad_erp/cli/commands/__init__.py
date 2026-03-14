@@ -10,6 +10,8 @@ from .add_salesman import *
 from .deactivate_product import *
 from .deactivate_salesman import *
 from .debts import *
+from .list_products import *
+from .list_salesmen import *
 from .log import *
 from .pay_debt import *
 from .profit import *
