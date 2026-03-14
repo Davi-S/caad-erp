@@ -31,7 +31,7 @@ def _ensure_salesmen_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any
             and a ``by_id`` lookup dictionary.
     """
 
-    bucket = runtime._get_cache_bucket(context, "salesmen")
+    bucket = runtime.get_cache_bucket(context, "salesmen")
     if "all" not in bucket:
         all_salesmen = list(dal.iter_salesmen(context.workbook))
         bucket["all"] = all_salesmen
@@ -145,7 +145,7 @@ def add_salesman(
     )
 
     dal.append_salesman(context.workbook, record)
-    runtime._invalidate_cache(context, "salesmen")
+    runtime.invalidate_cache(context, "salesmen")
     logger.info("Registered salesman '%s' (%s)",
                 record.salesman_id, record.salesman_name)
     return record
@@ -193,7 +193,7 @@ def update_salesman(
         raise exceptions.MissingReferenceError(
             f"Unknown salesman id: {normalized_id}") from exc
 
-    runtime._invalidate_cache(context, "salesmen")
+    runtime.invalidate_cache(context, "salesmen")
     updated = get_salesman(context, normalized_id)
     logger.info(
         "Updated salesman '%s' fields: %s",

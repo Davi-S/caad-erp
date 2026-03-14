@@ -43,7 +43,7 @@ async def lifespan(app: fastapi.FastAPI) -> t.AsyncIterator[None]:
     # Startup: Initialize RuntimeContext
     logger.info("Initializing RuntimeContext...")
     try:
-        context = bll.load_runtime_context()
+        context = bll.load_context()
         bll.ensure_schema_version(context)
         dependencies.set_runtime_context(context)
         logger.info("RuntimeContext initialized successfully")
