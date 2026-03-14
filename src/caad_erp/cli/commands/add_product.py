@@ -17,7 +17,7 @@ def register_add_product_command() -> command_spec.CommandSpec:
     name = "add-product"
     help_text = "Register a new product in the Products sheet."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``add-product`` arguments to the provided sub-parser.
 
         Args:
@@ -37,10 +37,10 @@ def register_add_product_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_add_product)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_add_product)
 
 
-def translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
+def _translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
     """Convert parsed CLI arguments into ``add_product`` keyword arguments.
 
     Args:
@@ -65,7 +65,7 @@ def translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
     }
 
 
-def run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the add-product workflow through the business logic layer.
 
     Args:
@@ -78,6 +78,6 @@ def run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> in
         int: Exit code ``0`` on success. Errors are propagated for higher level
             handling.
     """
-    payload = translate_add_product(args)
+    payload = _translate_add_product(args)
     bll.add_product(context, **payload)  # type: ignore[attr-defined]
     return 0

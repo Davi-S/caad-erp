@@ -16,7 +16,7 @@ def register_restock_command() -> command_spec.CommandSpec:
     name = "restock"
     help_text = "Record a restock transaction."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``restock`` arguments to the provided sub-parser.
 
         Args:
@@ -36,10 +36,10 @@ def register_restock_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_restock)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_restock)
 
 
-def translate_restock(args: argparse.Namespace) -> bll.RestockCommand:
+def _translate_restock(args: argparse.Namespace) -> bll.RestockCommand:
     """Convert parsed CLI arguments into a ``RestockCommand``.
 
     Args:
@@ -63,7 +63,7 @@ def translate_restock(args: argparse.Namespace) -> bll.RestockCommand:
     )
 
 
-def run_restock(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_restock(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the restock workflow through the business logic layer.
 
     Args:
@@ -75,6 +75,6 @@ def run_restock(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     Returns:
         int: Exit code ``0`` when the restock is recorded successfully.
     """
-    command = translate_restock(args)
+    command = _translate_restock(args)
     bll.record_restock(context, command)
     return 0

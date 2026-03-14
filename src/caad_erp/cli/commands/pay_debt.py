@@ -16,7 +16,7 @@ def register_pay_debt_command() -> command_spec.CommandSpec:
     name = "pay-debt"
     help_text = "Record a credit payment for an outstanding sale."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``pay-debt`` arguments to the provided sub-parser.
 
         Args:
@@ -41,10 +41,10 @@ def register_pay_debt_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_pay_debt)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_pay_debt)
 
 
-def translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:
+def _translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:
     """Convert parsed CLI arguments into a ``CreditPaymentCommand``.
 
     Args:
@@ -73,7 +73,7 @@ def translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:
     )
 
 
-def run_pay_debt(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_pay_debt(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the credit payment workflow through the business logic layer.
 
     Args:
@@ -85,6 +85,6 @@ def run_pay_debt(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     Returns:
         int: Exit code ``0`` when the payment is recorded successfully.
     """
-    command = translate_pay_debt(args)
+    command = _translate_pay_debt(args)
     bll.record_credit_payment(context, command)
     return 0

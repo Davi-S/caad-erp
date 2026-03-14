@@ -16,7 +16,7 @@ def register_list_salesmen_command() -> command_spec.CommandSpec:
     name = "list-salesmen"
     help_text = "Display registered salesmen."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``list-salesmen`` arguments to the provided sub-parser.
 
         Args:
@@ -39,13 +39,13 @@ def register_list_salesmen_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(
         name=name,
         help_text=help_text,
-        register=registrar,
-        execute=run_list_salesmen_report,
+        register=_registrar,
+        execute=_run_list_salesmen_report,
         is_mutating=False,
     )
 
 
-def display_salesmen_report(
+def _display_salesmen_report(
     salesmen: t.Iterable[object], *, include_inactive: bool
 ) -> None:
     """Print salesman records in a fixed-width table.
@@ -81,7 +81,7 @@ def display_salesmen_report(
         )
 
 
-def run_list_salesmen_report(
+def _run_list_salesmen_report(
     context: bll.RuntimeContext, args: argparse.Namespace
 ) -> int:
     """Fetch salesmen and display them on the console.
@@ -96,5 +96,5 @@ def run_list_salesmen_report(
     """
     include_inactive = bool(getattr(args, "all", False))
     salesmen = bll.list_salesmen(context, include_inactive=include_inactive)
-    display_salesmen_report(salesmen, include_inactive=include_inactive)
+    _display_salesmen_report(salesmen, include_inactive=include_inactive)
     return 0

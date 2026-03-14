@@ -16,7 +16,7 @@ def register_list_products_command() -> command_spec.CommandSpec:
     name = "list-products"
     help_text = "Display registered products."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``list-products`` arguments to the provided sub-parser.
 
         Args:
@@ -39,13 +39,13 @@ def register_list_products_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(
         name=name,
         help_text=help_text,
-        register=registrar,
-        execute=run_list_products_report,
+        register=_registrar,
+        execute=_run_list_products_report,
         is_mutating=False,
     )
 
 
-def display_products_report(
+def _display_products_report(
     products: t.Iterable[object], *, include_inactive: bool
 ) -> None:
     """Print product records in a fixed-width table.
@@ -83,7 +83,7 @@ def display_products_report(
         )
 
 
-def run_list_products_report(
+def _run_list_products_report(
     context: bll.RuntimeContext, args: argparse.Namespace
 ) -> int:
     """Fetch products and display them on the console.
@@ -98,5 +98,5 @@ def run_list_products_report(
     """
     include_inactive = bool(getattr(args, "all", False))
     products = bll.list_products(context, include_inactive=include_inactive)
-    display_products_report(products, include_inactive=include_inactive)
+    _display_products_report(products, include_inactive=include_inactive)
     return 0
