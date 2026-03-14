@@ -16,7 +16,7 @@ def register_deactivate_product_command() -> command_spec.CommandSpec:
     name = "deactivate-product"
     help_text = "Mark an existing product as inactive."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``deactivate-product`` arguments to the provided sub-parser.
 
         Args:
@@ -32,10 +32,10 @@ def register_deactivate_product_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_deactivate_product)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_deactivate_product)
 
 
-def translate_deactivate_product(args: argparse.Namespace) -> str:
+def _translate_deactivate_product(args: argparse.Namespace) -> str:
     """Normalize CLI arguments into a product identifier.
 
     Args:
@@ -50,7 +50,7 @@ def translate_deactivate_product(args: argparse.Namespace) -> str:
     return str(args.product_id).strip()
 
 
-def run_deactivate_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_deactivate_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the deactivate-product workflow through the business logic layer.
 
     Args:
@@ -62,6 +62,6 @@ def run_deactivate_product(context: bll.RuntimeContext, args: argparse.Namespace
         int: Exit code ``0`` after the product has been flagged as inactive.
     """
 
-    product_id = translate_deactivate_product(args)
+    product_id = _translate_deactivate_product(args)
     bll.update_product(context, product_id, is_active=False)
     return 0

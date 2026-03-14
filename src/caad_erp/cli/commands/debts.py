@@ -17,7 +17,7 @@ def register_debts_command() -> command_spec.CommandSpec:
     name = "debts"
     help_text = "Display outstanding credit balances."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``debts`` arguments to the provided sub-parser.
 
         Args:
@@ -35,13 +35,13 @@ def register_debts_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(
         name=name,
         help_text=help_text,
-        register=registrar,
-        execute=run_debts_report,
+        register=_registrar,
+        execute=_run_debts_report,
         is_mutating=False,
     )
 
 
-def display_debts_report(summary: t.Mapping[str, object]) -> None:
+def _display_debts_report(summary: t.Mapping[str, object]) -> None:
     """Print outstanding credit balances with a running total.
 
     Args:
@@ -82,7 +82,7 @@ def display_debts_report(summary: t.Mapping[str, object]) -> None:
     print(f"\nTotal outstanding: {total_outstanding}")
 
 
-def run_debts_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_debts_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Summarize outstanding credit balances and print them.
 
     Args:
@@ -96,5 +96,5 @@ def run_debts_report(context: bll.RuntimeContext, args: argparse.Namespace) -> i
     """
 
     summary = bll.calculate_outstanding_debts(context)
-    display_debts_report(summary)
+    _display_debts_report(summary)
     return 0

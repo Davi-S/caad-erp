@@ -16,7 +16,7 @@ def register_write_off_command() -> command_spec.CommandSpec:
     name = "write-off"
     help_text = "Record a write-off transaction."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``write-off`` arguments to the provided sub-parser.
 
         Args:
@@ -35,10 +35,10 @@ def register_write_off_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_write_off)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_write_off)
 
 
-def translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:
+def _translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:
     """Convert parsed CLI arguments into a ``WriteOffCommand``.
 
     Args:
@@ -61,7 +61,7 @@ def translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:
     )
 
 
-def run_write_off(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_write_off(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the write-off workflow through the business logic layer.
 
     Args:
@@ -73,6 +73,6 @@ def run_write_off(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     Returns:
         int: Exit code ``0`` when the write-off is recorded successfully.
     """
-    command = translate_write_off(args)
+    command = _translate_write_off(args)
     bll.record_write_off(context, command)
     return 0
