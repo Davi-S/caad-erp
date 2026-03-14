@@ -16,7 +16,7 @@ def register_log_command() -> command_spec.CommandSpec:
     name = "log"
     help_text = "Display the transaction log."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``log`` arguments to the provided sub-parser.
 
         Args:
@@ -34,13 +34,13 @@ def register_log_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(
         name=name,
         help_text=help_text,
-        register=registrar,
-        execute=run_log_report,
+        register=_registrar,
+        execute=_run_log_report,
         is_mutating=False,
     )
 
 
-def display_transaction_log(transactions: t.Iterable[object]) -> None:
+def _display_transaction_log(transactions: t.Iterable[object]) -> None:
     """Print transaction log entries using a concise tabular layout.
 
     Args:
@@ -77,7 +77,7 @@ def display_transaction_log(transactions: t.Iterable[object]) -> None:
         )
 
 
-def run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Fetch the immutable transaction log and display it to the console.
 
     Args:
@@ -91,5 +91,5 @@ def run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int
     """
 
     transactions = bll.list_transactions(context)
-    display_transaction_log(transactions)
+    _display_transaction_log(transactions)
     return 0

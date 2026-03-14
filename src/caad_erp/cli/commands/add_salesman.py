@@ -16,7 +16,7 @@ def register_add_salesman_command() -> command_spec.CommandSpec:
     name = "add-salesman"
     help_text = "Register a new salesman in the Salesmen sheet."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``add-salesman`` arguments to the provided sub-parser.
 
         Args:
@@ -35,10 +35,10 @@ def register_add_salesman_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_add_salesman)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_add_salesman)
 
 
-def translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
+def _translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
     """Convert parsed CLI arguments into ``add_salesman`` keyword arguments.
 
     Args:
@@ -56,7 +56,7 @@ def translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
     }
 
 
-def run_add_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_add_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the add-salesman workflow through the business logic layer.
 
     Args:
@@ -67,6 +67,6 @@ def run_add_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> i
     Returns:
         int: Exit code ``0`` when the salesman is successfully recorded.
     """
-    payload = translate_add_salesman(args)
+    payload = _translate_add_salesman(args)
     bll.add_salesman(context, **payload)  # type: ignore[attr-defined]
     return 0

@@ -16,7 +16,7 @@ def register_deactivate_salesman_command() -> command_spec.CommandSpec:
     name = "deactivate-salesman"
     help_text = "Mark an existing salesman as inactive."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``deactivate-salesman`` arguments to the provided sub-parser.
 
         Args:
@@ -32,10 +32,10 @@ def register_deactivate_salesman_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_deactivate_salesman)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_deactivate_salesman)
 
 
-def translate_deactivate_salesman(args: argparse.Namespace) -> str:
+def _translate_deactivate_salesman(args: argparse.Namespace) -> str:
     """Normalize CLI arguments into a salesman identifier.
 
     Args:
@@ -50,7 +50,7 @@ def translate_deactivate_salesman(args: argparse.Namespace) -> str:
     return str(args.salesman_id).strip()
 
 
-def run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the deactivate-salesman workflow through the business logic layer.
 
     Args:
@@ -62,6 +62,6 @@ def run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespac
         int: Exit code ``0`` after the salesman has been flagged as inactive.
     """
 
-    salesman_id = translate_deactivate_salesman(args)
+    salesman_id = _translate_deactivate_salesman(args)
     bll.update_salesman(context, salesman_id, is_active=False)
     return 0
