@@ -60,8 +60,7 @@ def configure_subcommands(
         Mapping[str, CommandSpec]: Immutable view mapping command names to
             their registered specifications.
     """
-    subparsers = parser.add_subparsers(
-        dest="command", required=True, title="commands")
+    subparsers = parser.add_subparsers(dest="command", required=True, title="commands")
     write_specs = register_write_commands(subparsers)
     read_specs = register_read_commands(subparsers)
     return build_command_table([*write_specs.values(), *read_specs.values()])
@@ -199,43 +198,6 @@ def handle_cli_error(error: Exception) -> int:
     return 1
 
 
-def persist_workbook(context: bll.RuntimeContext) -> None:
-    """Flush pending workbook mutations to disk after a successful run.
-
-    Args:
-        context (bll.RuntimeContext): Runtime context whose workbook
-            should be persisted.
-
-    Raises:
-        RuntimeError: If saving the workbook fails due to permission
-            constraints. The original :class:`PermissionError` is preserved as
-            the cause.
-    """
-    try:
-        bll.persist_context(context)
-    except PermissionError as error:
-        raise RuntimeError(str(error)) from error
-
-
-def load_runtime_context(config_path: t.Optional[Path] = None) -> bll.RuntimeContext:
-    """Load configuration and workbook state for CLI execution.
-
-    Args:
-        config_path (Path | None): Optional override pointing to ``config.ini``.
-            When omitted the search starts in the current working directory.
-
-    Returns:
-        bll.RuntimeContext: Context object bundling parsed settings,
-            an open workbook, and cache containers.
-
-    Raises:
-        FileNotFoundError: If the configuration file or workbook cannot be
-            located.
-        KeyError: When required configuration options are missing.
-    """
-    return bll.load_context(config_path)
-
-
 def main(argv: t.Sequence[str] | None = None) -> int:
     """Parse arguments, execute the selected command, and persist changes.
 
@@ -250,10 +212,10 @@ def main(argv: t.Sequence[str] | None = None) -> int:
     command_table = configure_subcommands(parse)
     args = parse.parse_args(argv)
     try:
-        context = load_runtime_context(getattr(args, "config", None))
+        context = bll.load_context(getattr(args, "config", None))
         exit_code = dispatch_command(context, args, command_table)
         if exit_code == 0:
-            persist_workbook(context)
+            bll.persist_context(context)
         return exit_code
     except Exception as error:
         return handle_cli_error(error)
