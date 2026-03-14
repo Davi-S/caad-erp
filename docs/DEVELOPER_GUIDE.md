@@ -282,7 +282,6 @@ It does a similar thing for sellers looking at the debt and any other necessary 
 
 ## Future Work
 
-- Expose the list_products, list_salesman, and list_transactions into the UI layers
 - Currently, the layers are exposing all their functions. We need to expose only the public methods. Private methods (even if not explicited by the "underscore notation" should not be exposed.
 - **Feat: Implement Period-End Archive Script**
   - **Task:** Create the `archive.py` script as defined in the guide.
