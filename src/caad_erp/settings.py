@@ -1,9 +1,4 @@
-"""Centralized application settings for CAAD ERP.
-
-This module consolidates discovery and parsing of the ``config.ini`` file used
-throughout the application. Callers interact with the strongly typed
-:class:`AppSettings` dataclass via :func:`get_settings`.
-"""
+"""Centralized application settings for CAAD ERP."""
 
 import configparser
 import dataclasses
@@ -26,46 +21,24 @@ class AppSettings:
     default_salesman_id: str
 
 
-def discover_config_file(explicit_path: Optional[Path] = None) -> Path:
+def _discover_config_file(explicit_path: Optional[Path] = None) -> Path:
     """Find the configuration file, honoring overrides when provided."""
 
     if explicit_path is not None:
-        candidate = Path(explicit_path).expanduser()
-        logger.debug("Using explicit config path '%s'", candidate)
-        return candidate
+        return Path(explicit_path).expanduser()
 
     current = Path.cwd()
     for directory in (current, *current.parents):
         candidate = directory / CONFIG_FILE_NAME
         if candidate.exists():
-            logger.debug("Discovered config file at '%s'", candidate)
             return candidate.resolve()
 
-    logger.error(
-        "Configuration file '%s' not found starting from '%s'",
-        CONFIG_FILE_NAME,
-        current,
-    )
     raise FileNotFoundError(
         f"Configuration file not found: {CONFIG_FILE_NAME}")
 
 
-def read_config(config_path: Path) -> configparser.ConfigParser:
-    """Read and parse an INI file, returning a populated ``ConfigParser``."""
-
-    resolved = Path(config_path).expanduser().resolve()
-    logger.debug("Reading configuration file '%s'", resolved)
-    if not resolved.exists():
-        logger.error("Configuration file not found at '%s'", resolved)
-        raise FileNotFoundError(f"Configuration file not found: {resolved}")
-
-    parser = configparser.ConfigParser()
-    parser.read(resolved)
-    return parser
-
-
-def parse_settings(parser: configparser.ConfigParser, *, base_path: Optional[Path] = None) -> AppSettings:
-    """Convert raw parser data into immutable :class:`AppSettings`."""
+def _parse_settings(parser: configparser.ConfigParser, base_path: Path) -> AppSettings:
+    """Extract and normalize settings values from a populated ``ConfigParser``."""
 
     try:
         data_file_raw = parser.get("System", "DataFile")
@@ -73,42 +46,29 @@ def parse_settings(parser: configparser.ConfigParser, *, base_path: Optional[Pat
         schema_version = parser.get("System", "SchemaVersion")
         default_salesman = parser.get("Defaults", "DefaultSalesman")
     except (configparser.NoSectionError, configparser.NoOptionError) as exc:
-        logger.error("Missing required configuration entry: %s", exc)
         raise KeyError(f"Missing required configuration entry: {exc}") from exc
 
-    data_file_path = Path(data_file_raw)
-    if not data_file_path.is_absolute():
-        anchor = base_path if base_path is not None else Path.cwd()
-        data_file_path = (anchor / data_file_path).resolve()
+    data_file = Path(data_file_raw)
+    if not data_file.is_absolute():
+        data_file = (base_path / data_file).resolve()
 
-    settings = AppSettings(
-        data_file=data_file_path,
+    return AppSettings(
+        data_file=data_file,
         lounge_name=lounge_name,
         schema_version=schema_version,
         default_salesman_id=default_salesman,
     )
 
-    logger.debug(
-        "Parsed settings: data_file='%s', lounge='%s', schema='%s', default_salesman='%s'",
-        settings.data_file,
-        settings.lounge_name,
-        settings.schema_version,
-        settings.default_salesman_id,
-    )
-
-    return settings
-
-
-def load_settings(config_path: Path) -> AppSettings:
-    """Load settings from a specific path, bypassing config discovery."""
-
-    resolved = Path(config_path).expanduser().resolve()
-    parser = read_config(resolved)
-    return parse_settings(parser, base_path=resolved.parent)
-
 
 def get_settings(config_path: Optional[Path] = None) -> AppSettings:
-    """Resolve, parse, and cache settings for the supplied config path."""
+    """Discover, parse, and return application settings."""
 
-    located = discover_config_file(config_path)
-    return load_settings(located)
+    resolved = _discover_config_file(config_path).expanduser().resolve()
+
+    if not resolved.exists():
+        raise FileNotFoundError(f"Configuration file not found: {resolved}")
+
+    parser = configparser.ConfigParser()
+    parser.read(resolved)
+
+    return _parse_settings(parser, resolved.parent)
