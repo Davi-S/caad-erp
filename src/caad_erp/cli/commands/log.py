@@ -31,7 +31,13 @@ def register_log_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_log_report)
+    return command_spec.CommandSpec(
+        name=name,
+        help_text=help_text,
+        register=registrar,
+        execute=run_log_report,
+        is_mutating=False,
+    )
 
 
 def display_transaction_log(transactions: t.Iterable[object]) -> None:

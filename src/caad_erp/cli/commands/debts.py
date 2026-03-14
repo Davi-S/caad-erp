@@ -32,7 +32,13 @@ def register_debts_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_debts_report)
+    return command_spec.CommandSpec(
+        name=name,
+        help_text=help_text,
+        register=registrar,
+        execute=run_debts_report,
+        is_mutating=False,
+    )
 
 
 def display_debts_report(summary: t.Mapping[str, object]) -> None:
