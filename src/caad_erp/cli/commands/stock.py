@@ -32,7 +32,13 @@ def register_stock_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_stock_report)
+    return command_spec.CommandSpec(
+        name=name,
+        help_text=help_text,
+        register=registrar,
+        execute=run_stock_report,
+        is_mutating=False,
+    )
 
 
 def display_inventory_report(inventory: t.Mapping[str, Decimal]) -> None:

@@ -60,7 +60,8 @@ def configure_subcommands(
         Mapping[str, CommandSpec]: Immutable view mapping command names to
             their registered specifications.
     """
-    subparsers = parser.add_subparsers(dest="command", required=True, title="commands")
+    subparsers = parser.add_subparsers(
+        dest="command", required=True, title="commands")
     write_specs = register_write_commands(subparsers)
     read_specs = register_read_commands(subparsers)
     return build_command_table([*write_specs.values(), *read_specs.values()])
@@ -207,14 +208,17 @@ def main(argv: t.Sequence[str] | None = None) -> int:
 
     Returns:
         int: Exit status emitted by the invoked command or error handler.
+            Successful commands persist only when their command
+            specification is marked as mutating.
     """
     parse = build_parser()
     command_table = configure_subcommands(parse)
     args = parse.parse_args(argv)
+    spec = command_table.get(getattr(args, "command", ""))
     try:
         context = bll.load_context(getattr(args, "config", None))
         exit_code = dispatch_command(context, args, command_table)
-        if exit_code == 0:
+        if exit_code == 0 and spec is not None and spec.is_mutating:
             bll.persist_context(context)
         return exit_code
     except Exception as error:
