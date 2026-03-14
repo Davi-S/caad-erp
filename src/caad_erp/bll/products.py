@@ -34,7 +34,7 @@ def _ensure_products_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any
             computations when available.
     """
 
-    bucket = runtime._get_cache_bucket(context, "products")
+    bucket = runtime.get_cache_bucket(context, "products")
     if "all" not in bucket:
         all_products = list(dal.iter_products(context.workbook))
         bucket["all"] = all_products
@@ -160,7 +160,7 @@ def update_product(
         raise exceptions.MissingReferenceError(
             f"Unknown product id: {normalized_id}") from exc
 
-    runtime._invalidate_cache(context, "products")
+    runtime.invalidate_cache(context, "products")
     updated = get_product(context, normalized_id)
     logger.info(
         "Updated product '%s' fields: %s",
@@ -236,7 +236,7 @@ def add_product(
     )
 
     dal.append_product(context.workbook, record)
-    runtime._invalidate_cache(context, "products")
+    runtime.invalidate_cache(context, "products")
     logger.info(
         "Registered product '%s' (%s) with sell price %s",
         record.product_id,
