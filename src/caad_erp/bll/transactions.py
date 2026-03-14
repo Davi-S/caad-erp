@@ -98,7 +98,7 @@ def _ensure_transactions_cache(context: runtime.RuntimeContext) -> t.Dict[str, t
             dictionary for quick primary key lookups.
     """
 
-    bucket = runtime._get_cache_bucket(context, "transactions")
+    bucket = runtime.get_cache_bucket(context, "transactions")
     if "all" not in bucket:
         all_transactions = list(
             dal.iter_transactions(context.workbook))
@@ -112,7 +112,7 @@ def _ensure_transactions_cache(context: runtime.RuntimeContext) -> t.Dict[str, t
     return bucket
 
 
-def generate_transaction_id(when: datetime.datetime) -> str:
+def _generate_transaction_id(when: datetime.datetime) -> str:
     """Generate a sortable transaction identifier using UTC timestamps.
 
     Args:
@@ -130,7 +130,7 @@ def generate_transaction_id(when: datetime.datetime) -> str:
     return when.strftime('%Y%m%d%H%M%S%f')
 
 
-def require_positive_quantity(quantity: Decimal) -> None:
+def _require_positive_quantity(quantity: Decimal) -> None:
     """Validate that a quantity is strictly positive.
 
     Args:
@@ -149,7 +149,7 @@ def require_positive_quantity(quantity: Decimal) -> None:
         raise ValueError("Quantity must be greater than zero")
 
 
-def require_nonnegative_money(amount: Decimal) -> None:
+def _require_nonnegative_money(amount: Decimal) -> None:
     """Validate that a monetary value is nonnegative.
 
     Args:
@@ -251,19 +251,19 @@ def record_sale(context: runtime.RuntimeContext, command: SaleCommand) -> dal.Tr
             "Attempted sale with inactive salesman '%s'", command.salesman_id)
         raise exceptions.BusinessRuleViolation(
             f"Salesman '{command.salesman_id}' is inactive")
-    require_positive_quantity(command.quantity)
-    require_nonnegative_money(command.total_revenue)
+    _require_positive_quantity(command.quantity)
+    _require_nonnegative_money(command.total_revenue)
     if not isinstance(command.payment_type, constants.PaymentType):
         logger.error("Unsupported payment type provided: %s",
                      command.payment_type)
         raise exceptions.BusinessRuleViolation(
             f"Unsupported payment type: {command.payment_type}")
 
-    transaction_id = generate_transaction_id(when=now)
-    transaction = build_sale_transaction(
+    transaction_id = _generate_transaction_id(when=now)
+    transaction = _build_sale_transaction(
         command, transaction_id=transaction_id, timestamp=now)
     dal.append_transaction(context.workbook, transaction)
-    runtime._invalidate_cache(context, "transactions")
+    runtime.invalidate_cache(context, "transactions")
     logger.info(
         "Recorded SALE transaction '%s' for product '%s' (quantity=%s, revenue=%s)",
         transaction.transaction_id,
@@ -274,7 +274,7 @@ def record_sale(context: runtime.RuntimeContext, command: SaleCommand) -> dal.Tr
     return transaction
 
 
-def build_sale_transaction(command: SaleCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
+def _build_sale_transaction(command: SaleCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
     """Materialize a :class:`SaleCommand` into a DAL transaction row.
 
     Args:
@@ -341,14 +341,14 @@ def record_restock(context: runtime.RuntimeContext, command: RestockCommand) -> 
             "Attempted restock with inactive salesman '%s'", command.salesman_id)
         raise exceptions.BusinessRuleViolation(
             f"Salesman '{command.salesman_id}' is inactive")
-    require_positive_quantity(command.quantity)
-    require_nonnegative_money(abs(command.total_cost))
+    _require_positive_quantity(command.quantity)
+    _require_nonnegative_money(abs(command.total_cost))
 
-    transaction_id = generate_transaction_id(when=now)
-    transaction = build_restock_transaction(
+    transaction_id = _generate_transaction_id(when=now)
+    transaction = _build_restock_transaction(
         command, transaction_id=transaction_id, timestamp=now)
     dal.append_transaction(context.workbook, transaction)
-    runtime._invalidate_cache(context, "transactions")
+    runtime.invalidate_cache(context, "transactions")
     logger.info(
         "Recorded RESTOCK transaction '%s' for product '%s' (quantity=%s, cost=%s)",
         transaction.transaction_id,
@@ -359,7 +359,7 @@ def record_restock(context: runtime.RuntimeContext, command: RestockCommand) -> 
     return transaction
 
 
-def build_restock_transaction(command: RestockCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
+def _build_restock_transaction(command: RestockCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
     """Materialize a :class:`RestockCommand` into a DAL transaction row.
 
     Args:
@@ -425,13 +425,13 @@ def record_write_off(context: runtime.RuntimeContext, command: WriteOffCommand) 
             "Attempted write-off with inactive salesman '%s'", command.salesman_id)
         raise exceptions.BusinessRuleViolation(
             f"Salesman '{command.salesman_id}' is inactive")
-    require_positive_quantity(command.quantity)
+    _require_positive_quantity(command.quantity)
 
-    transaction_id = generate_transaction_id(when=now)
-    transaction = build_write_off_transaction(
+    transaction_id = _generate_transaction_id(when=now)
+    transaction = _build_write_off_transaction(
         command, transaction_id=transaction_id, timestamp=now)
     dal.append_transaction(context.workbook, transaction)
-    runtime._invalidate_cache(context, "transactions")
+    runtime.invalidate_cache(context, "transactions")
     logger.info(
         "Recorded WRITE_OFF transaction '%s' for product '%s' (quantity=%s)",
         transaction.transaction_id,
@@ -441,7 +441,7 @@ def record_write_off(context: runtime.RuntimeContext, command: WriteOffCommand) 
     return transaction
 
 
-def build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
+def _build_write_off_transaction(command: WriteOffCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
     """Materialize a :class:`WriteOffCommand` into a DAL transaction row.
 
     Args:
@@ -497,8 +497,8 @@ def record_credit_payment(context: runtime.RuntimeContext, command: CreditPaymen
     """
     now = datetime.datetime.now(datetime.UTC)
     linked_sale = get_transaction(context, command.linked_transaction_id)
-    validate_credit_sale_link(linked_sale)
-    require_nonnegative_money(command.total_revenue)
+    _validate_credit_sale_link(linked_sale)
+    _require_nonnegative_money(command.total_revenue)
     if not isinstance(command.payment_type, constants.PaymentType):
         logger.error(
             "Unsupported payment type provided for credit payment: %s", command.payment_type)
@@ -511,15 +511,15 @@ def record_credit_payment(context: runtime.RuntimeContext, command: CreditPaymen
         raise exceptions.BusinessRuleViolation(
             f"Salesman '{command.salesman_id}' is inactive")
 
-    transaction_id = generate_transaction_id(when=now)
-    transaction = build_credit_payment_transaction(
+    transaction_id = _generate_transaction_id(when=now)
+    transaction = _build_credit_payment_transaction(
         command,
         transaction_id=transaction_id,
         timestamp=now,
         product_id=linked_sale.product_id,
     )
     dal.append_transaction(context.workbook, transaction)
-    runtime._invalidate_cache(context, "transactions")
+    runtime.invalidate_cache(context, "transactions")
     logger.info(
         "Recorded CREDIT_PAYMENT '%s' linked to '%s' (amount=%s)",
         transaction.transaction_id,
@@ -529,7 +529,7 @@ def record_credit_payment(context: runtime.RuntimeContext, command: CreditPaymen
     return transaction
 
 
-def build_credit_payment_transaction(command: CreditPaymentCommand, *, transaction_id: str, timestamp: datetime.datetime, product_id: t.Optional[str] = None) -> dal.TransactionRow:
+def _build_credit_payment_transaction(command: CreditPaymentCommand, *, transaction_id: str, timestamp: datetime.datetime, product_id: t.Optional[str] = None) -> dal.TransactionRow:
     """Materialize a :class:`CreditPaymentCommand` into a DAL transaction row.
 
     Args:
@@ -564,7 +564,7 @@ def build_credit_payment_transaction(command: CreditPaymentCommand, *, transacti
     )
 
 
-def validate_credit_sale_link(transaction: dal.TransactionRow) -> None:
+def _validate_credit_sale_link(transaction: dal.TransactionRow) -> None:
     """Ensure a sale transaction qualifies for credit payment linkage.
 
     Args:
@@ -646,14 +646,14 @@ def record_open_stock(context: runtime.RuntimeContext, command: OpenStockCommand
             "Attempted open stock with inactive salesman '%s'", command.salesman_id)
         raise exceptions.BusinessRuleViolation(
             f"Salesman '{command.salesman_id}' is inactive")
-    require_positive_quantity(command.quantity)
-    require_nonnegative_money(command.total_revenue)
+    _require_positive_quantity(command.quantity)
+    _require_nonnegative_money(command.total_revenue)
 
-    transaction_id = generate_transaction_id(when=now)
-    transaction = build_open_stock_transaction(
+    transaction_id = _generate_transaction_id(when=now)
+    transaction = _build_open_stock_transaction(
         command, transaction_id=transaction_id, timestamp=now)
     dal.append_transaction(context.workbook, transaction)
-    runtime._invalidate_cache(context, "transactions")
+    runtime.invalidate_cache(context, "transactions")
     logger.info(
         "Recorded OPEN_STOCK transaction '%s' for product '%s' (quantity=%s, value=%s)",
         transaction.transaction_id,
@@ -664,7 +664,7 @@ def record_open_stock(context: runtime.RuntimeContext, command: OpenStockCommand
     return transaction
 
 
-def build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
+def _build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: str, timestamp: datetime.datetime) -> dal.TransactionRow:
     """Materialize an :class:`OpenStockCommand` into a DAL transaction row.
 
     Args:
@@ -720,12 +720,12 @@ def record_void(context: runtime.RuntimeContext, command: VoidCommand) -> dal.Tr
     logger.info("Recording VOID for transaction '%s'",
                 command.linked_transaction_id)
     target = get_transaction(context, command.linked_transaction_id)
-    validate_void_target(target)
+    _validate_void_target(target)
 
-    reversal = build_void_transaction(
+    reversal = _build_void_transaction(
         target, timestamp=now, notes=command.notes)
     dal.append_transaction(context.workbook, reversal)
-    runtime._invalidate_cache(context, "transactions")
+    runtime.invalidate_cache(context, "transactions")
     logger.info(
         "Recorded VOID reversal '%s' for transaction '%s'",
         reversal.transaction_id,
@@ -734,7 +734,7 @@ def record_void(context: runtime.RuntimeContext, command: VoidCommand) -> dal.Tr
     return reversal
 
 
-def build_void_transaction(transaction: dal.TransactionRow, *, timestamp: datetime.datetime, notes: t.Optional[str]) -> dal.TransactionRow:
+def _build_void_transaction(transaction: dal.TransactionRow, *, timestamp: datetime.datetime, notes: t.Optional[str]) -> dal.TransactionRow:
     """Create a reversal transaction that negates a prior entry.
 
     Args:
@@ -754,7 +754,7 @@ def build_void_transaction(transaction: dal.TransactionRow, *, timestamp: dateti
     audit trails.
     """
     return dal.TransactionRow(
-        transaction_id=generate_transaction_id(when=timestamp),
+        transaction_id=_generate_transaction_id(when=timestamp),
         timestamp_iso=timestamp.isoformat(),
         transaction_type=constants.TransactionType.VOID.value,
         product_id=transaction.product_id,
@@ -768,7 +768,7 @@ def build_void_transaction(transaction: dal.TransactionRow, *, timestamp: dateti
     )
 
 
-def validate_void_target(transaction: dal.TransactionRow) -> None:
+def _validate_void_target(transaction: dal.TransactionRow) -> None:
     """Confirm that a transaction may be voided under business rules.
 
     Args:
