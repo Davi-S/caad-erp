@@ -116,6 +116,8 @@ def register_read_commands(
         "profit": commands.register_profit_command(),
         "debts": commands.register_debts_command(),
         "log": commands.register_log_command(),
+        "list-products": commands.register_list_products_command(),
+        "list-salesmen": commands.register_list_salesmen_command(),
     }
     for spec in specs.values():
         spec.register(subparsers)
