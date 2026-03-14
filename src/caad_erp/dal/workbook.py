@@ -65,25 +65,6 @@ def save_workbook(workbook: Workbook, destination: Path) -> None:
     workbook.save(dest)
 
 
-def refresh_workbook(data_file: Path) -> Workbook:
-    """Reload the workbook from disk, discarding any unsaved in-memory changes.
-
-    This helper simply proxies to :func:`open_workbook` to obtain a pristine
-    workbook instance. It is useful when callers want to abandon modifications
-    made to an existing workbook object.
-
-    Args:
-        data_file (Path): Location of the workbook to reopen.
-
-    Returns:
-        Workbook: Freshly loaded workbook detached from the previous instance.
-    """
-
-    # Simply open a fresh workbook instance
-    logger.debug("Refreshing workbook from '%s'", data_file)
-    return open_workbook(data_file)
-
-
 def locate_row(workbook: Workbook, sheet_name: str, key_column: str, key_value: str) -> t.Optional[int]:
     """Find a row by matching a key value within the specified worksheet.
 
