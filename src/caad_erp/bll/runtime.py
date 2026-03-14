@@ -65,7 +65,7 @@ def refresh_context(context: RuntimeContext) -> RuntimeContext:
     hands back a pristine workbook pointer. Because a new :class:`RuntimeContext`
     is produced, any cached data from the previous context is discarded.
     """
-    workbook = dal.refresh_workbook(context.settings.data_file)
+    workbook = dal.open_workbook(context.settings.data_file)
     logger.info("Reloaded workbook '%s'", context.settings.data_file)
     return RuntimeContext(settings=context.settings, workbook=workbook)
 
