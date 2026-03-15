@@ -27,7 +27,20 @@ The code follows a three-layer design:
      arguments, converts them into command objects defined by the BLL, and
      delegates execution. All user input is expressed through explicit long-form
      options. No business rules live in the CLI; everything flows through
-     `core_logic`.
+     the `bll`. Supports two modes of operation:
+     - **One-shot mode:** Pass a sub-command directly (e.g.
+       `caad-erp-cli sale ...`). The context is loaded, the command
+       executes, the workbook is saved if the command mutated state, and
+       the process exits.
+     - **Interactive REPL mode** (`src/caad_erp/cli/repl.py`): Running
+       `caad-erp-cli` without a sub-command (or with the `repl`
+       sub-command) opens an interactive session. The `RuntimeContext` is
+       loaded once and reused across every command entered at the prompt,
+       eliminating the per-invocation I/O overhead. Commands are
+       discovered automatically from the commands package via
+       `discover_command_specs` in `parser.py`; adding a new command
+       module with a `register_<name>_command()` factory makes it
+       available in both modes without any manual registration.
    - **API** (`src/caad_erp/api`): A FastAPI-based headless HTTP API server
      that translates HTTP requests into BLL calls. Intended for local network
      operation only, enabling web-based UIs to interact with the system.
@@ -242,7 +255,7 @@ Soft-delete is our method for "removing" an item (like a product or a salesman) 
 
 Instead of actually deleting the row from the Excel sheet, just flip the `TRUE`/`FALSE` **`IsActive` column** in your `Products` and `Salesmen` sheets.
 
-**The Effect:** The `core_logic` (BLL) is built to ignore inactive items. That product will instantly vanish from the `stock` report and from the list of items you can `sale`. To the user, it's "deleted."
+**The Effect:** The BLL is built to ignore inactive items. That product will instantly vanish from the `stock` report and from the list of items you can `sale`. To the user, it's "deleted."
 
 ### Why This is Absolutely Needed
 
