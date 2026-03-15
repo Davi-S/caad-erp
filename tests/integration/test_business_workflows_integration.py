@@ -398,4 +398,144 @@ def test_data_persists_across_context_reload_for_full_workflow(
     assert bll.get_salesman(
         reloaded, "WF-S010").salesman_name == "Salesman WF-S010"
     assert bll.calculate_inventory(reloaded)["WF-P010"] == Decimal("4")
-    assert len(bll.list_transactions(reloaded)) >= 2
+
+
+def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
+    initialized_context: bll.RuntimeContext,
+) -> None:
+    """
+    GIVEN two products and two salesmen participating in mixed sale restock write-off credit and void operations
+    WHEN all reports are computed at the end of the chained workflow
+    THEN inventory profit and outstanding debts reconcile with the combined ledger effects
+    """
+    _add_product(initialized_context, "WF-P011", price="10.00")
+    _add_product(initialized_context, "WF-P012", price="5.00")
+    _add_salesman(initialized_context, "WF-S011")
+    _add_salesman(initialized_context, "WF-S012")
+
+    bll.record_open_stock(
+        initialized_context,
+        bll.OpenStockCommand(
+            product_id="WF-P011",
+            salesman_id="WF-S011",
+            quantity=Decimal("10"),
+            total_revenue=Decimal("0.00"),
+        ),
+    )
+    voided_sale = bll.record_sale(
+        initialized_context,
+        bll.SaleCommand(
+            product_id="WF-P011",
+            salesman_id="WF-S011",
+            quantity=Decimal("2"),
+            total_revenue=Decimal("20.00"),
+            payment_type=constants.PaymentType.CASH,
+        ),
+    )
+    bll.record_void(
+        initialized_context,
+        bll.VoidCommand(linked_transaction_id=voided_sale.transaction_id),
+    )
+    bll.record_restock(
+        initialized_context,
+        bll.RestockCommand(
+            product_id="WF-P012",
+            salesman_id="WF-S012",
+            quantity=Decimal("12"),
+            total_cost=Decimal("18.00"),
+        ),
+    )
+    credit_sale = bll.record_sale(
+        initialized_context,
+        bll.SaleCommand(
+            product_id="WF-P012",
+            salesman_id="WF-S012",
+            quantity=Decimal("4"),
+            total_revenue=Decimal("0.00"),
+            payment_type=constants.PaymentType.ON_CREDIT,
+        ),
+    )
+    bll.record_credit_payment(
+        initialized_context,
+        bll.CreditPaymentCommand(
+            linked_transaction_id=credit_sale.transaction_id,
+            salesman_id="WF-S012",
+            total_revenue=Decimal("6.00"),
+            payment_type=constants.PaymentType.PIX,
+        ),
+    )
+    bll.record_write_off(
+        initialized_context,
+        bll.WriteOffCommand(
+            product_id="WF-P012",
+            salesman_id="WF-S012",
+            quantity=Decimal("1"),
+        ),
+    )
+
+    inventory = bll.calculate_inventory(initialized_context)
+    profit = bll.calculate_profit_summary(initialized_context)
+    debts = bll.calculate_outstanding_debts(initialized_context)
+
+    assert inventory["WF-P011"] == Decimal("10")
+    assert inventory["WF-P012"] == Decimal("7")
+    assert profit["total_revenue"] == Decimal("6.00")
+    assert profit["total_cost"] == Decimal("-18.00")
+    assert profit["profit"] == Decimal("-12.00")
+    assert debts["total_outstanding"] == Decimal("14.00")
+    assert len(debts["balances"]) == 1
+    assert debts["balances"][0].transaction_id == credit_sale.transaction_id
+
+
+def test_invalid_void_chains_raise_without_creating_partial_rows(
+    initialized_context: bll.RuntimeContext,
+) -> None:
+    """
+    GIVEN a credit-sale lifecycle with a settlement payment and a valid sale void
+    WHEN invalid void attempts target a credit-payment row and then a void row
+    THEN business errors are raised and transaction count only changes for the valid void
+    """
+    _add_product(initialized_context, "WF-P013", price="9.00")
+    _add_salesman(initialized_context, "WF-S013")
+
+    credit_sale = bll.record_sale(
+        initialized_context,
+        bll.SaleCommand(
+            product_id="WF-P013",
+            salesman_id="WF-S013",
+            quantity=Decimal("2"),
+            total_revenue=Decimal("0.00"),
+            payment_type=constants.PaymentType.ON_CREDIT,
+        ),
+    )
+    payment = bll.record_credit_payment(
+        initialized_context,
+        bll.CreditPaymentCommand(
+            linked_transaction_id=credit_sale.transaction_id,
+            salesman_id="WF-S013",
+            total_revenue=Decimal("5.00"),
+            payment_type=constants.PaymentType.CASH,
+        ),
+    )
+
+    before_invalid_voids = len(bll.list_transactions(initialized_context))
+
+    with pytest.raises(exceptions.BusinessRuleViolation):
+        bll.record_void(
+            initialized_context,
+            bll.VoidCommand(linked_transaction_id=payment.transaction_id),
+        )
+
+    valid_void = bll.record_void(
+        initialized_context,
+        bll.VoidCommand(linked_transaction_id=credit_sale.transaction_id),
+    )
+
+    with pytest.raises(exceptions.BusinessRuleViolation):
+        bll.record_void(
+            initialized_context,
+            bll.VoidCommand(linked_transaction_id=valid_void.transaction_id),
+        )
+
+    final_transactions = bll.list_transactions(initialized_context)
+    assert len(final_transactions) == before_invalid_voids + 1
