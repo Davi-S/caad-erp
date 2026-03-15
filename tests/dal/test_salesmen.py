@@ -1,3 +1,5 @@
+import pytest
+
 from caad_erp.dal import salesmen
 
 
@@ -163,20 +165,19 @@ def test_deserialize_salesman_returns_salesman_row_instance() -> None:
     # happy path
 
 
-def test_deserialize_salesman_coerces_numeric_id_to_str() -> None:
+@pytest.mark.parametrize(
+    "raw_row, expected_salesman_id, expected_salesman_name",
+    [],
+)
+def test_deserialize_salesman_coerces_text_fields_to_str(
+    raw_row,
+    expected_salesman_id,
+    expected_salesman_name,
+) -> None:
     """
-    GIVEN a raw row with numeric SalesmanID
+    GIVEN raw rows with non-string SalesmanID or SalesmanName
     WHEN _deserialize_salesman is called
-    THEN SalesmanID is coerced to string
-    """
-    # happy path
-
-
-def test_deserialize_salesman_coerces_salesman_name_to_str() -> None:
-    """
-    GIVEN a raw row with non-string SalesmanName
-    WHEN _deserialize_salesman is called
-    THEN SalesmanName is coerced to string
+    THEN textual fields are coerced to string
     """
     # happy path
 
@@ -190,7 +191,8 @@ def test_deserialize_salesman_coerces_is_active_to_bool() -> None:
     # happy path
 
 
-def test_deserialize_salesman_raises_index_error_for_short_row() -> None:
+@pytest.mark.parametrize("raw_row", [])
+def test_deserialize_salesman_raises_index_error_for_short_row(raw_row) -> None:
     """
     GIVEN a short raw row missing required columns
     WHEN _deserialize_salesman is called

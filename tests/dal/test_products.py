@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+import pytest
+
 from caad_erp.dal import products
 
 
@@ -183,47 +185,35 @@ def test_deserialize_product_returns_product_row_instance() -> None:
     # happy path
 
 
-def test_deserialize_product_coerces_numeric_id_to_str() -> None:
+@pytest.mark.parametrize(
+    "raw_row, expected_product_id, expected_product_name",
+    [],
+)
+def test_deserialize_product_coerces_text_fields_to_str(
+    raw_row,
+    expected_product_id,
+    expected_product_name,
+) -> None:
     """
-    GIVEN a raw row with numeric ProductID
+    GIVEN raw rows with non-string ProductID or ProductName
     WHEN _deserialize_product is called
-    THEN ProductID is coerced to string
+    THEN textual fields are coerced to string
     """
     # happy path
 
 
-def test_deserialize_product_coerces_product_name_to_str() -> None:
+@pytest.mark.parametrize(
+    "raw_row, expected_sell_price",
+    [],
+)
+def test_deserialize_product_normalizes_sell_price(
+    raw_row,
+    expected_sell_price,
+) -> None:
     """
-    GIVEN a raw row with non-string ProductName
+    GIVEN raw rows with SellPrice as numeric float or None
     WHEN _deserialize_product is called
-    THEN ProductName is coerced to string
-    """
-    # happy path
-
-
-def test_deserialize_product_converts_numeric_sell_price_to_decimal() -> None:
-    """
-    GIVEN a raw row with numeric SellPrice
-    WHEN _deserialize_product is called
-    THEN SellPrice is converted to Decimal
-    """
-    # happy path
-
-
-def test_deserialize_product_defaults_sell_price_to_zero_when_none() -> None:
-    """
-    GIVEN a raw row with None SellPrice
-    WHEN _deserialize_product is called
-    THEN SellPrice defaults to Decimal 0.00
-    """
-    # edge path
-
-
-def test_deserialize_product_converts_float_sell_price_via_str() -> None:
-    """
-    GIVEN a raw row with float SellPrice
-    WHEN _deserialize_product is called
-    THEN conversion happens via string representation for precision safety
+    THEN SellPrice is normalized to the expected Decimal value
     """
     # edge path
 
@@ -237,7 +227,8 @@ def test_deserialize_product_coerces_is_active_to_bool() -> None:
     # happy path
 
 
-def test_deserialize_product_raises_index_error_for_short_row() -> None:
+@pytest.mark.parametrize("raw_row", [])
+def test_deserialize_product_raises_index_error_for_short_row(raw_row) -> None:
     """
     GIVEN a short raw row missing required columns
     WHEN _deserialize_product is called
@@ -246,7 +237,8 @@ def test_deserialize_product_raises_index_error_for_short_row() -> None:
     # sad path
 
 
-def test_deserialize_product_raises_decimal_error_for_invalid_sell_price() -> None:
+@pytest.mark.parametrize("raw_row", [])
+def test_deserialize_product_raises_decimal_error_for_invalid_sell_price(raw_row) -> None:
     """
     GIVEN a raw row with invalid SellPrice text
     WHEN _deserialize_product is called
