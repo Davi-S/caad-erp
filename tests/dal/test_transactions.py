@@ -1,3 +1,5 @@
+import pytest
+
 from caad_erp.dal import transactions
 
 
@@ -163,56 +165,20 @@ def test_deserialize_transaction_returns_transaction_row_instance() -> None:
     # happy path
 
 
-def test_deserialize_transaction_converts_quantity_change_to_decimal() -> None:
+@pytest.mark.parametrize(
+    "raw_row, expected_quantity_change, expected_total_revenue, expected_total_cost",
+    [],
+)
+def test_deserialize_transaction_normalizes_numeric_fields(
+    raw_row,
+    expected_quantity_change,
+    expected_total_revenue,
+    expected_total_cost,
+) -> None:
     """
-    GIVEN a raw row with numeric QuantityChange
+    GIVEN raw rows with numeric or None quantity and totals
     WHEN _deserialize_transaction is called
-    THEN QuantityChange is converted to Decimal
-    """
-    # happy path
-
-
-def test_deserialize_transaction_defaults_quantity_change_to_zero_when_none() -> None:
-    """
-    GIVEN a raw row with None QuantityChange
-    WHEN _deserialize_transaction is called
-    THEN QuantityChange defaults to Decimal 0
-    """
-    # edge path
-
-
-def test_deserialize_transaction_converts_total_revenue_to_decimal() -> None:
-    """
-    GIVEN a raw row with numeric TotalRevenue
-    WHEN _deserialize_transaction is called
-    THEN TotalRevenue is converted to Decimal
-    """
-    # happy path
-
-
-def test_deserialize_transaction_defaults_total_revenue_to_zero_when_none() -> None:
-    """
-    GIVEN a raw row with None TotalRevenue
-    WHEN _deserialize_transaction is called
-    THEN TotalRevenue defaults to Decimal 0.00
-    """
-    # edge path
-
-
-def test_deserialize_transaction_converts_total_cost_to_decimal() -> None:
-    """
-    GIVEN a raw row with numeric TotalCost
-    WHEN _deserialize_transaction is called
-    THEN TotalCost is converted to Decimal
-    """
-    # happy path
-
-
-def test_deserialize_transaction_defaults_total_cost_to_zero_when_none() -> None:
-    """
-    GIVEN a raw row with None TotalCost
-    WHEN _deserialize_transaction is called
-    THEN TotalCost defaults to Decimal 0.00
+    THEN numeric fields are normalized to expected Decimal values
     """
     # edge path
 
@@ -226,20 +192,19 @@ def test_deserialize_transaction_preserves_none_for_optional_text_fields() -> No
     # happy path
 
 
-def test_deserialize_transaction_defaults_timestamp_iso_to_empty_str_when_none() -> None:
+@pytest.mark.parametrize(
+    "raw_row, expected_timestamp_iso, expected_transaction_type",
+    [],
+)
+def test_deserialize_transaction_defaults_required_text_fields_when_none(
+    raw_row,
+    expected_timestamp_iso,
+    expected_transaction_type,
+) -> None:
     """
-    GIVEN a raw row with None timestamp
+    GIVEN raw rows with None timestamp or transaction type
     WHEN _deserialize_transaction is called
-    THEN timestamp defaults to an empty string
-    """
-    # edge path
-
-
-def test_deserialize_transaction_defaults_transaction_type_to_empty_str_when_none() -> None:
-    """
-    GIVEN a raw row with None transaction type
-    WHEN _deserialize_transaction is called
-    THEN transaction type defaults to an empty string
+    THEN required text fields default to expected values
     """
     # edge path
 
@@ -253,7 +218,8 @@ def test_deserialize_transaction_coerces_transaction_id_to_str() -> None:
     # happy path
 
 
-def test_deserialize_transaction_converts_float_via_str_for_precision() -> None:
+@pytest.mark.parametrize("raw_row", [])
+def test_deserialize_transaction_converts_float_via_str_for_precision(raw_row) -> None:
     """
     GIVEN a raw row with float numeric values
     WHEN _deserialize_transaction is called
@@ -262,7 +228,8 @@ def test_deserialize_transaction_converts_float_via_str_for_precision() -> None:
     # edge path
 
 
-def test_deserialize_transaction_raises_value_error_for_short_row() -> None:
+@pytest.mark.parametrize("raw_row", [])
+def test_deserialize_transaction_raises_value_error_for_short_row(raw_row) -> None:
     """
     GIVEN a short raw row missing required columns
     WHEN _deserialize_transaction is called
@@ -271,7 +238,8 @@ def test_deserialize_transaction_raises_value_error_for_short_row() -> None:
     # sad path
 
 
-def test_deserialize_transaction_raises_decimal_error_for_invalid_numeric_values() -> None:
+@pytest.mark.parametrize("raw_row", [])
+def test_deserialize_transaction_raises_decimal_error_for_invalid_numeric_values(raw_row) -> None:
     """
     GIVEN a raw row with invalid numeric text
     WHEN _deserialize_transaction is called

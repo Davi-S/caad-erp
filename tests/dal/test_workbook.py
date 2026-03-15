@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from caad_erp.dal import workbook as dal_workbook
 
 
@@ -12,7 +14,11 @@ def test_open_workbook_returns_workbook_instance(tmp_workbook_path: Path) -> Non
     # happy path
 
 
-def test_open_workbook_raises_file_not_found_for_missing_path(tmp_path: Path) -> None:
+@pytest.mark.parametrize("missing_path", [])
+def test_open_workbook_raises_file_not_found_for_missing_path(
+    tmp_path: Path,
+    missing_path,
+) -> None:
     """
     GIVEN a missing workbook path
     WHEN open_workbook is called
@@ -21,7 +27,11 @@ def test_open_workbook_raises_file_not_found_for_missing_path(tmp_path: Path) ->
     # sad path
 
 
-def test_open_workbook_raises_for_invalid_file_content(tmp_path: Path) -> None:
+@pytest.mark.parametrize("invalid_file_payload", [])
+def test_open_workbook_raises_for_invalid_file_content(
+    tmp_path: Path,
+    invalid_file_payload,
+) -> None:
     """
     GIVEN an invalid workbook file
     WHEN open_workbook is called
@@ -66,7 +76,12 @@ def test_save_workbook_propagates_permission_error_when_unwritable(tmp_path: Pat
     # sad path
 
 
-def test_locate_row_returns_correct_row_index(products_workbook) -> None:
+@pytest.mark.parametrize("lookup_key, expected_row_index", [])
+def test_locate_row_returns_correct_row_index(
+    products_workbook,
+    lookup_key,
+    expected_row_index,
+) -> None:
     """
     GIVEN a sheet containing the key
     WHEN locate_row is called
@@ -75,7 +90,11 @@ def test_locate_row_returns_correct_row_index(products_workbook) -> None:
     # happy path
 
 
-def test_locate_row_returns_none_when_value_not_found(products_workbook) -> None:
+@pytest.mark.parametrize("missing_key", [])
+def test_locate_row_returns_none_when_value_not_found(
+    products_workbook,
+    missing_key,
+) -> None:
     """
     GIVEN a sheet without the key
     WHEN locate_row is called
@@ -84,7 +103,11 @@ def test_locate_row_returns_none_when_value_not_found(products_workbook) -> None
     # sad path
 
 
-def test_locate_row_raises_key_error_for_unknown_column(products_workbook) -> None:
+@pytest.mark.parametrize("unknown_column", [])
+def test_locate_row_raises_key_error_for_unknown_column(
+    products_workbook,
+    unknown_column,
+) -> None:
     """
     GIVEN an unknown key column
     WHEN locate_row is called
@@ -120,7 +143,11 @@ def test_locate_row_returns_none_for_header_only_sheet(products_workbook) -> Non
     # edge path
 
 
-def test_locate_row_raises_key_error_for_unknown_sheet(products_workbook) -> None:
+@pytest.mark.parametrize("unknown_sheet", [])
+def test_locate_row_raises_key_error_for_unknown_sheet(
+    products_workbook,
+    unknown_sheet,
+) -> None:
     """
     GIVEN a non-existent sheet name
     WHEN locate_row is called
