@@ -100,6 +100,8 @@ Reporting commands return calculated information without mutating the workbook:
 - `profit`
 - `debts`
 - `log`
+- `list-products`
+- `list-salesmen`
 
 ### API Server
 
