@@ -1,5 +1,4 @@
 import argparse
-import typing as t
 from decimal import Decimal
 
 from caad_erp import bll
@@ -40,15 +39,15 @@ def register_add_product_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_add_product)
 
 
-def _translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
-    """Convert parsed CLI arguments into ``add_product`` keyword arguments.
+def _translate_add_product(args: argparse.Namespace) -> bll.ProductCommand:
+    """Convert parsed CLI arguments into a product command object.
 
     Args:
         args (argparse.Namespace): Namespace produced by
             :func:`argparse.ArgumentParser.parse_args` for the command.
 
     Returns:
-        Mapping[str, Any]: Keyword payload compatible with
+        bll.ProductCommand: Command payload compatible with
             :func:`bll.add_product`. Numerical values are coerced to
             :class:`~decimal.Decimal` and the ``--inactive`` flag is inverted
             into the ``is_active`` boolean expected by the business layer.
@@ -57,12 +56,12 @@ def _translate_add_product(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
         decimal.InvalidOperation: If ``--sell-price`` cannot be parsed as a
             valid decimal number.
     """
-    return {
-        "product_id": args.product_id,
-        "product_name": args.product_name,
-        "sell_price": Decimal(args.sell_price),
-        "is_active": not getattr(args, "inactive", False),
-    }
+    return bll.ProductCommand(
+        product_id=args.product_id,
+        product_name=args.product_name,
+        sell_price=Decimal(args.sell_price),
+        is_active=not getattr(args, "inactive", False),
+    )
 
 
 def _run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
@@ -78,6 +77,6 @@ def _run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> i
         int: Exit code ``0`` on success. Errors are propagated for higher level
             handling.
     """
-    payload = _translate_add_product(args)
-    bll.add_product(context, **payload)  # type: ignore[attr-defined]
+    command = _translate_add_product(args)
+    bll.add_product(context, command)
     return 0
