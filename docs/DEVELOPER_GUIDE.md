@@ -218,8 +218,8 @@ New functionality should be driven by `pytest`-based tests under `tests/`.
 The test suite follows a pyramid structure to keep fast feedback at the unit level while retaining confidence in the full stack:
 
 - **`tests/dal/`** – Integration coverage for the DAL that exercises real `openpyxl` reads and writes.
-- **`tests/bll/`** – Unit coverage for the BLL with the entire data access layer (DAL) mocked.
-- **`tests/cli/`** – Unit coverage for the CLI (Presentation Layer) with the business logic layer (BLL) mocked.
+- **`tests/bll/`** – Unit coverage for the BLL with the entire data access layer (DAL) not mocked.
+- **`tests/cli/`** – Unit coverage for the CLI (Presentation Layer) with the business logic layer (BLL) not mocked.
 - **`tests/api/`** – Unit coverage for the API (Presentation Layer) using FastAPI's TestClient.
 - **`tests/test_integration_layers.py`** – Cross-layer integration without mocks, verifying the complete workflow from CLI through the DAL.
 
