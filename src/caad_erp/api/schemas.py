@@ -21,7 +21,7 @@ from caad_erp import constants
 
 class StandardResponse(pydantic.BaseModel):
     """Standard wrapper for mutation endpoint responses.
-    
+
     The `data` field uses `Any` to allow flexibility across different entity
     types (Product, Salesman, Transaction). Individual endpoints ensure type
     safety by constructing specific response DTOs before wrapping them.
@@ -125,6 +125,35 @@ class PayDebtRequest(pydantic.BaseModel):
     total_revenue: Decimal = pydantic.Field(..., ge=0)
     payment_type: constants.PaymentType
     notes: t.Optional[str] = None
+
+    @pydantic.field_validator("payment_type")
+    @classmethod
+    def payment_type_not_on_credit(
+        cls, value: constants.PaymentType
+    ) -> constants.PaymentType:
+        """Reject OnCredit as a settlement method for credit payments."""
+        if value == constants.PaymentType.ON_CREDIT:
+            raise ValueError(
+                "Payment type 'OnCredit' is not allowed when settling a debt"
+            )
+        return value
+
+
+# ---------------------------------------------------------------------------
+# List DTOs
+# ---------------------------------------------------------------------------
+
+
+class ProductListResponse(pydantic.BaseModel):
+    """Response for listing products."""
+
+    items: t.List[ProductResponse]
+
+
+class SalesmanListResponse(pydantic.BaseModel):
+    """Response for listing salesmen."""
+
+    items: t.List[SalesmanResponse]
 
 
 class TransactionResponse(pydantic.BaseModel):
