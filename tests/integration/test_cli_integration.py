@@ -1,3 +1,4 @@
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -272,3 +273,108 @@ def test_cli_help_and_parse_errors_do_not_crash_repl_loop(
 
     result = cli_parser.repl.run_repl(initialized_context, parser, table)
     assert result == 0
+
+
+def test_cli_one_shot_credit_lifecycle_persists_and_matches_reports(
+    integration_config_path: Path,
+    initialized_context: bll.RuntimeContext,
+) -> None:
+    """
+    GIVEN one-shot CLI commands that create product salesman credit sale and partial debt payment
+    WHEN read commands run and context is reloaded from disk
+    THEN each command exits cleanly and persisted reports reflect expected outstanding debt
+    """
+    add_product_result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "add-product",
+            "--product-id",
+            "CLI-P003",
+            "--product-name",
+            "Credit Product",
+            "--sell-price",
+            "8.00",
+        ]
+    )
+    add_salesman_result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "add-salesman",
+            "--salesman-id",
+            "CLI-S003",
+            "--salesman-name",
+            "Credit Seller",
+        ]
+    )
+    sale_result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "sale",
+            "--product-id",
+            "CLI-P003",
+            "--quantity",
+            "3",
+            "--salesman-id",
+            "CLI-S003",
+            "--total-revenue",
+            "0.00",
+            "--payment-type",
+            constants.PaymentType.ON_CREDIT.value,
+        ]
+    )
+
+    working_context = bll.load_context(integration_config_path)
+    sale_transaction = next(
+        row
+        for row in bll.list_transactions(working_context)
+        if row.transaction_type == constants.TransactionType.SALE.value
+        and row.product_id == "CLI-P003"
+        and row.salesman_id == "CLI-S003"
+    )
+
+    pay_debt_result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "pay-debt",
+            "--linked-transaction-id",
+            sale_transaction.transaction_id,
+            "--total-revenue",
+            "10.00",
+            "--salesman-id",
+            "CLI-S003",
+            "--payment-type",
+            constants.PaymentType.CASH.value,
+        ]
+    )
+    debts_result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "debts",
+        ]
+    )
+    log_result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "log",
+        ]
+    )
+
+    reloaded = bll.load_context(integration_config_path)
+    debts_report = bll.calculate_outstanding_debts(reloaded)
+    transactions = bll.list_transactions(reloaded)
+
+    assert add_product_result == 0
+    assert add_salesman_result == 0
+    assert sale_result == 0
+    assert pay_debt_result == 0
+    assert debts_result == 0
+    assert log_result == 0
+    assert len(transactions) == 2
+    assert debts_report["total_outstanding"] == Decimal("14.00")
+    assert debts_report["balances"][0].transaction_id == sale_transaction.transaction_id
