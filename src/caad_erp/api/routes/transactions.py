@@ -8,7 +8,7 @@ import fastapi
 
 from caad_erp import bll, dal
 
-from .. import dependencies, schemas
+from .. import runtime, schemas
 
 router = fastapi.APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -33,7 +33,7 @@ def _transaction_to_response(transaction: dal.TransactionRow) -> schemas.Transac
 @router.post("/sale", response_model=schemas.StandardResponse, status_code=201)
 def record_sale(
     request: schemas.SaleRequest,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Record a sale transaction.
 
@@ -65,7 +65,7 @@ def record_sale(
 @router.post("/restock", response_model=schemas.StandardResponse, status_code=201)
 def record_restock(
     request: schemas.RestockRequest,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Record a restock transaction.
 
@@ -96,7 +96,7 @@ def record_restock(
 @router.post("/write-off", response_model=schemas.StandardResponse, status_code=201)
 def record_write_off(
     request: schemas.WriteOffRequest,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Record a write-off transaction.
 
@@ -126,7 +126,7 @@ def record_write_off(
 @router.post("/void", response_model=schemas.StandardResponse, status_code=201)
 def record_void(
     request: schemas.VoidRequest,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Void an existing transaction.
 
@@ -154,7 +154,7 @@ def record_void(
 @router.post("/pay-debt", response_model=schemas.StandardResponse, status_code=201)
 def record_pay_debt(
     request: schemas.PayDebtRequest,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Record a credit payment for an outstanding sale.
 
