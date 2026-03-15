@@ -292,3 +292,69 @@ def test_reporting_outputs_remain_stable_after_context_reload(
     assert inventory_after == inventory_before
     assert profit_after == profit_before
     assert debts_after["total_outstanding"] == debts_before["total_outstanding"]
+
+
+def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balances(
+    initialized_context: bll.RuntimeContext,
+) -> None:
+    """
+    GIVEN multiple credit sales across products where one sale is overpaid and another is partially paid
+    WHEN calculate_outstanding_debts is executed
+    THEN only positive remaining balances are reported and total outstanding is aggregated correctly
+    """
+    _add_product(initialized_context, "RP-P007", price="10.00")
+    _add_product(initialized_context, "RP-P008", price="6.00")
+    _add_salesman(initialized_context, "RP-S007")
+
+    overpaid_sale = bll.record_sale(
+        initialized_context,
+        bll.SaleCommand(
+            product_id="RP-P007",
+            salesman_id="RP-S007",
+            quantity=Decimal("1"),
+            total_revenue=Decimal("0.00"),
+            payment_type=constants.PaymentType.ON_CREDIT,
+        ),
+    )
+    partial_sale = bll.record_sale(
+        initialized_context,
+        bll.SaleCommand(
+            product_id="RP-P008",
+            salesman_id="RP-S007",
+            quantity=Decimal("3"),
+            total_revenue=Decimal("0.00"),
+            payment_type=constants.PaymentType.ON_CREDIT,
+        ),
+    )
+
+    bll.record_credit_payment(
+        initialized_context,
+        bll.CreditPaymentCommand(
+            linked_transaction_id=overpaid_sale.transaction_id,
+            salesman_id="RP-S007",
+            total_revenue=Decimal("12.00"),
+            payment_type=constants.PaymentType.CASH,
+        ),
+    )
+    bll.record_credit_payment(
+        initialized_context,
+        bll.CreditPaymentCommand(
+            linked_transaction_id=partial_sale.transaction_id,
+            salesman_id="RP-S007",
+            total_revenue=Decimal("4.00"),
+            payment_type=constants.PaymentType.PIX,
+        ),
+    )
+
+    report = bll.calculate_outstanding_debts(initialized_context)
+    balances_by_id = {row.transaction_id: row for row in report["balances"]}
+
+    assert overpaid_sale.transaction_id not in balances_by_id
+    assert partial_sale.transaction_id in balances_by_id
+    assert balances_by_id[partial_sale.transaction_id].expected_amount == Decimal(
+        "18.00")
+    assert balances_by_id[partial_sale.transaction_id].amount_paid == Decimal(
+        "4.00")
+    assert balances_by_id[partial_sale.transaction_id].balance == Decimal(
+        "14.00")
+    assert report["total_outstanding"] == Decimal("14.00")
