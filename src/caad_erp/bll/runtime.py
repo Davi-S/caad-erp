@@ -25,7 +25,10 @@ class RuntimeContext:
     settings: settings.AppSettings
     workbook: Workbook
     _cache: t.Dict[str, t.Dict[str, t.Any]] = dataclasses.field(
-        default_factory=dict, repr=False, compare=False)
+        default_factory=dict,
+        repr=False,
+        compare=False
+    )
 
 
 def persist_context(context: RuntimeContext) -> None:
@@ -47,30 +50,7 @@ def persist_context(context: RuntimeContext) -> None:
     logger.info("Persisted workbook '%s'", context.settings.data_file)
 
 
-def refresh_context(context: RuntimeContext) -> RuntimeContext:
-    """Reload the workbook to discard unsaved modifications.
-
-    Args:
-        context (RuntimeContext): Runtime context whose settings should be
-            reused.
-
-    Returns:
-        RuntimeContext: Fresh context containing a newly opened workbook and
-            an empty cache.
-
-    Raises:
-        FileNotFoundError: If the backing workbook cannot be reloaded.
-
-    This is effectively a "revert" operation that drops in-memory edits and
-    hands back a pristine workbook pointer. Because a new :class:`RuntimeContext`
-    is produced, any cached data from the previous context is discarded.
-    """
-    workbook = dal.refresh_workbook(context.settings.data_file)
-    logger.info("Reloaded workbook '%s'", context.settings.data_file)
-    return RuntimeContext(settings=context.settings, workbook=workbook)
-
-
-def _get_cache_bucket(context: RuntimeContext, name: str) -> t.Dict[str, t.Any]:
+def get_cache_bucket(context: RuntimeContext, name: str) -> t.Dict[str, t.Any]:
     """Return a mutable cache bucket dedicated to the supplied name.
 
     The business logic layer maintains in-memory caches keyed by domain area
@@ -97,7 +77,7 @@ def _get_cache_bucket(context: RuntimeContext, name: str) -> t.Dict[str, t.Any]:
     return bucket
 
 
-def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
+def invalidate_cache(context: RuntimeContext, *names: str) -> None:
     """Evict one or more cache buckets after mutating workbook state.
 
     Following write operations, invalidation ensures subsequent reads rebuild
@@ -120,7 +100,7 @@ def _invalidate_cache(context: RuntimeContext, *names: str) -> None:
         context._cache.pop(name, None)
 
 
-def load_runtime_context(config_path: t.Optional[Path] = None) -> RuntimeContext:
+def load_context(config_path: t.Optional[Path] = None) -> RuntimeContext:
     """Build a runtime context from configuration and workbook resources.
 
     This helper obtains immutable configuration data via

@@ -15,7 +15,7 @@ def register_void_command() -> command_spec.CommandSpec:
     name = "void"
     help_text = "Void an existing transaction."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``void`` arguments to the provided sub-parser.
 
         Args:
@@ -31,10 +31,10 @@ def register_void_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_void)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_void)
 
 
-def translate_void(
+def _translate_void(
     args: argparse.Namespace,
 ) -> bll.VoidCommand:
     """Convert parsed CLI arguments into a ``VoidCommand``.
@@ -51,7 +51,7 @@ def translate_void(
     )
 
 
-def run_void(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_void(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the void workflow through the business logic layer.
 
     Args:
@@ -63,6 +63,6 @@ def run_void(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     Returns:
         int: Exit code ``0`` when the void is recorded successfully.
     """
-    command = translate_void(args)
+    command = _translate_void(args)
     bll.record_void(context, command)
     return 0

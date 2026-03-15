@@ -8,13 +8,24 @@ memoized cache across requests.
 
 import logging
 import typing as t
-from decimal import Decimal, InvalidOperation
+import dataclasses
+from decimal import Decimal
 
 from caad_erp import dal, exceptions
 
 from . import runtime
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(frozen=True)
+class ProductCommand:
+    """Command payload used by product create and update workflows."""
+
+    product_id: str
+    product_name: t.Optional[str] = None
+    sell_price: t.Optional[Decimal] = None
+    is_active: t.Optional[bool] = None
 
 
 def _ensure_products_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
@@ -34,7 +45,7 @@ def _ensure_products_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any
             computations when available.
     """
 
-    bucket = runtime._get_cache_bucket(context, "products")
+    bucket = runtime.get_cache_bucket(context, "products")
     if "all" not in bucket:
         all_products = list(dal.iter_products(context.workbook))
         bucket["all"] = all_products
@@ -102,38 +113,26 @@ def get_product(context: runtime.RuntimeContext, product_id: str) -> dal.Product
 
 def update_product(
     context: runtime.RuntimeContext,
-    product_id: str,
-    *,
-    product_name: t.Optional[str] = None,
-    sell_price: t.Optional[Decimal] = None,
-    is_active: t.Optional[bool] = None,
+    command: ProductCommand,
 ) -> dal.ProductRow:
     """Update selected fields for an existing product and refresh caches."""
 
-    normalized_id = product_id.strip()
+    normalized_id = command.product_id.strip()
     if not normalized_id:
         logger.error("Product update rejected: blank product_id")
         raise ValueError("Product ID must be provided")
 
     field_values: dict[str, t.Any] = {}
 
-    if product_name is not None:
-        normalized_name = str(product_name).strip()
+    if command.product_name is not None:
+        normalized_name = command.product_name.strip()
         if not normalized_name:
             logger.error("Product update rejected: blank product_name")
             raise ValueError("Product name must be provided")
         field_values["ProductName"] = normalized_name
 
-    if sell_price is not None:
-        try:
-            price = sell_price if isinstance(
-                sell_price, Decimal) else Decimal(sell_price)
-        except (InvalidOperation, TypeError) as exc:
-            logger.error(
-                "Product update rejected: invalid sell_price '%s'", sell_price)
-            raise ValueError(
-                "Sell price must be a valid decimal number") from exc
-
+    if command.sell_price is not None:
+        price = command.sell_price
         if price < Decimal("0"):
             logger.error(
                 "Product update rejected: negative sell_price '%s'", price)
@@ -141,12 +140,8 @@ def update_product(
 
         field_values["SellPrice"] = price
 
-    if is_active is not None:
-        if not isinstance(is_active, bool):
-            logger.error(
-                "Product update rejected: non-boolean is_active '%s'", is_active)
-            raise ValueError("is_active must be a boolean value")
-        field_values["IsActive"] = is_active
+    if command.is_active is not None:
+        field_values["IsActive"] = command.is_active
 
     if not field_values:
         logger.error("Product update rejected: no fields provided")
@@ -160,7 +155,7 @@ def update_product(
         raise exceptions.MissingReferenceError(
             f"Unknown product id: {normalized_id}") from exc
 
-    runtime._invalidate_cache(context, "products")
+    runtime.invalidate_cache(context, "products")
     updated = get_product(context, normalized_id)
     logger.info(
         "Updated product '%s' fields: %s",
@@ -172,21 +167,15 @@ def update_product(
 
 def add_product(
     context: runtime.RuntimeContext,
-    *,
-    product_id: str,
-    product_name: str,
-    sell_price: Decimal,
-    is_active: bool = True,
+    command: ProductCommand,
 ) -> dal.ProductRow:
     """Append a product row after enforcing catalog invariants.
 
     Args:
         context (RuntimeContext): Active runtime context encapsulating settings
             and workbook references.
-        product_id (str): Identifier to assign in the ``Products`` sheet.
-        product_name (str): Human-friendly name stored alongside the id.
-        sell_price (Decimal): Default sale price used when recording sales.
-        is_active (bool): Initial activation state. Defaults to ``True``.
+        command (ProductCommand): Structured command that must provide all
+            mutable fields when creating a product.
 
     Returns:
         dal.ProductRow: Persisted product record represented as a DAL
@@ -198,28 +187,32 @@ def add_product(
             identifier.
     """
 
-    normalized_id = product_id.strip()
+    normalized_id = command.product_id.strip()
     if not normalized_id:
         logger.error("Product creation rejected: blank product_id")
         raise ValueError("Product ID must be provided")
 
-    normalized_name = product_name.strip()
+    if command.product_name is None:
+        logger.error("Product creation rejected: missing product_name")
+        raise ValueError("Product name must be provided")
+    normalized_name = command.product_name.strip()
     if not normalized_name:
         logger.error("Product creation rejected: blank product_name")
         raise ValueError("Product name must be provided")
 
-    try:
-        price = sell_price if isinstance(
-            sell_price, Decimal) else Decimal(sell_price)
-    except (InvalidOperation, TypeError) as exc:
-        logger.error(
-            "Product creation rejected: invalid sell_price '%s'", sell_price)
-        raise ValueError("Sell price must be a valid decimal number") from exc
+    if command.sell_price is None:
+        logger.error("Product creation rejected: missing sell_price")
+        raise ValueError("Sell price must be provided")
 
+    price = command.sell_price
     if price < Decimal("0"):
         logger.error(
             "Product creation rejected: negative sell_price '%s'", price)
         raise ValueError("Sell price must be zero or positive")
+
+    if command.is_active is None:
+        logger.error("Product creation rejected: missing is_active")
+        raise ValueError("is_active must be provided")
 
     bucket = _ensure_products_cache(context)
     if normalized_id in bucket["by_id"]:
@@ -232,11 +225,11 @@ def add_product(
         product_id=normalized_id,
         product_name=normalized_name,
         sell_price=price,
-        is_active=is_active,
+        is_active=command.is_active,
     )
 
     dal.append_product(context.workbook, record)
-    runtime._invalidate_cache(context, "products")
+    runtime.invalidate_cache(context, "products")
     logger.info(
         "Registered product '%s' (%s) with sell price %s",
         record.product_id,

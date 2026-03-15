@@ -49,7 +49,7 @@ def iter_salesmen(workbook: Workbook) -> t.Iterable[SalesmanRow]:
     sheet = workbook[SALESMEN_SHEET]
     for raw in sheet.iter_rows(min_row=2, values_only=True):
         if any(cell is not None for cell in raw):
-            yield deserialize_salesman(raw)
+            yield _deserialize_salesman(raw)
 
 
 def append_salesman(workbook: Workbook, record: SalesmanRow) -> None:
@@ -64,10 +64,9 @@ def append_salesman(workbook: Workbook, record: SalesmanRow) -> None:
         record (SalesmanRow): Salesman entry to append.
     """
 
-    logger.debug("Appending salesman '%s' to salesmen sheet",
-                 record.salesman_id)
+    logger.debug("Appending salesman '%s' to salesmen sheet", record.salesman_id)
     sheet = workbook[SALESMEN_SHEET]
-    sheet.append(serialize_salesman(record))
+    sheet.append(_serialize_salesman(record))
 
 
 def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[str, t.Any]) -> None:
@@ -89,7 +88,11 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
 
     sheet_name = SALESMEN_SHEET
     row_index = dal_workbook.locate_row(
-        workbook, sheet_name, "SalesmanID", salesman_id)
+        workbook,
+        sheet_name,
+        "SalesmanID",
+        salesman_id
+    )
     if row_index is None:
         logger.warning("Salesman '%s' not found during update", salesman_id)
         raise KeyError(f"Salesman not found: {salesman_id}")
@@ -100,16 +103,14 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
 
     for field, value in field_values.items():
         if field not in header_map:
-            logger.error(
-                "Unknown salesman field '%s' referenced during update", field)
+            logger.error("Unknown salesman field '%s' referenced during update", field)
             raise KeyError(f"Unknown salesman field: {field}")
         col = header_map[field]
         sheet.cell(row=row_index, column=col, value=value)
-    logger.debug("Updated salesman '%s' fields: %s",
-                 salesman_id, list(field_values.keys()))
+    logger.debug("Updated salesman '%s' fields: %s", salesman_id, list(field_values.keys()))
 
 
-def serialize_salesman(record: SalesmanRow) -> list[object]:
+def _serialize_salesman(record: SalesmanRow) -> list[object]:
     """Convert a salesman dataclass into the worksheet column ordering.
 
     Args:
@@ -123,7 +124,7 @@ def serialize_salesman(record: SalesmanRow) -> list[object]:
     return [record.salesman_id, record.salesman_name, record.is_active]
 
 
-def deserialize_salesman(raw_row: t.Sequence[object]) -> SalesmanRow:
+def _deserialize_salesman(raw_row: t.Sequence[object]) -> SalesmanRow:
     """Convert a raw worksheet row into a strongly typed salesman record.
 
     The function coerces identifier and name fields to ``str`` and uses ``bool``
