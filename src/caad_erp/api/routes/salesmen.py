@@ -13,6 +13,35 @@ from .. import dependencies, schemas
 router = fastapi.APIRouter(prefix="/salesmen", tags=["Salesmen"])
 
 
+@router.get("", response_model=schemas.SalesmanListResponse)
+def list_salesmen(
+    include_inactive: bool = False,
+    context: bll.RuntimeContext = fastapi.Depends(
+        dependencies.get_runtime_context),
+) -> schemas.SalesmanListResponse:
+    """List salesmen, optionally including inactive ones.
+
+    Args:
+        include_inactive: When True, inactive salesmen are included.
+            Mirrors the CLI ``--all`` flag. Defaults to False.
+        context: Runtime context injected via dependency.
+
+    Returns:
+        SalesmanListResponse containing the matching salesman records.
+    """
+    salesmen = bll.list_salesmen(context, include_inactive=include_inactive)
+    return schemas.SalesmanListResponse(
+        items=[
+            schemas.SalesmanResponse(
+                salesman_id=s.salesman_id,
+                salesman_name=s.salesman_name,
+                is_active=s.is_active,
+            )
+            for s in salesmen
+        ]
+    )
+
+
 @router.post("", response_model=schemas.StandardResponse, status_code=201)
 def create_salesman(
     request: schemas.SalesmanCreateRequest,
