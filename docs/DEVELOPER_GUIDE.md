@@ -62,6 +62,7 @@ All runtime code should resolve configuration through `caad_erp.settings`.
 
 - `[System]`
   - `DataFile`: Path to the Excel data file.
+  - `LoungeName`: Human-readable name for the lounge; used for reports and UI titles.
   - `SchemaVersion`: Used for compatibility checks.
 - `[Defaults]`
   - `DefaultSalesman`: Fallback `SalesmanID` for new sales.
@@ -179,7 +180,7 @@ Guidelines:
 - Prefer accessing data through the public helpers (`list_products`,
   `get_transaction`) so the caches stay transparent to callers.
 - If you add write flows that modify products or salesmen, call
-  `_invalidate_cache(context, "products")` or `_invalidate_cache(context,
+  `invalidate_cache(context, "products")` or `invalidate_cache(context,
 "salesmen")` right after the DAL operation.
 - Avoid mutating the workbook directly from outside the BLL. Doing so bypasses
   the invalidation hook and can leave cached data stale.

@@ -226,6 +226,7 @@ def main(argv: t.Sequence[str] | None = None) -> int:
     try:
         context = bll.load_context(getattr(args, "config", None))
         exit_code = dispatch_command(context, args, command_table)
+        # In normal cases spec will never be None. It is here just for typing reasons.
         if exit_code == 0 and spec is not None and spec.is_mutating:
             bll.persist_context(context)
         return exit_code
