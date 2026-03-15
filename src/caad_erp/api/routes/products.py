@@ -13,6 +13,36 @@ from .. import dependencies, schemas
 router = fastapi.APIRouter(prefix="/products", tags=["Products"])
 
 
+@router.get("", response_model=schemas.ProductListResponse)
+def list_products(
+    include_inactive: bool = False,
+    context: bll.RuntimeContext = fastapi.Depends(
+        dependencies.get_runtime_context),
+) -> schemas.ProductListResponse:
+    """List products, optionally including inactive ones.
+
+    Args:
+        include_inactive: When True, inactive products are included.
+            Mirrors the CLI ``--all`` flag. Defaults to False.
+        context: Runtime context injected via dependency.
+
+    Returns:
+        ProductListResponse containing the matching product records.
+    """
+    products = bll.list_products(context, include_inactive=include_inactive)
+    return schemas.ProductListResponse(
+        items=[
+            schemas.ProductResponse(
+                product_id=p.product_id,
+                product_name=p.product_name,
+                sell_price=p.sell_price,
+                is_active=p.is_active,
+            )
+            for p in products
+        ]
+    )
+
+
 @router.post("", response_model=schemas.StandardResponse, status_code=201)
 def create_product(
     request: schemas.ProductCreateRequest,

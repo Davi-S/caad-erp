@@ -14,14 +14,9 @@ import pydantic
 from caad_erp import constants
 
 
-# ---------------------------------------------------------------------------
-# Standard Response Envelope
-# ---------------------------------------------------------------------------
-
-
 class StandardResponse(pydantic.BaseModel):
     """Standard wrapper for mutation endpoint responses.
-    
+
     The `data` field uses `Any` to allow flexibility across different entity
     types (Product, Salesman, Transaction). Individual endpoints ensure type
     safety by constructing specific response DTOs before wrapping them.
@@ -29,11 +24,6 @@ class StandardResponse(pydantic.BaseModel):
 
     detail: str
     data: t.Optional[t.Any] = None
-
-
-# ---------------------------------------------------------------------------
-# Product DTOs
-# ---------------------------------------------------------------------------
 
 
 class ProductCreateRequest(pydantic.BaseModel):
@@ -54,11 +44,6 @@ class ProductResponse(pydantic.BaseModel):
     is_active: bool
 
 
-# ---------------------------------------------------------------------------
-# Salesman DTOs
-# ---------------------------------------------------------------------------
-
-
 class SalesmanCreateRequest(pydantic.BaseModel):
     """Request payload for creating a new salesman."""
 
@@ -73,11 +58,6 @@ class SalesmanResponse(pydantic.BaseModel):
     salesman_id: str
     salesman_name: str
     is_active: bool
-
-
-# ---------------------------------------------------------------------------
-# Transaction DTOs
-# ---------------------------------------------------------------------------
 
 
 class SaleRequest(pydantic.BaseModel):
@@ -126,6 +106,30 @@ class PayDebtRequest(pydantic.BaseModel):
     payment_type: constants.PaymentType
     notes: t.Optional[str] = None
 
+    @pydantic.field_validator("payment_type")
+    @classmethod
+    def payment_type_not_on_credit(
+        cls, value: constants.PaymentType
+    ) -> constants.PaymentType:
+        """Reject OnCredit as a settlement method for credit payments."""
+        if value == constants.PaymentType.ON_CREDIT:
+            raise ValueError(
+                "Payment type 'OnCredit' is not allowed when settling a debt"
+            )
+        return value
+    
+
+class ProductListResponse(pydantic.BaseModel):
+    """Response for listing products."""
+
+    items: t.List[ProductResponse]
+
+
+class SalesmanListResponse(pydantic.BaseModel):
+    """Response for listing salesmen."""
+
+    items: t.List[SalesmanResponse]
+
 
 class TransactionResponse(pydantic.BaseModel):
     """Response representation of a transaction record."""
@@ -141,11 +145,6 @@ class TransactionResponse(pydantic.BaseModel):
     total_cost: Decimal
     linked_transaction_id: t.Optional[str]
     notes: t.Optional[str]
-
-
-# ---------------------------------------------------------------------------
-# Report DTOs
-# ---------------------------------------------------------------------------
 
 
 class StockItem(pydantic.BaseModel):
