@@ -27,10 +27,7 @@ APP_DESCRIPTION = (
 
 def _get_app_version() -> str:
     """Get the application version from package metadata."""
-    try:
-        return importlib.metadata.version("caad-erp")
-    except Exception:
-        return "0.0.0"
+    return importlib.metadata.version("caad-erp")
 
 
 @contextlib.asynccontextmanager

@@ -4,6 +4,7 @@ This module provides centralized exception handling to map BLL exceptions
 to appropriate HTTP status codes and response formats.
 """
 
+import dataclasses
 import logging
 import typing as t
 
@@ -16,8 +17,18 @@ from caad_erp import exceptions
 logger = logging.getLogger(__name__)
 
 
-# Type alias for custom response factory functions
+# Type alias for response factory functions.
 ResponseFactory = t.Callable[[int, Exception], fastapi.responses.JSONResponse]
+
+
+@dataclasses.dataclass(frozen=True)
+class ExceptionHandlerSpec:
+    """Declarative configuration for registering one exception handler."""
+
+    exception_class: type[Exception]
+    status_code: int
+    response_factory: ResponseFactory
+    log_level: int = logging.WARNING
 
 
 def _default_response_factory(
@@ -33,9 +44,14 @@ def _default_response_factory(
     Returns:
         JSONResponse with the standard error format.
     """
+    error_code = type(exc).__name__.lower()
     return fastapi.responses.JSONResponse(
         status_code=status_code,
-        content={"detail": str(exc)},
+        content={
+            "detail": str(exc),
+            "code": error_code,
+            "error_type": type(exc).__name__,
+        },
     )
 
 
@@ -52,10 +68,10 @@ def _validation_error_response_factory(
     Returns:
         JSONResponse with validation error details.
     """
-    errors = exc.errors()
-    if errors:
+    validation_errors = exc.errors()
+    if validation_errors:
         # Extract first error message for the detail field
-        first_error = errors[0]
+        first_error = validation_errors[0]
         location = ".".join(str(loc) for loc in first_error.get("loc", []))
         message = first_error.get("msg", "Validation error")
         detail = f"{location}: {message}" if location else message
@@ -64,7 +80,12 @@ def _validation_error_response_factory(
 
     return fastapi.responses.JSONResponse(
         status_code=status_code,
-        content={"detail": detail},
+        content={
+            "detail": detail,
+            "code": "validation_error",
+            "error_type": type(exc).__name__,
+            "errors": validation_errors,
+        },
     )
 
 
@@ -83,32 +104,94 @@ def _catch_all_response_factory(
     """
     return fastapi.responses.JSONResponse(
         status_code=status_code,
-        content={"detail": "An unexpected error occurred"},
+        content={
+            "detail": "An unexpected error occurred",
+            "code": "internal_server_error",
+            "error_type": type(exc).__name__,
+        },
     )
 
 
-# Exception-to-HTTP-status-code mapping with optional custom response factories.
-# More specific exceptions should be listed before their base classes.
-# Each tuple contains: (exception_class, status_code, optional_response_factory)
-EXCEPTION_STATUS_MAP: list[
-    tuple[type[Exception], int, t.Optional[ResponseFactory]]
-] = [
+# Exception-to-HTTP-status-code mapping with explicit response factories.
+EXCEPTION_HANDLER_SPECS: list[ExceptionHandlerSpec] = [
     # Domain-specific errors
-    (exceptions.MissingReferenceError, 404, None),
-    (exceptions.BusinessRuleViolation, 409, None),
-    (ValueError, 400, None),
+    ExceptionHandlerSpec(
+        exceptions.MissingReferenceError,
+        404,
+        _default_response_factory,
+    ),
+    ExceptionHandlerSpec(
+        exceptions.BusinessRuleViolation,
+        409,
+        _default_response_factory,
+    ),
+    ExceptionHandlerSpec(
+        ValueError,
+        400,
+        _default_response_factory,
+    ),
     # Validation errors from Pydantic
-    (fastapi.exceptions.RequestValidationError, 422, _validation_error_response_factory),
+    ExceptionHandlerSpec(
+        fastapi.exceptions.RequestValidationError,
+        422,
+        _validation_error_response_factory,
+    ),
     # Dependency/runtime errors
-    (RuntimeError, 503, None),
+    ExceptionHandlerSpec(
+        RuntimeError,
+        503,
+        _default_response_factory,
+    ),
     # Catch-all for unexpected errors (should be last)
-    (Exception, 500, _catch_all_response_factory),
+    ExceptionHandlerSpec(
+        Exception,
+        500,
+        _catch_all_response_factory,
+        log_level=logging.ERROR,
+    ),
 ]
+
+
+def _exception_specificity(exc_class: type[Exception]) -> int:
+    """Return inheritance depth used to register more specific classes first."""
+    return len(exc_class.mro())
+
+
+def _validate_exception_handler_specs(
+    specs: t.Sequence[ExceptionHandlerSpec],
+) -> None:
+    """Validate handler configuration at application startup."""
+    if not specs:
+        raise RuntimeError("EXCEPTION_HANDLER_SPECS must not be empty")
+
+    seen_classes: set[type[Exception]] = set()
+    catch_all_count = 0
+
+    for spec in specs:
+        if spec.exception_class in seen_classes:
+            raise RuntimeError(
+                f"Duplicate exception handler spec for {spec.exception_class.__name__}"
+            )
+        seen_classes.add(spec.exception_class)
+
+        if spec.exception_class is Exception:
+            catch_all_count += 1
+
+        if not (100 <= spec.status_code <= 599):
+            raise RuntimeError(
+                "Invalid status code "
+                f"{spec.status_code} for {spec.exception_class.__name__}"
+            )
+
+    if catch_all_count != 1:
+        raise RuntimeError(
+            "EXCEPTION_HANDLER_SPECS must define exactly one Exception catch-all handler"
+        )
 
 
 def _create_exception_handler(
     status_code: int,
-    response_factory: t.Optional[ResponseFactory] = None,
+    response_factory: ResponseFactory,
     log_level: int = logging.WARNING,
 ) -> t.Callable[
     [fastapi.Request, Exception],
@@ -118,21 +201,21 @@ def _create_exception_handler(
 
     Args:
         status_code: HTTP status code to return.
-        response_factory: Optional custom response factory. If None,
-            uses _default_response_factory.
+        response_factory: Response factory used to build the JSON payload.
         log_level: Logging level for the exception.
 
     Returns:
         An async exception handler function.
     """
-    factory = response_factory or _default_response_factory
-
     async def handler(
         request: fastapi.Request,
         exc: Exception,
     ) -> fastapi.responses.JSONResponse:
-        logger.log(log_level, "%s: %s", type(exc).__name__, exc)
-        return factory(status_code, exc)
+        if log_level >= logging.ERROR:
+            logger.exception("%s: %s", type(exc).__name__, exc)
+        else:
+            logger.log(log_level, "%s: %s", type(exc).__name__, exc)
+        return response_factory(status_code, exc)
 
     return handler
 
@@ -143,15 +226,23 @@ def register_handlers(app: fastapi.FastAPI) -> None:
     This function should be called during application initialization
     to ensure all endpoints benefit from centralized exception handling.
 
-    Exception handlers are registered in the order defined in
-    EXCEPTION_STATUS_MAP, ensuring more specific exceptions are
-    handled before their base classes.
+    The registration process validates configuration at startup and then
+    registers handlers from most specific exception classes to least specific.
 
     Args:
         app: The FastAPI application instance.
     """
-    for exc_class, status_code, response_factory in EXCEPTION_STATUS_MAP:
-        # Use ERROR level for catch-all, WARNING for others
-        log_level = logging.ERROR if exc_class is Exception else logging.WARNING
-        handler = _create_exception_handler(status_code, response_factory, log_level)
-        app.add_exception_handler(exc_class, handler)
+    _validate_exception_handler_specs(EXCEPTION_HANDLER_SPECS)
+
+    # Register by specificity, not by defined order
+    for spec in sorted(
+        EXCEPTION_HANDLER_SPECS,
+        key=lambda value: _exception_specificity(value.exception_class),
+        reverse=True,
+    ):
+        handler = _create_exception_handler(
+            spec.status_code,
+            spec.response_factory,
+            spec.log_level,
+        )
+        app.add_exception_handler(spec.exception_class, handler)
