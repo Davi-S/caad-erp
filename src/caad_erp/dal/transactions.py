@@ -59,7 +59,7 @@ def iter_transactions(workbook: Workbook) -> t.Iterable[TransactionRow]:
     sheet = workbook[TRANSACTION_LOG_SHEET]
     for raw in sheet.iter_rows(min_row=2, values_only=True):
         if any(cell is not None for cell in raw):
-            yield deserialize_transaction(raw)
+            yield _deserialize_transaction(raw)
 
 
 def append_transaction(workbook: Workbook, record: TransactionRow) -> None:
@@ -80,10 +80,10 @@ def append_transaction(workbook: Workbook, record: TransactionRow) -> None:
         record.transaction_type,
     )
     sheet = workbook[TRANSACTION_LOG_SHEET]
-    sheet.append(serialize_transaction(record))
+    sheet.append(_serialize_transaction(record))
 
 
-def serialize_transaction(record: TransactionRow) -> list[object]:
+def _serialize_transaction(record: TransactionRow) -> list[object]:
     """Convert a transaction dataclass into the transaction log column order.
 
     Args:
@@ -109,7 +109,7 @@ def serialize_transaction(record: TransactionRow) -> list[object]:
     ]
 
 
-def deserialize_transaction(raw_row: t.Sequence[object]) -> TransactionRow:
+def _deserialize_transaction(raw_row: t.Sequence[object]) -> TransactionRow:
     """Convert a raw worksheet row into a strongly typed transaction record.
 
     Decimal-compatible columns are normalized into :class:`~decimal.Decimal`

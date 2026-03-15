@@ -15,9 +15,14 @@ class SubparserFactory(t.Protocol):
 
 @dataclasses.dataclass(frozen=True)
 class CommandSpec:
-    """Describe how a CLI sub-command is configured and executed."""
+    """Describe how a CLI sub-command is configured and executed.
+
+    The ``is_mutating`` flag tells the CLI runtime whether a successful
+    command should flush workbook changes to disk.
+    """
 
     name: str
     help_text: str
     register: t.Callable[[SubparserFactory], argparse.ArgumentParser]
     execute: t.Callable[[bll.RuntimeContext, argparse.Namespace], int]
+    is_mutating: bool = True

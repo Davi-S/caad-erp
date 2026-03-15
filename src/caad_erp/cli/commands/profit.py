@@ -17,7 +17,7 @@ def register_profit_command() -> command_spec.CommandSpec:
     name = "profit"
     help_text = "Display revenue, cost, and profit summaries."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``profit`` arguments to the provided sub-parser.
 
         Args:
@@ -32,10 +32,16 @@ def register_profit_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_profit_report)
+    return command_spec.CommandSpec(
+        name=name,
+        help_text=help_text,
+        register=_registrar,
+        execute=_run_profit_report,
+        is_mutating=False,
+    )
 
 
-def display_profit_summary(summary: t.Mapping[str, Decimal]) -> None:
+def _display_profit_summary(summary: t.Mapping[str, Decimal]) -> None:
     """Print the aggregated revenue, cost, and profit metrics.
 
     Args:
@@ -54,7 +60,7 @@ def display_profit_summary(summary: t.Mapping[str, Decimal]) -> None:
     print(f"  Profit        : {profit}")
 
 
-def run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Compute and display the profit summary for the current workbook.
 
     Args:
@@ -68,5 +74,5 @@ def run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> 
     """
 
     summary = bll.calculate_profit_summary(context)
-    display_profit_summary(summary)
+    _display_profit_summary(summary)
     return 0

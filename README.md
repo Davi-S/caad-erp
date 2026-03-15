@@ -75,6 +75,11 @@ uv run --with-editable . caad-erp-cli
 By default the CLI looks for a `config.ini` in the current working directory.
 Pass `--config /path/to/config.ini` if your configuration lives elsewhere.
 
+Running `caad-erp-cli` without a sub-command starts an **interactive REPL
+session**. The workbook is opened once and shared across every command you
+enter at the prompt, which is faster than invoking the script from scratch
+for each operation. Type `exit` or press `Ctrl+D` to end the session.
+
 **For copy-paste walkthroughs, head over to the [examples/](./examples/) directory.**
 
 #### Write Commands
@@ -100,6 +105,8 @@ Reporting commands return calculated information without mutating the workbook:
 - `profit`
 - `debts`
 - `log`
+- `list-products`
+- `list-salesmen`
 
 ### API Server
 

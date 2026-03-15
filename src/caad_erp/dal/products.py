@@ -53,7 +53,7 @@ def iter_products(workbook: Workbook) -> t.Iterable[ProductRow]:
     for raw in sheet.iter_rows(min_row=2, values_only=True):
         # skip fully empty rows
         if any(cell is not None for cell in raw):
-            yield deserialize_product(raw)
+            yield _deserialize_product(raw)
 
 
 def append_product(workbook: Workbook, record: ProductRow) -> None:
@@ -70,7 +70,7 @@ def append_product(workbook: Workbook, record: ProductRow) -> None:
 
     logger.debug("Appending product '%s' to products sheet", record.product_id)
     sheet = workbook[PRODUCTS_SHEET]
-    sheet.append(serialize_product(record))
+    sheet.append(_serialize_product(record))
 
 
 def update_product(workbook: Workbook, product_id: str, *, field_values: dict[str, t.Any]) -> None:
@@ -91,29 +91,30 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
         KeyError: If the product or any referenced column cannot be found.
     """
 
-    sheet_name = PRODUCTS_SHEET
     row_index = dal_workbook.locate_row(
-        workbook, sheet_name, "ProductID", product_id)
+        workbook,
+        PRODUCTS_SHEET,
+        "ProductID",
+        product_id
+    )
     if row_index is None:
         logger.warning("Product '%s' not found during update", product_id)
         raise KeyError(f"Product not found: {product_id}")
 
-    sheet = workbook[sheet_name]
+    sheet = workbook[PRODUCTS_SHEET]
     headers = list(sheet[1])
     header_map = {cell.value: idx + 1 for idx, cell in enumerate(headers)}
 
     for field, value in field_values.items():
         if field not in header_map:
-            logger.error(
-                "Unknown product field '%s' referenced during update", field)
+            logger.error("Unknown product field '%s' referenced during update", field)
             raise KeyError(f"Unknown product field: {field}")
         col = header_map[field]
         sheet.cell(row=row_index, column=col, value=value)
-    logger.debug("Updated product '%s' fields: %s",
-                 product_id, list(field_values.keys()))
+    logger.debug("Updated product '%s' fields: %s", product_id, list(field_values.keys()))
 
 
-def serialize_product(record: ProductRow) -> list[object]:
+def _serialize_product(record: ProductRow) -> list[object]:
     """Convert a product dataclass into the worksheet column ordering.
 
     Args:
@@ -127,7 +128,7 @@ def serialize_product(record: ProductRow) -> list[object]:
     return [record.product_id, record.product_name, record.sell_price, record.is_active]
 
 
-def deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
+def _deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
     """Convert a raw worksheet row into a strongly typed product record.
 
     The converter normalizes numeric values into :class:`~decimal.Decimal`
@@ -147,6 +148,10 @@ def deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
     sell_raw = raw_row[2]
     is_active = raw_row[3]
 
-    sell_price = Decimal(
-        str(sell_raw)) if sell_raw is not None else Decimal("0.00")
-    return ProductRow(product_id=str(product_id), product_name=str(product_name), sell_price=sell_price, is_active=bool(is_active))
+    sell_price = Decimal(str(sell_raw)) if sell_raw is not None else Decimal("0.00")
+    return ProductRow(
+        product_id=str(product_id),
+        product_name=str(product_name),
+        sell_price=sell_price,
+        is_active=bool(is_active)
+    )
