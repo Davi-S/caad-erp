@@ -31,85 +31,65 @@ class ExceptionHandlerSpec:
     log_level: int = logging.WARNING
 
 
-def _default_response_factory(
-    status_code: int,
-    exc: Exception,
-) -> fastapi.responses.JSONResponse:
-    """Create a standardized JSON error response.
+class ErrorResponseBuilder:
+    """Factory object responsible for constructing JSON error payloads."""
 
-    Args:
-        status_code: HTTP status code for the response.
-        exc: The exception that triggered this response.
+    @staticmethod
+    def default(
+        status_code: int,
+        exc: Exception,
+    ) -> fastapi.responses.JSONResponse:
+        """Create a standardized JSON error response."""
+        error_code = type(exc).__name__.lower()
+        return fastapi.responses.JSONResponse(
+            status_code=status_code,
+            content={
+                "detail": str(exc),
+                "code": error_code,
+                "error_type": type(exc).__name__,
+            },
+        )
 
-    Returns:
-        JSONResponse with the standard error format.
-    """
-    error_code = type(exc).__name__.lower()
-    return fastapi.responses.JSONResponse(
-        status_code=status_code,
-        content={
-            "detail": str(exc),
-            "code": error_code,
-            "error_type": type(exc).__name__,
-        },
-    )
+    @staticmethod
+    def validation(
+        status_code: int,
+        exc: fastapi.exceptions.RequestValidationError,
+    ) -> fastapi.responses.JSONResponse:
+        """Create a validation error response with structured error details."""
+        validation_errors = exc.errors()
+        if validation_errors:
+            # Extract first error message for the detail field
+            first_error = validation_errors[0]
+            location = ".".join(str(loc) for loc in first_error.get("loc", []))
+            message = first_error.get("msg", "Validation error")
+            detail = f"{location}: {message}" if location else message
+        else:
+            detail = "Validation error"
 
+        return fastapi.responses.JSONResponse(
+            status_code=status_code,
+            content={
+                "detail": detail,
+                "code": "validation_error",
+                "error_type": type(exc).__name__,
+                "errors": validation_errors,
+            },
+        )
 
-def _validation_error_response_factory(
-    status_code: int,
-    exc: fastapi.exceptions.RequestValidationError,
-) -> fastapi.responses.JSONResponse:
-    """Create a validation error response with structured error details.
-
-    Args:
-        status_code: HTTP status code for the response.
-        exc: The RequestValidationError exception.
-
-    Returns:
-        JSONResponse with validation error details.
-    """
-    validation_errors = exc.errors()
-    if validation_errors:
-        # Extract first error message for the detail field
-        first_error = validation_errors[0]
-        location = ".".join(str(loc) for loc in first_error.get("loc", []))
-        message = first_error.get("msg", "Validation error")
-        detail = f"{location}: {message}" if location else message
-    else:
-        detail = "Validation error"
-
-    return fastapi.responses.JSONResponse(
-        status_code=status_code,
-        content={
-            "detail": detail,
-            "code": "validation_error",
-            "error_type": type(exc).__name__,
-            "errors": validation_errors,
-        },
-    )
-
-
-def _catch_all_response_factory(
-    status_code: int,
-    exc: Exception,
-) -> fastapi.responses.JSONResponse:
-    """Create a sanitized error response for unexpected exceptions.
-
-    Args:
-        status_code: HTTP status code for the response.
-        exc: The exception that triggered this response.
-
-    Returns:
-        JSONResponse with a generic error message.
-    """
-    return fastapi.responses.JSONResponse(
-        status_code=status_code,
-        content={
-            "detail": "An unexpected error occurred",
-            "code": "internal_server_error",
-            "error_type": type(exc).__name__,
-        },
-    )
+    @staticmethod
+    def catch_all(
+        status_code: int,
+        exc: Exception,
+    ) -> fastapi.responses.JSONResponse:
+        """Create a sanitized error response for unexpected exceptions."""
+        return fastapi.responses.JSONResponse(
+            status_code=status_code,
+            content={
+                "detail": "An unexpected error occurred",
+                "code": "internal_server_error",
+                "error_type": type(exc).__name__,
+            },
+        )
 
 
 # Exception-to-HTTP-status-code mapping with explicit response factories.
@@ -118,106 +98,118 @@ EXCEPTION_HANDLER_SPECS: list[ExceptionHandlerSpec] = [
     ExceptionHandlerSpec(
         exceptions.MissingReferenceError,
         404,
-        _default_response_factory,
+        ErrorResponseBuilder.default,
     ),
     ExceptionHandlerSpec(
         exceptions.BusinessRuleViolation,
         409,
-        _default_response_factory,
+        ErrorResponseBuilder.default,
     ),
     ExceptionHandlerSpec(
         ValueError,
         400,
-        _default_response_factory,
+        ErrorResponseBuilder.default,
     ),
     # Validation errors from Pydantic
     ExceptionHandlerSpec(
         fastapi.exceptions.RequestValidationError,
         422,
-        _validation_error_response_factory,
+        ErrorResponseBuilder.validation,
     ),
     # Dependency/runtime errors
     ExceptionHandlerSpec(
         RuntimeError,
         503,
-        _default_response_factory,
+        ErrorResponseBuilder.default,
     ),
     # Catch-all for unexpected errors (should be last)
     ExceptionHandlerSpec(
         Exception,
         500,
-        _catch_all_response_factory,
+        ErrorResponseBuilder.catch_all,
         log_level=logging.ERROR,
     ),
 ]
 
 
-def _exception_specificity(exc_class: type[Exception]) -> int:
-    """Return inheritance depth used to register more specific classes first."""
-    return len(exc_class.mro())
+class ExceptionHandlerRegistry:
+    """Registers validated exception handlers on a FastAPI application."""
 
+    def __init__(
+        self,
+        specs: t.Sequence[ExceptionHandlerSpec],
+        *,
+        logger_instance: logging.Logger,
+    ) -> None:
+        self._specs = list(specs)
+        self._logger = logger_instance
+        self._validate_specs()
 
-def _validate_exception_handler_specs(
-    specs: t.Sequence[ExceptionHandlerSpec],
-) -> None:
-    """Validate handler configuration at application startup."""
-    if not specs:
-        raise RuntimeError("EXCEPTION_HANDLER_SPECS must not be empty")
+    @staticmethod
+    def _exception_specificity(exc_class: type[Exception]) -> int:
+        """Return inheritance depth to register specific handlers first."""
+        return len(exc_class.mro())
 
-    seen_classes: set[type[Exception]] = set()
-    catch_all_count = 0
+    def _validate_specs(self) -> None:
+        """Validate handler configuration before registration."""
+        if not self._specs:
+            raise RuntimeError("EXCEPTION_HANDLER_SPECS must not be empty")
 
-    for spec in specs:
-        if spec.exception_class in seen_classes:
+        seen_classes: set[type[Exception]] = set()
+        catch_all_count = 0
+
+        for spec in self._specs:
+            if spec.exception_class in seen_classes:
+                raise RuntimeError(
+                    "Duplicate exception handler spec for "
+                    f"{spec.exception_class.__name__}"
+                )
+            seen_classes.add(spec.exception_class)
+
+            if spec.exception_class is Exception:
+                catch_all_count += 1
+
+            if not (100 <= spec.status_code <= 599):
+                raise RuntimeError(
+                    "Invalid status code "
+                    f"{spec.status_code} for {spec.exception_class.__name__}"
+                )
+
+        if catch_all_count != 1:
             raise RuntimeError(
-                f"Duplicate exception handler spec for {spec.exception_class.__name__}"
-            )
-        seen_classes.add(spec.exception_class)
-
-        if spec.exception_class is Exception:
-            catch_all_count += 1
-
-        if not (100 <= spec.status_code <= 599):
-            raise RuntimeError(
-                "Invalid status code "
-                f"{spec.status_code} for {spec.exception_class.__name__}"
+                "EXCEPTION_HANDLER_SPECS must define exactly one Exception catch-all handler"
             )
 
-    if catch_all_count != 1:
-        raise RuntimeError(
-            "EXCEPTION_HANDLER_SPECS must define exactly one Exception catch-all handler"
-        )
+    def _build_handler(
+        self,
+        spec: ExceptionHandlerSpec,
+    ) -> t.Callable[
+        [fastapi.Request, Exception],
+        t.Coroutine[t.Any, t.Any, fastapi.responses.JSONResponse],
+    ]:
+        """Build one FastAPI-compatible async exception handler."""
 
+        async def handler(
+            request: fastapi.Request,
+            exc: Exception,
+        ) -> fastapi.responses.JSONResponse:
+            if spec.log_level >= logging.ERROR:
+                self._logger.exception("%s: %s", type(exc).__name__, exc)
+            else:
+                self._logger.log(spec.log_level, "%s: %s", type(exc).__name__, exc)
+            return spec.response_factory(spec.status_code, exc)
 
-def _create_exception_handler(
-    status_code: int,
-    response_factory: ResponseFactory,
-    log_level: int = logging.WARNING,
-) -> t.Callable[
-    [fastapi.Request, Exception],
-    t.Coroutine[t.Any, t.Any, fastapi.responses.JSONResponse],
-]:
-    """Create an exception handler function for the given configuration.
+        return handler
 
-    Args:
-        status_code: HTTP status code to return.
-        response_factory: Response factory used to build the JSON payload.
-        log_level: Logging level for the exception.
-
-    Returns:
-        An async exception handler function.
-    """
-    async def handler(
-        request: fastapi.Request,
-        exc: Exception,
-    ) -> fastapi.responses.JSONResponse:
-        if log_level >= logging.ERROR:
-            logger.exception("%s: %s", type(exc).__name__, exc)
-        else:
-            logger.log(log_level, "%s: %s", type(exc).__name__, exc)
-        return response_factory(status_code, exc)
-
-    return handler
+    def register(self, app: fastapi.FastAPI) -> None:
+        """Validate specs and register handlers sorted by type specificity."""
+        for spec in sorted(
+            self._specs,
+            key=lambda value: self._exception_specificity(
+                value.exception_class),
+            reverse=True,
+        ):
+            app.add_exception_handler(spec.exception_class, self._build_handler(spec))
 
 
 def register_handlers(app: fastapi.FastAPI) -> None:
@@ -232,17 +224,8 @@ def register_handlers(app: fastapi.FastAPI) -> None:
     Args:
         app: The FastAPI application instance.
     """
-    _validate_exception_handler_specs(EXCEPTION_HANDLER_SPECS)
-
-    # Register by specificity, not by defined order
-    for spec in sorted(
+    registry = ExceptionHandlerRegistry(
         EXCEPTION_HANDLER_SPECS,
-        key=lambda value: _exception_specificity(value.exception_class),
-        reverse=True,
-    ):
-        handler = _create_exception_handler(
-            spec.status_code,
-            spec.response_factory,
-            spec.log_level,
-        )
-        app.add_exception_handler(spec.exception_class, handler)
+        logger_instance=logger,
+    )
+    registry.register(app)
