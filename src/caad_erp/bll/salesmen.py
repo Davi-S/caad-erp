@@ -8,12 +8,22 @@ invariants and active status checks.
 
 import logging
 import typing as t
+import dataclasses
 
 from caad_erp import dal, exceptions
 
 from . import runtime
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(frozen=True)
+class SalesmanCommand:
+    """Command payload used by salesman create and update workflows."""
+
+    salesman_id: str
+    salesman_name: t.Optional[str] = None
+    is_active: t.Optional[bool] = None
 
 
 def _ensure_salesmen_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
@@ -31,7 +41,7 @@ def _ensure_salesmen_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any
             and a ``by_id`` lookup dictionary.
     """
 
-    bucket = runtime._get_cache_bucket(context, "salesmen")
+    bucket = runtime.get_cache_bucket(context, "salesmen")
     if "all" not in bucket:
         all_salesmen = list(dal.iter_salesmen(context.workbook))
         bucket["all"] = all_salesmen
@@ -98,19 +108,14 @@ def get_salesman(context: runtime.RuntimeContext, salesman_id: str) -> dal.Sales
 
 def add_salesman(
     context: runtime.RuntimeContext,
-    *,
-    salesman_id: str,
-    salesman_name: str,
-    is_active: bool = True,
+    command: SalesmanCommand,
 ) -> dal.SalesmanRow:
     """Register a salesman while enforcing identifier uniqueness.
 
     Args:
         context (RuntimeContext): Runtime context providing workbook access.
-        salesman_id (str): Unique identifier stored in the ``Salesmen`` sheet.
-        salesman_name (str): Display name recorded next to the identifier.
-        is_active (bool): Activation flag for the new salesman. Defaults to
-            ``True``.
+        command (SalesmanCommand): Structured command that must provide all
+            mutable fields when creating a salesman.
 
     Returns:
         dal.SalesmanRow: Persisted salesman dataclass.
@@ -121,15 +126,22 @@ def add_salesman(
             already exists.
     """
 
-    normalized_id = salesman_id.strip()
+    normalized_id = command.salesman_id.strip()
     if not normalized_id:
         logger.error("Salesman creation rejected: blank salesman_id")
         raise ValueError("Salesman ID must be provided")
 
-    normalized_name = salesman_name.strip()
+    if command.salesman_name is None:
+        logger.error("Salesman creation rejected: missing salesman_name")
+        raise ValueError("Salesman name must be provided")
+    normalized_name = command.salesman_name.strip()
     if not normalized_name:
         logger.error("Salesman creation rejected: blank salesman_name")
         raise ValueError("Salesman name must be provided")
+
+    if command.is_active is None:
+        logger.error("Salesman creation rejected: missing is_active")
+        raise ValueError("is_active must be provided")
 
     bucket = _ensure_salesmen_cache(context)
     if normalized_id in bucket["by_id"]:
@@ -141,11 +153,11 @@ def add_salesman(
     record = dal.SalesmanRow(
         salesman_id=normalized_id,
         salesman_name=normalized_name,
-        is_active=is_active,
+        is_active=command.is_active,
     )
 
     dal.append_salesman(context.workbook, record)
-    runtime._invalidate_cache(context, "salesmen")
+    runtime.invalidate_cache(context, "salesmen")
     logger.info("Registered salesman '%s' (%s)",
                 record.salesman_id, record.salesman_name)
     return record
@@ -153,33 +165,26 @@ def add_salesman(
 
 def update_salesman(
     context: runtime.RuntimeContext,
-    salesman_id: str,
-    *,
-    salesman_name: t.Optional[str] = None,
-    is_active: t.Optional[bool] = None,
+    command: SalesmanCommand,
 ) -> dal.SalesmanRow:
     """Update selected fields for a salesman and refresh caches."""
 
-    normalized_id = salesman_id.strip()
+    normalized_id = command.salesman_id.strip()
     if not normalized_id:
         logger.error("Salesman update rejected: blank salesman_id")
         raise ValueError("Salesman ID must be provided")
 
     field_values: dict[str, t.Any] = {}
 
-    if salesman_name is not None:
-        normalized_name = str(salesman_name).strip()
+    if command.salesman_name is not None:
+        normalized_name = command.salesman_name.strip()
         if not normalized_name:
             logger.error("Salesman update rejected: blank salesman_name")
             raise ValueError("Salesman name must be provided")
         field_values["SalesmanName"] = normalized_name
 
-    if is_active is not None:
-        if not isinstance(is_active, bool):
-            logger.error(
-                "Salesman update rejected: non-boolean is_active '%s'", is_active)
-            raise ValueError("is_active must be a boolean value")
-        field_values["IsActive"] = is_active
+    if command.is_active is not None:
+        field_values["IsActive"] = command.is_active
 
     if not field_values:
         logger.error("Salesman update rejected: no fields provided")
@@ -193,7 +198,7 @@ def update_salesman(
         raise exceptions.MissingReferenceError(
             f"Unknown salesman id: {normalized_id}") from exc
 
-    runtime._invalidate_cache(context, "salesmen")
+    runtime.invalidate_cache(context, "salesmen")
     updated = get_salesman(context, normalized_id)
     logger.info(
         "Updated salesman '%s' fields: %s",

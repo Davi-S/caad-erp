@@ -6,13 +6,15 @@ low-level exceptions into exit codes suitable for shell automation.
 """
 
 import argparse
+import importlib
 import logging
+import pkgutil
 import typing as t
 from pathlib import Path
 
 from caad_erp import bll, exceptions
 
-from . import command_spec, commands
+from . import command_spec, repl
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +47,14 @@ def build_parser() -> argparse.ArgumentParser:
 def configure_subcommands(
     parser: argparse.ArgumentParser,
 ) -> t.Mapping[str, command_spec.CommandSpec]:
-    """Attach read and write sub-commands to the base parser.
+    """Attach all sub-commands to the base parser via auto-discovery.
 
-    This routine coordinates registration of every command exposed by the CLI
-    by delegating to :func:`register_write_commands` and
-    :func:`register_read_commands`. The resulting command table is keyed by
-    command name for quick lookups during dispatch.
+    This routine invokes :func:`discover_command_specs` to locate every
+    ``CommandSpec`` in the commands package automatically, then registers
+    each one with the sub-parser collection. The ``repl`` meta-command is
+    also surfaced in ``--help`` even though it is not a ``CommandSpec``.
+    The resulting command table is keyed by command name for quick lookups
+    during dispatch.
 
     Args:
         parser (argparse.ArgumentParser): Parser produced by
@@ -61,65 +65,72 @@ def configure_subcommands(
             their registered specifications.
     """
     subparsers = parser.add_subparsers(
-        dest="command", required=True, title="commands")
-    write_specs = register_write_commands(subparsers)
-    read_specs = register_read_commands(subparsers)
-    return build_command_table([*write_specs.values(), *read_specs.values()])
+        dest="command", required=False, title="commands")
+    discovered_specs = discover_command_specs()
+
+    # Register the discovered specs
+    for spec in discovered_specs:
+        spec.register(subparsers)
+
+    # 'repl' is a meta-command: it is surfaced in --help but is not a
+    # CommandSpec because it carries no BLL semantics of its own.
+    subparsers.add_parser(
+        "repl",
+        help="Start an interactive session (default when no command is given).",
+    )
+
+    return build_command_table(discovered_specs)
 
 
-def register_write_commands(
-    subparsers: argparse._SubParsersAction,
-) -> t.Dict[str, command_spec.CommandSpec]:
-    """Register state-mutating commands like sales, restocks, and voids.
-
-    Args:
-        subparsers (argparse._SubParsersAction): Sub-parser collection created
-            by :meth:`argparse.ArgumentParser.add_subparsers` that is used to
-            install each write-capable command.
+def discover_command_specs() -> t.Tuple[command_spec.CommandSpec, ...]:
+    """Discover command factories in the commands package and build specs.
 
     Returns:
-        dict[str, CommandSpec]: Mapping of command names to their
-            specifications, already registered with ``subparsers``.
+        tuple[CommandSpec, ...]: Deterministically ordered command
+            specifications sorted by command name.
+
+    Raises:
+        ValueError: If a command module does not expose the expected register
+            factory function.
+        TypeError: If a discovered register attribute is not callable or does
+            not return a :class:`CommandSpec`.
     """
-    specs = {
-        "add-product": commands.register_add_product_command(),
-        "add-salesman": commands.register_add_salesman_command(),
-        "deactivate-product": commands.register_deactivate_product_command(),
-        "deactivate-salesman": commands.register_deactivate_salesman_command(),
-        "sale": commands.register_sale_command(),
-        "restock": commands.register_restock_command(),
-        "write-off": commands.register_write_off_command(),
-        "pay-debt": commands.register_pay_debt_command(),
-        "void": commands.register_void_command(),
-    }
-    for spec in specs.values():
-        spec.register(subparsers)
-    return specs
+    package_name = "caad_erp.cli.commands"
+    package = importlib.import_module(package_name)
+    if not hasattr(package, "__path__"):
+        raise ValueError(
+            f"Command package does not define __path__: {package_name}")
 
+    specs: t.List[command_spec.CommandSpec] = []
+    for module_info in pkgutil.iter_modules(package.__path__):
+        if module_info.ispkg:
+            continue
+        module_name = module_info.name
+        module = importlib.import_module(f"{package_name}.{module_name}")
+        register_name = f"register_{module_name}_command"
+        register_factory = getattr(module, register_name, None)
+        if register_factory is None:
+            raise ValueError(
+                f"Missing register factory '{register_name}' in module "
+                f"'{package_name}.{module_name}'"
+            )
+        if not callable(register_factory):
+            raise TypeError(
+                f"Register factory '{register_name}' in module "
+                f"'{package_name}.{module_name}' is not callable"
+            )
 
-def register_read_commands(
-    subparsers: argparse._SubParsersAction,
-) -> t.Dict[str, command_spec.CommandSpec]:
-    """Register read-only reporting commands such as stock and profit views.
+        spec = register_factory()
+        if not isinstance(spec, command_spec.CommandSpec):
+            raise TypeError(
+                f"Register factory '{register_name}' in module "
+                f"'{package_name}.{module_name}' returned "
+                f"'{type(spec).__name__}', expected CommandSpec"
+            )
+        specs.append(spec)
 
-    Args:
-        subparsers (argparse._SubParsersAction): Sub-parser collection created
-            by :meth:`argparse.ArgumentParser.add_subparsers` that is used to
-            install each reporting command.
-
-    Returns:
-        dict[str, CommandSpec]: Mapping of command names to their
-            specifications, already registered with ``subparsers``.
-    """
-    specs = {
-        "stock": commands.register_stock_command(),
-        "profit": commands.register_profit_command(),
-        "debts": commands.register_debts_command(),
-        "log": commands.register_log_command(),
-    }
-    for spec in specs.values():
-        spec.register(subparsers)
-    return specs
+    specs.sort(key=lambda item: item.name)
+    return tuple(specs)
 
 
 def dispatch_command(
@@ -199,45 +210,16 @@ def handle_cli_error(error: Exception) -> int:
     return 1
 
 
-def persist_workbook(context: bll.RuntimeContext) -> None:
-    """Flush pending workbook mutations to disk after a successful run.
-
-    Args:
-        context (bll.RuntimeContext): Runtime context whose workbook
-            should be persisted.
-
-    Raises:
-        RuntimeError: If saving the workbook fails due to permission
-            constraints. The original :class:`PermissionError` is preserved as
-            the cause.
-    """
-    try:
-        bll.persist_context(context)
-    except PermissionError as error:
-        raise RuntimeError(str(error)) from error
-
-
-def load_runtime_context(config_path: t.Optional[Path] = None) -> bll.RuntimeContext:
-    """Load configuration and workbook state for CLI execution.
-
-    Args:
-        config_path (Path | None): Optional override pointing to ``config.ini``.
-            When omitted the search starts in the current working directory.
-
-    Returns:
-        bll.RuntimeContext: Context object bundling parsed settings,
-            an open workbook, and cache containers.
-
-    Raises:
-        FileNotFoundError: If the configuration file or workbook cannot be
-            located.
-        KeyError: When required configuration options are missing.
-    """
-    return bll.load_runtime_context(config_path)
-
-
 def main(argv: t.Sequence[str] | None = None) -> int:
     """Parse arguments, execute the selected command, and persist changes.
+
+    When invoked with no sub-command (or with the ``repl`` sub-command)
+    the function starts an interactive REPL session using
+    :func:`~caad_erp.cli.repl.run_repl`, loading the
+    :class:`~caad_erp.bll.RuntimeContext` once for the entire session.
+
+    For all other sub-commands the existing one-shot behaviour is
+    preserved: load context, execute command, persist if mutating, exit.
 
     Args:
         argv (Sequence[str] | None): Optional argument vector to parse. When
@@ -245,15 +227,22 @@ def main(argv: t.Sequence[str] | None = None) -> int:
 
     Returns:
         int: Exit status emitted by the invoked command or error handler.
+            Successful commands persist only when their command
+            specification is marked as mutating.
     """
     parse = build_parser()
     command_table = configure_subcommands(parse)
     args = parse.parse_args(argv)
+    command_name = getattr(args, "command", None)
     try:
-        context = load_runtime_context(getattr(args, "config", None))
+        context = bll.load_context(getattr(args, "config", None))
+        if command_name is None or command_name == "repl":
+            return repl.run_repl(context, parse, command_table)
+        spec = command_table.get(command_name)
         exit_code = dispatch_command(context, args, command_table)
-        if exit_code == 0:
-            persist_workbook(context)
+        # In normal cases spec will never be None. It is here just for typing reasons.
+        if exit_code == 0 and spec is not None and spec.is_mutating:
+            bll.persist_context(context)
         return exit_code
     except Exception as error:
         return handle_cli_error(error)

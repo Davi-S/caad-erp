@@ -1,139 +1,470 @@
 from decimal import Decimal
+from decimal import InvalidOperation
 
 import pytest
 
-from caad_erp import dal, constants
+from caad_erp.dal import products
 
 
-def test_iter_products_yields_product_rows(master_workbook_path):
+def _sample_product(
+    product_id: str = "P-001",
+    product_name: str = "Soda",
+    sell_price: Decimal = Decimal("5.50"),
+    is_active: bool = True,
+) -> products.ProductRow:
+    return products.ProductRow(
+        product_id=product_id,
+        product_name=product_name,
+        sell_price=sell_price,
+        is_active=is_active,
+    )
+
+
+def test_iter_products_yields_product_row_instances(products_workbook) -> None:
     """
-    Given a workbook with product data 
-    When iter_products runs 
-    Then ProductRow instances stream back.
+    GIVEN a products sheet with populated rows
+    WHEN iter_products is called
+    THEN it yields ProductRow instances
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
-    products = workbook[constants.SheetName.PRODUCTS.value]
-    products.append(["P300", "Soda", "5.00", True])
-    dal.save_workbook(workbook, master_workbook_path)
+    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
 
     # Act
-    refreshed = dal.open_workbook(master_workbook_path)
-    rows = list(dal.iter_products(refreshed))
+    records = list(products.iter_products(products_workbook))
 
     # Assert
-    assert rows == [
-        dal.ProductRow(
-            product_id="P300",
-            product_name="Soda",
-            sell_price=Decimal("5.00"),
-            is_active=True,
-        )
-    ]
+    assert len(records) == 1
+    assert isinstance(records[0], products.ProductRow)
 
-
-def test_append_product_adds_row(master_workbook_path):
+def test_iter_products_yields_all_non_empty_rows(products_workbook) -> None:
     """
-    Given a product record 
-    When append_product runs 
-    Then the workbook gains the new row.
+    GIVEN a products sheet with non-empty data rows
+    WHEN iter_products is called
+    THEN it yields all non-empty rows
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
-    record = dal.ProductRow(
-        product_id="P400",
-        product_name="Juice",
-        sell_price=Decimal("6.00"),
+    sheet = products_workbook["Products"]
+    sheet.append(["P-001", "Soda", Decimal("5.50"), True])
+    sheet.append([None, None, None, None])
+    sheet.append(["P-002", "Juice", Decimal("6.00"), True])
+    sheet.append(["P-003", "Water", Decimal("3.00"), False])
+
+    # Act
+    records = list(products.iter_products(products_workbook))
+
+    # Assert
+    assert [record.product_id for record in records] == ["P-001", "P-002", "P-003"]
+
+def test_iter_products_empty_sheet_yields_nothing(products_workbook) -> None:
+    """
+    GIVEN a header-only products sheet
+    WHEN iter_products is called
+    THEN it yields no rows
+    """
+    # Arrange
+
+    # Act
+    records = list(products.iter_products(products_workbook))
+
+    # Assert
+    assert not records
+
+def test_iter_products_skips_fully_empty_rows(products_workbook) -> None:
+    """
+    GIVEN a products sheet containing fully empty rows
+    WHEN iter_products is called
+    THEN fully empty rows are skipped
+    """
+    # Arrange
+    sheet = products_workbook["Products"]
+    sheet.append([None, None, None, None])
+    sheet.append(["P-001", "Soda", Decimal("5.50"), True])
+    sheet.append([None, None, None, None])
+
+    # Act
+    records = list(products.iter_products(products_workbook))
+
+    # Assert
+    assert len(records) == 1
+    assert records[0].product_id == "P-001"
+
+def test_iter_products_raises_key_error_for_missing_sheet(make_workbook) -> None:
+    """
+    GIVEN a workbook without a Products sheet
+    WHEN iter_products is called
+    THEN it raises KeyError
+    """
+    # Arrange
+    workbook = make_workbook("Salesmen", ["SalesmanID", "SalesmanName", "IsActive"])
+
+    # Act / Assert
+    with pytest.raises(KeyError):
+        list(products.iter_products(workbook))
+
+def test_append_product_increases_row_count_by_one(products_workbook) -> None:
+    """
+    GIVEN a products sheet with existing rows
+    WHEN append_product is called
+    THEN row count increases by one
+    """
+    # Arrange
+    sheet = products_workbook["Products"]
+    before_count = sheet.max_row
+    record = _sample_product()
+
+    # Act
+    products.append_product(products_workbook, record)
+
+    # Assert
+    assert sheet.max_row == before_count + 1
+
+def test_append_product_stores_correct_values(products_workbook) -> None:
+    """
+    GIVEN a product record
+    WHEN append_product is called
+    THEN record values are persisted unchanged
+    """
+    # Arrange
+    record = _sample_product()
+
+    # Act
+    products.append_product(products_workbook, record)
+    last_row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[-1]
+
+    # Assert
+    assert last_row == ("P-001", "Soda", Decimal("5.50"), True)
+
+def test_append_product_column_ordering(products_workbook) -> None:
+    """
+    GIVEN a product record
+    WHEN append_product is called
+    THEN values are written in ProductID ProductName SellPrice IsActive order
+    """
+    # Arrange
+    record = products.ProductRow(
+        product_id="P-010",
+        product_name="Energy Drink",
+        sell_price=Decimal("9.90"),
         is_active=False,
     )
 
     # Act
-    dal.append_product(workbook, record)
-    dal.save_workbook(workbook, master_workbook_path)
-    refreshed = dal.open_workbook(master_workbook_path)
-    rows = list(dal.iter_products(refreshed))
+    products.append_product(products_workbook, record)
+    last_row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[-1]
 
     # Assert
-    assert any(row.product_id ==
-               "P400" and row.is_active is False for row in rows)
+    assert last_row == ("P-010", "Energy Drink", Decimal("9.90"), False)
 
-
-def test_update_product_modifies_existing_row(master_workbook_path):
+def test_append_product_preserves_decimal_sell_price(products_workbook) -> None:
     """
-    Given an existing product 
-    When update_product writes new values 
-    Then the worksheet reflects the changes.
+    GIVEN a product record with Decimal sell_price
+    WHEN append_product is called
+    THEN sell_price remains Decimal in storage
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
-    sheet = workbook[constants.SheetName.PRODUCTS.value]
-    sheet.append(["P500", "Old", "1.00", True])
-    dal.save_workbook(workbook, master_workbook_path)
+    record = _sample_product(sell_price=Decimal("12.99"))
 
     # Act
-    reloaded = dal.open_workbook(master_workbook_path)
-    dal.update_product(
-        reloaded,
-        "P500",
-        field_values={"ProductName": "New", "SellPrice": Decimal("2.00")},
-    )
-    dal.save_workbook(reloaded, master_workbook_path)
-    final = dal.open_workbook(master_workbook_path)
-    rows = list(dal.iter_products(final))
+    products.append_product(products_workbook, record)
+    stored_price = products_workbook["Products"].cell(row=2, column=3).value
 
     # Assert
-    assert any(row.product_id == "P500" and row.product_name ==
-               "New" for row in rows)
+    assert stored_price == Decimal("12.99")
+    assert isinstance(stored_price, Decimal)
 
-
-def test_update_product_missing_raises(master_workbook_path):
+def test_append_product_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
-    Given an unknown product ID 
-    When update_product runs 
-    Then KeyError is raised.
+    GIVEN a workbook without a Products sheet
+    WHEN append_product is called
+    THEN it raises KeyError
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
+    workbook = make_workbook("Salesmen", ["SalesmanID", "SalesmanName", "IsActive"])
 
     # Act / Assert
     with pytest.raises(KeyError):
-        dal.update_product(workbook, "NOPE", field_values={"ProductName": "X"})
+        products.append_product(workbook, _sample_product())
 
-
-def test_serialize_product_preserves_order():
+def test_update_product_updates_single_field(products_workbook) -> None:
     """
-    Given a ProductRow 
-    When serialize_product executes 
-    Then the column order remains consistent.
+    GIVEN an existing product row
+    WHEN update_product is called with one field
+    THEN only that field is updated
     """
-
     # Arrange
-    record = dal.ProductRow("P1", "Name", Decimal("1.25"), True)
+    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
 
     # Act
-    serialized = dal.serialize_product(record)
+    products.update_product(
+        products_workbook,
+        "P-001",
+        field_values={"ProductName": "Soda Zero"},
+    )
+    row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
 
     # Assert
-    assert serialized == ["P1", "Name", Decimal("1.25"), True]
+    assert row == ("P-001", "Soda Zero", Decimal("5.50"), True)
 
-
-def test_deserialize_product_constructs_dataclass():
+def test_update_product_updates_multiple_fields_simultaneously(products_workbook) -> None:
     """
-    Given worksheet values 
-    When deserialize_product runs 
-    Then a ProductRow is created with coerced types.
+    GIVEN an existing product row
+    WHEN update_product is called with multiple fields
+    THEN all requested fields are updated
     """
-
     # Arrange
-    raw_row = ["P9", "Bar", "2.75", True]
+    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
 
     # Act
-    record = dal.deserialize_product(raw_row)
+    products.update_product(
+        products_workbook,
+        "P-001",
+        field_values={"ProductName": "Soda Zero", "SellPrice": Decimal("6.25")},
+    )
+    row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
 
     # Assert
-    assert record.product_id == "P9"
-    assert record.sell_price == Decimal("2.75")
+    assert row == ("P-001", "Soda Zero", Decimal("6.25"), True)
+
+def test_update_product_leaves_other_fields_unchanged(products_workbook) -> None:
+    """
+    GIVEN an existing product row
+    WHEN update_product is called for selected fields
+    THEN unselected fields remain unchanged
+    """
+    # Arrange
+    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+
+    # Act
+    products.update_product(
+        products_workbook,
+        "P-001",
+        field_values={"ProductName": "Soda Zero"},
+    )
+    row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+
+    # Assert
+    assert row[0] == "P-001"
+    assert row[2] == Decimal("5.50")
+    assert row[3] is True
+
+def test_update_product_raises_key_error_for_missing_product_id(products_workbook) -> None:
+    """
+    GIVEN a missing product id
+    WHEN update_product is called
+    THEN it raises KeyError
+    """
+    # Arrange
+    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+
+    # Act / Assert
+    with pytest.raises(KeyError, match="Product not found"):
+        products.update_product(
+            products_workbook,
+            "P-999",
+            field_values={"ProductName": "Unknown"},
+        )
+
+def test_update_product_raises_key_error_for_unknown_column_name(products_workbook) -> None:
+    """
+    GIVEN an unknown field name
+    WHEN update_product is called
+    THEN it raises KeyError
+    """
+    # Arrange
+    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+
+    # Act / Assert
+    with pytest.raises(KeyError, match="Unknown product field"):
+        products.update_product(
+            products_workbook,
+            "P-001",
+            field_values={"NotAColumn": "Value"},
+        )
+
+def test_update_product_raises_key_error_for_missing_sheet(make_workbook) -> None:
+    """
+    GIVEN a workbook without a Products sheet
+    WHEN update_product is called
+    THEN it raises KeyError
+    """
+    # Arrange
+    workbook = make_workbook("Salesmen", ["SalesmanID", "SalesmanName", "IsActive"])
+
+    # Act / Assert
+    with pytest.raises(KeyError):
+        products.update_product(workbook, "P-001", field_values={"ProductName": "Soda"})
+
+def test_update_product_empty_field_values_is_no_op(products_workbook) -> None:
+    """
+    GIVEN an existing product row and empty field_values
+    WHEN update_product is called
+    THEN no workbook values are changed
+    """
+    # Arrange
+    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    before = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+
+    # Act
+    products.update_product(products_workbook, "P-001", field_values={})
+    after = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+
+    # Assert
+    assert after == before
+
+def test_serialize_product_returns_correct_column_order() -> None:
+    """
+    GIVEN a ProductRow record
+    WHEN _serialize_product is called
+    THEN values are returned in canonical column order
+    """
+    # Arrange
+    record = products.ProductRow(
+        product_id="P-001",
+        product_name="Soda",
+        sell_price=Decimal("5.50"),
+        is_active=False,
+    )
+
+    # Act
+    serialized = products._serialize_product(record)
+
+    # Assert
+    assert serialized == ["P-001", "Soda", Decimal("5.50"), False]
+
+def test_serialize_product_preserves_decimal_type_for_sell_price() -> None:
+    """
+    GIVEN a ProductRow with Decimal sell_price
+    WHEN _serialize_product is called
+    THEN sell_price remains Decimal in the output list
+    """
+    # Arrange
+    record = _sample_product(sell_price=Decimal("9.99"))
+
+    # Act
+    serialized = products._serialize_product(record)
+
+    # Assert
+    assert serialized[2] == Decimal("9.99")
+    assert isinstance(serialized[2], Decimal)
+
+def test_deserialize_product_returns_product_row_instance() -> None:
+    """
+    GIVEN a valid raw product row
+    WHEN _deserialize_product is called
+    THEN it returns a ProductRow instance
+    """
+    # Arrange
+    raw_row = ["P-001", "Soda", Decimal("5.50"), True]
+
+    # Act
+    result = products._deserialize_product(raw_row)
+
+    # Assert
+    assert isinstance(result, products.ProductRow)
+
+@pytest.mark.parametrize(
+    "raw_row, expected_product_id, expected_product_name",
+    [
+        ([123, 456, Decimal("1.00"), True], "123", "456"),
+        (["P-001", 789, Decimal("2.00"), False], "P-001", "789"),
+    ],
+)
+def test_deserialize_product_coerces_text_fields_to_str(
+    raw_row,
+    expected_product_id,
+    expected_product_name,
+) -> None:
+    """
+    GIVEN raw rows with non-string ProductID or ProductName
+    WHEN _deserialize_product is called
+    THEN textual fields are coerced to string
+    """
+    # Arrange
+
+    # Act
+    result = products._deserialize_product(raw_row)
+
+    # Assert
+    assert result.product_id == expected_product_id
+    assert result.product_name == expected_product_name
+    assert isinstance(result.product_id, str)
+    assert isinstance(result.product_name, str)
+
+@pytest.mark.parametrize(
+    "raw_row, expected_sell_price",
+    [
+        (["P-001", "Soda", None, True], Decimal("0.00")),
+        (["P-001", "Soda", 5, True], Decimal("5")),
+        (["P-001", "Soda", 5.5, True], Decimal("5.5")),
+        (["P-001", "Soda", "10.25", True], Decimal("10.25")),
+    ],
+)
+def test_deserialize_product_normalizes_sell_price(
+    raw_row,
+    expected_sell_price,
+) -> None:
+    """
+    GIVEN raw rows with SellPrice as numeric float or None
+    WHEN _deserialize_product is called
+    THEN SellPrice is normalized to the expected Decimal value
+    """
+    # Arrange
+
+    # Act
+    result = products._deserialize_product(raw_row)
+
+    # Assert
+    assert result.sell_price == expected_sell_price
+    assert isinstance(result.sell_price, Decimal)
+
+def test_deserialize_product_coerces_is_active_to_bool() -> None:
+    """
+    GIVEN a raw row with IsActive value
+    WHEN _deserialize_product is called
+    THEN IsActive is coerced to bool
+    """
+    # Arrange
+    raw_true = ["P-001", "Soda", Decimal("5.50"), 1]
+    raw_false = ["P-002", "Water", Decimal("3.00"), 0]
+
+    # Act
+    result_true = products._deserialize_product(raw_true)
+    result_false = products._deserialize_product(raw_false)
+
+    # Assert
+    assert result_true.is_active is True
+    assert result_false.is_active is False
+    assert isinstance(result_true.is_active, bool)
+    assert isinstance(result_false.is_active, bool)
+
+@pytest.mark.parametrize("raw_row", [["P-001"], ["P-001", "Soda"], ["P-001", "Soda", Decimal("1.00")]])
+def test_deserialize_product_raises_index_error_for_short_row(raw_row) -> None:
+    """
+    GIVEN a short raw row missing required columns
+    WHEN _deserialize_product is called
+    THEN it raises IndexError
+    """
+    # Arrange
+
+    # Act / Assert
+    with pytest.raises(IndexError):
+        products._deserialize_product(raw_row)
+
+@pytest.mark.parametrize(
+    "raw_row",
+    [
+        ["P-001", "Soda", "abc", True],
+        ["P-001", "Soda", "12,34", True],
+    ],
+)
+def test_deserialize_product_raises_decimal_error_for_invalid_sell_price(raw_row) -> None:
+    """
+    GIVEN a raw row with invalid SellPrice text
+    WHEN _deserialize_product is called
+    THEN it raises a decimal conversion error
+    """
+    # Arrange
+
+    # Act / Assert
+    with pytest.raises(InvalidOperation):
+        products._deserialize_product(raw_row)

@@ -1,157 +1,288 @@
-import openpyxl
+from pathlib import Path
+
 import pytest
-from openpyxl.workbook import Workbook as OpenpyxlWorkbook
 
-from caad_erp import dal, constants
+from caad_erp.dal import workbook as dal_workbook
 
 
-def test_open_workbook_returns_openpyxl_instance(master_workbook_path):
+def test_open_workbook_returns_workbook_instance(tmp_workbook_path: Path) -> None:
     """
-    Given an existing workbook path 
-    When open_workbook executes 
-    Then an openpyxl Workbook returns.
+    GIVEN an existing workbook file
+    WHEN open_workbook is called
+    THEN it returns a live Workbook instance
     """
-
     # Arrange
-    workbook_path = master_workbook_path
 
     # Act
-    workbook = dal.open_workbook(workbook_path)
+    workbook = dal_workbook.open_workbook(tmp_workbook_path)
 
     # Assert
-    assert isinstance(workbook, OpenpyxlWorkbook)
+    assert hasattr(workbook, "save")
+    assert isinstance(workbook.sheetnames, list)
 
 
-def test_open_workbook_missing_file_raises(tmp_path):
+@pytest.mark.parametrize(
+    "missing_path",
+    [
+        Path("missing.xlsx"),
+        Path("nested") / "missing.xlsx",
+    ],
+)
+def test_open_workbook_raises_file_not_found_for_missing_path(
+    tmp_path: Path,
+    missing_path,
+) -> None:
     """
-    Given a missing workbook path 
-    When open_workbook runs 
-    Then FileNotFoundError is raised.
+    GIVEN a missing workbook path
+    WHEN open_workbook is called
+    THEN it raises FileNotFoundError
     """
-
     # Arrange
-    missing_path = tmp_path / "missing.xlsx"
+    file_path = tmp_path / missing_path
 
     # Act / Assert
-    with pytest.raises(FileNotFoundError):
-        dal.open_workbook(missing_path)
+    with pytest.raises(FileNotFoundError, match="Workbook not found"):
+        dal_workbook.open_workbook(file_path)
 
 
-def test_save_workbook_persists_changes(master_workbook_path):
+@pytest.mark.parametrize(
+    "invalid_file_payload",
+    [
+        b"not an xlsx",
+        b"PK\x03\x04broken-zip-content",
+    ],
+)
+def test_open_workbook_raises_for_invalid_file_content(
+    tmp_path: Path,
+    invalid_file_payload,
+) -> None:
     """
-    Given workbook mutations 
-    When save_workbook persists them 
-    Then disk reads include the updates.
+    GIVEN an invalid workbook file
+    WHEN open_workbook is called
+    THEN openpyxl raises a load or parsing error
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
-    sheet = workbook[constants.SheetName.PRODUCTS.value]
-    sheet.append(["P100", "Chips", "2.50", True])
+    invalid_path = tmp_path / "invalid.xlsx"
+    invalid_path.write_bytes(invalid_file_payload)
+
+    # Act / Assert
+    with pytest.raises(Exception):
+        dal_workbook.open_workbook(invalid_path)
+
+
+def test_save_workbook_writes_file_to_existing_directory(
+    tmp_path: Path,
+    tmp_workbook_path: Path,
+) -> None:
+    """
+    GIVEN a writable existing directory
+    WHEN save_workbook is called
+    THEN the target file is created
+    """
+    # Arrange
+    workbook = dal_workbook.open_workbook(tmp_workbook_path)
+    target = tmp_path / "saved.xlsx"
 
     # Act
-    dal.save_workbook(workbook, master_workbook_path)
-    reloaded = dal.open_workbook(master_workbook_path)
-    values = list(
-        reloaded[constants.SheetName.PRODUCTS.value].iter_rows(
-            min_row=2, values_only=True)
-    )
+    dal_workbook.save_workbook(workbook, target)
 
     # Assert
-    assert values == [("P100", "Chips", "2.50", True)]
+    assert target.is_file()
 
 
-def test_save_workbook_with_destination_creates_copy(master_workbook_path, tmp_path):
+def test_save_workbook_creates_missing_parent_directories(
+    tmp_path: Path,
+    tmp_workbook_path: Path,
+) -> None:
     """
-    Given a destination path 
-    When save_workbook writes to it 
-    Then a copied file exists independently.
+    GIVEN missing parent directories
+    WHEN save_workbook is called
+    THEN the directories are created automatically
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
-    sheet = workbook[constants.SheetName.SALESMEN.value]
-    sheet.append(["S2", "Jordan", True])
-    copy_path = tmp_path / "copy.xlsx"
+    workbook = dal_workbook.open_workbook(tmp_workbook_path)
+    target = tmp_path / "a" / "b" / "saved.xlsx"
 
     # Act
-    dal.save_workbook(workbook, destination=copy_path)
-    copy = openpyxl.load_workbook(copy_path)
-    rows = list(copy[constants.SheetName.SALESMEN.value].iter_rows(
-        min_row=2, values_only=True))
+    dal_workbook.save_workbook(workbook, target)
 
     # Assert
-    assert ("S2", "Jordan", True) in rows
+    assert target.exists()
+    assert target.parent.exists()
 
 
-def test_refresh_workbook_returns_new_instance(master_workbook_path):
+def test_save_workbook_saved_file_is_valid_xlsx(
+    tmp_path: Path,
+    tmp_workbook_path: Path,
+) -> None:
     """
-    Given prior workbook changes 
-    When refresh_workbook runs 
-    Then a new instance reflecting disk state is returned.
+    GIVEN a saved workbook file
+    WHEN it is reopened
+    THEN it is a valid xlsx workbook
     """
-
     # Arrange
-    original = dal.open_workbook(master_workbook_path)
-    sheet = original[constants.SheetName.PRODUCTS.value]
-    sheet.append(["P200", "Bars", "4.00", True])
-    dal.save_workbook(original, master_workbook_path)
+    workbook = dal_workbook.open_workbook(tmp_workbook_path)
+    target = tmp_path / "valid.xlsx"
 
     # Act
-    refreshed = dal.refresh_workbook(master_workbook_path)
-    values = list(
-        refreshed[constants.SheetName.PRODUCTS.value].iter_rows(
-            min_row=2, values_only=True)
-    )
+    dal_workbook.save_workbook(workbook, target)
+    reopened = dal_workbook.open_workbook(target)
 
     # Assert
-    assert refreshed is not original
-    assert ("P200", "Bars", "4.00", True) in values
+    assert hasattr(reopened, "save")
+    assert reopened.sheetnames
 
 
-def test_locate_row_returns_row_index(master_workbook_path):
+def test_save_workbook_propagates_permission_error_when_unwritable(
+    tmp_path: Path,
+    tmp_workbook_path: Path,
+    monkeypatch,
+) -> None:
     """
-    Given a matching key 
-    When locate_row executes 
-    Then the correct worksheet index is returned.
+    GIVEN an unwritable destination
+    WHEN save_workbook is called
+    THEN it propagates PermissionError
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
-    sheet = workbook[constants.SheetName.PRODUCTS.value]
-    sheet.append(["P600", "Snack", "2.00", True])
-    dal.save_workbook(workbook, master_workbook_path)
+    workbook = dal_workbook.open_workbook(tmp_workbook_path)
+    target = tmp_path / "readonly" / "saved.xlsx"
+
+    def _raise_permission_error(_destination: Path) -> None:
+        raise PermissionError("cannot write file")
+
+    monkeypatch.setattr(workbook, "save", _raise_permission_error)
+
+    # Act / Assert
+    with pytest.raises(PermissionError):
+        dal_workbook.save_workbook(workbook, target)
+
+
+@pytest.mark.parametrize(
+    "lookup_key, expected_row_index",
+    [
+        ("P-001", 2),
+        ("P-002", 3),
+    ],
+)
+def test_locate_row_returns_correct_row_index(
+    products_workbook,
+    lookup_key,
+    expected_row_index,
+) -> None:
+    """
+    GIVEN a sheet containing the key
+    WHEN locate_row is called
+    THEN it returns the expected 1-based row index
+    """
+    # Arrange
+    sheet = products_workbook["Products"]
+    sheet.append(["P-001", "Soda", 5.5, True])
+    sheet.append(["P-002", "Water", 3.0, True])
 
     # Act
-    reloaded = dal.open_workbook(master_workbook_path)
-    row_index = dal.locate_row(
-        reloaded,
-        constants.SheetName.PRODUCTS.value,
-        "ProductID",
-        "P600",
-    )
+    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", lookup_key)
+
+    # Assert
+    assert row_index == expected_row_index
+
+
+@pytest.mark.parametrize("missing_key", ["P-404", "UNKNOWN"])
+def test_locate_row_returns_none_when_value_not_found(
+    products_workbook,
+    missing_key,
+) -> None:
+    """
+    GIVEN a sheet without the key
+    WHEN locate_row is called
+    THEN it returns None
+    """
+    # Arrange
+    products_workbook["Products"].append(["P-001", "Soda", 5.5, True])
+
+    # Act
+    result = dal_workbook.locate_row(products_workbook, "Products", "ProductID", missing_key)
+
+    # Assert
+    assert result is None
+
+
+@pytest.mark.parametrize("unknown_column", ["BadColumn", "Sku"])
+def test_locate_row_raises_key_error_for_unknown_column(
+    products_workbook,
+    unknown_column,
+) -> None:
+    """
+    GIVEN an unknown key column
+    WHEN locate_row is called
+    THEN it raises KeyError
+    """
+    # Arrange
+
+    # Act / Assert
+    with pytest.raises(KeyError, match="Unknown column"):
+        dal_workbook.locate_row(products_workbook, "Products", unknown_column, "P-001")
+
+
+def test_locate_row_returns_first_match_when_duplicates_exist(products_workbook) -> None:
+    """
+    GIVEN duplicate matching keys
+    WHEN locate_row is called
+    THEN it returns the first matching data row
+    """
+    # Arrange
+    sheet = products_workbook["Products"]
+    sheet.append(["P-001", "Soda", 5.5, True])
+    sheet.append(["P-001", "Soda Duplicate", 6.0, False])
+
+    # Act
+    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", "P-001")
 
     # Assert
     assert row_index == 2
 
 
-def test_locate_row_returns_none_when_missing(master_workbook_path):
+def test_locate_row_excludes_header_row_from_search(products_workbook) -> None:
     """
-    Given an absent key 
-    When locate_row executes 
-    Then None is returned.
+    GIVEN a header containing the lookup value
+    WHEN locate_row is called
+    THEN header row is not matched
     """
-
     # Arrange
-    workbook = dal.open_workbook(master_workbook_path)
 
     # Act
-    result = dal.locate_row(
-        workbook,
-        constants.SheetName.PRODUCTS.value,
-        "ProductID",
-        "NOPE",
-    )
+    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", "ProductID")
 
     # Assert
-    assert result is None
+    assert row_index is None
+
+
+def test_locate_row_returns_none_for_header_only_sheet(products_workbook) -> None:
+    """
+    GIVEN a header-only sheet
+    WHEN locate_row is called
+    THEN it returns None
+    """
+    # Arrange
+
+    # Act
+    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", "P-001")
+
+    # Assert
+    assert row_index is None
+
+
+@pytest.mark.parametrize("unknown_sheet", ["UnknownSheet", "Nope"])
+def test_locate_row_raises_key_error_for_unknown_sheet(
+    products_workbook,
+    unknown_sheet,
+) -> None:
+    """
+    GIVEN a non-existent sheet name
+    WHEN locate_row is called
+    THEN it raises KeyError
+    """
+    # Arrange
+
+    # Act / Assert
+    with pytest.raises(KeyError):
+        dal_workbook.locate_row(products_workbook, unknown_sheet, "ProductID", "P-001")

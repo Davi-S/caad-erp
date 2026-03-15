@@ -1,20 +1,8 @@
-"""Public command registrations for the CAAD ERP CLI.
+"""Command modules for the CAAD ERP CLI.
 
-Importing this module makes every command registration helper available via a
-single namespace, simplifying command table composition in
-``caad_erp.cli.parser`` and for any downstream tooling.
+Each module in this package exposes a ``register_<module>_command`` factory
+that returns a :class:`~caad_erp.cli.command_spec.CommandSpec`. These
+factories are discovered and invoked automatically by
+:func:`caad_erp.cli.parser.discover_command_specs`; no manual imports or
+registration calls are needed here.
 """
-
-from .add_product import *
-from .add_salesman import *
-from .deactivate_product import *
-from .deactivate_salesman import *
-from .debts import *
-from .log import *
-from .pay_debt import *
-from .profit import *
-from .restock import *
-from .sale import *
-from .stock import *
-from .void import *
-from .write_off import *

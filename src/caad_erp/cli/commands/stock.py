@@ -17,7 +17,7 @@ def register_stock_command() -> command_spec.CommandSpec:
     name = "stock"
     help_text = "Display current stock levels."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``stock`` arguments to the provided sub-parser.
 
         Args:
@@ -32,10 +32,16 @@ def register_stock_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_stock_report)
+    return command_spec.CommandSpec(
+        name=name,
+        help_text=help_text,
+        register=_registrar,
+        execute=_run_stock_report,
+        is_mutating=False,
+    )
 
 
-def display_inventory_report(inventory: t.Mapping[str, Decimal]) -> None:
+def _display_inventory_report(inventory: t.Mapping[str, Decimal]) -> None:
     """Print the current inventory quantities in a fixed-width table.
 
     Args:
@@ -53,7 +59,7 @@ def display_inventory_report(inventory: t.Mapping[str, Decimal]) -> None:
         print(f"{product_id:<20} {quantity}")
 
 
-def run_stock_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_stock_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Calculate inventory levels and display them to the user.
 
     Args:
@@ -68,5 +74,5 @@ def run_stock_report(context: bll.RuntimeContext, args: argparse.Namespace) -> i
     """
 
     inventory = bll.calculate_inventory(context)
-    display_inventory_report(inventory)
+    _display_inventory_report(inventory)
     return 0

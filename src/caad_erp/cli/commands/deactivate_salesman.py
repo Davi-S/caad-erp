@@ -16,7 +16,7 @@ def register_deactivate_salesman_command() -> command_spec.CommandSpec:
     name = "deactivate-salesman"
     help_text = "Mark an existing salesman as inactive."
 
-    def registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
+    def _registrar(action: command_spec.SubparserFactory) -> argparse.ArgumentParser:
         """Attach ``deactivate-salesman`` arguments to the provided sub-parser.
 
         Args:
@@ -32,25 +32,28 @@ def register_deactivate_salesman_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=registrar, execute=run_deactivate_salesman)
+    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_deactivate_salesman)
 
 
-def translate_deactivate_salesman(args: argparse.Namespace) -> str:
-    """Normalize CLI arguments into a salesman identifier.
+def _translate_deactivate_salesman(args: argparse.Namespace) -> bll.SalesmanCommand:
+    """Normalize CLI arguments into a salesman update command.
 
     Args:
         args (argparse.Namespace): Namespace containing the
             ``deactivate-salesman`` options.
 
     Returns:
-        str: Sanitized salesman identifier suitable for
-            :func:`bll.update_salesman`.
+        bll.SalesmanCommand: Command setting ``is_active`` to ``False`` while
+            leaving other fields unchanged.
     """
+    return bll.SalesmanCommand(
+        salesman_id=str(args.salesman_id).strip(),
+        salesman_name=None,
+        is_active=False,
+    )
 
-    return str(args.salesman_id).strip()
 
-
-def run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
+def _run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
     """Execute the deactivate-salesman workflow through the business logic layer.
 
     Args:
@@ -62,6 +65,6 @@ def run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespac
         int: Exit code ``0`` after the salesman has been flagged as inactive.
     """
 
-    salesman_id = translate_deactivate_salesman(args)
-    bll.update_salesman(context, salesman_id, is_active=False)
+    command = _translate_deactivate_salesman(args)
+    bll.update_salesman(context, command)
     return 0
