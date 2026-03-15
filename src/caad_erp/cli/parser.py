@@ -6,13 +6,15 @@ low-level exceptions into exit codes suitable for shell automation.
 """
 
 import argparse
+import importlib
 import logging
+import pkgutil
 import typing as t
 from pathlib import Path
 
 from caad_erp import bll, exceptions
 
-from . import command_spec, commands
+from . import command_spec
 
 logger = logging.getLogger(__name__)
 
@@ -60,68 +62,72 @@ def configure_subcommands(
         Mapping[str, CommandSpec]: Immutable view mapping command names to
             their registered specifications.
     """
-    subparsers = parser.add_subparsers(
-        dest="command", required=True, title="commands")
-    write_specs = register_write_commands(subparsers)
-    read_specs = register_read_commands(subparsers)
-    return build_command_table([*write_specs.values(), *read_specs.values()])
+    subparsers = parser.add_subparsers(dest="command", required=True, title="commands")
+    discovered_specs = discover_command_specs()
+    
+    # Register the discovered specs
+    for spec in discovered_specs:
+        spec.register(subparsers)
+    
+    # write_specs = {
+    #     spec.name: spec for spec in discovered_specs if spec.is_mutating
+    # }
+    # read_specs = {
+    #     spec.name: spec for spec in discovered_specs if not spec.is_mutating
+    # }
+    
+    return build_command_table(discovered_specs)
 
 
-def register_write_commands(
-    subparsers: argparse._SubParsersAction,
-) -> t.Dict[str, command_spec.CommandSpec]:
-    """Register state-mutating commands like sales, restocks, and voids.
-
-    Args:
-        subparsers (argparse._SubParsersAction): Sub-parser collection created
-            by :meth:`argparse.ArgumentParser.add_subparsers` that is used to
-            install each write-capable command.
+def discover_command_specs() -> t.Tuple[command_spec.CommandSpec, ...]:
+    """Discover command factories in the commands package and build specs.
 
     Returns:
-        dict[str, CommandSpec]: Mapping of command names to their
-            specifications, already registered with ``subparsers``.
+        tuple[CommandSpec, ...]: Deterministically ordered command
+            specifications sorted by command name.
+
+    Raises:
+        ValueError: If a command module does not expose the expected register
+            factory function.
+        TypeError: If a discovered register attribute is not callable or does
+            not return a :class:`CommandSpec`.
     """
-    specs = {
-        "add-product": commands.register_add_product_command(),
-        "add-salesman": commands.register_add_salesman_command(),
-        "deactivate-product": commands.register_deactivate_product_command(),
-        "deactivate-salesman": commands.register_deactivate_salesman_command(),
-        "sale": commands.register_sale_command(),
-        "restock": commands.register_restock_command(),
-        "write-off": commands.register_write_off_command(),
-        "pay-debt": commands.register_pay_debt_command(),
-        "void": commands.register_void_command(),
-    }
-    for spec in specs.values():
-        spec.register(subparsers)
-    return specs
+    package_name = "caad_erp.cli.commands"
+    package = importlib.import_module(package_name)
+    if not hasattr(package, "__path__"):
+        raise ValueError(
+            f"Command package does not define __path__: {package_name}")
 
+    specs: t.List[command_spec.CommandSpec] = []
+    for module_info in pkgutil.iter_modules(package.__path__):
+        if module_info.ispkg:
+            continue
+        module_name = module_info.name
+        module = importlib.import_module(f"{package_name}.{module_name}")
+        register_name = f"register_{module_name}_command"
+        register_factory = getattr(module, register_name, None)
+        if register_factory is None:
+            raise ValueError(
+                f"Missing register factory '{register_name}' in module "
+                f"'{package_name}.{module_name}'"
+            )
+        if not callable(register_factory):
+            raise TypeError(
+                f"Register factory '{register_name}' in module "
+                f"'{package_name}.{module_name}' is not callable"
+            )
 
-def register_read_commands(
-    subparsers: argparse._SubParsersAction,
-) -> t.Dict[str, command_spec.CommandSpec]:
-    """Register read-only reporting commands such as stock and profit views.
+        spec = register_factory()
+        if not isinstance(spec, command_spec.CommandSpec):
+            raise TypeError(
+                f"Register factory '{register_name}' in module "
+                f"'{package_name}.{module_name}' returned "
+                f"'{type(spec).__name__}', expected CommandSpec"
+            )
+        specs.append(spec)
 
-    Args:
-        subparsers (argparse._SubParsersAction): Sub-parser collection created
-            by :meth:`argparse.ArgumentParser.add_subparsers` that is used to
-            install each reporting command.
-
-    Returns:
-        dict[str, CommandSpec]: Mapping of command names to their
-            specifications, already registered with ``subparsers``.
-    """
-    specs = {
-        "stock": commands.register_stock_command(),
-        "profit": commands.register_profit_command(),
-        "debts": commands.register_debts_command(),
-        "log": commands.register_log_command(),
-        "list-products": commands.register_list_products_command(),
-        "list-salesmen": commands.register_list_salesmen_command(),
-    }
-    for spec in specs.values():
-        spec.register(subparsers)
-    return specs
+    specs.sort(key=lambda item: item.name)
+    return tuple(specs)
 
 
 def dispatch_command(
