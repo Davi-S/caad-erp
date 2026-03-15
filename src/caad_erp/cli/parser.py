@@ -47,12 +47,14 @@ def build_parser() -> argparse.ArgumentParser:
 def configure_subcommands(
     parser: argparse.ArgumentParser,
 ) -> t.Mapping[str, command_spec.CommandSpec]:
-    """Attach read and write sub-commands to the base parser.
+    """Attach all sub-commands to the base parser via auto-discovery.
 
-    This routine coordinates registration of every command exposed by the CLI
-    by delegating to :func:`register_write_commands` and
-    :func:`register_read_commands`. The resulting command table is keyed by
-    command name for quick lookups during dispatch.
+    This routine invokes :func:`discover_command_specs` to locate every
+    ``CommandSpec`` in the commands package automatically, then registers
+    each one with the sub-parser collection. The ``repl`` meta-command is
+    also surfaced in ``--help`` even though it is not a ``CommandSpec``.
+    The resulting command table is keyed by command name for quick lookups
+    during dispatch.
 
     Args:
         parser (argparse.ArgumentParser): Parser produced by
