@@ -14,7 +14,7 @@ from pathlib import Path
 
 from caad_erp import bll, exceptions
 
-from . import command_spec
+from . import command_spec, repl
 
 logger = logging.getLogger(__name__)
 
@@ -62,20 +62,21 @@ def configure_subcommands(
         Mapping[str, CommandSpec]: Immutable view mapping command names to
             their registered specifications.
     """
-    subparsers = parser.add_subparsers(dest="command", required=True, title="commands")
+    subparsers = parser.add_subparsers(
+        dest="command", required=False, title="commands")
     discovered_specs = discover_command_specs()
-    
+
     # Register the discovered specs
     for spec in discovered_specs:
         spec.register(subparsers)
-    
-    # write_specs = {
-    #     spec.name: spec for spec in discovered_specs if spec.is_mutating
-    # }
-    # read_specs = {
-    #     spec.name: spec for spec in discovered_specs if not spec.is_mutating
-    # }
-    
+
+    # 'repl' is a meta-command: it is surfaced in --help but is not a
+    # CommandSpec because it carries no BLL semantics of its own.
+    subparsers.add_parser(
+        "repl",
+        help="Start an interactive session (default when no command is given).",
+    )
+
     return build_command_table(discovered_specs)
 
 
@@ -210,6 +211,14 @@ def handle_cli_error(error: Exception) -> int:
 def main(argv: t.Sequence[str] | None = None) -> int:
     """Parse arguments, execute the selected command, and persist changes.
 
+    When invoked with no sub-command (or with the ``repl`` sub-command)
+    the function starts an interactive REPL session using
+    :func:`~caad_erp.cli.repl.run_repl`, loading the
+    :class:`~caad_erp.bll.RuntimeContext` once for the entire session.
+
+    For all other sub-commands the existing one-shot behaviour is
+    preserved: load context, execute command, persist if mutating, exit.
+
     Args:
         argv (Sequence[str] | None): Optional argument vector to parse. When
             ``None`` the default ``sys.argv`` semantics apply.
@@ -222,9 +231,12 @@ def main(argv: t.Sequence[str] | None = None) -> int:
     parse = build_parser()
     command_table = configure_subcommands(parse)
     args = parse.parse_args(argv)
-    spec = command_table.get(getattr(args, "command", ""))
+    command_name = getattr(args, "command", None)
     try:
         context = bll.load_context(getattr(args, "config", None))
+        if command_name is None or command_name == "repl":
+            return repl.run_repl(context, parse, command_table)
+        spec = command_table.get(command_name)
         exit_code = dispatch_command(context, args, command_table)
         # In normal cases spec will never be None. It is here just for typing reasons.
         if exit_code == 0 and spec is not None and spec.is_mutating:
