@@ -16,7 +16,8 @@ router = fastapi.APIRouter(prefix="/salesmen", tags=["Salesmen"])
 @router.post("", response_model=schemas.StandardResponse, status_code=201)
 def create_salesman(
     request: schemas.SalesmanCreateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(
+        dependencies.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Create a new salesman.
 
@@ -32,9 +33,11 @@ def create_salesman(
     """
     salesman = bll.add_salesman(
         context,
-        salesman_id=request.salesman_id,
-        salesman_name=request.salesman_name,
-        is_active=request.is_active,
+        bll.SalesmanCommand(
+            salesman_id=request.salesman_id,
+            salesman_name=request.salesman_name,
+            is_active=request.is_active,
+        ),
     )
     return schemas.StandardResponse(
         detail="Salesman created successfully",
@@ -49,7 +52,8 @@ def create_salesman(
 @router.post("/{salesman_id}/deactivate", response_model=schemas.StandardResponse)
 def deactivate_salesman(
     salesman_id: str,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(
+        dependencies.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Deactivate an existing salesman.
 
@@ -63,7 +67,14 @@ def deactivate_salesman(
     Raises:
         HTTPException: 404 if salesman not found.
     """
-    salesman = bll.update_salesman(context, salesman_id, is_active=False)
+    salesman = bll.update_salesman(
+        context,
+        bll.SalesmanCommand(
+            salesman_id=salesman_id,
+            salesman_name=None,
+            is_active=False,
+        ),
+    )
     return schemas.StandardResponse(
         detail="Salesman deactivated successfully",
         data=schemas.SalesmanResponse(

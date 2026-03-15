@@ -282,7 +282,6 @@ It does a similar thing for sellers looking at the debt and any other necessary 
 
 ## Future Work
 
-- There is no model for the salesman and products. For example, "add_product" receives raw arguments instead of a model of a product, and "_translate_add_product" returns a dict. It would be better for "_translate_add_product" to return a model like "_translate_sale", and "add_product" to receive a model like "record_sale".
 - Currently, the layers are exposing all their functions. We need to expose only the public methods. Private methods (even if not explicited by the "underscore notation" should not be exposed.
 - **Feat: Implement Period-End Archive Script**
   - **Task:** Create the `archive.py` script as defined in the guide.

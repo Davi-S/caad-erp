@@ -16,7 +16,8 @@ router = fastapi.APIRouter(prefix="/products", tags=["Products"])
 @router.post("", response_model=schemas.StandardResponse, status_code=201)
 def create_product(
     request: schemas.ProductCreateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(
+        dependencies.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Create a new product.
 
@@ -32,10 +33,12 @@ def create_product(
     """
     product = bll.add_product(
         context,
-        product_id=request.product_id,
-        product_name=request.product_name,
-        sell_price=request.sell_price,
-        is_active=request.is_active,
+        bll.ProductCommand(
+            product_id=request.product_id,
+            product_name=request.product_name,
+            sell_price=request.sell_price,
+            is_active=request.is_active,
+        ),
     )
     return schemas.StandardResponse(
         detail="Product created successfully",
@@ -51,7 +54,8 @@ def create_product(
 @router.post("/{product_id}/deactivate", response_model=schemas.StandardResponse)
 def deactivate_product(
     product_id: str,
-    context: bll.RuntimeContext = fastapi.Depends(dependencies.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(
+        dependencies.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Deactivate an existing product.
 
@@ -65,7 +69,15 @@ def deactivate_product(
     Raises:
         HTTPException: 404 if product not found.
     """
-    product = bll.update_product(context, product_id, is_active=False)
+    product = bll.update_product(
+        context,
+        bll.ProductCommand(
+            product_id=product_id,
+            product_name=None,
+            sell_price=None,
+            is_active=False,
+        ),
+    )
     return schemas.StandardResponse(
         detail="Product deactivated successfully",
         data=schemas.ProductResponse(

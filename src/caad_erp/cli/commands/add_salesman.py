@@ -1,5 +1,4 @@
 import argparse
-import typing as t
 
 from caad_erp import bll
 
@@ -38,22 +37,23 @@ def register_add_salesman_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_add_salesman)
 
 
-def _translate_add_salesman(args: argparse.Namespace) -> t.Mapping[str, t.Any]:
-    """Convert parsed CLI arguments into ``add_salesman`` keyword arguments.
+def _translate_add_salesman(args: argparse.Namespace) -> bll.SalesmanCommand:
+    """Convert parsed CLI arguments into a salesman command object.
 
     Args:
         args (argparse.Namespace): Namespace produced for the
             ``add-salesman`` command.
 
     Returns:
-        Mapping[str, Any]: Keyword payload used by :func:`bll.add_salesman`.
-            The ``--inactive`` option is inverted into the ``is_active`` flag.
+        bll.SalesmanCommand: Command payload used by
+            :func:`bll.add_salesman`. The ``--inactive`` option is inverted
+            into the ``is_active`` flag.
     """
-    return {
-        "salesman_id": args.salesman_id,
-        "salesman_name": args.salesman_name,
-        "is_active": not getattr(args, "inactive", False),
-    }
+    return bll.SalesmanCommand(
+        salesman_id=args.salesman_id,
+        salesman_name=args.salesman_name,
+        is_active=not getattr(args, "inactive", False),
+    )
 
 
 def _run_add_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
@@ -67,6 +67,6 @@ def _run_add_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> 
     Returns:
         int: Exit code ``0`` when the salesman is successfully recorded.
     """
-    payload = _translate_add_salesman(args)
-    bll.add_salesman(context, **payload)  # type: ignore[attr-defined]
+    command = _translate_add_salesman(args)
+    bll.add_salesman(context, command)
     return 0

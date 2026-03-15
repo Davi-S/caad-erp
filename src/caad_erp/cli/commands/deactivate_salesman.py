@@ -35,19 +35,22 @@ def register_deactivate_salesman_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_deactivate_salesman)
 
 
-def _translate_deactivate_salesman(args: argparse.Namespace) -> str:
-    """Normalize CLI arguments into a salesman identifier.
+def _translate_deactivate_salesman(args: argparse.Namespace) -> bll.SalesmanCommand:
+    """Normalize CLI arguments into a salesman update command.
 
     Args:
         args (argparse.Namespace): Namespace containing the
             ``deactivate-salesman`` options.
 
     Returns:
-        str: Sanitized salesman identifier suitable for
-            :func:`bll.update_salesman`.
+        bll.SalesmanCommand: Command setting ``is_active`` to ``False`` while
+            leaving other fields unchanged.
     """
-
-    return str(args.salesman_id).strip()
+    return bll.SalesmanCommand(
+        salesman_id=str(args.salesman_id).strip(),
+        salesman_name=None,
+        is_active=False,
+    )
 
 
 def _run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
@@ -62,6 +65,6 @@ def _run_deactivate_salesman(context: bll.RuntimeContext, args: argparse.Namespa
         int: Exit code ``0`` after the salesman has been flagged as inactive.
     """
 
-    salesman_id = _translate_deactivate_salesman(args)
-    bll.update_salesman(context, salesman_id, is_active=False)
+    command = _translate_deactivate_salesman(args)
+    bll.update_salesman(context, command)
     return 0

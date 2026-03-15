@@ -35,19 +35,23 @@ def register_deactivate_product_command() -> command_spec.CommandSpec:
     return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_deactivate_product)
 
 
-def _translate_deactivate_product(args: argparse.Namespace) -> str:
-    """Normalize CLI arguments into a product identifier.
+def _translate_deactivate_product(args: argparse.Namespace) -> bll.ProductCommand:
+    """Normalize CLI arguments into a product update command.
 
     Args:
         args (argparse.Namespace): Namespace containing the
             ``deactivate-product`` options.
 
     Returns:
-        str: Sanitized product identifier suitable for
-            :func:`bll.update_product`.
+        bll.ProductCommand: Command setting ``is_active`` to ``False`` while
+            leaving other fields unchanged.
     """
-
-    return str(args.product_id).strip()
+    return bll.ProductCommand(
+        product_id=str(args.product_id).strip(),
+        product_name=None,
+        sell_price=None,
+        is_active=False,
+    )
 
 
 def _run_deactivate_product(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
@@ -62,6 +66,6 @@ def _run_deactivate_product(context: bll.RuntimeContext, args: argparse.Namespac
         int: Exit code ``0`` after the product has been flagged as inactive.
     """
 
-    product_id = _translate_deactivate_product(args)
-    bll.update_product(context, product_id, is_active=False)
+    command = _translate_deactivate_product(args)
+    bll.update_product(context, command)
     return 0
