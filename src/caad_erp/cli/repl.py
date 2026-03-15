@@ -10,7 +10,7 @@ import logging
 import shlex
 import typing as t
 
-from caad_erp import bll, exceptions
+from caad_erp import bll
 
 from . import command_spec
 

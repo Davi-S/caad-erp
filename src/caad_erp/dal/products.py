@@ -149,4 +149,9 @@ def _deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
     is_active = raw_row[3]
 
     sell_price = Decimal(str(sell_raw)) if sell_raw is not None else Decimal("0.00")
-    return ProductRow(product_id=str(product_id), product_name=str(product_name), sell_price=sell_price, is_active=bool(is_active))
+    return ProductRow(
+        product_id=str(product_id),
+        product_name=str(product_name),
+        sell_price=sell_price,
+        is_active=bool(is_active)
+    )

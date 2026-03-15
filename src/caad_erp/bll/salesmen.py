@@ -142,10 +142,6 @@ def add_salesman(
     if command.is_active is None:
         logger.error("Salesman creation rejected: missing is_active")
         raise ValueError("is_active must be provided")
-    if not isinstance(command.is_active, bool):
-        logger.error(
-            "Salesman creation rejected: non-boolean is_active '%s'", command.is_active)
-        raise ValueError("is_active must be a boolean value")
 
     bucket = _ensure_salesmen_cache(context)
     if normalized_id in bucket["by_id"]:
@@ -181,17 +177,13 @@ def update_salesman(
     field_values: dict[str, t.Any] = {}
 
     if command.salesman_name is not None:
-        normalized_name = str(command.salesman_name).strip()
+        normalized_name = command.salesman_name.strip()
         if not normalized_name:
             logger.error("Salesman update rejected: blank salesman_name")
             raise ValueError("Salesman name must be provided")
         field_values["SalesmanName"] = normalized_name
 
     if command.is_active is not None:
-        if not isinstance(command.is_active, bool):
-            logger.error(
-                "Salesman update rejected: non-boolean is_active '%s'", command.is_active)
-            raise ValueError("is_active must be a boolean value")
         field_values["IsActive"] = command.is_active
 
     if not field_values:
