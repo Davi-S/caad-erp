@@ -9,7 +9,7 @@ memoized cache across requests.
 import logging
 import typing as t
 import dataclasses
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from caad_erp import dal, exceptions
 
@@ -125,22 +125,14 @@ def update_product(
     field_values: dict[str, t.Any] = {}
 
     if command.product_name is not None:
-        normalized_name = str(command.product_name).strip()
+        normalized_name = command.product_name.strip()
         if not normalized_name:
             logger.error("Product update rejected: blank product_name")
             raise ValueError("Product name must be provided")
         field_values["ProductName"] = normalized_name
 
     if command.sell_price is not None:
-        try:
-            price = command.sell_price if isinstance(
-                command.sell_price, Decimal) else Decimal(command.sell_price)
-        except (InvalidOperation, TypeError) as exc:
-            logger.error(
-                "Product update rejected: invalid sell_price '%s'", command.sell_price)
-            raise ValueError(
-                "Sell price must be a valid decimal number") from exc
-
+        price = command.sell_price
         if price < Decimal("0"):
             logger.error(
                 "Product update rejected: negative sell_price '%s'", price)
@@ -149,10 +141,6 @@ def update_product(
         field_values["SellPrice"] = price
 
     if command.is_active is not None:
-        if not isinstance(command.is_active, bool):
-            logger.error(
-                "Product update rejected: non-boolean is_active '%s'", command.is_active)
-            raise ValueError("is_active must be a boolean value")
         field_values["IsActive"] = command.is_active
 
     if not field_values:
@@ -216,14 +204,7 @@ def add_product(
         logger.error("Product creation rejected: missing sell_price")
         raise ValueError("Sell price must be provided")
 
-    try:
-        price = command.sell_price if isinstance(
-            command.sell_price, Decimal) else Decimal(command.sell_price)
-    except (InvalidOperation, TypeError) as exc:
-        logger.error(
-            "Product creation rejected: invalid sell_price '%s'", command.sell_price)
-        raise ValueError("Sell price must be a valid decimal number") from exc
-
+    price = command.sell_price
     if price < Decimal("0"):
         logger.error(
             "Product creation rejected: negative sell_price '%s'", price)
@@ -232,10 +213,6 @@ def add_product(
     if command.is_active is None:
         logger.error("Product creation rejected: missing is_active")
         raise ValueError("is_active must be provided")
-    if not isinstance(command.is_active, bool):
-        logger.error(
-            "Product creation rejected: non-boolean is_active '%s'", command.is_active)
-        raise ValueError("is_active must be a boolean value")
 
     bucket = _ensure_products_cache(context)
     if normalized_id in bucket["by_id"]:

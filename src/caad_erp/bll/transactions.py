@@ -253,11 +253,6 @@ def record_sale(context: runtime.RuntimeContext, command: SaleCommand) -> dal.Tr
             f"Salesman '{command.salesman_id}' is inactive")
     _require_positive_quantity(command.quantity)
     _require_nonnegative_money(command.total_revenue)
-    if not isinstance(command.payment_type, constants.PaymentType):
-        logger.error("Unsupported payment type provided: %s",
-                     command.payment_type)
-        raise exceptions.BusinessRuleViolation(
-            f"Unsupported payment type: {command.payment_type}")
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_sale_transaction(
@@ -499,11 +494,6 @@ def record_credit_payment(context: runtime.RuntimeContext, command: CreditPaymen
     linked_sale = get_transaction(context, command.linked_transaction_id)
     _validate_credit_sale_link(linked_sale)
     _require_nonnegative_money(command.total_revenue)
-    if not isinstance(command.payment_type, constants.PaymentType):
-        logger.error(
-            "Unsupported payment type provided for credit payment: %s", command.payment_type)
-        raise exceptions.BusinessRuleViolation(
-            f"Unsupported payment type: {command.payment_type}")
     salesman = salesmen.get_salesman(context, command.salesman_id)
     if not salesman.is_active:
         logger.warning(
