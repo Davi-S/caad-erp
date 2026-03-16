@@ -8,7 +8,7 @@ import fastapi
 
 from caad_erp import bll
 
-from .. import dependencies, schemas
+from .. import persistence, runtime, schemas
 
 router = fastapi.APIRouter(prefix="/products", tags=["Products"])
 
@@ -17,7 +17,7 @@ router = fastapi.APIRouter(prefix="/products", tags=["Products"])
 def list_products(
     include_inactive: bool = False,
     context: bll.RuntimeContext = fastapi.Depends(
-        dependencies.get_runtime_context),
+        runtime.get_runtime_context),
 ) -> schemas.ProductListResponse:
     """List products, optionally including inactive ones.
 
@@ -44,10 +44,11 @@ def list_products(
 
 
 @router.post("", response_model=schemas.StandardResponse, status_code=201)
+@persistence.mutating_endpoint
 def create_product(
     request: schemas.ProductCreateRequest,
     context: bll.RuntimeContext = fastapi.Depends(
-        dependencies.get_runtime_context),
+        runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Create a new product.
 
@@ -82,10 +83,11 @@ def create_product(
 
 
 @router.post("/{product_id}/deactivate", response_model=schemas.StandardResponse)
+@persistence.mutating_endpoint
 def deactivate_product(
     product_id: str,
     context: bll.RuntimeContext = fastapi.Depends(
-        dependencies.get_runtime_context),
+        runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Deactivate an existing product.
 
