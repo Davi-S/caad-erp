@@ -1,29 +1,48 @@
 """Persistence helpers for API mutation endpoints.
 
-This module defines a lightweight marker used to flag handlers that mutate
-workbook state. The FastAPI application middleware checks this marker to
-decide whether it should persist the runtime context after a successful
-response.
+The decorator in this module wraps mutating route handlers so successful
+requests automatically persist workbook changes to disk. Exceptions are left
+untouched so the API layer's centralized error handling continues to map them
+to HTTP responses.
 """
 
+import functools
+import inspect
 import typing as t
 
-_MUTATING_ENDPOINT_ATTR = "__caad_mutating_endpoint__"
+from caad_erp import bll
+
+from . import runtime
+
+P = t.ParamSpec("P")
+R = t.TypeVar("R")
 
 
-def mutating_endpoint(handler: t.Callable[..., t.Any]) -> t.Callable[..., t.Any]:
-    """Mark an API handler as mutating workbook state.
+def mutating_endpoint(handler: t.Callable[P, R]) -> t.Callable[P, R]:
+    """Persist the runtime context after a successful mutating handler.
 
     Args:
-        handler: Route function to mark.
+        handler: Route function to wrap.
 
     Returns:
-        The same callable with a mutation marker attribute attached.
+        Callable preserving the original signature while persisting on success.
     """
-    setattr(handler, _MUTATING_ENDPOINT_ATTR, True)
-    return handler
 
+    if inspect.iscoroutinefunction(handler):
+        @functools.wraps(handler)
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            result = await handler(*args, **kwargs)
+            bll.persist_context(runtime.get_runtime_context())
+            return result
 
-def is_mutating_endpoint(handler: t.Any) -> bool:
-    """Return whether the supplied handler is marked as mutating."""
-    return bool(handler is not None and getattr(handler, _MUTATING_ENDPOINT_ATTR, False))
+        async_wrapper.__signature__ = inspect.signature(handler)
+        return t.cast(t.Callable[P, R], async_wrapper)
+
+    @functools.wraps(handler)
+    def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        result = handler(*args, **kwargs)
+        bll.persist_context(runtime.get_runtime_context())
+        return result
+
+    sync_wrapper.__signature__ = inspect.signature(handler)
+    return sync_wrapper
