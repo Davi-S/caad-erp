@@ -210,7 +210,7 @@ def test_load_context_uses_explicit_config_path_when_provided(tmp_path: Path) ->
     assert result.settings.data_file == workbook_path.resolve()
 
 
-def test_load_context_uses_discovery_when_config_path_is_none(tmp_path: Path, monkeypatch) -> None:
+def test_load_context_uses_discovery_when_config_path_is_none(tmp_path: Path) -> None:
     """
     GIVEN no explicit config path argument
     WHEN load_context is called
@@ -221,10 +221,15 @@ def test_load_context_uses_discovery_when_config_path_is_none(tmp_path: Path, mo
     openpyxl.Workbook().save(workbook_path)
     config_path = tmp_path / "config.ini"
     _write_config(config_path, workbook_path)
-    monkeypatch.chdir(tmp_path)
+    import os
 
-    # Act
-    result = runtime.load_context(config_path=None)
+    current_dir = Path.cwd()
+    try:
+        os.chdir(tmp_path)
+        # Act
+        result = runtime.load_context(config_path=None)
+    finally:
+        os.chdir(current_dir)
 
     # Assert
     assert result.settings.data_file == workbook_path.resolve()

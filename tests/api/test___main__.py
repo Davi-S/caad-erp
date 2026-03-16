@@ -1,20 +1,13 @@
 import importlib
 
 
-def test_api_module_main_invokes_server_main() -> None:
+def test_api_module_main_reexports_server_main_symbol() -> None:
     """
-    GIVEN module execution through python -m caad_erp.api
-    WHEN api.__main__ is evaluated
-    THEN server.main is invoked as the runtime entrypoint
+    GIVEN module execution support through python -m caad_erp.api
+    WHEN caad_erp.api.__main__ is imported
+    THEN module-level main symbol points to caad_erp.api.server.main
     """
     module = importlib.import_module("caad_erp.api.__main__")
-    calls: list[str] = []
+    server = importlib.import_module("caad_erp.api.server")
 
-    original_main = module.main
-    try:
-        module.main = lambda: calls.append("main")
-        module.main()
-    finally:
-        module.main = original_main
-
-    assert calls == ["main"]
+    assert module.main is server.main
