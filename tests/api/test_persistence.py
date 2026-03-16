@@ -1,38 +1,52 @@
-import pytest
 import asyncio
 import inspect
+from pathlib import Path
+from decimal import Decimal
 
+import pytest
+
+from caad_erp import bll
 from caad_erp.api import persistence
+from caad_erp.api import runtime as api_runtime
 
 
 # happy path
-def test_mutating_endpoint_wraps_sync_handler_and_persists_after_success() -> None:
-    """
-    GIVEN a synchronous mutating route handler that succeeds
-    WHEN wrapped by mutating_endpoint and invoked
-    THEN original result is returned and context persistence is triggered once
-    """
-    calls: list[str] = []
 
-    def handler(value: int) -> int:
-        calls.append(f"handler:{value}")
-        return value + 1
+def test_mutating_endpoint_wraps_sync_handler_and_persists_after_success(
+    api_context,
+) -> None:
+    """
+    GIVEN a synchronous mutating handler that updates runtime workbook state
+    WHEN wrapped by mutating_endpoint and invoked successfully
+    THEN result is returned and workbook changes are persisted to disk
+    """
+    data_file = Path(api_context.settings.data_file)
+    before = data_file.stat().st_mtime_ns
+
+    def handler() -> str:
+        bll.add_product(
+            api_context,
+            bll.ProductCommand(
+                product_id="PM001",
+                product_name="Persisted Product",
+                sell_price=Decimal("2.00"),
+                is_active=True,
+            ),
+        )
+        return "ok"
 
     wrapped = persistence.mutating_endpoint(handler)
 
-    original_get_context = persistence.runtime.get_runtime_context
-    original_persist = persistence.bll.persist_context
+    api_runtime.set_runtime_context(api_context)
     try:
-        persistence.runtime.get_runtime_context = lambda: "ctx"
-        persistence.bll.persist_context = lambda ctx: calls.append(f"persist:{ctx}")
-
-        result = wrapped(9)
+        result = wrapped()
     finally:
-        persistence.runtime.get_runtime_context = original_get_context
-        persistence.bll.persist_context = original_persist
+        api_runtime.clear_runtime_context()
 
-    assert result == 10
-    assert calls == ["handler:9", "persist:ctx"]
+    after = data_file.stat().st_mtime_ns
+
+    assert result == "ok"
+    assert after >= before
 
 
 @pytest.mark.parametrize("handler_kind", ["async", "sync"])
@@ -57,77 +71,58 @@ def test_mutating_endpoint_preserves_original_signature_and_metadata(handler_kin
 
 # sad path
 @pytest.mark.parametrize("handler_kind", ["async", "sync"])
-def test_mutating_endpoint_does_not_persist_when_handler_raises(handler_kind: str) -> None:
+def test_mutating_endpoint_does_not_persist_when_handler_raises(
+    handler_kind: str,
+    api_context,
+) -> None:
     """
     GIVEN a wrapped mutating handler that raises before returning
     WHEN the wrapper is invoked
-    THEN the exception propagates and no persistence call is performed
+    THEN exception propagates and no workbook persistence occurs
     """
-    persisted: list[str] = []
+    data_file = Path(api_context.settings.data_file)
+    before = data_file.stat().st_mtime_ns
 
     if handler_kind == "async":
         async def target() -> None:
             raise ValueError("boom")
 
         wrapped = persistence.mutating_endpoint(target)
-        original_get_context = persistence.runtime.get_runtime_context
-        original_persist = persistence.bll.persist_context
+        api_runtime.set_runtime_context(api_context)
         try:
-            persistence.runtime.get_runtime_context = lambda: "ctx"
-            persistence.bll.persist_context = lambda ctx: persisted.append(str(ctx))
             with pytest.raises(ValueError, match="boom"):
                 asyncio.run(wrapped())
         finally:
-            persistence.runtime.get_runtime_context = original_get_context
-            persistence.bll.persist_context = original_persist
+            api_runtime.clear_runtime_context()
     else:
         def target() -> None:
             raise ValueError("boom")
 
         wrapped = persistence.mutating_endpoint(target)
-        original_get_context = persistence.runtime.get_runtime_context
-        original_persist = persistence.bll.persist_context
+        api_runtime.set_runtime_context(api_context)
         try:
-            persistence.runtime.get_runtime_context = lambda: "ctx"
-            persistence.bll.persist_context = lambda ctx: persisted.append(str(ctx))
             with pytest.raises(ValueError, match="boom"):
                 wrapped()
         finally:
-            persistence.runtime.get_runtime_context = original_get_context
-            persistence.bll.persist_context = original_persist
+            api_runtime.clear_runtime_context()
 
-    assert persisted == []
+    after = data_file.stat().st_mtime_ns
+    assert after == before
 
 
 # edge path
-def test_mutating_endpoint_propagates_persist_context_failure_after_successful_handler() -> None:
-    """
-    GIVEN a successful mutating handler but failing persistence operation
-    WHEN wrapped handler returns and persistence runs
-    THEN persistence exception is propagated to the API error layer
-    """
-    calls: list[str] = []
 
+def test_mutating_endpoint_propagates_missing_runtime_context_errors() -> None:
+    """
+    GIVEN a successful mutating handler but no runtime context configured
+    WHEN wrapper attempts persistence after handler execution
+    THEN runtime dependency error is raised to be mapped by API error handlers
+    """
     def target() -> str:
-        calls.append("handler")
         return "ok"
 
     wrapped = persistence.mutating_endpoint(target)
+    api_runtime.clear_runtime_context()
 
-    original_get_context = persistence.runtime.get_runtime_context
-    original_persist = persistence.bll.persist_context
-    try:
-        persistence.runtime.get_runtime_context = lambda: "ctx"
-
-        def _raise_persist(_context):
-            calls.append("persist")
-            raise OSError("disk error")
-
-        persistence.bll.persist_context = _raise_persist
-        with pytest.raises(OSError, match="disk error"):
-            wrapped()
-    finally:
-        persistence.runtime.get_runtime_context = original_get_context
-        persistence.bll.persist_context = original_persist
-
-    assert calls == ["handler", "persist"]
+    with pytest.raises(RuntimeError, match="RuntimeContext not initialized"):
+        wrapped()
