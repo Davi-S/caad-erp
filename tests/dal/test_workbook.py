@@ -136,7 +136,6 @@ def test_save_workbook_saved_file_is_valid_xlsx(
 def test_save_workbook_propagates_permission_error_when_unwritable(
     tmp_path: Path,
     tmp_workbook_path: Path,
-    monkeypatch,
 ) -> None:
     """
     GIVEN an unwritable destination
@@ -145,16 +144,18 @@ def test_save_workbook_propagates_permission_error_when_unwritable(
     """
     # Arrange
     workbook = dal_workbook.open_workbook(tmp_workbook_path)
-    target = tmp_path / "readonly" / "saved.xlsx"
+    readonly_dir = tmp_path / "readonly"
+    readonly_dir.mkdir()
+    target = readonly_dir / "saved.xlsx"
 
-    def _raise_permission_error(_destination: Path) -> None:
-        raise PermissionError("cannot write file")
-
-    monkeypatch.setattr(workbook, "save", _raise_permission_error)
-
-    # Act / Assert
-    with pytest.raises(PermissionError):
-        dal_workbook.save_workbook(workbook, target)
+    # Deny write permission on the directory so openpyxl cannot create file.
+    readonly_dir.chmod(0o555)
+    try:
+        with pytest.raises(PermissionError):
+            dal_workbook.save_workbook(workbook, target)
+    finally:
+        # Restore permissions so pytest temp cleanup can remove this path.
+        readonly_dir.chmod(0o755)
 
 
 @pytest.mark.parametrize(
@@ -180,7 +181,8 @@ def test_locate_row_returns_correct_row_index(
     sheet.append(["P-002", "Water", 3.0, True])
 
     # Act
-    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", lookup_key)
+    row_index = dal_workbook.locate_row(
+        products_workbook, "Products", "ProductID", lookup_key)
 
     # Assert
     assert row_index == expected_row_index
@@ -200,7 +202,8 @@ def test_locate_row_returns_none_when_value_not_found(
     products_workbook["Products"].append(["P-001", "Soda", 5.5, True])
 
     # Act
-    result = dal_workbook.locate_row(products_workbook, "Products", "ProductID", missing_key)
+    result = dal_workbook.locate_row(
+        products_workbook, "Products", "ProductID", missing_key)
 
     # Assert
     assert result is None
@@ -220,7 +223,8 @@ def test_locate_row_raises_key_error_for_unknown_column(
 
     # Act / Assert
     with pytest.raises(KeyError, match="Unknown column"):
-        dal_workbook.locate_row(products_workbook, "Products", unknown_column, "P-001")
+        dal_workbook.locate_row(
+            products_workbook, "Products", unknown_column, "P-001")
 
 
 def test_locate_row_returns_first_match_when_duplicates_exist(products_workbook) -> None:
@@ -235,7 +239,8 @@ def test_locate_row_returns_first_match_when_duplicates_exist(products_workbook)
     sheet.append(["P-001", "Soda Duplicate", 6.0, False])
 
     # Act
-    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", "P-001")
+    row_index = dal_workbook.locate_row(
+        products_workbook, "Products", "ProductID", "P-001")
 
     # Assert
     assert row_index == 2
@@ -250,7 +255,8 @@ def test_locate_row_excludes_header_row_from_search(products_workbook) -> None:
     # Arrange
 
     # Act
-    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", "ProductID")
+    row_index = dal_workbook.locate_row(
+        products_workbook, "Products", "ProductID", "ProductID")
 
     # Assert
     assert row_index is None
@@ -265,7 +271,8 @@ def test_locate_row_returns_none_for_header_only_sheet(products_workbook) -> Non
     # Arrange
 
     # Act
-    row_index = dal_workbook.locate_row(products_workbook, "Products", "ProductID", "P-001")
+    row_index = dal_workbook.locate_row(
+        products_workbook, "Products", "ProductID", "P-001")
 
     # Assert
     assert row_index is None
@@ -285,4 +292,5 @@ def test_locate_row_raises_key_error_for_unknown_sheet(
 
     # Act / Assert
     with pytest.raises(KeyError):
-        dal_workbook.locate_row(products_workbook, unknown_sheet, "ProductID", "P-001")
+        dal_workbook.locate_row(
+            products_workbook, unknown_sheet, "ProductID", "P-001")
