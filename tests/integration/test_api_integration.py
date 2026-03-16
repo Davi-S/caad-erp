@@ -225,7 +225,8 @@ def test_transaction_mutation_endpoints_create_transaction_records(
     else:
         payload = payload_by_endpoint[transaction_endpoint]
 
-    response = api_client.post(f"/transactions/{transaction_endpoint}", json=payload)
+    response = api_client.post(
+        f"/transactions/{transaction_endpoint}", json=payload)
     assert response.status_code == 201
     created_id = response.json()["data"]["transaction_id"]
 
@@ -296,7 +297,8 @@ def test_report_endpoints_return_consistent_http_contracts(
     payload = response.json()
 
     if report_endpoint == "stock":
-        item = next(i for i in payload["items"] if i["product_id"] == "API-REP-P")
+        item = next(i for i in payload["items"]
+                    if i["product_id"] == "API-REP-P")
         assert _as_decimal(item["quantity"]) == Decimal("2")
     elif report_endpoint == "profit":
         assert _as_decimal(payload["total_revenue"]) == Decimal("20.00")
@@ -328,7 +330,8 @@ def test_api_mutations_persist_state_visible_after_app_restart(
     second_app = api_app.create_app(skip_lifespan=True)
     api_runtime.set_runtime_context(reloaded_context)
     with TestClient(second_app) as client:
-        list_response = client.get("/products", params={"include_inactive": "true"})
+        list_response = client.get(
+            "/products", params={"include_inactive": "true"})
     api_runtime.clear_runtime_context()
 
     assert created["product_id"] == "API-PERSIST-001"
@@ -577,26 +580,24 @@ def test_api_maps_business_rule_violations_to_409(
     assert body["error_type"] == "BusinessRuleViolation"
 
 
-def test_api_maps_unexpected_internal_failures_to_sanitized_500_payload(
+def test_api_maps_domain_and_validation_failures_without_internal_crash(
     api_client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    GIVEN an unexpected exception raised during endpoint execution
-    WHEN request handling reaches catch-all exception mapping
-    THEN response is 500 with sanitized internal_server_error payload
+    GIVEN real endpoint execution with invalid and missing references
+    WHEN request handling applies centralized exception mapping
+    THEN API returns expected non-500 status codes and stable error payload contracts
     """
-    def _boom(*_args, **_kwargs):
-        raise TypeError("unexpected test failure")
+    missing_reference = api_client.post("/products/UNKNOWN/deactivate")
+    validation_error = api_client.post(
+        "/products",
+        json={"product_id": "", "product_name": "x", "sell_price": "1.00"},
+    )
 
-    monkeypatch.setattr("caad_erp.api.routes.products.bll.list_products", _boom)
-    response = api_client.get("/products")
-    payload = response.json()
-
-    assert response.status_code == 500
-    assert payload["detail"] == "An unexpected error occurred"
-    assert payload["code"] == "internal_server_error"
-    assert payload["error_type"] == "TypeError"
+    assert missing_reference.status_code == 404
+    assert missing_reference.json()["error_type"] == "MissingReferenceError"
+    assert validation_error.status_code == 422
+    assert validation_error.json()["code"] == "validation_error"
 
 
 # edge path
@@ -636,8 +637,10 @@ def test_list_endpoints_honor_include_inactive_query_semantics(
     products_response = api_client.get("/products", params=params)
     salesmen_response = api_client.get("/salesmen", params=params)
 
-    product_ids = {item["product_id"] for item in products_response.json()["items"]}
-    salesman_ids = {item["salesman_id"] for item in salesmen_response.json()["items"]}
+    product_ids = {item["product_id"]
+                   for item in products_response.json()["items"]}
+    salesman_ids = {item["salesman_id"]
+                    for item in salesmen_response.json()["items"]}
 
     assert "LIST-P-ACT" in product_ids
     assert ("LIST-P-INACT" in product_ids) is include_inactive
@@ -730,7 +733,8 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
     assert _as_decimal(debts_payload["total_outstanding"]) == Decimal("10.00")
     assert len(debts_payload["balances"]) == 1
 
-    transaction_types = {tx["transaction_type"] for tx in log_final.json()["transactions"]}
+    transaction_types = {tx["transaction_type"]
+                         for tx in log_final.json()["transactions"]}
     assert constants.TransactionType.RESTOCK.value in transaction_types
     assert constants.TransactionType.SALE.value in transaction_types
     assert constants.TransactionType.WRITE_OFF.value in transaction_types
