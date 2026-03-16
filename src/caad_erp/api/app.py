@@ -14,7 +14,7 @@ import fastapi.middleware.cors
 
 from caad_erp import bll
 
-from . import dependencies, errors, routes
+from . import errors, routes, runtime
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +27,7 @@ APP_DESCRIPTION = (
 
 def _get_app_version() -> str:
     """Get the application version from package metadata."""
-    try:
-        return importlib.metadata.version("caad-erp")
-    except Exception:
-        return "0.0.0"
+    return importlib.metadata.version("caad-erp")
 
 
 @contextlib.asynccontextmanager
@@ -45,7 +42,7 @@ async def lifespan(app: fastapi.FastAPI) -> t.AsyncIterator[None]:
     try:
         context = bll.load_context()
         bll.ensure_schema_version(context)
-        dependencies.set_runtime_context(context)
+        runtime.set_runtime_context(context)
         logger.info("RuntimeContext initialized successfully")
     except Exception:
         logger.exception("Failed to initialize RuntimeContext")
@@ -55,7 +52,7 @@ async def lifespan(app: fastapi.FastAPI) -> t.AsyncIterator[None]:
 
     # Shutdown: Clean up resources
     logger.info("Shutting down RuntimeContext...")
-    dependencies.clear_runtime_context()
+    runtime.clear_runtime_context()
     logger.info("RuntimeContext shutdown complete")
 
 

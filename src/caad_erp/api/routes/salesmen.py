@@ -8,7 +8,7 @@ import fastapi
 
 from caad_erp import bll
 
-from .. import dependencies, schemas
+from .. import persistence, runtime, schemas
 
 router = fastapi.APIRouter(prefix="/salesmen", tags=["Salesmen"])
 
@@ -17,7 +17,7 @@ router = fastapi.APIRouter(prefix="/salesmen", tags=["Salesmen"])
 def list_salesmen(
     include_inactive: bool = False,
     context: bll.RuntimeContext = fastapi.Depends(
-        dependencies.get_runtime_context),
+        runtime.get_runtime_context),
 ) -> schemas.SalesmanListResponse:
     """List salesmen, optionally including inactive ones.
 
@@ -43,10 +43,11 @@ def list_salesmen(
 
 
 @router.post("", response_model=schemas.StandardResponse, status_code=201)
+@persistence.mutating_endpoint
 def create_salesman(
     request: schemas.SalesmanCreateRequest,
     context: bll.RuntimeContext = fastapi.Depends(
-        dependencies.get_runtime_context),
+        runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Create a new salesman.
 
@@ -79,10 +80,11 @@ def create_salesman(
 
 
 @router.post("/{salesman_id}/deactivate", response_model=schemas.StandardResponse)
+@persistence.mutating_endpoint
 def deactivate_salesman(
     salesman_id: str,
     context: bll.RuntimeContext = fastapi.Depends(
-        dependencies.get_runtime_context),
+        runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Deactivate an existing salesman.
 
