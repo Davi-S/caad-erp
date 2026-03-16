@@ -14,7 +14,7 @@ import fastapi.middleware.cors
 
 from caad_erp import bll
 
-from . import errors, persistence, routes, runtime
+from . import errors, routes, runtime
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +72,6 @@ def create_app(*, skip_lifespan: bool = False) -> fastapi.FastAPI:
         version=_get_app_version(),
         lifespan=None if skip_lifespan else lifespan,
     )
-
-    @app.middleware("http")
-    async def persist_mutating_requests(
-        request: fastapi.Request,
-        call_next: t.Callable[[fastapi.Request], t.Awaitable[fastapi.Response]],
-    ) -> fastapi.Response:
-        """Persist workbook changes for successful mutating endpoints."""
-        response = await call_next(request)
-
-        endpoint = request.scope.get("endpoint")
-        if (
-            persistence.is_mutating_endpoint(endpoint)
-            and response.status_code < 400
-        ):
-            bll.persist_context(runtime.get_runtime_context())
-
-        return response
 
     # Configure CORS for local development/local network use
     # Allow all origins without credentials for maximum compatibility
