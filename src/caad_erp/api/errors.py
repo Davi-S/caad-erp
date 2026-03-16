@@ -7,8 +7,10 @@ to appropriate HTTP status codes and response formats.
 import dataclasses
 import logging
 import typing as t
+from decimal import Decimal
 
 import fastapi
+import fastapi.encoders
 import fastapi.exceptions
 import fastapi.responses
 
@@ -56,7 +58,13 @@ class ErrorResponseBuilder:
         exc: fastapi.exceptions.RequestValidationError,
     ) -> fastapi.responses.JSONResponse:
         """Create a validation error response with structured error details."""
-        validation_errors = exc.errors()
+        validation_errors = fastapi.encoders.jsonable_encoder(
+            exc.errors(),
+            custom_encoder={
+                Decimal: str,
+                Exception: str,
+            },
+        )
         if validation_errors:
             # Extract first error message for the detail field
             first_error = validation_errors[0]
