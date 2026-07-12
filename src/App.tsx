@@ -80,21 +80,18 @@ function Eyebrow({ step, label }) {
     );
 }
 
-function PhoneChrome({ children }) {
+function ScreenShell({ children }) {
     return (
         <div
-            className="relative w-full h-full flex flex-col overflow-hidden"
-            style={{ background: C.paper }}
+            className="relative w-full min-h-[100svh] flex flex-col overflow-hidden"
+            style={{
+                background: C.paper,
+                paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+                paddingLeft: "max(0px, env(safe-area-inset-left))",
+                paddingRight: "max(0px, env(safe-area-inset-right))",
+            }}
         >
-            <div className="flex items-center justify-between px-6 pt-3 pb-1 shrink-0">
-                <span style={{ fontFamily: F_MONO, fontSize: 12, color: C.inkSoft }}>9:41</span>
-                <div className="flex gap-1 items-end">
-                    <div style={{ width: 3, height: 5, background: C.inkSoft }} />
-                    <div style={{ width: 3, height: 7, background: C.inkSoft }} />
-                    <div style={{ width: 3, height: 9, background: C.inkSoft }} />
-                    <div style={{ width: 3, height: 11, background: C.inkFaint }} />
-                </div>
-            </div>
             {children}
         </div>
     );
@@ -103,8 +100,8 @@ function PhoneChrome({ children }) {
 // ---------------- Screen 1: pick seller ----------------
 function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
     return (
-        <PhoneChrome>
-            <div className="flex-1 flex flex-col px-6 pt-4 pb-6 overflow-y-auto">
+        <ScreenShell>
+            <div className="flex-1 flex flex-col px-4 sm:px-6 pt-4 pb-6 overflow-y-auto">
                 <Eyebrow step={1} label="Vendedor" />
                 <h1
                     className="mt-1 mb-6 leading-tight"
@@ -174,7 +171,7 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
                 </div>
             </div>
 
-            <div className="px-6 pb-7 pt-3 shrink-0" style={{ borderTop: `1px dashed ${C.paperLine}` }}>
+            <div className="px-4 sm:px-6 pb-7 pt-3 shrink-0" style={{ borderTop: `1px dashed ${C.paperLine}` }}>
                 <button
                     disabled={!selected}
                     onClick={onNext}
@@ -191,7 +188,7 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
                     Começar venda
                 </button>
             </div>
-        </PhoneChrome>
+        </ScreenShell>
     );
 }
 
@@ -204,8 +201,8 @@ function CartScreen({ seller, qty, setQty, onBack, onClose }) {
     const dec = (id) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] || 0) - 1) }));
 
     return (
-        <PhoneChrome>
-            <div className="px-6 pt-4 shrink-0">
+        <ScreenShell>
+            <div className="px-4 sm:px-6 pt-4 shrink-0">
                 <Eyebrow step={2} label="Carrinho" />
                 <div className="flex items-center gap-2 mb-4">
                     <button onClick={onBack} className="p-1 -ml-1">
@@ -220,7 +217,7 @@ function CartScreen({ seller, qty, setQty, onBack, onClose }) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6">
                 <p
                     className="text-xs uppercase tracking-wider mb-2"
                     style={{ fontFamily: F_BODY, color: C.inkFaint, fontWeight: 600, letterSpacing: "0.1em" }}
@@ -302,7 +299,7 @@ function CartScreen({ seller, qty, setQty, onBack, onClose }) {
                 </div>
             </div>
 
-            <div className="px-6 pt-3 pb-7 shrink-0" style={{ borderTop: `1.5px dashed ${C.inkFaint}` }}>
+            <div className="px-4 sm:px-6 pt-3 pb-7 shrink-0" style={{ borderTop: `1.5px dashed ${C.inkFaint}` }}>
                 <div className="flex items-baseline justify-between mb-3">
                     <span style={{ fontFamily: F_BODY, color: C.inkSoft, fontSize: 13, fontWeight: 600 }}>
                         Total
@@ -327,7 +324,7 @@ function CartScreen({ seller, qty, setQty, onBack, onClose }) {
                     Fechar venda
                 </button>
             </div>
-        </PhoneChrome>
+        </ScreenShell>
     );
 }
 
@@ -337,7 +334,16 @@ function PixScreen({ total, status, setStatus, onNewSale }) {
     const confirmed = status === "confirmed";
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center px-5" style={{ background: C.ink }}>
+        <div
+            className="w-full min-h-[100svh] flex flex-col items-center justify-center px-4 sm:px-5"
+            style={{
+                background: C.ink,
+                paddingTop: "max(1rem, env(safe-area-inset-top))",
+                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+                paddingLeft: "max(1rem, env(safe-area-inset-left))",
+                paddingRight: "max(1rem, env(safe-area-inset-right))",
+            }}
+        >
             <Eyebrow step={3} label="Pagamento" />
             <div className="relative w-full max-w-xs mt-2">
                 {confirmed && (
@@ -366,7 +372,7 @@ function PixScreen({ total, status, setStatus, onNewSale }) {
                 )}
 
                 <div className="torn-top" style={{ background: C.card, paddingTop: 20 }}>
-                    <div className="flex flex-col items-center px-6 pb-7">
+                    <div className="flex flex-col items-center px-4 sm:px-6 pb-7">
                         <span
                             className="mb-1"
                             style={{
@@ -453,7 +459,7 @@ export default function App() {
 
     return (
         <div
-            className="w-full min-h-screen flex items-center justify-center p-6"
+            className="w-full min-h-[100svh]"
             style={{
                 fontFamily: F_BODY,
                 background: `radial-gradient(circle, ${C.paperLine} 1px, transparent 1px) ${C.paper}`,
@@ -475,45 +481,38 @@ export default function App() {
         }
       `}</style>
 
-            <div
-                className="relative rounded-[2.5rem] shadow-2xl overflow-hidden"
-                style={{ width: 380, height: 760, border: `8px solid ${C.ink}`, background: C.ink }}
-            >
-                <div className="w-full h-full rounded-[2rem] overflow-hidden">
-                    {screen === "seller" && (
-                        <SellerScreen
-                            sellers={sellers}
-                            setSellers={setSellers}
-                            selected={selected}
-                            setSelected={setSelected}
-                            onNext={() => setScreen("cart")}
-                        />
-                    )}
-                    {screen === "cart" && (
-                        <CartScreen
-                            seller={selected}
-                            qty={qty}
-                            setQty={setQty}
-                            onBack={() => setScreen("seller")}
-                            onClose={() => {
-                                setPixStatus("waiting");
-                                setScreen("pix");
-                            }}
-                        />
-                    )}
-                    {screen === "pix" && (
-                        <PixScreen
-                            total={total}
-                            status={pixStatus}
-                            setStatus={setPixStatus}
-                            onNewSale={() => {
-                                setQty({});
-                                setScreen("cart");
-                            }}
-                        />
-                    )}
-                </div>
-            </div>
+            {screen === "seller" && (
+                <SellerScreen
+                    sellers={sellers}
+                    setSellers={setSellers}
+                    selected={selected}
+                    setSelected={setSelected}
+                    onNext={() => setScreen("cart")}
+                />
+            )}
+            {screen === "cart" && (
+                <CartScreen
+                    seller={selected}
+                    qty={qty}
+                    setQty={setQty}
+                    onBack={() => setScreen("seller")}
+                    onClose={() => {
+                        setPixStatus("waiting");
+                        setScreen("pix");
+                    }}
+                />
+            )}
+            {screen === "pix" && (
+                <PixScreen
+                    total={total}
+                    status={pixStatus}
+                    setStatus={setPixStatus}
+                    onNewSale={() => {
+                        setQty({});
+                        setScreen("cart");
+                    }}
+                />
+            )}
         </div>
     );
 }
