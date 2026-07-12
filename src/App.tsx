@@ -475,7 +475,7 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
             <div className="relative w-full max-w-xs mt-2">
                 {confirmed && (
                     <div
-                        className="stamp-anim absolute z-10"
+                        className="absolute z-10"
                         style={{
                             top: -14,
                             right: -6,
@@ -498,7 +498,7 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
                     </div>
                 )}
 
-                <div className="torn-top" style={{ background: C.card, paddingTop: 20 }}>
+                <div style={{ background: C.card, paddingTop: 20 }}>
                     <div className="flex flex-col items-center px-4 sm:px-6 pb-7">
                         <span
                             className="mb-1"
@@ -511,7 +511,7 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
                             }}
                         >
                             {confirmed ? "PAGAMENTO CONFIRMADO" : "AGUARDANDO PAGAMENTO"}
-                            {!confirmed && <span className="pulse-dot ml-1">●</span>}
+                            {!confirmed && <span className="animate-pulse ml-1">●</span>}
                         </span>
 
                         <div
@@ -587,7 +587,7 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
                     </button>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
 
@@ -758,23 +758,6 @@ export default function App() {
                 backgroundSize: "18px 18px",
             }}
         >
-            <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
-        @keyframes stampIn {
-          0% { transform: scale(2.2) rotate(-25deg); opacity: 0; }
-          60% { transform: scale(0.92) rotate(-8deg); opacity: 1; }
-          100% { transform: scale(1) rotate(-12deg); opacity: 1; }
-        }
-        .stamp-anim { animation: stampIn 0.5s cubic-bezier(.2,.8,.2,1) both; }
-        @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.25} }
-        .pulse-dot { display:inline-block; animation: pulseDot 1.2s ease-in-out infinite; color: #C98A2C; }
-        .torn-top {
-          clip-path: polygon(0% 10px,4% 0px,8% 10px,12% 0px,16% 10px,20% 0px,24% 10px,28% 0px,32% 10px,36% 0px,40% 10px,44% 0px,48% 10px,52% 0px,56% 10px,60% 0px,64% 10px,68% 0px,72% 10px,76% 0px,80% 10px,84% 0px,88% 10px,92% 0px,96% 10px,100% 0px,100% 100%,0% 100%);
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .animate-spin { animation: spin 1s linear infinite; }
-      `}</style>
-
             {content}
         </div>
     );
