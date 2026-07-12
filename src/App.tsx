@@ -1,26 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Minus, ArrowLeft, Pencil, Check, Copy, ShoppingBag, AlertTriangle, Loader2 } from "lucide-react";
 
-// ---- Design tokens (paper-ledger / carimbo identity) ----
-const C = {
-    paper: "#FAF6EC",
-    paperLine: "#E4DCC7",
-    card: "#FFFDF7",
-    ink: "#21302A",
-    inkSoft: "#5C6B62",
-    inkFaint: "#9AA79F",
-    teal: "#0E8F7E",
-    tealDark: "#0B6F62",
-    tealSoft: "#DCEFEA",
-    stamp: "#B23A2E",
-    stampSoft: "#F4DEDB",
-    mustard: "#C98A2C",
-};
-
-const F_DISPLAY = "'Space Grotesk', sans-serif";
-const F_BODY = "'Inter', sans-serif";
-const F_MONO = "'IBM Plex Mono', monospace";
-
 // ---------------- CAAD-ERP API client ----------------
 // Local-network-only API. See caad-erp-api-docs.json for the full OpenAPI spec.
 const API_BASE = "http://192.168.0.164:8000";
@@ -108,7 +88,7 @@ function slugify(str) {
         .replace(/(^-+|-+$)/g, "");
 }
 
-const AVATAR_COLORS = [C.teal, C.stamp, C.mustard];
+const AVATAR_CLASSES = ["bg-teal", "bg-stamp", "bg-mustard"];
 
 function brl(n) {
     return "R$ " + n.toFixed(2).replace(".", ",");
@@ -143,14 +123,12 @@ function Eyebrow({ step, label }) {
     return (
         <div className="flex items-center gap-2 mb-1">
             <span
-                className="text-xs px-1.5 py-0.5 rounded"
-                style={{ fontFamily: F_MONO, background: C.tealSoft, color: C.tealDark, fontWeight: 600 }}
+                className="text-xs px-1.5 py-0.5 rounded font-mono font-semibold bg-tealSoft text-tealDark"
             >
                 {step}/3
             </span>
             <span
-                className="text-xs uppercase tracking-wider"
-                style={{ fontFamily: F_BODY, color: C.inkFaint, letterSpacing: "0.12em", fontWeight: 600 }}
+                className="text-xs uppercase tracking-[0.12em] font-body font-semibold text-inkFaint "
             >
                 {label}
             </span>
@@ -161,14 +139,7 @@ function Eyebrow({ step, label }) {
 function ScreenShell({ children }) {
     return (
         <div
-            className="relative w-full min-h-[100svh] flex flex-col overflow-hidden"
-            style={{
-                background: C.paper,
-                paddingTop: "max(0.75rem, env(safe-area-inset-top))",
-                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
-                paddingLeft: "max(0px, env(safe-area-inset-left))",
-                paddingRight: "max(0px, env(safe-area-inset-right))",
-            }}
+            className="relative w-full min-h-[100svh] flex flex-col overflow-hidden bg-paper pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0px,env(safe-area-inset-left))] pr-[max(0px,env(safe-area-inset-right))]"
         >
             {children}
         </div>
@@ -176,26 +147,31 @@ function ScreenShell({ children }) {
 }
 
 // ---------------- Loading / error shell for API calls ----------------
-function StatusScreen({ mode, message, onRetry }) {
+function StatusScreen({ mode, message, onRetry }: {
+    mode: "loading" | "error";
+    message?: string;
+    onRetry?: () => void;
+}) {
     return (
         <ScreenShell>
             <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3">
                 {mode === "loading" ? (
-                    <Loader2 size={28} color={C.teal} className="animate-spin" />
+                    <Loader2 size={28} className="animate-spin text-teal" />
                 ) : (
-                    <AlertTriangle size={28} color={C.stamp} />
+                    <AlertTriangle size={28} className="text-stamp" />
                 )}
-                <p style={{ fontFamily: F_BODY, color: C.ink, fontSize: 14, fontWeight: 600 }}>
+                <p className="font-body text-ink text-sm font-semibold">
                     {mode === "loading" ? "Carregando dados do CAAD-ERP..." : "Não deu pra falar com o CAAD-ERP"}
                 </p>
                 {message && (
-                    <p style={{ fontFamily: F_BODY, color: C.inkFaint, fontSize: 13 }}>{message}</p>
+                    <p className="font-body text-inkFaint text-[13px]">
+                        {message}
+                    </p>
                 )}
                 {mode === "error" && onRetry && (
                     <button
                         onClick={onRetry}
-                        className="mt-2 px-4 py-2.5 rounded-2xl"
-                        style={{ background: C.ink, color: "#fff", fontFamily: F_DISPLAY, fontWeight: 700, fontSize: 14 }}
+                        className="mt-2 px-4 py-2.5 rounded-2xl bg-ink text-white font-display font-bold text-sm"
                     >
                         Tentar de novo
                     </button>
@@ -211,16 +187,13 @@ function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, crea
         <ScreenShell>
             <div className="flex-1 flex flex-col px-4 sm:px-6 pt-4 pb-6 overflow-y-auto">
                 <Eyebrow step={1} label="Vendedor" />
-                <h1
-                    className="mt-1 mb-6 leading-tight"
-                    style={{ fontFamily: F_DISPLAY, color: C.ink, fontSize: 26, fontWeight: 700 }}
-                >
+                <h1 className="mt-1 mb-6 leading-tight font-display font-bold text-ink text-[26px]">
                     Quem tá vendendo hoje?
                 </h1>
 
                 <div className="flex flex-col gap-2">
                     {sellers.length === 0 && (
-                        <p style={{ fontFamily: F_BODY, color: C.inkFaint, fontSize: 13 }}>
+                        <p className="font-body text-inkFaint text-[13px]">
                             Nenhum vendedor cadastrado ainda no CAAD-ERP.
                         </p>
                     )}
@@ -230,32 +203,20 @@ function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, crea
                             <button
                                 key={s.id}
                                 onClick={() => setSelectedId(s.id)}
-                                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all"
-                                style={{
-                                    background: isSel ? C.tealSoft : C.card,
-                                    border: `1.5px solid ${isSel ? C.teal : C.paperLine}`,
-                                }}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all border-[1.5px] border-solid ${isSel
+                                    ? "bg-tealSoft border-teal"
+                                    : "bg-card border-paperLine"
+                                    }`}
                             >
-                                <div
-                                    className="rounded-full flex items-center justify-center shrink-0"
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        background: AVATAR_COLORS[i % AVATAR_COLORS.length],
-                                        color: "#fff",
-                                        fontFamily: F_DISPLAY,
-                                        fontWeight: 700,
-                                        fontSize: 16,
-                                    }}
-                                >
+                                <div className={`rounded-full flex items-center justify-center shrink-0 w-10 h-10 text-white font-display font-bold text-base ${AVATAR_CLASSES[i % AVATAR_CLASSES.length]}`}>
                                     {s.name.charAt(0).toUpperCase()}
                                 </div>
-                                <span style={{ fontFamily: F_BODY, color: C.ink, fontWeight: 600, fontSize: 15 }}>
+                                <span className="font-body text-ink font-semibold text-[15px]">
                                     {s.name}
                                 </span>
                                 {isSel && (
                                     <span className="ml-auto">
-                                        <Check size={18} color={C.teal} />
+                                        <Check size={18} className="text-teal" />
                                     </span>
                                 )}
                             </button>
@@ -265,35 +226,23 @@ function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, crea
                     <button
                         disabled={creating}
                         onClick={onCreateSeller}
-                        className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                        style={{ border: `1.5px dashed ${C.inkFaint}`, background: "transparent", opacity: creating ? 0.6 : 1 }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-[1.5px] border-dashed border-inkFaint bg-transparent disabled:opacity-60`}
                     >
-                        <div
-                            className="rounded-full flex items-center justify-center shrink-0"
-                            style={{ width: 40, height: 40, border: `1.5px dashed ${C.inkFaint}` }}
-                        >
-                            <Plus size={16} color={C.inkSoft} />
+                        <div className="rounded-full flex items-center justify-center shrink-0 w-10 h-10 border-[1.5px] border-dashed border-inkFaint">
+                            <Plus size={16} className="text-inkSoft" />
                         </div>
-                        <span style={{ fontFamily: F_BODY, color: C.inkSoft, fontWeight: 600, fontSize: 15 }}>
+                        <span className="font-body text-inkSoft font-semibold text-[15px]">
                             {creating ? "Cadastrando..." : "Novo vendedor"}
                         </span>
                     </button>
                 </div>
             </div>
 
-            <div className="px-4 sm:px-6 pb-7 pt-3 shrink-0" style={{ borderTop: `1px dashed ${C.paperLine}` }}>
+            <div className="px-4 sm:px-6 pb-7 pt-3 shrink-0 border-t border-dashed border-paperLine">
                 <button
                     disabled={!selectedId}
                     onClick={onNext}
-                    className="w-full py-3.5 rounded-2xl transition-opacity"
-                    style={{
-                        background: selectedId ? C.ink : C.inkFaint,
-                        color: "#fff",
-                        fontFamily: F_DISPLAY,
-                        fontWeight: 700,
-                        fontSize: 15,
-                        opacity: selectedId ? 1 : 0.6,
-                    }}
+                    className="w-full py-3.5 rounded-2xl transition-opacity text-white font-display font-bold text-[15px] bg-ink disabled:bg-inkFaint disabled:opacity-60"
                 >
                     Começar venda
                 </button>
@@ -323,22 +272,19 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                 <Eyebrow step={2} label="Carrinho" />
                 <div className="flex items-center gap-2 mb-4">
                     <button onClick={onBack} className="p-1 -ml-1">
-                        <ArrowLeft size={20} color={C.ink} />
+                        <ArrowLeft size={20} className="text-ink" />
                     </button>
-                    <h1 style={{ fontFamily: F_DISPLAY, color: C.ink, fontSize: 20, fontWeight: 700 }}>
+                    <h1 className="font-display text-ink text-xl font-bold">
                         Venda de {seller?.name}
                     </h1>
                     <button onClick={onBack} className="ml-auto p-1">
-                        <Pencil size={14} color={C.inkFaint} />
+                        <Pencil size={14} className="text-inkFaint" />
                     </button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 sm:px-6">
-                <p
-                    className="text-xs uppercase tracking-wider mb-2"
-                    style={{ fontFamily: F_BODY, color: C.inkFaint, fontWeight: 600, letterSpacing: "0.1em" }}
-                >
+                <p className="text-xs uppercase tracking-widest mb-2 font-body text-inkFaint font-semibold">
                     Toque para adicionar
                 </p>
                 <div className="grid grid-cols-3 gap-2 mb-5">
@@ -350,34 +296,18 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                                 key={p.id}
                                 onClick={() => inc(p.id)}
                                 disabled={soldOut}
-                                className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative"
-                                style={{
-                                    background: C.card,
-                                    border: `1px solid ${C.paperLine}`,
-                                    opacity: soldOut ? 0.45 : 1,
-                                }}
+                                className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative bg-card border border-solid border-paperLine disabled:opacity-45"
                             >
                                 {qty[p.id] > 0 && (
-                                    <span
-                                        className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center"
-                                        style={{
-                                            width: 20,
-                                            height: 20,
-                                            background: C.teal,
-                                            color: "#fff",
-                                            fontFamily: F_MONO,
-                                            fontSize: 11,
-                                            fontWeight: 600,
-                                        }}
-                                    >
+                                    <span className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center w-5 h-5 bg-teal text-white font-mono text-[11px] font-semibold">
                                         {qty[p.id]}
                                     </span>
                                 )}
-                                <span style={{ fontSize: 20 }}>{p.emoji}</span>
-                                <span style={{ fontFamily: F_BODY, color: C.ink, fontSize: 12, fontWeight: 600 }}>
+                                <span className="text-[20px]">{p.emoji}</span>
+                                <span className="font-body text-ink text-xs font-semibold">
                                     {p.name}
                                 </span>
-                                <span style={{ fontFamily: F_MONO, color: C.inkSoft, fontSize: 11 }}>
+                                <span className="font-mono text-inkSoft text-[11px]">
                                     {soldOut ? "Esgotado" : brl(p.price)}
                                 </span>
                             </button>
@@ -385,11 +315,11 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                     })}
                 </div>
 
-                <div style={{ borderTop: `1px dashed ${C.paperLine}` }} className="pt-3">
+                <div className="pt-3 border-t border-dashed border-paperLine">
                     {items.length === 0 ? (
                         <div className="flex flex-col items-center text-center py-10 gap-2">
-                            <ShoppingBag size={28} color={C.inkFaint} />
-                            <p style={{ fontFamily: F_BODY, color: C.inkFaint, fontSize: 13 }}>
+                            <ShoppingBag size={28} className="text-inkFaint" />
+                            <p className="font-body text-inkFaint text-[13px]">
                                 Nenhum item ainda.
                                 <br />
                                 Toque em um produto acima pra começar.
@@ -398,25 +328,22 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                     ) : (
                         items.map((p) => (
                             <div key={p.id} className="flex items-center gap-2 py-2">
-                                <span style={{ fontSize: 16 }}>{p.emoji}</span>
-                                <span
-                                    style={{ fontFamily: F_BODY, color: C.ink, fontSize: 14, fontWeight: 500 }}
-                                    className="flex-1"
-                                >
+                                <span className="text-base">{p.emoji}</span>
+                                <span className="flex-1 font-body text-ink text-sm font-medium">
                                     {p.name}
                                 </span>
-                                <div className="flex items-center gap-2 rounded-full px-1" style={{ background: C.paper, border: `1px solid ${C.paperLine}` }}>
+                                <div className="flex items-center gap-2 rounded-full px-1 bg-paper border border-solid border-paperLine">
                                     <button onClick={() => dec(p.id)} className="p-1">
-                                        <Minus size={12} color={C.inkSoft} />
+                                        <Minus size={12} className="text-inkSoft" />
                                     </button>
-                                    <span style={{ fontFamily: F_MONO, fontSize: 12, color: C.ink, minWidth: 14, textAlign: "center" }}>
+                                    <span className="font-mono text-xs text-ink min-w-3.5 text-center">
                                         {p.qty}
                                     </span>
                                     <button onClick={() => inc(p.id)} className="p-1">
-                                        <Plus size={12} color={C.inkSoft} />
+                                        <Plus size={12} className="text-inkSoft" />
                                     </button>
                                 </div>
-                                <span style={{ fontFamily: F_MONO, color: C.ink, fontSize: 13, minWidth: 62, textAlign: "right" }}>
+                                <span className="font-mono text-ink text-[13px] min-w-15.5 text-right">
                                     {brl(p.qty * p.price)}
                                 </span>
                             </div>
@@ -425,27 +352,19 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                 </div>
             </div>
 
-            <div className="px-4 sm:px-6 pt-3 pb-7 shrink-0" style={{ borderTop: `1.5px dashed ${C.inkFaint}` }}>
+            <div className="px-4 sm:px-6 pt-3 pb-7 shrink-0 border-t-[1.5px] border-dashed border-inkFaint">
                 <div className="flex items-baseline justify-between mb-3">
-                    <span style={{ fontFamily: F_BODY, color: C.inkSoft, fontSize: 13, fontWeight: 600 }}>
+                    <span className="font-body text-inkSoft text-[13px] font-semibold">
                         Total
                     </span>
-                    <span style={{ fontFamily: F_MONO, color: C.ink, fontSize: 24, fontWeight: 600 }}>
+                    <span className="font-mono text-ink text-2xl font-semibold">
                         {brl(total)}
                     </span>
                 </div>
                 <button
                     disabled={total === 0}
                     onClick={onClose}
-                    className="w-full py-3.5 rounded-2xl"
-                    style={{
-                        background: total > 0 ? C.teal : C.inkFaint,
-                        color: "#fff",
-                        fontFamily: F_DISPLAY,
-                        fontWeight: 700,
-                        fontSize: 15,
-                        opacity: total > 0 ? 1 : 0.6,
-                    }}
+                    className="w-full py-3.5 rounded-2xl text-white font-display font-bold text-[15px] bg-teal disabled:bg-inkFaint disabled:opacity-60"
                 >
                     Fechar venda
                 </button>
@@ -462,54 +381,22 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
 
     return (
         <div
-            className="w-full min-h-[100svh] flex flex-col items-center justify-center px-4 sm:px-5"
-            style={{
-                background: C.ink,
-                paddingTop: "max(1rem, env(safe-area-inset-top))",
-                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-                paddingLeft: "max(1rem, env(safe-area-inset-left))",
-                paddingRight: "max(1rem, env(safe-area-inset-right))",
-            }}
+            className="w-full min-h-svh flex flex-col items-center justify-center px-4 sm:px-5 bg-ink pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]"
         >
             <Eyebrow step={3} label="Pagamento" />
             <div className="relative w-full max-w-xs mt-2">
                 {confirmed && (
-                    <div
-                        className="absolute z-10"
-                        style={{
-                            top: -14,
-                            right: -6,
-                            width: 84,
-                            height: 84,
-                            borderRadius: "50%",
-                            border: `3px solid ${C.stamp}`,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transform: "rotate(-12deg)",
-                            background: "rgba(178,58,46,0.06)",
-                        }}
-                    >
-                        <span style={{ fontFamily: F_DISPLAY, color: C.stamp, fontWeight: 700, fontSize: 15, letterSpacing: "0.05em" }}>
+                    <div className="absolute z-10 -top-[14px] -right-[6px] w-[84px] h-[84px] rounded-full border-[3px] border-solid border-stamp flex flex-col items-center justify-center -rotate-12 bg-stamp/[0.06]">
+                        <span className="font-display text-stamp font-bold text-[15px] tracking-wider">
                             PAGO
                         </span>
-                        <Check size={14} color={C.stamp} />
+                        <Check size={14} className="text-stamp" />
                     </div>
                 )}
 
-                <div style={{ background: C.card, paddingTop: 20 }}>
+                <div className="bg-card pt-5">
                     <div className="flex flex-col items-center px-4 sm:px-6 pb-7">
-                        <span
-                            className="mb-1"
-                            style={{
-                                fontFamily: F_BODY,
-                                fontWeight: 700,
-                                fontSize: 12,
-                                letterSpacing: "0.14em",
-                                color: confirmed ? C.teal : C.mustard,
-                            }}
-                        >
+                        <span className={`mb-1 font-body font-bold text-xs tracking-[0.14em] ${confirmed ? "text-teal" : "text-mustard"}`}>
                             {confirmed ? "PAGAMENTO CONFIRMADO" : "AGUARDANDO PAGAMENTO"}
                             {!confirmed && <span className="animate-pulse ml-1">●</span>}
                         </span>
@@ -522,16 +409,16 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
                                 row.map((cell, c) => (
                                     <div
                                         key={r + "-" + c}
-                                        style={{ width: 15, height: 15, background: cell ? C.ink : "transparent" }}
+                                        className={`w-3.75 h-3.75 ${cell ? "bg-ink" : "bg-transparent"}`}
                                     />
                                 ))
                             )}
                         </div>
 
-                        <span style={{ fontFamily: F_MONO, color: C.ink, fontSize: 26, fontWeight: 600 }}>
+                        <span className="font-mono text-ink text-[26px] font-semibold">
                             {brl(total)}
                         </span>
-                        <span style={{ fontFamily: F_BODY, color: C.inkFaint, fontSize: 12, marginTop: 2 }}>
+                        <span className="font-body text-inkFaint text-xs mt-0.5">
                             Pix • código de pagamento
                         </span>
 
@@ -540,13 +427,12 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
                                 setCopied(true);
                                 setTimeout(() => setCopied(false), 1500);
                             }}
-                            className="flex items-center gap-2 mt-4 px-3 py-2 rounded-xl w-full justify-center"
-                            style={{ background: C.paper, border: `1px solid ${C.paperLine}` }}
+                            className="flex items-center gap-2 mt-4 px-3 py-2 rounded-xl w-full justify-center bg-paper border border-solid border-paperLine"
                         >
-                            <span style={{ fontFamily: F_MONO, fontSize: 11, color: C.inkSoft }}>
+                            <span className="font-mono text-[11px] text-inkSoft">
                                 {copied ? "Copiado!" : "pix •••• 8f2a-91cd"}
                             </span>
-                            <Copy size={13} color={C.inkSoft} />
+                            <Copy size={13} className="text-inkSoft" />
                         </button>
                     </div>
                 </div>
@@ -554,10 +440,7 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
 
             <div className="w-full max-w-xs mt-6">
                 {error && (
-                    <p
-                        className="mb-3 text-center"
-                        style={{ fontFamily: F_BODY, color: C.stampSoft, fontSize: 12 }}
-                    >
+                    <p className="mb-3 text-center font-body text-stampSoft text-xs">
                         {error}
                     </p>
                 )}
@@ -565,29 +448,20 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
                     <button
                         onClick={onConfirm}
                         disabled={confirming}
-                        className="w-full py-3.5 rounded-2xl"
-                        style={{
-                            background: C.teal,
-                            color: "#fff",
-                            fontFamily: F_DISPLAY,
-                            fontWeight: 700,
-                            fontSize: 14,
-                            opacity: confirming ? 0.7 : 1,
-                        }}
+                        className="w-full py-3.5 rounded-2xl bg-teal text-white font-display font-bold text-sm disabled:opacity-70"
                     >
                         {confirming ? "Registrando venda..." : "Já recebi o pagamento"}
                     </button>
                 ) : (
                     <button
                         onClick={onNewSale}
-                        className="w-full py-3.5 rounded-2xl"
-                        style={{ background: "transparent", color: "#fff", border: "1.5px solid #ffffff55", fontFamily: F_DISPLAY, fontWeight: 700, fontSize: 14 }}
+                        className="w-full py-3.5 rounded-2xl bg-transparent text-white border-[1.5px] border-solid border-[#ffffff55] font-display font-bold text-sm"
                     >
                         Nova venda
                     </button>
                 )}
             </div>
-        </div >
+        </div>
     );
 }
 
@@ -702,7 +576,7 @@ export default function App() {
         }
     }
 
-    let content;
+    let content: React.ReactNode;
     if (initStatus === "loading") {
         content = <StatusScreen mode="loading" />;
     } else if (initStatus === "error") {
@@ -751,12 +625,7 @@ export default function App() {
 
     return (
         <div
-            className="w-full min-h-[100svh]"
-            style={{
-                fontFamily: F_BODY,
-                background: `radial-gradient(circle, ${C.paperLine} 1px, transparent 1px) ${C.paper}`,
-                backgroundSize: "18px 18px",
-            }}
+            className="w-full min-h-svh font-body bg-paper bg-[radial-gradient(circle,var(--color-paperLine)_1px,transparent_1px)] bg-size[18px_18px]"
         >
             {content}
         </div>
