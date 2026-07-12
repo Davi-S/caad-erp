@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Minus, ArrowLeft, Pencil, Check, Copy, ShoppingBag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Minus, ArrowLeft, Pencil, Check, Copy, ShoppingBag, AlertTriangle, Loader2 } from "lucide-react";
 
 // ---- Design tokens (paper-ledger / carimbo identity) ----
 const C = {
@@ -21,14 +21,92 @@ const F_DISPLAY = "'Space Grotesk', sans-serif";
 const F_BODY = "'Inter', sans-serif";
 const F_MONO = "'IBM Plex Mono', monospace";
 
-const CATALOG = [
-    { id: "brig", name: "Brigadeiro", price: 2, emoji: "🍫" },
-    { id: "cox", name: "Coxinha", price: 5, emoji: "🍗" },
-    { id: "past", name: "Pastel", price: 6, emoji: "🥟" },
-    { id: "suco", name: "Suco natural", price: 4, emoji: "🥤" },
-    { id: "bolo", name: "Bolo de pote", price: 7, emoji: "🍮" },
-    { id: "agua", name: "Água", price: 3, emoji: "💧" },
-];
+// ---------------- CAAD-ERP API client ----------------
+// Local-network-only API. See caad-erp-api-docs.json for the full OpenAPI spec.
+const API_BASE = "http://192.168.0.164:8000";
+
+async function apiFetch(path, options = {}) {
+    let res;
+    try {
+        res = await fetch(`${API_BASE}${path}`, {
+            headers: { "Content-Type": "application/json" },
+            ...options,
+        });
+    } catch (err) {
+        throw new Error(
+            `Não foi possível conectar à API do CAAD-ERP em ${API_BASE}. Verifique se ela está rodando na rede local.`
+        );
+    }
+
+    let body = null;
+    try {
+        body = await res.json();
+    } catch {
+        // No JSON body (e.g. empty response) - that's fine.
+    }
+
+    if (!res.ok) {
+        let detail = res.statusText;
+        if (body) {
+            if (typeof body.detail === "string") detail = body.detail;
+            else if (Array.isArray(body.detail)) detail = body.detail.map((d) => d.msg).join("; ");
+        }
+        throw new Error(detail || `Erro ${res.status}`);
+    }
+    return body;
+}
+
+const api = {
+    listProducts: () => apiFetch("/products"),
+    listSalesmen: () => apiFetch("/salesmen"),
+    createSalesman: (salesman_id, salesman_name) =>
+        apiFetch("/salesmen", {
+            method: "POST",
+            body: JSON.stringify({ salesman_id, salesman_name }),
+        }),
+    getStockReport: () => apiFetch("/reports/stock"),
+    recordSale: (payload) =>
+        apiFetch("/transactions/sale", {
+            method: "POST",
+            body: JSON.stringify(payload),
+        }),
+};
+
+// Products from the API don't carry an emoji, so we guess one from the name
+// and fall back to a generic icon for anything we don't recognize.
+const EMOJI_BY_KEYWORD = {
+    brigadeiro: "🍫",
+    coxinha: "🍗",
+    pastel: "🥟",
+    suco: "🥤",
+    bolo: "🍮",
+    agua: "💧",
+    água: "💧",
+    refrigerante: "🥤",
+    cafe: "☕",
+    café: "☕",
+    pao: "🥖",
+    pão: "🥖",
+    doce: "🍬",
+    salgado: "🥐",
+};
+function emojiFor(name) {
+    const key = (name || "").toLowerCase();
+    for (const kw in EMOJI_BY_KEYWORD) {
+        if (key.includes(kw)) return EMOJI_BY_KEYWORD[kw];
+    }
+    return "🧺";
+}
+
+function slugify(str) {
+    return (str || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-+|-+$)/g, "");
+}
 
 const AVATAR_COLORS = [C.teal, C.stamp, C.mustard];
 
@@ -97,8 +175,38 @@ function ScreenShell({ children }) {
     );
 }
 
+// ---------------- Loading / error shell for API calls ----------------
+function StatusScreen({ mode, message, onRetry }) {
+    return (
+        <ScreenShell>
+            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3">
+                {mode === "loading" ? (
+                    <Loader2 size={28} color={C.teal} className="animate-spin" />
+                ) : (
+                    <AlertTriangle size={28} color={C.stamp} />
+                )}
+                <p style={{ fontFamily: F_BODY, color: C.ink, fontSize: 14, fontWeight: 600 }}>
+                    {mode === "loading" ? "Carregando dados do CAAD-ERP..." : "Não deu pra falar com o CAAD-ERP"}
+                </p>
+                {message && (
+                    <p style={{ fontFamily: F_BODY, color: C.inkFaint, fontSize: 13 }}>{message}</p>
+                )}
+                {mode === "error" && onRetry && (
+                    <button
+                        onClick={onRetry}
+                        className="mt-2 px-4 py-2.5 rounded-2xl"
+                        style={{ background: C.ink, color: "#fff", fontFamily: F_DISPLAY, fontWeight: 700, fontSize: 14 }}
+                    >
+                        Tentar de novo
+                    </button>
+                )}
+            </div>
+        </ScreenShell>
+    );
+}
+
 // ---------------- Screen 1: pick seller ----------------
-function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
+function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, creating, onNext }) {
     return (
         <ScreenShell>
             <div className="flex-1 flex flex-col px-4 sm:px-6 pt-4 pb-6 overflow-y-auto">
@@ -111,12 +219,17 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
                 </h1>
 
                 <div className="flex flex-col gap-2">
-                    {sellers.map((name, i) => {
-                        const isSel = selected === name;
+                    {sellers.length === 0 && (
+                        <p style={{ fontFamily: F_BODY, color: C.inkFaint, fontSize: 13 }}>
+                            Nenhum vendedor cadastrado ainda no CAAD-ERP.
+                        </p>
+                    )}
+                    {sellers.map((s, i) => {
+                        const isSel = selectedId === s.id;
                         return (
                             <button
-                                key={name}
-                                onClick={() => setSelected(name)}
+                                key={s.id}
+                                onClick={() => setSelectedId(s.id)}
                                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all"
                                 style={{
                                     background: isSel ? C.tealSoft : C.card,
@@ -135,10 +248,10 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
                                         fontSize: 16,
                                     }}
                                 >
-                                    {name.charAt(0)}
+                                    {s.name.charAt(0).toUpperCase()}
                                 </div>
                                 <span style={{ fontFamily: F_BODY, color: C.ink, fontWeight: 600, fontSize: 15 }}>
-                                    {name}
+                                    {s.name}
                                 </span>
                                 {isSel && (
                                     <span className="ml-auto">
@@ -150,13 +263,10 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
                     })}
 
                     <button
-                        onClick={() => {
-                            const next = "Vendedor " + (sellers.length + 1);
-                            setSellers([...sellers, next]);
-                            setSelected(next);
-                        }}
+                        disabled={creating}
+                        onClick={onCreateSeller}
                         className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                        style={{ border: `1.5px dashed ${C.inkFaint}`, background: "transparent" }}
+                        style={{ border: `1.5px dashed ${C.inkFaint}`, background: "transparent", opacity: creating ? 0.6 : 1 }}
                     >
                         <div
                             className="rounded-full flex items-center justify-center shrink-0"
@@ -165,7 +275,7 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
                             <Plus size={16} color={C.inkSoft} />
                         </div>
                         <span style={{ fontFamily: F_BODY, color: C.inkSoft, fontWeight: 600, fontSize: 15 }}>
-                            Novo vendedor
+                            {creating ? "Cadastrando..." : "Novo vendedor"}
                         </span>
                     </button>
                 </div>
@@ -173,16 +283,16 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
 
             <div className="px-4 sm:px-6 pb-7 pt-3 shrink-0" style={{ borderTop: `1px dashed ${C.paperLine}` }}>
                 <button
-                    disabled={!selected}
+                    disabled={!selectedId}
                     onClick={onNext}
                     className="w-full py-3.5 rounded-2xl transition-opacity"
                     style={{
-                        background: selected ? C.ink : C.inkFaint,
+                        background: selectedId ? C.ink : C.inkFaint,
                         color: "#fff",
                         fontFamily: F_DISPLAY,
                         fontWeight: 700,
                         fontSize: 15,
-                        opacity: selected ? 1 : 0.6,
+                        opacity: selectedId ? 1 : 0.6,
                     }}
                 >
                     Começar venda
@@ -193,11 +303,18 @@ function SellerScreen({ sellers, setSellers, selected, setSelected, onNext }) {
 }
 
 // ---------------- Screen 2: cart ----------------
-function CartScreen({ seller, qty, setQty, onBack, onClose }) {
-    const items = CATALOG.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0);
+function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
+    const items = products.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0);
     const total = items.reduce((s, p) => s + p.qty * p.price, 0);
 
-    const inc = (id) => setQty((q) => ({ ...q, [id]: (q[id] || 0) + 1 }));
+    const availableFor = (id) => stock[id];
+    const inc = (id) =>
+        setQty((q) => {
+            const current = q[id] || 0;
+            const available = availableFor(id);
+            if (available !== undefined && current >= available) return q;
+            return { ...q, [id]: current + 1 };
+        });
     const dec = (id) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] || 0) - 1) }));
 
     return (
@@ -209,7 +326,7 @@ function CartScreen({ seller, qty, setQty, onBack, onClose }) {
                         <ArrowLeft size={20} color={C.ink} />
                     </button>
                     <h1 style={{ fontFamily: F_DISPLAY, color: C.ink, fontSize: 20, fontWeight: 700 }}>
-                        Venda de {seller}
+                        Venda de {seller?.name}
                     </h1>
                     <button onClick={onBack} className="ml-auto p-1">
                         <Pencil size={14} color={C.inkFaint} />
@@ -225,38 +342,47 @@ function CartScreen({ seller, qty, setQty, onBack, onClose }) {
                     Toque para adicionar
                 </p>
                 <div className="grid grid-cols-3 gap-2 mb-5">
-                    {CATALOG.map((p) => (
-                        <button
-                            key={p.id}
-                            onClick={() => inc(p.id)}
-                            className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative"
-                            style={{ background: C.card, border: `1px solid ${C.paperLine}` }}
-                        >
-                            {qty[p.id] > 0 && (
-                                <span
-                                    className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center"
-                                    style={{
-                                        width: 20,
-                                        height: 20,
-                                        background: C.teal,
-                                        color: "#fff",
-                                        fontFamily: F_MONO,
-                                        fontSize: 11,
-                                        fontWeight: 600,
-                                    }}
-                                >
-                                    {qty[p.id]}
+                    {products.map((p) => {
+                        const available = availableFor(p.id);
+                        const soldOut = available !== undefined && available <= 0;
+                        return (
+                            <button
+                                key={p.id}
+                                onClick={() => inc(p.id)}
+                                disabled={soldOut}
+                                className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative"
+                                style={{
+                                    background: C.card,
+                                    border: `1px solid ${C.paperLine}`,
+                                    opacity: soldOut ? 0.45 : 1,
+                                }}
+                            >
+                                {qty[p.id] > 0 && (
+                                    <span
+                                        className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center"
+                                        style={{
+                                            width: 20,
+                                            height: 20,
+                                            background: C.teal,
+                                            color: "#fff",
+                                            fontFamily: F_MONO,
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        {qty[p.id]}
+                                    </span>
+                                )}
+                                <span style={{ fontSize: 20 }}>{p.emoji}</span>
+                                <span style={{ fontFamily: F_BODY, color: C.ink, fontSize: 12, fontWeight: 600 }}>
+                                    {p.name}
                                 </span>
-                            )}
-                            <span style={{ fontSize: 20 }}>{p.emoji}</span>
-                            <span style={{ fontFamily: F_BODY, color: C.ink, fontSize: 12, fontWeight: 600 }}>
-                                {p.name}
-                            </span>
-                            <span style={{ fontFamily: F_MONO, color: C.inkSoft, fontSize: 11 }}>
-                                {brl(p.price)}
-                            </span>
-                        </button>
-                    ))}
+                                <span style={{ fontFamily: F_MONO, color: C.inkSoft, fontSize: 11 }}>
+                                    {soldOut ? "Esgotado" : brl(p.price)}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <div style={{ borderTop: `1px dashed ${C.paperLine}` }} className="pt-3">
@@ -329,9 +455,10 @@ function CartScreen({ seller, qty, setQty, onBack, onClose }) {
 }
 
 // ---------------- Screen 3: PIX QR ----------------
-function PixScreen({ total, status, setStatus, onNewSale }) {
+function PixScreen({ total, status, error, onConfirm, onNewSale }) {
     const [copied, setCopied] = useState(false);
     const confirmed = status === "confirmed";
+    const confirming = status === "confirming";
 
     return (
         <div
@@ -426,13 +553,29 @@ function PixScreen({ total, status, setStatus, onNewSale }) {
             </div>
 
             <div className="w-full max-w-xs mt-6">
+                {error && (
+                    <p
+                        className="mb-3 text-center"
+                        style={{ fontFamily: F_BODY, color: C.stampSoft, fontSize: 12 }}
+                    >
+                        {error}
+                    </p>
+                )}
                 {!confirmed ? (
                     <button
-                        onClick={() => setStatus("confirmed")}
+                        onClick={onConfirm}
+                        disabled={confirming}
                         className="w-full py-3.5 rounded-2xl"
-                        style={{ background: C.teal, color: "#fff", fontFamily: F_DISPLAY, fontWeight: 700, fontSize: 14 }}
+                        style={{
+                            background: C.teal,
+                            color: "#fff",
+                            fontFamily: F_DISPLAY,
+                            fontWeight: 700,
+                            fontSize: 14,
+                            opacity: confirming ? 0.7 : 1,
+                        }}
                     >
-                        Já recebi o pagamento
+                        {confirming ? "Registrando venda..." : "Já recebi o pagamento"}
                     </button>
                 ) : (
                     <button
@@ -450,12 +593,161 @@ function PixScreen({ total, status, setStatus, onNewSale }) {
 
 export default function App() {
     const [screen, setScreen] = useState("seller"); // seller | cart | pix
-    const [sellers, setSellers] = useState(["Maria", "João"]);
-    const [selected, setSelected] = useState(null);
-    const [qty, setQty] = useState({});
-    const [pixStatus, setPixStatus] = useState("waiting");
 
-    const total = CATALOG.reduce((s, p) => s + (qty[p.id] || 0) * p.price, 0);
+    // ---- Data loaded from the CAAD-ERP API ----
+    const [initStatus, setInitStatus] = useState("loading"); // loading | ready | error
+    const [initError, setInitError] = useState("");
+    const [products, setProducts] = useState([]); // [{id, name, price, emoji}]
+    const [sellers, setSellers] = useState([]); // [{id, name}]
+    const [stock, setStock] = useState({}); // { [productId]: quantity }
+
+    const [selectedSellerId, setSelectedSellerId] = useState(null);
+    const [creatingSeller, setCreatingSeller] = useState(false);
+
+    const [qty, setQty] = useState({});
+    const [pixStatus, setPixStatus] = useState("waiting"); // waiting | confirming | confirmed
+    const [pixError, setPixError] = useState("");
+
+    async function loadAll() {
+        setInitStatus("loading");
+        setInitError("");
+        try {
+            const [productsRes, salesmenRes, stockRes] = await Promise.all([
+                api.listProducts(),
+                api.listSalesmen(),
+                api.getStockReport(),
+            ]);
+
+            setProducts(
+                (productsRes?.items || []).map((p) => ({
+                    id: p.product_id,
+                    name: p.product_name,
+                    price: parseFloat(p.sell_price),
+                    emoji: emojiFor(p.product_name),
+                }))
+            );
+            setSellers(
+                (salesmenRes?.items || []).map((s) => ({
+                    id: s.salesman_id,
+                    name: s.salesman_name,
+                }))
+            );
+            const stockMap = {};
+            (stockRes?.items || []).forEach((i) => {
+                stockMap[i.product_id] = parseFloat(i.quantity);
+            });
+            setStock(stockMap);
+
+            setInitStatus("ready");
+        } catch (err) {
+            setInitError(err.message || String(err));
+            setInitStatus("error");
+        }
+    }
+
+    useEffect(() => {
+        loadAll();
+    }, []);
+
+    async function handleCreateSeller() {
+        const name = window.prompt("Nome do novo vendedor:");
+        if (!name || !name.trim()) return;
+        const trimmed = name.trim();
+        const id = `${slugify(trimmed)}-${Date.now().toString(36).slice(-4)}`;
+        setCreatingSeller(true);
+        try {
+            await api.createSalesman(id, trimmed);
+            setSellers((prev) => [...prev, { id, name: trimmed }]);
+            setSelectedSellerId(id);
+        } catch (err) {
+            window.alert(`Não foi possível cadastrar o vendedor: ${err.message || err}`);
+        } finally {
+            setCreatingSeller(false);
+        }
+    }
+
+    const selectedSeller = sellers.find((s) => s.id === selectedSellerId) || null;
+    const productById = Object.fromEntries(products.map((p) => [p.id, p]));
+    const cartItems = products.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0);
+    const total = cartItems.reduce((s, p) => s + p.qty * p.price, 0);
+
+    async function handleConfirmPayment() {
+        if (!selectedSeller || cartItems.length === 0) return;
+        setPixStatus("confirming");
+        setPixError("");
+        try {
+            for (const item of cartItems) {
+                await api.recordSale({
+                    product_id: item.id,
+                    salesman_id: selectedSeller.id,
+                    quantity: item.qty,
+                    total_revenue: item.qty * item.price,
+                    payment_type: "PIX",
+                });
+            }
+            // Refresh stock in the background so the next cart reflects reality.
+            api.getStockReport()
+                .then((stockRes) => {
+                    const stockMap = {};
+                    (stockRes?.items || []).forEach((i) => {
+                        stockMap[i.product_id] = parseFloat(i.quantity);
+                    });
+                    setStock(stockMap);
+                })
+                .catch(() => { });
+            setPixStatus("confirmed");
+        } catch (err) {
+            setPixError(err.message || String(err));
+            setPixStatus("waiting");
+        }
+    }
+
+    let content;
+    if (initStatus === "loading") {
+        content = <StatusScreen mode="loading" />;
+    } else if (initStatus === "error") {
+        content = <StatusScreen mode="error" message={initError} onRetry={loadAll} />;
+    } else if (screen === "seller") {
+        content = (
+            <SellerScreen
+                sellers={sellers}
+                selectedId={selectedSellerId}
+                setSelectedId={setSelectedSellerId}
+                onCreateSeller={handleCreateSeller}
+                creating={creatingSeller}
+                onNext={() => setScreen("cart")}
+            />
+        );
+    } else if (screen === "cart") {
+        content = (
+            <CartScreen
+                seller={selectedSeller}
+                products={products}
+                stock={stock}
+                qty={qty}
+                setQty={setQty}
+                onBack={() => setScreen("seller")}
+                onClose={() => {
+                    setPixStatus("waiting");
+                    setPixError("");
+                    setScreen("pix");
+                }}
+            />
+        );
+    } else if (screen === "pix") {
+        content = (
+            <PixScreen
+                total={total}
+                status={pixStatus}
+                error={pixError}
+                onConfirm={handleConfirmPayment}
+                onNewSale={() => {
+                    setQty({});
+                    setScreen("cart");
+                }}
+            />
+        );
+    }
 
     return (
         <div
@@ -479,40 +771,11 @@ export default function App() {
         .torn-top {
           clip-path: polygon(0% 10px,4% 0px,8% 10px,12% 0px,16% 10px,20% 0px,24% 10px,28% 0px,32% 10px,36% 0px,40% 10px,44% 0px,48% 10px,52% 0px,56% 10px,60% 0px,64% 10px,68% 0px,72% 10px,76% 0px,80% 10px,84% 0px,88% 10px,92% 0px,96% 10px,100% 0px,100% 100%,0% 100%);
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
       `}</style>
 
-            {screen === "seller" && (
-                <SellerScreen
-                    sellers={sellers}
-                    setSellers={setSellers}
-                    selected={selected}
-                    setSelected={setSelected}
-                    onNext={() => setScreen("cart")}
-                />
-            )}
-            {screen === "cart" && (
-                <CartScreen
-                    seller={selected}
-                    qty={qty}
-                    setQty={setQty}
-                    onBack={() => setScreen("seller")}
-                    onClose={() => {
-                        setPixStatus("waiting");
-                        setScreen("pix");
-                    }}
-                />
-            )}
-            {screen === "pix" && (
-                <PixScreen
-                    total={total}
-                    status={pixStatus}
-                    setStatus={setPixStatus}
-                    onNewSale={() => {
-                        setQty({});
-                        setScreen("cart");
-                    }}
-                />
-            )}
+            {content}
         </div>
     );
 }
