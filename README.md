@@ -56,7 +56,7 @@ Run the bootstrap script once to create the initial Excel workbook with the
 required sheets, headers, and default salesperson defined in `config.ini`:
 
 ```bash
-python setup_excel.py
+uv run setup_excel.py
 ```
 
 ### CLI
@@ -127,7 +127,7 @@ uv pip install -e ".[api]"
 caad-erp-api
 
 # Or run directly through Python
-python -m caad_erp.api
+uv run -m caad_erp.api
 ```
 
 By default, the server starts on `http://0.0.0.0:8000`, making it accessible
