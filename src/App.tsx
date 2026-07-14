@@ -1,135 +1,13 @@
 import { useEffect, useState } from "react"
-import { Plus, Minus, ArrowLeft, Pencil, Check, Copy, ShoppingBag, AlertTriangle, Loader2 } from "lucide-react"
+import { Plus, Minus, ArrowLeft, Pencil, Check, Copy, ShoppingBag } from "lucide-react"
 import { api } from "./api/apiClient"
+import { slugify, brl, buildQrGrid } from "./helpers"
+import { Eyebrow } from "./components/Eyebrow"
+import { ScreenShell } from "./components/ScreenShell"
+import { StatusScreen } from "./components/StatusScreen"
 
-// Products from the API don't carry an emoji, so we guess one from the name
-// and fall back to a generic icon for anything we don't recognize.
-const EMOJI_BY_KEYWORD = {
-    brigadeiro: "🍫",
-    coxinha: "🍗",
-    pastel: "🥟",
-    suco: "🥤",
-    bolo: "🍮",
-    agua: "💧",
-    água: "💧",
-    refrigerante: "🥤",
-    cafe: "☕",
-    café: "☕",
-    pao: "🥖",
-    pão: "🥖",
-    doce: "🍬",
-    salgado: "🥐",
-}
-function emojiFor(name) {
-    const key = (name || "").toLowerCase()
-    for (const kw in EMOJI_BY_KEYWORD) {
-        if (key.includes(kw)) return EMOJI_BY_KEYWORD[kw]
-    }
-    return "🧺"
-}
-
-function slugify(str) {
-    return (str || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-+|-+$)/g, "")
-}
-
-const AVATAR_CLASSES = ["bg-teal", "bg-stamp", "bg-mustard"]
-
-function brl(n) {
-    return "R$ " + n.toFixed(2).replace(".", ",")
-}
-
-// Deterministic mock QR pattern (visual only, not a real payload)
-const QR_SIZE = 11
-function buildQrGrid() {
-    const grid = []
-    for (let r = 0; r < QR_SIZE; r++) {
-        const row = []
-        for (let c = 0; c < QR_SIZE; c++) {
-            const isFinderBlock =
-                (r < 3 && c < 3) || (r < 3 && c >= QR_SIZE - 3) || (r >= QR_SIZE - 3 && c < 3)
-            let filled
-            if (isFinderBlock) {
-                const lr = r < 3 ? r : r - (QR_SIZE - 3)
-                const lc = c < 3 ? c : c - (QR_SIZE - 3)
-                filled = lr === 0 || lr === 2 || lc === 0 || lc === 2 || (lr === 1 && lc === 1)
-            } else {
-                filled = (r * 13 + c * 7 + r * c) % 5 < 2
-            }
-            row.push(filled)
-        }
-        grid.push(row)
-    }
-    return grid
-}
 const QR_GRID = buildQrGrid()
-
-function Eyebrow({ step, label }) {
-    return (
-        <div className="flex items-center gap-2 mb-1">
-            <span
-                className="text-xs px-1.5 py-0.5 rounded font-mono font-semibold bg-tealSoft text-tealDark"
-            >
-                {step}/3
-            </span>
-            <span
-                className="text-xs uppercase tracking-[0.12em] font-body font-semibold text-inkFaint "
-            >
-                {label}
-            </span>
-        </div>
-    )
-}
-
-function ScreenShell({ children }) {
-    return (
-        <div
-            className="relative w-full min-h-[100svh] flex flex-col overflow-hidden bg-paper pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0px,env(safe-area-inset-left))] pr-[max(0px,env(safe-area-inset-right))]"
-        >
-            {children}
-        </div>
-    )
-}
-
-// ---------------- Loading / error shell for API calls ----------------
-function StatusScreen({ mode, message, onRetry }: {
-    mode: "loading" | "error"
-    message?: string
-    onRetry?: () => void
-}) {
-    return (
-        <ScreenShell>
-            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3">
-                {mode === "loading" ? (
-                    <Loader2 size={28} className="animate-spin text-teal" />
-                ) : (
-                    <AlertTriangle size={28} className="text-stamp" />
-                )}
-                <p className="font-body text-ink text-sm font-semibold">
-                    {mode === "loading" ? "Carregando dados do CAAD-ERP..." : "Não deu pra falar com o CAAD-ERP"}
-                </p>
-                {message && (
-                    <p className="font-body text-inkFaint text-[13px]">
-                        {message}
-                    </p>
-                )}
-                {mode === "error" && onRetry && (
-                    <button
-                        onClick={onRetry}
-                        className="mt-2 px-4 py-2.5 rounded-2xl bg-ink text-white font-display font-bold text-sm"
-                    >
-                        Tentar de novo
-                    </button>
-                )}
-            </div>
-        </ScreenShell>
-    )
-}
+const AVATAR_CLASSES = ["bg-teal", "bg-stamp", "bg-mustard"]
 
 // ---------------- Screen 1: pick seller ----------------
 function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, creating, onNext }) {
@@ -465,7 +343,7 @@ export default function App() {
                 id: p.product_id,
                 name: p.product_name,
                 price: parseFloat(p.sell_price),
-                emoji: emojiFor(p.product_name),
+                emoji: "🧺",
             }))
         )
         setSellers(
