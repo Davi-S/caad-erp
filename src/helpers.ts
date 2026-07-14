@@ -13,7 +13,7 @@ export function brl(n: number) {
 }
 
 // Deterministic mock QR pattern (visual only, not a real payload)
-const QR_SIZE = 11
+export const QR_SIZE = 11
 export function buildQrGrid() {
     const grid = []
     for (let r = 0; r < QR_SIZE; r++) {
