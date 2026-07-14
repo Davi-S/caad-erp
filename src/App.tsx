@@ -1,56 +1,6 @@
-import { useEffect, useState } from "react";
-import { Plus, Minus, ArrowLeft, Pencil, Check, Copy, ShoppingBag, AlertTriangle, Loader2 } from "lucide-react";
-
-// ---------------- CAAD-ERP API client ----------------
-// Local-network-only API. See caad-erp-api-docs.json for the full OpenAPI spec.
-const API_BASE = "http://192.168.0.164:8000";
-
-async function apiFetch(path, options = {}) {
-    let res;
-    try {
-        res = await fetch(`${API_BASE}${path}`, {
-            headers: { "Content-Type": "application/json" },
-            ...options,
-        });
-    } catch (err) {
-        throw new Error(
-            `Não foi possível conectar à API do CAAD-ERP em ${API_BASE}. Verifique se ela está rodando na rede local.`
-        );
-    }
-
-    let body = null;
-    try {
-        body = await res.json();
-    } catch {
-        // No JSON body (e.g. empty response) - that's fine.
-    }
-
-    if (!res.ok) {
-        let detail = res.statusText;
-        if (body) {
-            if (typeof body.detail === "string") detail = body.detail;
-            else if (Array.isArray(body.detail)) detail = body.detail.map((d) => d.msg).join("; ");
-        }
-        throw new Error(detail || `Erro ${res.status}`);
-    }
-    return body;
-}
-
-const api = {
-    listProducts: () => apiFetch("/products"),
-    listSalesmen: () => apiFetch("/salesmen"),
-    createSalesman: (salesman_id, salesman_name) =>
-        apiFetch("/salesmen", {
-            method: "POST",
-            body: JSON.stringify({ salesman_id, salesman_name }),
-        }),
-    getStockReport: () => apiFetch("/reports/stock"),
-    recordSale: (payload) =>
-        apiFetch("/transactions/sale", {
-            method: "POST",
-            body: JSON.stringify(payload),
-        }),
-};
+import { useEffect, useState } from "react"
+import { Plus, Minus, ArrowLeft, Pencil, Check, Copy, ShoppingBag, AlertTriangle, Loader2 } from "lucide-react"
+import { api } from "./api/apiClient"
 
 // Products from the API don't carry an emoji, so we guess one from the name
 // and fall back to a generic icon for anything we don't recognize.
@@ -69,13 +19,13 @@ const EMOJI_BY_KEYWORD = {
     pão: "🥖",
     doce: "🍬",
     salgado: "🥐",
-};
+}
 function emojiFor(name) {
-    const key = (name || "").toLowerCase();
+    const key = (name || "").toLowerCase()
     for (const kw in EMOJI_BY_KEYWORD) {
-        if (key.includes(kw)) return EMOJI_BY_KEYWORD[kw];
+        if (key.includes(kw)) return EMOJI_BY_KEYWORD[kw]
     }
-    return "🧺";
+    return "🧺"
 }
 
 function slugify(str) {
@@ -85,39 +35,39 @@ function slugify(str) {
         .toLowerCase()
         .trim()
         .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-+|-+$)/g, "");
+        .replace(/(^-+|-+$)/g, "")
 }
 
-const AVATAR_CLASSES = ["bg-teal", "bg-stamp", "bg-mustard"];
+const AVATAR_CLASSES = ["bg-teal", "bg-stamp", "bg-mustard"]
 
 function brl(n) {
-    return "R$ " + n.toFixed(2).replace(".", ",");
+    return "R$ " + n.toFixed(2).replace(".", ",")
 }
 
 // Deterministic mock QR pattern (visual only, not a real payload)
-const QR_SIZE = 11;
+const QR_SIZE = 11
 function buildQrGrid() {
-    const grid = [];
+    const grid = []
     for (let r = 0; r < QR_SIZE; r++) {
-        const row = [];
+        const row = []
         for (let c = 0; c < QR_SIZE; c++) {
             const isFinderBlock =
-                (r < 3 && c < 3) || (r < 3 && c >= QR_SIZE - 3) || (r >= QR_SIZE - 3 && c < 3);
-            let filled;
+                (r < 3 && c < 3) || (r < 3 && c >= QR_SIZE - 3) || (r >= QR_SIZE - 3 && c < 3)
+            let filled
             if (isFinderBlock) {
-                const lr = r < 3 ? r : r - (QR_SIZE - 3);
-                const lc = c < 3 ? c : c - (QR_SIZE - 3);
-                filled = lr === 0 || lr === 2 || lc === 0 || lc === 2 || (lr === 1 && lc === 1);
+                const lr = r < 3 ? r : r - (QR_SIZE - 3)
+                const lc = c < 3 ? c : c - (QR_SIZE - 3)
+                filled = lr === 0 || lr === 2 || lc === 0 || lc === 2 || (lr === 1 && lc === 1)
             } else {
-                filled = (r * 13 + c * 7 + r * c) % 5 < 2;
+                filled = (r * 13 + c * 7 + r * c) % 5 < 2
             }
-            row.push(filled);
+            row.push(filled)
         }
-        grid.push(row);
+        grid.push(row)
     }
-    return grid;
+    return grid
 }
-const QR_GRID = buildQrGrid();
+const QR_GRID = buildQrGrid()
 
 function Eyebrow({ step, label }) {
     return (
@@ -133,7 +83,7 @@ function Eyebrow({ step, label }) {
                 {label}
             </span>
         </div>
-    );
+    )
 }
 
 function ScreenShell({ children }) {
@@ -143,14 +93,14 @@ function ScreenShell({ children }) {
         >
             {children}
         </div>
-    );
+    )
 }
 
 // ---------------- Loading / error shell for API calls ----------------
 function StatusScreen({ mode, message, onRetry }: {
-    mode: "loading" | "error";
-    message?: string;
-    onRetry?: () => void;
+    mode: "loading" | "error"
+    message?: string
+    onRetry?: () => void
 }) {
     return (
         <ScreenShell>
@@ -178,7 +128,7 @@ function StatusScreen({ mode, message, onRetry }: {
                 )}
             </div>
         </ScreenShell>
-    );
+    )
 }
 
 // ---------------- Screen 1: pick seller ----------------
@@ -198,7 +148,7 @@ function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, crea
                         </p>
                     )}
                     {sellers.map((s, i) => {
-                        const isSel = selectedId === s.id;
+                        const isSel = selectedId === s.id
                         return (
                             <button
                                 key={s.id}
@@ -220,7 +170,7 @@ function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, crea
                                     </span>
                                 )}
                             </button>
-                        );
+                        )
                     })}
 
                     <button
@@ -248,23 +198,23 @@ function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSeller, crea
                 </button>
             </div>
         </ScreenShell>
-    );
+    )
 }
 
 // ---------------- Screen 2: cart ----------------
 function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
-    const items = products.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0);
-    const total = items.reduce((s, p) => s + p.qty * p.price, 0);
+    const items = products.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0)
+    const total = items.reduce((s, p) => s + p.qty * p.price, 0)
 
-    const availableFor = (id) => stock[id];
+    const availableFor = (id) => stock[id]
     const inc = (id) =>
         setQty((q) => {
-            const current = q[id] || 0;
-            const available = availableFor(id);
-            if (available !== undefined && current >= available) return q;
-            return { ...q, [id]: current + 1 };
-        });
-    const dec = (id) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] || 0) - 1) }));
+            const current = q[id] || 0
+            const available = availableFor(id)
+            if (available !== undefined && current >= available) return q
+            return { ...q, [id]: current + 1 }
+        })
+    const dec = (id) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] || 0) - 1) }))
 
     return (
         <ScreenShell>
@@ -289,8 +239,8 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                 </p>
                 <div className="grid grid-cols-3 gap-2 mb-5">
                     {products.map((p) => {
-                        const available = availableFor(p.id);
-                        const soldOut = available !== undefined && available <= 0;
+                        const available = availableFor(p.id)
+                        const soldOut = available !== undefined && available <= 0
                         return (
                             <button
                                 key={p.id}
@@ -311,7 +261,7 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                                     {soldOut ? "Esgotado" : brl(p.price)}
                                 </span>
                             </button>
-                        );
+                        )
                     })}
                 </div>
 
@@ -370,14 +320,14 @@ function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
                 </button>
             </div>
         </ScreenShell>
-    );
+    )
 }
 
 // ---------------- Screen 3: PIX QR ----------------
 function PixScreen({ total, status, error, onConfirm, onNewSale }) {
-    const [copied, setCopied] = useState(false);
-    const confirmed = status === "confirmed";
-    const confirming = status === "confirming";
+    const [copied, setCopied] = useState(false)
+    const confirmed = status === "confirmed"
+    const confirming = status === "confirming"
 
     return (
         <div
@@ -424,8 +374,8 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
 
                         <button
                             onClick={() => {
-                                setCopied(true);
-                                setTimeout(() => setCopied(false), 1500);
+                                setCopied(true)
+                                setTimeout(() => setCopied(false), 1500)
                             }}
                             className="flex items-center gap-2 mt-4 px-3 py-2 rounded-xl w-full justify-center bg-paper border border-solid border-paperLine"
                         >
@@ -462,125 +412,202 @@ function PixScreen({ total, status, error, onConfirm, onNewSale }) {
                 )}
             </div>
         </div>
-    );
+    )
 }
 
 export default function App() {
-    const [screen, setScreen] = useState("seller"); // seller | cart | pix
+    const [screen, setScreen] = useState("seller") // seller | cart | pix
 
     // ---- Data loaded from the CAAD-ERP API ----
-    const [initStatus, setInitStatus] = useState("loading"); // loading | ready | error
-    const [initError, setInitError] = useState("");
-    const [products, setProducts] = useState([]); // [{id, name, price, emoji}]
-    const [sellers, setSellers] = useState([]); // [{id, name}]
-    const [stock, setStock] = useState({}); // { [productId]: quantity }
+    const [initStatus, setInitStatus] = useState("loading") // loading | ready | error
+    const [initError, setInitError] = useState("")
+    const [products, setProducts] = useState([]) // [{id, name, price, emoji}]
+    const [sellers, setSellers] = useState([]) // [{id, name}]
+    const [stock, setStock] = useState({}) // { [productId]: quantity }
 
-    const [selectedSellerId, setSelectedSellerId] = useState(null);
-    const [creatingSeller, setCreatingSeller] = useState(false);
+    const [selectedSellerId, setSelectedSellerId] = useState(null)
+    const [creatingSeller, setCreatingSeller] = useState(false)
 
-    const [qty, setQty] = useState({});
-    const [pixStatus, setPixStatus] = useState("waiting"); // waiting | confirming | confirmed
-    const [pixError, setPixError] = useState("");
+    const [qty, setQty] = useState({})
+    const [pixStatus, setPixStatus] = useState("waiting") // waiting | confirming | confirmed
+    const [pixError, setPixError] = useState("")
 
     async function loadAll() {
-        setInitStatus("loading");
-        setInitError("");
-        try {
-            const [productsRes, salesmenRes, stockRes] = await Promise.all([
-                api.listProducts(),
-                api.listSalesmen(),
-                api.getStockReport(),
-            ]);
+        setInitStatus("loading")
+        setInitError("")
 
-            setProducts(
-                (productsRes?.items || []).map((p) => ({
-                    id: p.product_id,
-                    name: p.product_name,
-                    price: parseFloat(p.sell_price),
-                    emoji: emojiFor(p.product_name),
-                }))
-            );
-            setSellers(
-                (salesmenRes?.items || []).map((s) => ({
-                    id: s.salesman_id,
-                    name: s.salesman_name,
-                }))
-            );
-            const stockMap = {};
-            (stockRes?.items || []).forEach((i) => {
-                stockMap[i.product_id] = parseFloat(i.quantity);
-            });
-            setStock(stockMap);
+        // Fetch everything concurrently
+        const [productsRes, salesmenRes, stockRes] = await Promise.all([
+            api.GET("/products"),
+            api.GET("/salesmen"),
+            api.GET("/reports/stock"),
+        ])
 
-            setInitStatus("ready");
-        } catch (err) {
-            setInitError(err.message || String(err));
-            setInitStatus("error");
+        // Check if ANY of the requests failed
+        if (productsRes.error || salesmenRes.error || stockRes.error) {
+            setInitError(String({
+                productsError: productsRes.error,
+                salesmenError: salesmenRes.error,
+                stockError: stockRes.error,
+            }))
+            setInitStatus("error")
+            // Stop execution because the UI cannot function without this data
+            return
         }
+
+        // If we pass the error check, TypeScript guarantees 'data' exists for all of them
+        const products = productsRes.data
+        const salesmen = salesmenRes.data
+        const stock = stockRes.data
+
+        setProducts(
+            (products?.items || []).map((p) => ({
+                id: p.product_id,
+                name: p.product_name,
+                price: parseFloat(p.sell_price),
+                emoji: emojiFor(p.product_name),
+            }))
+        )
+        setSellers(
+            (salesmen.items || []).map((s) => ({
+                id: s.salesman_id,
+                name: s.salesman_name,
+            }))
+        )
+        const stockMap = {};
+        (stock?.items || []).forEach((i) => {
+            stockMap[i.product_id] = parseFloat(i.quantity)
+        })
+        setStock(stockMap)
+
+        setInitStatus("ready")
     }
 
     useEffect(() => {
-        loadAll();
-    }, []);
+        loadAll()
+    }, [])
 
     async function handleCreateSeller() {
-        const name = window.prompt("Nome do novo vendedor:");
-        if (!name || !name.trim()) return;
-        const trimmed = name.trim();
-        const id = `${slugify(trimmed)}-${Date.now().toString(36).slice(-4)}`;
-        setCreatingSeller(true);
+        const name = window.prompt("Nome do novo vendedor:")
+        if (!name || !name.trim()) return
+        const trimmed = name.trim()
+        const id = `${slugify(trimmed)}-${Date.now().toString(36).slice(-4)}`
+        setCreatingSeller(true)
         try {
-            await api.createSalesman(id, trimmed);
-            setSellers((prev) => [...prev, { id, name: trimmed }]);
-            setSelectedSellerId(id);
+            // Call the endpoint directly with the correct body payload
+            const { data, error } = await api.POST("/salesmen", {
+                body: {
+                    salesman_id: id,
+                    salesman_name: trimmed,
+                    is_active: true // Optional, but good practice since it's in the schema
+                }
+            })
+
+            // 2. Handle HTTP Errors (e.g., 400 Validation Error, 409 Conflict)
+            if (error) {
+                let errorMsg = "Erro desconhecido"
+
+                // Extract the FastAPI error detail just like your old wrapper did
+                if (error.detail) {
+                    if (typeof error.detail === "string") {
+                        errorMsg = error.detail
+                    } else if (Array.isArray(error.detail)) {
+                        errorMsg = error.detail.map((d: any) => d.msg).join("; ")
+                    }
+                }
+
+                window.alert(`Não foi possível cadastrar o vendedor: ${errorMsg}`)
+                return // Stop execution so we don't update the UI state
+            }
+
+            // 3. Success Path: data is guaranteed to be StandardResponse here
+            setSellers((prev) => [...prev, { id, name: trimmed }])
+            setSelectedSellerId(id)
+
         } catch (err) {
-            window.alert(`Não foi possível cadastrar o vendedor: ${err.message || err}`);
+            // 4. Handle Network Crashes (e.g., server offline, no internet)
+            // This catch block now ONLY fires if the fetch() fails completely, not for HTTP errors.
+            window.alert("Erro de conexão. Verifique se o servidor está rodando na rede local.")
+            console.error(err)
         } finally {
-            setCreatingSeller(false);
+            setCreatingSeller(false)
         }
     }
 
-    const selectedSeller = sellers.find((s) => s.id === selectedSellerId) || null;
-    const productById = Object.fromEntries(products.map((p) => [p.id, p]));
-    const cartItems = products.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0);
-    const total = cartItems.reduce((s, p) => s + p.qty * p.price, 0);
+    const selectedSeller = sellers.find((s) => s.id === selectedSellerId) || null
+    const productById = Object.fromEntries(products.map((p) => [p.id, p]))
+    const cartItems = products.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0)
+    const total = cartItems.reduce((s, p) => s + p.qty * p.price, 0)
 
     async function handleConfirmPayment() {
-        if (!selectedSeller || cartItems.length === 0) return;
-        setPixStatus("confirming");
-        setPixError("");
+        if (!selectedSeller || cartItems.length === 0) return
+
+        setPixStatus("confirming")
+        setPixError("")
+
         try {
+            // 1. Process each sale transaction sequentially
             for (const item of cartItems) {
-                await api.recordSale({
-                    product_id: item.id,
-                    salesman_id: selectedSeller.id,
-                    quantity: item.qty,
-                    total_revenue: item.qty * item.price,
-                    payment_type: "PIX",
-                });
-            }
-            // Refresh stock in the background so the next cart reflects reality.
-            api.getStockReport()
-                .then((stockRes) => {
-                    const stockMap = {};
-                    (stockRes?.items || []).forEach((i) => {
-                        stockMap[i.product_id] = parseFloat(i.quantity);
-                    });
-                    setStock(stockMap);
+                const { error } = await api.POST("/transactions/sale", {
+                    body: {
+                        product_id: item.id,
+                        salesman_id: selectedSeller.id,
+                        quantity: item.qty,
+                        total_revenue: item.qty * item.price,
+                        payment_type: "PIX",
+                    }
                 })
-                .catch(() => { });
-            setPixStatus("confirmed");
+
+                // If a specific item fails, halt the entire process and show the error
+                if (error) {
+                    let errorMsg = "Erro na transação"
+                    if (error.detail) {
+                        if (typeof error.detail === "string") {
+                            errorMsg = error.detail
+                        } else if (Array.isArray(error.detail)) {
+                            errorMsg = error.detail.map((d: any) => d.msg).join("; ")
+                        }
+                    }
+
+                    // You can customize this string to show which item failed
+                    setPixError(`Falha ao registrar item (${item.id}): ${errorMsg}`)
+                    setPixStatus("waiting")
+                    return // Prevent subsequent items from being processed
+                }
+            }
+
+            // 2. Refresh stock in the background
+            api.GET("/reports/stock")
+                .then(({ data, error }) => {
+                    // If it fails HTTP validation or returns no data, fail silently
+                    // exactly like your original empty .catch(() => {}) did.
+                    if (error || !data) return
+
+                    const stockMap: Record<string, number> = {}
+                    data.items.forEach((i) => {
+                        stockMap[i.product_id] = parseFloat(i.quantity)
+                    })
+                    setStock(stockMap)
+                })
+                // Catch hard network failures on the background request
+                .catch(() => { })
+
+            // 3. Mark as success if the loop finishes without returning
+            setPixStatus("confirmed")
+
         } catch (err) {
-            setPixError(err.message || String(err));
-            setPixStatus("waiting");
+            // 4. Catch catastrophic network failures for the main checkout loop
+            const errMsg = err instanceof Error ? err.message : String(err)
+            setPixError(`Erro de conexão: ${errMsg}`)
+            setPixStatus("waiting")
         }
     }
 
-    let content: React.ReactNode;
+    let content: React.ReactNode
     if (initStatus === "loading") {
-        content = <StatusScreen mode="loading" />;
+        content = <StatusScreen mode="loading" />
     } else if (initStatus === "error") {
-        content = <StatusScreen mode="error" message={initError} onRetry={loadAll} />;
+        content = <StatusScreen mode="error" message={initError} onRetry={loadAll} />
     } else if (screen === "seller") {
         content = (
             <SellerScreen
@@ -591,7 +618,7 @@ export default function App() {
                 creating={creatingSeller}
                 onNext={() => setScreen("cart")}
             />
-        );
+        )
     } else if (screen === "cart") {
         content = (
             <CartScreen
@@ -602,12 +629,12 @@ export default function App() {
                 setQty={setQty}
                 onBack={() => setScreen("seller")}
                 onClose={() => {
-                    setPixStatus("waiting");
-                    setPixError("");
-                    setScreen("pix");
+                    setPixStatus("waiting")
+                    setPixError("")
+                    setScreen("pix")
                 }}
             />
-        );
+        )
     } else if (screen === "pix") {
         content = (
             <PixScreen
@@ -616,11 +643,11 @@ export default function App() {
                 error={pixError}
                 onConfirm={handleConfirmPayment}
                 onNewSale={() => {
-                    setQty({});
-                    setScreen("cart");
+                    setQty({})
+                    setScreen("cart")
                 }}
             />
-        );
+        )
     }
 
     return (
@@ -629,5 +656,5 @@ export default function App() {
         >
             {content}
         </div>
-    );
+    )
 }
