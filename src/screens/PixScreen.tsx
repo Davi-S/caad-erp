@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Check, Copy } from "lucide-react"
 import { brl, buildQrGrid, QR_SIZE } from "../helpers"
-import { Eyebrow } from "../components/Eyebrow"
 
 const QR_GRID = buildQrGrid()
 
@@ -15,7 +14,6 @@ export function PixScreen({ total, status, error, onConfirm, onNewSale }) {
         <div
             className="w-full min-h-svh flex flex-col items-center justify-center px-4 sm:px-5 bg-ink pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]"
         >
-            <Eyebrow step={3} label="Pagamento" />
             <div className="relative w-full max-w-xs mt-2">
                 {confirmed && (
                     <div className="absolute z-10 -top-[14px] -right-[6px] w-[84px] h-[84px] rounded-full border-[3px] border-solid border-stamp flex flex-col items-center justify-center -rotate-12 bg-stamp/[0.06]">

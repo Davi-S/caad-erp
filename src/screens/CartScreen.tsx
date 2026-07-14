@@ -1,6 +1,5 @@
 import { Plus, Minus, ArrowLeft, Pencil, ShoppingBag } from "lucide-react"
 import { ScreenShell } from "../components/ScreenShell"
-import { Eyebrow } from "../components/Eyebrow"
 import { brl } from "../helpers"
 
 // ---------------- Screen 2: cart ----------------
@@ -21,7 +20,6 @@ export function CartScreen({ seller, products, stock, qty, setQty, onBack, onClo
     return (
         <ScreenShell>
             <div className="px-4 sm:px-6 pt-4 shrink-0">
-                <Eyebrow step={2} label="Carrinho" />
                 <div className="flex items-center gap-2 mb-4">
                     <button onClick={onBack} className="p-1 -ml-1">
                         <ArrowLeft size={20} className="text-ink" />

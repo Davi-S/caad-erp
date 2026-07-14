@@ -1,6 +1,5 @@
 import { Plus, Check } from "lucide-react"
 import { ScreenShell } from "../components/ScreenShell"
-import { Eyebrow } from "../components/Eyebrow"
 
 const AVATAR_CLASSES = ["bg-teal", "bg-stamp", "bg-mustard"]
 
@@ -8,7 +7,6 @@ export function SellerScreen({ sellers, selectedId, setSelectedId, onCreateSelle
     return (
         <ScreenShell>
             <div className="flex-1 flex flex-col px-4 sm:px-6 pt-4 pb-6 overflow-y-auto">
-                <Eyebrow step={1} label="Vendedor" />
                 <h1 className="mt-1 mb-6 leading-tight font-display font-bold text-ink text-[26px]">
                     Quem tá vendendo hoje?
                 </h1>
