@@ -360,23 +360,7 @@ info
   - **Logic:** Update the "read-only" commands (`stock`, `profit`, `log`,
     `debts`) to print their results in clean, formatted console tables instead
     of simple text.
-- **Test (CLI): Add End-to-End CLI Tests**
-  - **Task:** Our `test_integration_layers.py` is great for the BLL/DAL. We need
-    tests for the _full application_.
-  - **Logic:** Use a tool like `pytester` (a pytest plugin) or the `subprocess`
-    module to write tests that _actually run_ `lounge-cli sale...` and assert
-    that the `stdout`/`stderr` and exit codes are correct.
-- **Docs: Create a detailed `USAGE.md` file**
-  - **Task:** Our `examples/` directory is good, but a formal, task-oriented
-    `USAGE.md` file would be better.
-  - **Logic:** This file would have sections like "How to handle a spoiled
-    item," "How to pay a debt," or "How to fix a mistaken sale," and show the
-    exact commands to run.
-- **Feat (UI): Develop a Web-Based User Interface**
-  - **Task:** Create a new "presentation layer" by building a simple web app
 - Add options to pass id to read-commands to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
 - Improve exceptions and error handling
-- Rename "Oncredit" to "PayLater" to avoid confusion with future "Credit"
-  payments
 
