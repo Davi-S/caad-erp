@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Check } from "lucide-react"
-import { ScreenShell } from "../../../components/ScreenShell"
-import type { Schemas } from "../../../api/apiClient"
+import { ScreenShell } from "@/components/ScreenShell"
+import type { Schemas } from "@/api/apiClient"
 
 interface SellerScreenProps {
     // Note: You likely want the array of items, not the whole response wrapper

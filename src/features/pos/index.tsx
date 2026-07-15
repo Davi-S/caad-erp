@@ -4,7 +4,7 @@ import { useCheckout } from "./hooks/useCheckout"
 import { SellerScreen } from "./components/SellerScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
-import type { Schemas } from "../../api/apiClient"
+import type { Schemas } from "@/api/apiClient"
 
 // Define the props expected by the POS feature
 interface POSFlowProps {

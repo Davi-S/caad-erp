@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
-import { brl, buildQrGrid, QR_SIZE } from "../../../helpers"
-import { ScreenShell } from "../../../components/ScreenShell"
-import type { Schemas } from "../../../api/apiClient"
+import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
+import { ScreenShell } from "@/components/ScreenShell"
+import type { Schemas } from "@/api/apiClient"
 import type { CheckoutStatus } from "../hooks/useCheckout"
 
 const QR_GRID = buildQrGrid()

@@ -1,6 +1,6 @@
 import { useState } from "react"
-import type { Schemas } from "../../../api/apiClient"
-import { api } from "../../../api/apiClient"
+import type { Schemas } from "@/api/apiClient"
+import { api } from "@/api/apiClient"
 
 export type CheckoutStatus = "idle" | "confirming" | "confirmed" | "error"
 
