@@ -362,5 +362,4 @@ info
     of simple text.
 - Add options to pass id to read-commands to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
-- Improve exceptions and error handling
 
