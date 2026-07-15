@@ -5,31 +5,34 @@ import type { Schemas } from "../api/apiClient"
 
 interface CartScreenProps {
     seller: Schemas["SalesmanResponse"] | null
-    products: Schemas["ProductListResponse"]["items"]
-    cartItems: any[]
-    total: number
-    stock: Schemas["StockReportResponse"]["items"]
-    qty: Record<string, number>
-    inc: (id: string) => void
-    dec: (id: string) => void
-    onBack: () => void
-    onClose: () => void
+    catalog: {
+        products: Schemas["ProductListResponse"]["items"]
+        stock: Schemas["StockReportResponse"]["items"]
+    }
+    cart: {
+        qty: Record<string, number>
+        cartItems: any[]
+        total: number
+        inc: (id: string) => void
+        dec: (id: string) => void
+    }
+    actions: {
+        onBack: () => void
+        onClose: () => void
+    }
 }
 
 export function CartScreen({
     seller,
-    products,
-    cartItems,
-    total,
-    stock,
-    qty,
-    inc,
-    dec,
-    onBack,
-    onClose
+    catalog,
+    cart,
+    actions
 }: CartScreenProps) {
-
+    const { products, stock } = catalog
+    const { qty, cartItems, total, inc, dec } = cart
+    const { onBack, onClose } = actions
     const availableFor = (id: string) => stock[id]
+
     return (
         <ScreenShell>
             <div className="px-4 sm:px-6 pt-4 shrink-0">

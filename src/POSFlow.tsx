@@ -4,7 +4,7 @@ import { useCheckout } from "./useCheckout"
 import { SellerScreen } from "./screens/SellerScreen"
 import { CartScreen } from "./screens/CartScreen"
 import { PixScreen } from "./screens/PixScreen"
-import type { Schemas } from "../api/apiClient"
+import type { Schemas } from "./api/apiClient"
 
 // Define the props expected by the POS feature
 interface POSFlowProps {
@@ -23,11 +23,10 @@ export function POSFlow({
     // Local routing state for the checkout sequence
     const [screen, setScreen] = useState<"seller" | "cart" | "pix">("seller")
     const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null)
-    const selectedSeller = sellers.find((s) => s.id === selectedSellerId) || null
+    const selectedSeller = sellers.find((s) => s.salesman_id === selectedSellerId) || null
 
     // Hooks
-    // TODO: Move these hooks into the CartScreen file
-    const { qty, setQty, cartItems, total, clearCart } = useCart(products, stock)
+    const cartState = useCart(products, stock)
     const { status, error, confirmPayment, resetCheckout } = useCheckout()
 
     if (screen === "seller") {
@@ -44,12 +43,14 @@ export function POSFlow({
         return (
             <CartScreen
                 seller={selectedSeller}
-                products={products}
-                stock={stock}
-                onBack={() => setScreen("seller")}
-                onClose={() => {
-                    resetCheckout()
-                    setScreen("pix")
+                catalog={{ products, stock }}
+                cart={cartState} // Passes the entire hook result at once
+                actions={{
+                    onBack: () => setScreen("seller"),
+                    onClose: () => {
+                        resetCheckout()
+                        setScreen("pix")
+                    }
                 }}
             />
         )
@@ -58,16 +59,16 @@ export function POSFlow({
     if (screen === "pix") {
         return (
             <PixScreen
-                total={total}
+                total={cartState.total}
                 status={status}
                 error={error}
                 onConfirm={() => {
                     if (selectedSellerId) {
-                        confirmPayment(cartItems, selectedSellerId, onUpdateStock)
+                        confirmPayment(cartState.cartItems, selectedSellerId, onUpdateStock)
                     }
                 }}
                 onNewSale={() => {
-                    clearCart()
+                    cartState.clearCart()
                     setScreen("cart")
                 }}
             />
