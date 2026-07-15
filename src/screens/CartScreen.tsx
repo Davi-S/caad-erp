@@ -1,22 +1,35 @@
 import { Plus, Minus, ArrowLeft, Pencil, ShoppingBag } from "lucide-react"
 import { ScreenShell } from "../components/ScreenShell"
 import { brl } from "../helpers"
+import type { Schemas } from "../api/apiClient"
 
-// ---------------- Screen 2: cart ----------------
-export function CartScreen({ seller, products, stock, qty, setQty, onBack, onClose }) {
-    const items = products.map((p) => ({ ...p, qty: qty[p.id] || 0 })).filter((p) => p.qty > 0)
-    const total = items.reduce((s, p) => s + p.qty * p.price, 0)
+interface CartScreenProps {
+    seller: Schemas["SalesmanResponse"] | null
+    products: Schemas["ProductListResponse"]["items"]
+    cartItems: any[]
+    total: number
+    stock: Schemas["StockReportResponse"]["items"]
+    qty: Record<string, number>
+    inc: (id: string) => void
+    dec: (id: string) => void
+    onBack: () => void
+    onClose: () => void
+}
 
-    const availableFor = (id) => stock[id]
-    const inc = (id) =>
-        setQty((q) => {
-            const current = q[id] || 0
-            const available = availableFor(id)
-            if (available !== undefined && current >= available) return q
-            return { ...q, [id]: current + 1 }
-        })
-    const dec = (id) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] || 0) - 1) }))
+export function CartScreen({
+    seller,
+    products,
+    cartItems,
+    total,
+    stock,
+    qty,
+    inc,
+    dec,
+    onBack,
+    onClose
+}: CartScreenProps) {
 
+    const availableFor = (id: string) => stock[id]
     return (
         <ScreenShell>
             <div className="px-4 sm:px-6 pt-4 shrink-0">
@@ -25,7 +38,7 @@ export function CartScreen({ seller, products, stock, qty, setQty, onBack, onClo
                         <ArrowLeft size={20} className="text-ink" />
                     </button>
                     <h1 className="font-display text-ink text-xl font-bold">
-                        Venda de {seller?.name}
+                        Venda de {seller?.salesman_name}
                     </h1>
                     <button onClick={onBack} className="ml-auto p-1">
                         <Pencil size={14} className="text-inkFaint" />
@@ -38,27 +51,26 @@ export function CartScreen({ seller, products, stock, qty, setQty, onBack, onClo
                     Toque para adicionar
                 </p>
                 <div className="grid grid-cols-3 gap-2 mb-5">
-                    {products.map((p) => {
-                        const available = availableFor(p.id)
+                    {products.map((product) => {
+                        const available = availableFor(product.product_id)
                         const soldOut = available !== undefined && available <= 0
                         return (
                             <button
-                                key={p.id}
-                                onClick={() => inc(p.id)}
+                                key={product.product_id}
+                                onClick={() => inc(product.product_id)}
                                 disabled={soldOut}
                                 className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative bg-card border border-solid border-paperLine disabled:opacity-45"
                             >
-                                {qty[p.id] > 0 && (
+                                {qty[product.product_id] > 0 && (
                                     <span className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center w-5 h-5 bg-teal text-white font-mono text-[11px] font-semibold">
-                                        {qty[p.id]}
+                                        {qty[product.product_id]}
                                     </span>
                                 )}
-                                <span className="text-[20px]">{p.emoji}</span>
                                 <span className="font-body text-ink text-xs font-semibold">
-                                    {p.name}
+                                    {product.product_name}
                                 </span>
                                 <span className="font-mono text-inkSoft text-[11px]">
-                                    {soldOut ? "Esgotado" : brl(p.price)}
+                                    {soldOut ? "Esgotado" : brl(Number(product.sell_price))}
                                 </span>
                             </button>
                         )
@@ -66,7 +78,7 @@ export function CartScreen({ seller, products, stock, qty, setQty, onBack, onClo
                 </div>
 
                 <div className="pt-3 border-t border-dashed border-paperLine">
-                    {items.length === 0 ? (
+                    {cartItems.length === 0 ? (
                         <div className="flex flex-col items-center text-center py-10 gap-2">
                             <ShoppingBag size={28} className="text-inkFaint" />
                             <p className="font-body text-inkFaint text-[13px]">
@@ -76,7 +88,7 @@ export function CartScreen({ seller, products, stock, qty, setQty, onBack, onClo
                             </p>
                         </div>
                     ) : (
-                        items.map((p) => (
+                        cartItems.map((p) => (
                             <div key={p.id} className="flex items-center gap-2 py-2">
                                 <span className="text-base">{p.emoji}</span>
                                 <span className="flex-1 font-body text-ink text-sm font-medium">
