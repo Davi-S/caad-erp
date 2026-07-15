@@ -5,7 +5,7 @@ import { POSFlow } from "./features/pos/"
 import type { Schemas } from "./api/apiClient"
 
 export default function App() {
-    const [initStatus, setInitStatus] = useState("loading") // loading | ready | error
+    const [initStatus, setInitStatus] = useState<"loading" | "ready" | "error">("loading")
     const [initError, setInitError] = useState("")
 
     const [products, setProducts] = useState<Schemas["ProductListResponse"]["items"]>([])
