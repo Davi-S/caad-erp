@@ -734,7 +734,8 @@ def test_record_write_off_appends_transaction_and_invalidates_cache() -> None:
     assert "transactions" not in context._cache
 
 
-def test_record_write_off_rejects_inactive_product_or_salesman() -> None:
+@pytest.mark.parametrize("inactive_party", ["product", "salesman"])
+def test_record_write_off_rejects_inactive_product_or_salesman(inactive_party) -> None:
     """
     GIVEN a write-off command referencing inactive product or salesman
     WHEN record_write_off is called
@@ -743,8 +744,8 @@ def test_record_write_off_rejects_inactive_product_or_salesman() -> None:
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", is_active=False)
-    _seed_salesman(workbook, "S1")
+    _seed_product(workbook, "P1", is_active=(inactive_party != "product"))
+    _seed_salesman(workbook, "S1", is_active=(inactive_party != "salesman"))
 
     # Act / Assert
     with pytest.raises(BusinessRuleViolation):
@@ -1142,7 +1143,8 @@ def test_record_open_stock_appends_transaction_and_invalidates_cache() -> None:
     assert "transactions" not in context._cache
 
 
-def test_record_open_stock_rejects_inactive_product_or_salesman() -> None:
+@pytest.mark.parametrize("inactive_party", ["product", "salesman"])
+def test_record_open_stock_rejects_inactive_product_or_salesman(inactive_party) -> None:
     """
     GIVEN an open stock command referencing inactive product or salesman
     WHEN record_open_stock is called
@@ -1151,8 +1153,8 @@ def test_record_open_stock_rejects_inactive_product_or_salesman() -> None:
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", is_active=False)
-    _seed_salesman(workbook, "S1")
+    _seed_product(workbook, "P1", is_active=(inactive_party != "product"))
+    _seed_salesman(workbook, "S1", is_active=(inactive_party != "salesman"))
 
     # Act / Assert
     with pytest.raises(BusinessRuleViolation):
