@@ -7,7 +7,7 @@ interface CartScreenProps {
     seller: Schemas["SalesmanResponse"] | null
     catalog: {
         products: Schemas["ProductListResponse"]["items"]
-        stock: Schemas["StockReportResponse"]["items"]
+        stock: Record<string, number>
     }
     cart: {
         qty: Record<string, number>
