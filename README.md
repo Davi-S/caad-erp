@@ -1,34 +1,43 @@
-# React + TypeScript + Vite
+# CAAD ERP - Frontend Consumer
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This repository contains the React frontend application for the CAAD ERP system.
+It is currently in active development and primarily features a Point of Sale
+(POS) wizard as a proof of concept.
 
-Currently, two official plugins are available:
+The frontend is designed to consume the CAAD ERP FastAPI backend, providing a
+streamlined, user-friendly interface for processing sales and managing
+inventory.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Current Features (Proof of Concept)
 
-## React Compiler
+The current implementation focuses on a three-step POS checkout flow:
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- **Seller Selection:** A starting screen that lists all active salespeople
+  retrieved from the backend, requiring the user to select who is conducting the
+  sale before proceeding.
 
-Note: This will impact Vite dev & build performances.
+- **Interactive Cart:** A point-of-sale interface where users can tap to add
+  products, increment or decrement quantities, and view real-time totals.
 
-## Expanding the Oxlint configuration
+- **Multi-Method Payment:** A dedicated payment screen that handles order
+  confirmation.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- **API Integration:** Upon payment confirmation, the cart state is transformed
+  into individual sales requests and submitted to the backend API, updating the
+  centralized Excel data store.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+## Development Setup
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+To run this frontend locally, you must have the CAAD ERP backend API running on
+your local network.
+
+1. Ensure the CAAD ERP API server is running (defaults to
+   `[http://0.0.0.0:8000](http://0.0.0.0:8000)`).
+
+2. Install the frontend dependencies using your preferred package manager (e.g.,
+   `npm install`).
+3. Start the local development server (e.g., `npm run dev`).
+4. The application will initialize by fetching the product catalog, seller list,
+   and current stock map. If the backend is unavailable, an error screen will
+   prompt you to retry.
+
