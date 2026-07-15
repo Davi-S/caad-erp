@@ -22,10 +22,10 @@ export function useCheckout() {
         try {
             for (const item of cartItems) {
                 const payload = {
-                    product_id: item.id,
+                    product_id: item.product_id,
                     salesman_id: sellerId,
                     quantity: item.qty,
-                    total_revenue: item.qty * item.price,
+                    total_revenue: item.qty * Number(item.sell_price),
                     payment_type: method,
                     notes: null
                 }
