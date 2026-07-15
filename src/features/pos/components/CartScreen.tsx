@@ -9,10 +9,10 @@ interface CartScreenProps {
         products: Schemas["ProductListResponse"]["items"]
         stock: Record<string, number>
     }
-    cart: {
-        qty: Record<string, number>
-        cartItems: any[]
+    cartState: {
+        cart: Record<string, number>
         total: number
+        isEmpty: boolean
         inc: (id: string) => void
         dec: (id: string) => void
     }
@@ -25,11 +25,11 @@ interface CartScreenProps {
 export function CartScreen({
     seller,
     catalog,
-    cart,
+    cartState,
     actions
 }: CartScreenProps) {
     const { products, stock } = catalog
-    const { qty, cartItems, total, inc, dec } = cart
+    const { cart, total, isEmpty, inc, dec } = cartState
     const { onBack, onClose } = actions
     const availableFor = (id: string) => stock[id]
 
@@ -64,9 +64,9 @@ export function CartScreen({
                                 disabled={soldOut}
                                 className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative bg-card border border-solid border-paperLine disabled:opacity-45"
                             >
-                                {qty[product.product_id] > 0 && (
+                                {cart[product.product_id] > 0 && (
                                     <span className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center w-5 h-5 bg-teal text-white font-mono text-[11px] font-semibold">
-                                        {qty[product.product_id]}
+                                        {cart[product.product_id]}
                                     </span>
                                 )}
                                 <span className="font-body text-ink text-xs font-semibold text-center px-1">
@@ -89,7 +89,7 @@ export function CartScreen({
                 </div>
 
                 <div className="pt-3 border-t border-dashed border-paperLine">
-                    {cartItems.length === 0 ? (
+                    {isEmpty ? (
                         <div className="flex flex-col items-center text-center py-10 gap-2">
                             <p className="font-body text-inkFaint text-[13px]">
                                 Nenhum item ainda.
@@ -98,29 +98,30 @@ export function CartScreen({
                             </p>
                         </div>
                     ) : (
-                        cartItems.map((p) => (
-                            <div key={p.product_id} className="flex items-center gap-2 py-2">
-                                <span className="text-base text-inkFaint mt-0.5">
-                                </span>
-                                <span className="flex-1 font-body text-ink text-sm font-medium">
-                                    {p.product_name}
-                                </span>
-                                <div className="flex items-center gap-2 rounded-full px-1 bg-paper border border-solid border-paperLine">
-                                    <button onClick={() => dec(p.product_id)} className="p-1">
-                                        <Minus size={12} className="text-inkSoft" />
-                                    </button>
-                                    <span className="font-mono text-xs text-ink min-w-3.5 text-center">
-                                        {p.qty}
+                        Object.entries(cart).map(([productId, quantity]) => {
+                            const product = products.find(p => p.product_id === productId)
+                            return (
+                                <div key={productId} className="flex items-center gap-2 py-2">
+                                    <span className="flex-1 font-body text-ink text-sm font-medium">
+                                        {product.product_name}
                                     </span>
-                                    <button onClick={() => inc(p.product_id)} className="p-1">
-                                        <Plus size={12} className="text-inkSoft" />
-                                    </button>
+                                    <div className="flex items-center gap-2 rounded-full px-1 bg-paper border border-solid border-paperLine">
+                                        <button onClick={() => dec(productId)} className="p-1">
+                                            <Minus size={12} className="text-inkSoft" />
+                                        </button>
+                                        <span className="font-mono text-xs text-ink min-w-3.5 text-center">
+                                            {quantity}
+                                        </span>
+                                        <button onClick={() => inc(productId)} className="p-1">
+                                            <Plus size={12} className="text-inkSoft" />
+                                        </button>
+                                    </div>
+                                    <span className="font-mono text-ink text-[13px] min-w-[62px] text-right">
+                                        {brl(quantity * Number(product.sell_price))}
+                                    </span>
                                 </div>
-                                <span className="font-mono text-ink text-[13px] min-w-[62px] text-right">
-                                    {brl(p.qty * Number(p.sell_price))}
-                                </span>
-                            </div>
-                        ))
+                            )
+                        })
                     )}
                 </div>
             </div>

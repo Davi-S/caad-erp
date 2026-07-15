@@ -6,7 +6,6 @@ import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
 import type { Schemas } from "@/api/apiClient"
 
-// Define the props expected by the POS feature
 interface POSFlowProps {
     products: Schemas["ProductListResponse"]["items"]
     stock: Record<string, number>
@@ -44,7 +43,7 @@ export function POSFlow({
             <CartScreen
                 seller={selectedSeller}
                 catalog={{ products, stock }}
-                cart={cartState} // Passes the entire hook result at once
+                cartState={cartState} // Passes the entire hook result at once
                 actions={{
                     onBack: () => setScreen("seller"),
                     onClose: () => {
@@ -63,9 +62,18 @@ export function POSFlow({
                 checkout={{ status, error }}
                 actions={{
                     onConfirm: (method) => {
-                        if (selectedSellerId) {
-                            confirmPayment(cartState.cartItems, selectedSellerId, method, onUpdateStock)
-                        }
+                        const salesRequests = Object.entries(cartState.cart).map(([productId, quantity]) => {
+                            const productPrice = Number(products.find(p => p.product_id === productId).sell_price)
+                            return {
+                                product_id: productId,
+                                salesman_id: selectedSellerId,
+                                quantity: quantity,
+                                total_revenue: quantity * productPrice,
+                                payment_type: method,
+                                notes: null
+                            }
+                        })
+                        confirmPayment(salesRequests, onUpdateStock)
                     },
                     onNewSale: () => {
                         cartState.clearCart()

@@ -2,46 +2,43 @@ import { useState } from "react"
 import type { Schemas } from "@/api/apiClient"
 
 export function useCart(products: Schemas["ProductListResponse"]["items"], stock: Record<string, number>) {
-    // Core state. Single source of truth
-    const [qty, setQty] = useState<Record<string, number>>({})
+    // Core state. Single source of truth. Simplest representation of the cart
+    const [cart, setCart] = useState<Record<string, number>>({})
 
-    // Derived states
-    const cartItems = products.map((p) => ({ ...p, qty: qty[p.product_id] || 0 })).filter((p) => p.qty > 0)
-    const total = cartItems.reduce((sum, item) => sum + item.qty * Number(item.sell_price), 0)
+    // Derived states used for clear intent and easy of use of other values 
+    const total = products.reduce((sum, item) => sum + cart[item.product_id] * Number(item.sell_price), 0)
+    const isEmpty = Object.keys(cart).length === 0
 
-    // 4. Actions
+    // Actions
     const inc = (id: string) => {
-        setQty((prevQty) => {
-            const current = prevQty[id] || 0
+        setCart((prevCart) => {
+            const current = prevCart[id]
             const available = stock[id]
-
-            // Guard clause: Prevent adding more than what is available in stock
+            // Prevent adding more than what is available in stock
             if (available !== undefined && current >= available) {
-                return prevQty
+                return prevCart
             }
-
-            return { ...prevQty, [id]: current + 1 }
+            return { ...prevCart, [id]: current + 1 }
         })
     }
-
     const dec = (id: string) => {
-        setQty((prevQty) => {
-            const current = prevQty[id] || 0
-            const nextCount = Math.max(0, current - 1)
-
-            return { ...prevQty, [id]: nextCount }
+        setCart((prevCart) => {
+            const current = prevCart[id]
+            if (current <= 1) {
+                const { [id]: removedItem, ...restOfCart } = prevCart
+                return restOfCart
+            }
+            return { ...prevCart, [id]: current - 1 }
         })
     }
-
     const clearCart = () => {
-        setQty({})
+        setCart({})
     }
 
-    // 5. The Output
     return {
-        qty,
-        cartItems,
+        cart,
         total,
+        isEmpty,
         inc,
         dec,
         clearCart,

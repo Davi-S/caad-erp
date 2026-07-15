@@ -9,9 +9,7 @@ export function useCheckout() {
     const [error, setError] = useState<string | null>(null)
 
     const confirmPayment = async (
-        cartItems: any[],
-        sellerId: string,
-        method: Schemas["PaymentType"],
+        salesRequests: Schemas["SaleRequest"][],
         onUpdateStock: (newStock: Record<string, number>) => void
     ) => {
         setStatus("confirming")
@@ -20,25 +18,13 @@ export function useCheckout() {
         // TODO: Update this when the api updates to accept multiple products
         // per sale.
         try {
-            for (const item of cartItems) {
-                const payload = {
-                    product_id: item.product_id,
-                    salesman_id: sellerId,
-                    quantity: item.qty,
-                    total_revenue: item.qty * Number(item.sell_price),
-                    payment_type: method,
-                    notes: null
-                }
-                // The loop pauses here until the server responds for THIS item
-                await api.POST("/transactions/sale", { body: payload })
+            for (const saleRequest of salesRequests) {
+                await api.POST("/transactions/sale", { body: saleRequest })
             }
 
-            // 2. Ask the API for the fresh inventory numbers
-            // (Replace this with your actual GET endpoint)
+            // Ask the API for the fresh inventory numbers
             const freshStockResponse = await api.GET("/reports/stock")
-
-            // 3. Send the real database numbers to the React state
-            // 2. Transform the array into a dictionary just like App.tsx does
+            // Transform the array into a dictionary just like App.tsx does
             const stockMap: Record<string, number> = {}
             const items = freshStockResponse.data["items"]
             for (const item of items) {
@@ -47,7 +33,6 @@ export function useCheckout() {
             onUpdateStock(stockMap)
 
             setStatus("confirmed")
-
         } catch (err) {
             setStatus("error")
             setError("Falha ao registrar a venda.")
