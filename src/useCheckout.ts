@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { Schemas } from "./api/apiClient"
+import { api } from "./api/apiClient"
 
 export type CheckoutStatus = "idle" | "confirming" | "confirmed" | "error"
 
@@ -11,35 +12,39 @@ export function useCheckout() {
         cartItems: any[],
         sellerId: string,
         method: Schemas["PaymentType"],
-        onUpdateStock: (newStock: Record<string, number>) => void
+        onUpdateStock: (newStock: Schemas["StockReportResponse"]["items"]) => void
     ) => {
-        // 1. Lock the UI and clear previous errors
         setStatus("confirming")
         setError(null)
 
+        // TODO: Update this when the api updates to accept multiple products
+        // per sale.
         try {
-            // 2. Mocking the API communication delay
-            // This fakes the time it takes to contact the banking/backend
-            // server to confirm the payment
-            await new Promise((resolve) => setTimeout(resolve, 1500))
+            for (const item of cartItems) {
+                const payload = {
+                    product_id: item.id,
+                    salesman_id: sellerId,
+                    quantity: item.qty,
+                    total_revenue: item.qty * item.price,
+                    payment_type: method,
+                    notes: null
+                }
+                // The loop pauses here until the server responds for THIS item
+                await api.POST("/transactions/sale", { body: payload })
+            }
 
-            // --- FUTURE API IMPLEMENTATION GOES HERE ---
-            // const payload = {
-            //     salesman_id: sellerId,
-            //     payment_method: method,
-            //     items: cartItems.map(item => ({ id: item.id, quantity: item.qty }))
-            // }
-            // const response = await apiClient.post("/sales", payload)
-            // onUpdateStock(response.updatedStock)
-            // -------------------------------------------
+            // 2. Ask the API for the fresh inventory numbers
+            // (Replace this with your actual GET endpoint)
+            const freshStockResponse = await api.GET("/reports/stock")
 
-            // 3. Transition to the success state
+            // 3. Send the real database numbers to the React state
+            onUpdateStock(freshStockResponse["items"])
+
             setStatus("confirmed")
 
         } catch (err) {
-            // 4. Handle failure gracefully
             setStatus("error")
-            setError("Falha ao registrar a venda. Por favor, tente novamente.")
+            setError("Falha ao registrar a venda.")
         }
     }
 
