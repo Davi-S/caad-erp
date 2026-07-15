@@ -13,7 +13,9 @@ from .. import persistence, runtime, schemas
 router = fastapi.APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
-def _transaction_to_response(transaction: dal.TransactionRow) -> schemas.TransactionResponse:
+def _transaction_to_response(
+    transaction: dal.TransactionRow,
+) -> schemas.TransactionResponse:
     """Convert a BLL TransactionRow to a response schema."""
     return schemas.TransactionResponse(
         transaction_id=transaction.transaction_id,
@@ -30,6 +32,11 @@ def _transaction_to_response(transaction: dal.TransactionRow) -> schemas.Transac
     )
 
 
+# TODO: need to handle multiple requests at once here, since the sale only
+# accepts one product at a time.
+# Maybe make the endpoint accept multiple products per sale, then call the BLL
+# for one product at a time.
+# Remember to update the CLI first.
 @router.post("/sale", response_model=schemas.StandardResponse, status_code=201)
 @persistence.mutating_endpoint
 def record_sale(
