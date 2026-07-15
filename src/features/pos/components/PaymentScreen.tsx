@@ -185,7 +185,7 @@ export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) 
                     ) : (
                         <button
                             onClick={onNewSale}
-                            className="w-full py-3.5 rounded-2xl bg-transparent text-white border-[1.5px] border-solid border-[#ffffff55] font-display font-bold text-sm"
+                            className="w-full py-3.5 rounded-2xl bg-transparent text-teal border-[1.5px] border-solid border-teal font-display font-bold text-sm"
                         >
                             Nova venda
                         </button>
