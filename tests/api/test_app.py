@@ -6,8 +6,11 @@ from fastapi.testclient import TestClient
 from caad_erp.api import app as app_module
 from caad_erp.api import runtime as api_runtime
 
+import unittest.mock
+import pytest
 
 # happy path
+
 
 def test_get_app_version_reads_installed_package_metadata() -> None:
     """
@@ -74,6 +77,7 @@ def test_create_app_configures_cors_for_local_network_usage() -> None:
 
 # sad path
 
+
 def test_skip_lifespan_mode_does_not_require_runtime_startup() -> None:
     """
     GIVEN skip_lifespan mode for lightweight route testing
@@ -88,7 +92,27 @@ def test_skip_lifespan_mode_does_not_require_runtime_startup() -> None:
     assert response.status_code == 200
 
 
+def test_lifespan_startup_logs_and_raises_on_initialization_failure() -> None:
+    """
+    GIVEN an environment where BLL context initialization fails
+    WHEN the app lifespan executes
+    THEN the exception is caught, logged, and re-raised
+    """
+    # Arrange
+    app = app_module.create_app(skip_lifespan=False)
+
+    # Act / Assert
+    with unittest.mock.patch(
+        "caad_erp.api.app.bll.load_context",
+        side_effect=RuntimeError("simulated config error"),
+    ):
+        with pytest.raises(RuntimeError, match="simulated config error"):
+            with TestClient(app):
+                pass
+
+
 # edge path
+
 
 def test_lifespan_startup_and_shutdown_manage_runtime_context(
     api_context,

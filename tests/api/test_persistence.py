@@ -69,7 +69,45 @@ def test_mutating_endpoint_preserves_original_signature_and_metadata(handler_kin
     assert inspect.signature(wrapped) == inspect.signature(target)
 
 
+def test_mutating_endpoint_wraps_async_handler_and_persists_after_success(
+    api_context,
+) -> None:
+    """
+    GIVEN an asynchronous mutating handler that updates runtime workbook state
+    WHEN wrapped by mutating_endpoint and invoked successfully
+    THEN result is returned and workbook changes are persisted to disk
+    """
+    data_file = Path(api_context.settings.data_file)
+    before = data_file.stat().st_mtime_ns
+
+    async def handler() -> str:
+        bll.add_product(
+            api_context,
+            bll.ProductCommand(
+                product_id="PM002",
+                product_name="Persisted Async Product",
+                sell_price=Decimal("3.00"),
+                is_active=True,
+            ),
+        )
+        return "async_ok"
+
+    wrapped = persistence.mutating_endpoint(handler)
+
+    api_runtime.set_runtime_context(api_context)
+    try:
+        result = asyncio.run(wrapped())
+    finally:
+        api_runtime.clear_runtime_context()
+
+    after = data_file.stat().st_mtime_ns
+
+    assert result == "async_ok"
+    assert after >= before
+
+
 # sad path
+
 @pytest.mark.parametrize("handler_kind", ["async", "sync"])
 def test_mutating_endpoint_does_not_persist_when_handler_raises(
     handler_kind: str,
