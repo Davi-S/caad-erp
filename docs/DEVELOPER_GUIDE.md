@@ -360,15 +360,7 @@ info
   - **Logic:** Update the "read-only" commands (`stock`, `profit`, `log`,
     `debts`) to print their results in clean, formatted console tables instead
     of simple text.
-- **Docs: Create a detailed `USAGE.md` file**
-  - **Task:** Our `examples/` directory is good, but a formal, task-oriented
-    `USAGE.md` file would be better.
-  - **Logic:** This file would have sections like "How to handle a spoiled
-    item," "How to pay a debt," or "How to fix a mistaken sale," and show the
-    exact commands to run.
 - Add options to pass id to read-commands to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
 - Improve exceptions and error handling
-- Rename "Oncredit" to "PayLater" to avoid confusion with future "Credit"
-  payments
 
