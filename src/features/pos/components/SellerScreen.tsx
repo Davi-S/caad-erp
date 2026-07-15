@@ -4,7 +4,6 @@ import { ScreenShell } from "@/components/ScreenShell"
 import type { Schemas } from "@/api/apiClient"
 
 interface SellerScreenProps {
-    // Note: You likely want the array of items, not the whole response wrapper
     sellers: Schemas["SalesmanListResponse"]["items"]
     onNext: (salesmanId: string) => void
 }
@@ -28,7 +27,7 @@ export function SellerScreen({
                             Nenhum vendedor cadastrado ainda no CAAD-ERP.
                         </p>
                     )}
-                    {sellers.map((seller, _) => {
+                    {sellers.filter((seller) => seller.is_active).map((seller) => {
                         const isSel = selectedId === seller.salesman_id
                         return (
                             <button
