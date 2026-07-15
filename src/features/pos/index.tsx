@@ -11,7 +11,7 @@ interface POSFlowProps {
     products: Schemas["ProductListResponse"]["items"]
     stock: Record<string, number>
     sellers: Schemas["SalesmanListResponse"]["items"]
-    onUpdateStock: (newStock: Schemas["StockReportResponse"]["items"]) => void
+    onUpdateStock: (newStock: Record<string, number>) => void
 }
 
 export function POSFlow({
