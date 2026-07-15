@@ -1,7 +1,7 @@
 import { Plus, Minus, ArrowLeft, Pencil, ShoppingBag } from "lucide-react"
-import { ScreenShell } from "../components/ScreenShell"
-import { brl } from "../helpers"
-import type { Schemas } from "../api/apiClient"
+import { ScreenShell } from "../../../components/ScreenShell"
+import { brl } from "../../../helpers"
+import type { Schemas } from "../../../api/apiClient"
 
 interface CartScreenProps {
     seller: Schemas["SalesmanResponse"] | null

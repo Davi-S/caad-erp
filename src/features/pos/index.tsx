@@ -1,10 +1,10 @@
 import { useState } from "react"
-import { useCart } from "./useCart"
-import { useCheckout } from "./useCheckout"
-import { SellerScreen } from "./screens/SellerScreen"
-import { CartScreen } from "./screens/CartScreen"
-import { PaymentScreen } from "./screens/PaymentScreen"
-import type { Schemas } from "./api/apiClient"
+import { useCart } from "./hooks/useCart"
+import { useCheckout } from "./hooks/useCheckout"
+import { SellerScreen } from "./components/SellerScreen"
+import { CartScreen } from "./components/CartScreen"
+import { PaymentScreen } from "./components/PaymentScreen"
+import type { Schemas } from "../../api/apiClient"
 
 // Define the props expected by the POS feature
 interface POSFlowProps {

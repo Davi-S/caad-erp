@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import type { Schemas } from "./api/apiClient"
+import type { Schemas } from "../../../api/apiClient"
 
 export function useCart(products: Schemas["ProductListResponse"]["items"], stock: Schemas["StockReportResponse"]["items"]) {
     // 1. The Core State (Single Source of Truth)
