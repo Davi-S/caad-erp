@@ -9,9 +9,9 @@ import type { Schemas } from "../../api/apiClient"
 // Define the props expected by the POS feature
 interface POSFlowProps {
     products: Schemas["ProductListResponse"]["items"]
-    stock: Schemas["StockReportResponse"]["items"]
+    stock: Record<string, number>
     sellers: Schemas["SalesmanListResponse"]["items"]
-    onUpdateStock: (newStock: Record<string, number>) => void
+    onUpdateStock: (newStock: Schemas["StockReportResponse"]["items"]) => void
 }
 
 export function POSFlow({

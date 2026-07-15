@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react"
 import type { Schemas } from "../../../api/apiClient"
 
-export function useCart(products: Schemas["ProductListResponse"]["items"], stock: Schemas["StockReportResponse"]["items"]) {
+export function useCart(products: Schemas["ProductListResponse"]["items"], stock: Record<string, number>) {
     // 1. The Core State (Single Source of Truth)
     // A lightweight dictionary mapping product IDs to their current count in the cart
     const [qty, setQty] = useState<Record<string, number>>({})

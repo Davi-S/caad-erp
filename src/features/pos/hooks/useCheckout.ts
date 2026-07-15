@@ -12,7 +12,7 @@ export function useCheckout() {
         cartItems: any[],
         sellerId: string,
         method: Schemas["PaymentType"],
-        onUpdateStock: (newStock: Schemas["StockReportResponse"]["items"]) => void
+        onUpdateStock: (newStock: Record<string, number>) => void
     ) => {
         setStatus("confirming")
         setError(null)
@@ -38,7 +38,13 @@ export function useCheckout() {
             const freshStockResponse = await api.GET("/reports/stock")
 
             // 3. Send the real database numbers to the React state
-            onUpdateStock(freshStockResponse["items"])
+            // 2. Transform the array into a dictionary just like App.tsx does
+            const stockMap: Record<string, number> = {}
+            const items = freshStockResponse.data["items"]
+            for (const item of items) {
+                stockMap[item.product_id] = Number(item.quantity)
+            }
+            onUpdateStock(stockMap)
 
             setStatus("confirmed")
 
