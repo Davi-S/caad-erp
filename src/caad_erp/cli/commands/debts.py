@@ -53,9 +53,7 @@ def _display_debts_report(summary: t.Mapping[str, object]) -> None:
     balances_data = t.cast(
         t.Iterable[bll.OutstandingDebt], summary.get("balances") or [])
     balances = list(balances_data)  # ensure deterministic iteration
-    total_outstanding = summary.get("total_outstanding")
-    if total_outstanding is None:
-        total_outstanding = Decimal("0.00")
+    total_outstanding = summary["total_outstanding"]
 
     if not balances:
         print("No outstanding credit balances.")
