@@ -3,7 +3,7 @@ import { api } from "./api/apiClient"
 import { slugify } from "./helpers"
 import { StatusScreen } from "./components/StatusScreen"
 import { SellerScreen } from "./screens/SellerScreen"
-import { PixScreen } from "./screens/PixScreen"
+import { PixScreen } from "./screens/PaymentScreen"
 import { CartScreen } from "./screens/CartScreen"
 
 export default function App() {

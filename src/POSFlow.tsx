@@ -3,7 +3,7 @@ import { useCart } from "./useCart"
 import { useCheckout } from "./useCheckout"
 import { SellerScreen } from "./screens/SellerScreen"
 import { CartScreen } from "./screens/CartScreen"
-import { PixScreen } from "./screens/PixScreen"
+import { PaymentScreen } from "./screens/PaymentScreen"
 import type { Schemas } from "./api/apiClient"
 
 // Define the props expected by the POS feature
@@ -21,7 +21,7 @@ export function POSFlow({
     onUpdateStock,
 }: POSFlowProps) {
     // Local routing state for the checkout sequence
-    const [screen, setScreen] = useState<"seller" | "cart" | "pix">("seller")
+    const [screen, setScreen] = useState<"seller" | "cart" | "payment">("seller")
     const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null)
     const selectedSeller = sellers.find((s) => s.salesman_id === selectedSellerId) || null
 
@@ -49,27 +49,42 @@ export function POSFlow({
                     onBack: () => setScreen("seller"),
                     onClose: () => {
                         resetCheckout()
-                        setScreen("pix")
+                        setScreen("payment")
                     }
                 }}
             />
         )
     }
 
-    if (screen === "pix") {
+    if (screen === "payment") {
         return (
-            <PixScreen
+            <PaymentScreen
                 total={cartState.total}
-                status={status}
-                error={error}
-                onConfirm={() => {
-                    if (selectedSellerId) {
-                        confirmPayment(cartState.cartItems, selectedSellerId, onUpdateStock)
+                checkout={{ status, error }}
+                actions={{
+                    onConfirm: (method) => {
+                        if (selectedSellerId) {
+                            confirmPayment(cartState.cartItems, selectedSellerId, method, onUpdateStock)
+                        }
+                    },
+                    onNewSale: () => {
+                        cartState.clearCart()
+                        resetCheckout()
+                        // Currently keeping the same seller. But in the future,
+                        // may be better to force the users to always select a
+                        // seller to prevent a new sell with the previous
+                        // seller's name
+                        setScreen("cart")
+                    },
+                    onEdit: () => {
+                        // Simply send them back to the cart. 
+                        setScreen("cart")
+                    },
+                    onCancel: () => {
+                        cartState.clearCart()
+                        resetCheckout()
+                        setScreen("seller")
                     }
-                }}
-                onNewSale={() => {
-                    cartState.clearCart()
-                    setScreen("cart")
                 }}
             />
         )
