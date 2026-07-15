@@ -76,5 +76,7 @@ def _run_restock(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
         int: Exit code ``0`` when the restock is recorded successfully.
     """
     command = _translate_restock(args)
+    # TODO: Need to return error when the restock fails
+    # For example, on inactive salesman
     bll.record_restock(context, command)
     return 0
