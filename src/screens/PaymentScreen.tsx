@@ -3,13 +3,14 @@ import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } 
 import { brl, buildQrGrid, QR_SIZE } from "../helpers"
 import { ScreenShell } from "../components/ScreenShell"
 import type { Schemas } from "../api/apiClient"
+import type { CheckoutStatus } from "../useCheckout"
 
 const QR_GRID = buildQrGrid()
 
 interface PaymentScreenProps {
     total: number
     checkout: {
-        status: "idle" | "confirming" | "confirmed" | "error"
+        status: CheckoutStatus
         error: string | null
     }
     actions: {
