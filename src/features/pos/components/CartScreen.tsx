@@ -69,12 +69,20 @@ export function CartScreen({
                                         {qty[product.product_id]}
                                     </span>
                                 )}
-                                <span className="font-body text-ink text-xs font-semibold">
+                                <span className="font-body text-ink text-xs font-semibold text-center px-1">
                                     {product.product_name}
                                 </span>
-                                <span className="font-mono text-inkSoft text-[11px]">
-                                    {soldOut ? "Esgotado" : brl(Number(product.sell_price))}
-                                </span>
+
+                                <div className="flex flex-col items-center">
+                                    <span className="font-mono text-inkSoft text-[11px]">
+                                        {soldOut ? "Esgotado" : brl(Number(product.sell_price))}
+                                    </span>
+                                    {!soldOut && available !== undefined && (
+                                        <span className="font-body text-inkFaint text-[9px] uppercase tracking-widest mt-0.5">
+                                            {available} disp.
+                                        </span>
+                                    )}
+                                </div>
                             </button>
                         )
                     })}
