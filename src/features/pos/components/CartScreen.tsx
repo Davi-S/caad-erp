@@ -1,4 +1,4 @@
-import { Plus, Minus, ArrowLeft, Pencil, ShoppingBag } from "lucide-react"
+import { Plus, Minus, ArrowLeft, Pencil } from "lucide-react"
 import { ScreenShell } from "../../../components/ScreenShell"
 import { brl } from "../../../helpers"
 import type { Schemas } from "../../../api/apiClient"
@@ -83,7 +83,6 @@ export function CartScreen({
                 <div className="pt-3 border-t border-dashed border-paperLine">
                     {cartItems.length === 0 ? (
                         <div className="flex flex-col items-center text-center py-10 gap-2">
-                            <ShoppingBag size={28} className="text-inkFaint" />
                             <p className="font-body text-inkFaint text-[13px]">
                                 Nenhum item ainda.
                                 <br />
@@ -92,24 +91,25 @@ export function CartScreen({
                         </div>
                     ) : (
                         cartItems.map((p) => (
-                            <div key={p.id} className="flex items-center gap-2 py-2">
-                                <span className="text-base">{p.emoji}</span>
+                            <div key={p.product_id} className="flex items-center gap-2 py-2">
+                                <span className="text-base text-inkFaint mt-0.5">
+                                </span>
                                 <span className="flex-1 font-body text-ink text-sm font-medium">
-                                    {p.name}
+                                    {p.product_name}
                                 </span>
                                 <div className="flex items-center gap-2 rounded-full px-1 bg-paper border border-solid border-paperLine">
-                                    <button onClick={() => dec(p.id)} className="p-1">
+                                    <button onClick={() => dec(p.product_id)} className="p-1">
                                         <Minus size={12} className="text-inkSoft" />
                                     </button>
                                     <span className="font-mono text-xs text-ink min-w-3.5 text-center">
                                         {p.qty}
                                     </span>
-                                    <button onClick={() => inc(p.id)} className="p-1">
+                                    <button onClick={() => inc(p.product_id)} className="p-1">
                                         <Plus size={12} className="text-inkSoft" />
                                     </button>
                                 </div>
-                                <span className="font-mono text-ink text-[13px] min-w-15.5 text-right">
-                                    {brl(p.qty * p.price)}
+                                <span className="font-mono text-ink text-[13px] min-w-[62px] text-right">
+                                    {brl(p.qty * Number(p.sell_price))}
                                 </span>
                             </div>
                         ))
