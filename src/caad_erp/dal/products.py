@@ -130,8 +130,7 @@ def _serialize_product(record: ProductRow) -> list[object]:
 def _deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
     """Convert a raw worksheet row into a strongly typed product record.
 
-    The converter normalizes numeric values into :class:`~decimal.Decimal`
-    instances and coerces id/name fields to ``str`` to avoid surprises caused by
+    The converter coerces id/name fields to ``str`` to avoid surprises caused by
     Excel automatically interpreting numbers.
 
     Args:

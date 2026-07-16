@@ -134,7 +134,7 @@ def _require_positive_quantity(quantity: int) -> None:
     """Validate that a quantity is strictly positive.
 
     Args:
-        quantity (Decimal): Quantity supplied by a command object.
+        quantity (int): Quantity supplied by a command object.
 
     Raises:
         ValueError: If ``quantity`` is zero or negative.
@@ -153,12 +153,12 @@ def _require_nonnegative_money(amount: int) -> None:
     """Validate that a monetary value is nonnegative.
 
     Args:
-        amount (Decimal): Currency value supplied by a command object.
+        amount (int): Currency value supplied by a command object.
 
     Raises:
         ValueError: If ``amount`` is less than zero.
 
-    Monetary fields are stored as signed decimals within the transaction logger.
+    Monetary fields are stored as signed integers within the transaction logger.
     This helper ensures upstream workflows never pass negative revenue or cost
     figures without explicitly opting into that behavior.
     """
