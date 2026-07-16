@@ -4,13 +4,22 @@ import { StatusScreen } from "./components/StatusScreen"
 import { POSFlow } from "./features/pos/"
 import type { Schemas } from "./api/apiClient"
 
+export type Product = Schemas["ProductResponse"]
+export type Products = Product[]
+export type Salesman = Schemas["SalesmanResponse"]
+export type Salesmen = Salesman[]
+export type Stock = Record<string, number>
+export type PaymentType = Schemas["PaymentType"]
+export type SaleRequest = Schemas["SaleRequest"]
+export type SalesRequests = SaleRequest[]
+
 export default function App() {
     const [initStatus, setInitStatus] = useState<"loading" | "ready" | "error">("loading")
     const [initError, setInitError] = useState("")
 
-    const [products, setProducts] = useState<Schemas["ProductListResponse"]["items"]>([])
-    const [sellers, setSellers] = useState<Schemas["SalesmanListResponse"]["items"]>([])
-    const [stock, setStock] = useState<Record<string, number>>({})
+    const [products, setProducts] = useState<Products>([])
+    const [sellers, setSellers] = useState<Salesmen>([])
+    const [stock, setStock] = useState<Stock>({})
 
     async function loadAll() {
         setInitStatus("loading")
@@ -38,7 +47,7 @@ export default function App() {
         const stockMap: Record<string, number> = {}
         const stockItems = stockRes.data["items"]
         for (const item of stockItems) {
-            stockMap[item.product_id] = Number(item.quantity)
+            stockMap[item.product_id] = item.quantity
         }
         setStock(stockMap)
 

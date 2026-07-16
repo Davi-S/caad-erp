@@ -4,19 +4,19 @@ import { useCheckout } from "./hooks/useCheckout"
 import { SellerScreen } from "./components/SellerScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
-import type { Schemas } from "@/api/apiClient"
+import type { Products, Salesmen, Stock } from "@/App"
 
 interface POSFlowProps {
-    products: Schemas["ProductListResponse"]["items"]
-    stock: Record<string, number>
-    sellers: Schemas["SalesmanListResponse"]["items"]
-    onUpdateStock: (newStock: Record<string, number>) => void
+    products: Products
+    sellers: Salesmen
+    stock: Stock
+    onUpdateStock: (newStock: Stock) => void
 }
 
 export function POSFlow({
     products,
-    stock,
     sellers,
+    stock,
     onUpdateStock,
 }: POSFlowProps) {
     // Local routing state for the checkout sequence
@@ -62,8 +62,8 @@ export function POSFlow({
                 checkout={{ status, error }}
                 actions={{
                     onConfirm: (method) => {
-                        const salesRequests = Object.entries(cartState.cart).map(([productId, quantity]) => {
-                            const productPrice = Number(products.find(p => p.product_id === productId).sell_price)
+                        const salesRequests = cartState.cartIterable.map(([productId, quantity]) => {
+                            const productPrice = products.find(p => p.product_id === productId).sell_price
                             return {
                                 product_id: productId,
                                 salesman_id: selectedSellerId,

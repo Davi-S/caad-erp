@@ -443,13 +443,13 @@ export interface components {
             /** Salesman Id */
             salesman_id: string | null;
             /** Quantity */
-            quantity: string;
+            quantity: number;
             /** Expected Amount */
-            expected_amount: string;
+            expected_amount: number;
             /** Amount Paid */
-            amount_paid: string;
+            amount_paid: number;
             /** Balance */
-            balance: string;
+            balance: number;
         };
         /**
          * DebtsReportResponse
@@ -459,7 +459,7 @@ export interface components {
             /** Balances */
             balances: components["schemas"]["DebtItem"][];
             /** Total Outstanding */
-            total_outstanding: string;
+            total_outstanding: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -494,7 +494,7 @@ export interface components {
             /** Salesman Id */
             salesman_id: string;
             /** Total Revenue */
-            total_revenue: number | string;
+            total_revenue: number;
             payment_type: components["schemas"]["PaymentType"];
             /** Notes */
             notes?: string | null;
@@ -515,7 +515,7 @@ export interface components {
             /** Product Name */
             product_name: string;
             /** Sell Price */
-            sell_price: number | string;
+            sell_price: number;
             /**
              * Is Active
              * @default true
@@ -540,7 +540,7 @@ export interface components {
             /** Product Name */
             product_name: string;
             /** Sell Price */
-            sell_price: string;
+            sell_price: number;
             /** Is Active */
             is_active: boolean;
         };
@@ -550,11 +550,11 @@ export interface components {
          */
         ProfitReportResponse: {
             /** Total Revenue */
-            total_revenue: string;
+            total_revenue: number;
             /** Total Cost */
-            total_cost: string;
+            total_cost: number;
             /** Profit */
-            profit: string;
+            profit: number;
         };
         /**
          * RestockRequest
@@ -566,9 +566,9 @@ export interface components {
             /** Salesman Id */
             salesman_id: string;
             /** Quantity */
-            quantity: number | string;
+            quantity: number;
             /** Total Cost */
-            total_cost: number | string;
+            total_cost: number;
             /** Notes */
             notes?: string | null;
         };
@@ -582,9 +582,9 @@ export interface components {
             /** Salesman Id */
             salesman_id: string;
             /** Quantity */
-            quantity: number | string;
+            quantity: number;
             /** Total Revenue */
-            total_revenue: number | string;
+            total_revenue: number;
             payment_type: components["schemas"]["PaymentType"];
             /** Notes */
             notes?: string | null;
@@ -646,7 +646,7 @@ export interface components {
             /** Product Id */
             product_id: string;
             /** Quantity */
-            quantity: string;
+            quantity: number;
         };
         /**
          * StockReportResponse
@@ -674,11 +674,11 @@ export interface components {
             /** Payment Type */
             payment_type: string | null;
             /** Quantity Change */
-            quantity_change: string;
+            quantity_change: number;
             /** Total Revenue */
-            total_revenue: string;
+            total_revenue: number;
             /** Total Cost */
-            total_cost: string;
+            total_cost: number;
             /** Linked Transaction Id */
             linked_transaction_id: string | null;
             /** Notes */
@@ -713,7 +713,7 @@ export interface components {
             /** Salesman Id */
             salesman_id: string;
             /** Quantity */
-            quantity: number | string;
+            quantity: number;
             /** Notes */
             notes?: string | null;
         };

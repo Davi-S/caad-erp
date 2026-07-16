@@ -1,16 +1,17 @@
 import { Plus, Minus, ArrowLeft, Pencil } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
-import type { Schemas } from "@/api/apiClient"
+import type { Products, Salesman, Stock } from "@/App"
 
 interface CartScreenProps {
-    seller: Schemas["SalesmanResponse"] | null
+    seller: Salesman
     catalog: {
-        products: Schemas["ProductListResponse"]["items"]
-        stock: Record<string, number>
+        products: Products
+        stock: Stock
     }
     cartState: {
         cart: Record<string, number>
+        cartIterable: [string, number][]
         total: number
         isEmpty: boolean
         inc: (id: string) => void
@@ -29,7 +30,7 @@ export function CartScreen({
     actions
 }: CartScreenProps) {
     const { products, stock } = catalog
-    const { cart, total, isEmpty, inc, dec } = cartState
+    const { cart, cartIterable, total, isEmpty, inc, dec } = cartState
     const { onBack, onClose } = actions
     const availableFor = (id: string) => stock[id]
 
@@ -75,7 +76,7 @@ export function CartScreen({
 
                                 <div className="flex flex-col items-center">
                                     <span className="font-mono text-inkSoft text-[11px]">
-                                        {soldOut ? "Esgotado" : brl(Number(product.sell_price))}
+                                        {soldOut ? "Esgotado" : brl(product.sell_price)}
                                     </span>
                                     {!soldOut && available !== undefined && (
                                         <span className="font-body text-inkFaint text-[9px] uppercase tracking-widest mt-0.5">
@@ -98,7 +99,7 @@ export function CartScreen({
                             </p>
                         </div>
                     ) : (
-                        Object.entries(cart).map(([productId, quantity]) => {
+                        cartIterable.map(([productId, quantity]) => {
                             const product = products.find(p => p.product_id === productId)
                             return (
                                 <div key={productId} className="flex items-center gap-2 py-2">
@@ -117,7 +118,7 @@ export function CartScreen({
                                         </button>
                                     </div>
                                     <span className="font-mono text-ink text-[13px] min-w-[62px] text-right">
-                                        {brl(quantity * Number(product.sell_price))}
+                                        {brl(quantity * product.sell_price)}
                                     </span>
                                 </div>
                             )
