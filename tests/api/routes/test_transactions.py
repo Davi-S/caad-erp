@@ -9,7 +9,7 @@ def _setup_product_and_salesman(client: TestClient) -> None:
         json={
             "product_id": "TP001",
             "product_name": "Tx Product",
-            "sell_price": "10.00",
+            "sell_price": 1000,
             "is_active": True,
         },
     )
@@ -42,8 +42,8 @@ def test_transaction_mutation_endpoints_return_201_and_standard_response(
         json={
             "product_id": "TP001",
             "salesman_id": "TS001",
-            "quantity": "2",
-            "total_revenue": "20.00",
+            "quantity": 2,
+            "total_revenue": 2000,
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
@@ -52,8 +52,8 @@ def test_transaction_mutation_endpoints_return_201_and_standard_response(
         json={
             "product_id": "TP001",
             "salesman_id": "TS001",
-            "quantity": "5",
-            "total_cost": "10.00",
+            "quantity": 5,
+            "total_cost": 1000,
         },
     )
     write_off_response = api_client.post(
@@ -61,7 +61,7 @@ def test_transaction_mutation_endpoints_return_201_and_standard_response(
         json={
             "product_id": "TP001",
             "salesman_id": "TS001",
-            "quantity": "1",
+            "quantity": 1,
         },
     )
 
@@ -81,8 +81,8 @@ def test_transaction_mutation_endpoints_return_201_and_standard_response(
         json={
             "product_id": "TP001",
             "salesman_id": "TS001",
-            "quantity": "1",
-            "total_revenue": "0.00",
+            "quantity": 1,
+            "total_revenue": 0,
             "payment_type": constants.PaymentType.ON_CREDIT.value,
         },
     )
@@ -94,7 +94,7 @@ def test_transaction_mutation_endpoints_return_201_and_standard_response(
         json={
             "linked_transaction_id": credit_sale_id,
             "salesman_id": "TS001",
-            "total_revenue": "5.00",
+            "total_revenue": 500,
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
@@ -115,8 +115,8 @@ def test_transaction_mutation_endpoints_persist_context_after_success(
         json={
             "product_id": "TP001",
             "salesman_id": "TS001",
-            "quantity": "3",
-            "total_cost": "7.50",
+            "quantity": 3,
+            "total_cost": 750,
         },
     )
     report = api_client.get("/reports/log")
@@ -143,8 +143,8 @@ def test_transaction_endpoints_reject_invalid_payloads_with_422(
             {
                 "product_id": "P",
                 "salesman_id": "S",
-                "quantity": "0",
-                "total_revenue": "1.00",
+                "quantity": 0,
+                "total_revenue": 100,
                 "payment_type": constants.PaymentType.CASH.value,
             },
         ),
@@ -153,8 +153,8 @@ def test_transaction_endpoints_reject_invalid_payloads_with_422(
             {
                 "product_id": "P",
                 "salesman_id": "S",
-                "quantity": "1",
-                "total_cost": "-1.00",
+                "quantity": 1,
+                "total_cost": -100,
             },
         ),
         (
@@ -162,7 +162,7 @@ def test_transaction_endpoints_reject_invalid_payloads_with_422(
             {
                 "product_id": "P",
                 "salesman_id": "S",
-                "quantity": "0",
+                "quantity": 0,
             },
         ),
         (
@@ -192,8 +192,8 @@ def test_transaction_endpoints_map_domain_errors_to_http_contract(
         json={
             "product_id": "UNKNOWN",
             "salesman_id": "TS001",
-            "quantity": "1",
-            "total_revenue": "5.00",
+            "quantity": 1,
+            "total_revenue": 500,
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
@@ -207,8 +207,8 @@ def test_transaction_endpoints_map_domain_errors_to_http_contract(
         json={
             "product_id": "TP001",
             "salesman_id": "TS001",
-            "quantity": "1",
-            "total_revenue": "5.00",
+            "quantity": 1,
+            "total_revenue": 500,
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
@@ -230,8 +230,8 @@ def test_transaction_endpoints_return_503_when_runtime_context_is_unavailable(
         json={
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "1",
-            "total_revenue": "5.00",
+            "quantity": 1,
+            "total_revenue": 500,
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
