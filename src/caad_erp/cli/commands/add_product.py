@@ -48,12 +48,12 @@ def _translate_add_product(args: argparse.Namespace) -> bll.ProductCommand:
     Returns:
         bll.ProductCommand: Command payload compatible with
             :func:`bll.add_product`. Numerical values are coerced to
-            :class:`~decimal.Decimal` and the ``--inactive`` flag is inverted
+            integers and the ``--inactive`` flag is inverted
             into the ``is_active`` boolean expected by the business layer.
 
     Raises:
-        decimal.InvalidOperation: If ``--sell-price`` cannot be parsed as a
-            valid decimal number.
+        ValueError: If ``--sell-price`` cannot be parsed as a
+            valid integer number.
     """
     return bll.ProductCommand(
         product_id=args.product_id,

@@ -50,13 +50,13 @@ def _translate_sale(args: argparse.Namespace) -> bll.SaleCommand:
 
     Returns:
         bll.SaleCommand: Domain command capturing sale details.
-            Quantity and revenue values are coerced to
-            :class:`~decimal.Decimal`, and the payment type string is converted
-            to :class:`~caad_erp.constants.PaymentType`.
+            Quantity and revenue values are coerced to integers , and the
+            payment type string is converted to
+            :class:`~caad_erp.constants.PaymentType`.
 
     Raises:
-        decimal.InvalidOperation: If ``--quantity`` or ``--total-revenue``
-            cannot be parsed as valid decimal numbers.
+        ValueError: If ``--quantity`` or ``--total-revenue`` cannot be parsed as
+            valid integer numbers.
         ValueError: If ``--payment-type`` does not correspond to a known
             :class:`~caad_erp.constants.PaymentType` value.
     """

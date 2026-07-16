@@ -134,9 +134,9 @@ transaction they negate.
 - Identifier columns (`ProductID`, `SalesmanID`, `TransactionID`,
   `LinkedTransactionID`) stay as text.
 - `Timestamp` cells store ISO 8601 strings captured by the business layer.
-- `QuantityChange` uses signed decimals
-- Monetary columns are written as `Decimal` instances. Revenue entries stay
-  positive, while costs are stored as negative numbers.
+- `QuantityChange` uses integers
+- Monetary columns are written as integers and represents cents. Revenue entries
+  stay positive, while costs are stored as negative numbers.
 - Boolean columns (`Products.IsActive`, `Salesmen.IsActive`) store Excel
   booleans; the DAL coerces them back to `bool` on read.
 - `PaymentType` stores one of the enum strings.
