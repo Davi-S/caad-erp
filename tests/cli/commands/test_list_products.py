@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import argparse
@@ -16,8 +15,8 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     wb.remove(default)
     products = wb.create_sheet(constants.SheetName.PRODUCTS.value)
     products.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
-    products.append(["P001", "Cookie", Decimal("2.50"), True])
-    products.append(["P002", "Soda", Decimal("3.00"), False])
+    products.append(["P001", "Cookie", 250, True])
+    products.append(["P002", "Soda", 300, False])
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
@@ -106,8 +105,8 @@ def test_display_products_report_prints_expected_columns_by_mode(include_inactiv
     """
     # Arrange
     rows = [
-        dal.ProductRow("P001", "Cookie", Decimal("2.50"), True),
-        dal.ProductRow("P002", "Soda", Decimal("3.00"), False),
+        dal.ProductRow("P001", "Cookie", 250, True),
+        dal.ProductRow("P002", "Soda", 300, False),
     ]
 
     # Act

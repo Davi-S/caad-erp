@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import argparse
@@ -102,9 +101,9 @@ def test_display_transaction_log_formats_rows_and_notes(notes_value, capsys) -> 
         product_id=None,
         salesman_id=None,
         payment_type=constants.PaymentType.CASH.value,
-        quantity_change=Decimal("-1"),
-        total_revenue=Decimal("2.50"),
-        total_cost=Decimal("0"),
+        quantity_change=-1,
+        total_revenue=250,
+        total_cost=0,
         linked_transaction_id=None,
         notes=notes_value,
     )
@@ -137,9 +136,9 @@ def test_run_log_report_calls_bll_and_returns_zero(tmp_path: Path, capsys) -> No
             product_id="P001",
             salesman_id="S001",
             payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("-1"),
-            total_revenue=Decimal("2.50"),
-            total_cost=Decimal("0"),
+            quantity_change=-1,
+            total_revenue=250,
+            total_cost=0,
             linked_transaction_id=None,
             notes=None,
         ),

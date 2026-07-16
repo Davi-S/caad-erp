@@ -1,4 +1,3 @@
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import argparse
@@ -16,7 +15,7 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     wb.remove(default)
     products = wb.create_sheet(constants.SheetName.PRODUCTS.value)
     products.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
-    products.append(["P001", "Cookie", Decimal("2.50"), True])
+    products.append(["P001", "Cookie", 250, True])
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
@@ -83,48 +82,6 @@ def test_register_write_off_registrar_configures_required_arguments() -> None:
     # Assert
     assert args.command == "write-off"
     assert args.quantity == "1"
-
-
-def test_translate_write_off_maps_args_to_write_off_command() -> None:
-    """
-    GIVEN parsed write-off args with valid values
-    WHEN _translate_write_off is called
-    THEN WriteOffCommand is built with Decimal quantity conversion
-    """
-    # Arrange
-    args = argparse.Namespace(
-        product_id="P001",
-        quantity="2",
-        salesman_id="S001",
-        notes="spoiled",
-    )
-
-    # Act
-    command = write_off._translate_write_off(args)
-
-    # Assert
-    assert command.quantity == Decimal("2")
-    assert command.notes == "spoiled"
-
-
-@pytest.mark.parametrize("invalid_quantity", ["", "abc", "1.2.3"])
-def test_translate_write_off_raises_for_invalid_decimal(invalid_quantity) -> None:
-    """
-    GIVEN parsed write-off args with invalid quantity text
-    WHEN _translate_write_off is called
-    THEN decimal conversion error is raised
-    """
-    # Arrange
-    args = argparse.Namespace(
-        product_id="P001",
-        quantity=invalid_quantity,
-        salesman_id="S001",
-        notes=None,
-    )
-
-    # Act / Assert
-    with pytest.raises(InvalidOperation):
-        write_off._translate_write_off(args)
 
 
 def test_run_write_off_calls_bll_and_returns_zero(tmp_path: Path) -> None:

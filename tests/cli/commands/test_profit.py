@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import argparse
@@ -78,11 +77,11 @@ def test_register_profit_registrar_configures_command_default() -> None:
     "summary_payload",
     [
         {},
-        {"total_revenue": Decimal("10.00"), "total_cost": Decimal("-4.00")},
+        {"total_revenue": 1000, "total_cost": -400},
         {
-            "total_revenue": Decimal("10.00"),
-            "total_cost": Decimal("-4.00"),
-            "profit": Decimal("9.00"),
+            "total_revenue": 1000,
+            "total_cost": -400,
+            "profit": 900,
         },
     ],
 )
@@ -119,9 +118,9 @@ def test_run_profit_report_calls_bll_and_returns_zero(tmp_path: Path, capsys) ->
             product_id="P001",
             salesman_id="S001",
             payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("-1"),
-            total_revenue=Decimal("5"),
-            total_cost=Decimal("0"),
+            quantity_change=-1,
+            total_revenue=500,
+            total_cost=0,
             linked_transaction_id=None,
             notes=None,
         ),
