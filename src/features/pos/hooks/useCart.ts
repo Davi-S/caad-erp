@@ -1,7 +1,7 @@
 import { useState } from "react"
-import type { Schemas } from "@/api/apiClient"
+import type { Products, Stock } from "@/App"
 
-export function useCart(products: Schemas["ProductListResponse"]["items"], stock: Record<string, number>) {
+export function useCart(products: Products, stock: Stock) {
     // Core state. Single source of truth. Simplest representation of the cart
     const [cart, setCart] = useState<Record<string, number>>({})
 

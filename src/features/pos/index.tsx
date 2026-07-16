@@ -4,19 +4,19 @@ import { useCheckout } from "./hooks/useCheckout"
 import { SellerScreen } from "./components/SellerScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
-import type { Schemas } from "@/api/apiClient"
+import type { Products, Salesmen, Stock } from "@/App"
 
 interface POSFlowProps {
-    products: Schemas["ProductListResponse"]["items"]
-    stock: Record<string, number>
-    sellers: Schemas["SalesmanListResponse"]["items"]
-    onUpdateStock: (newStock: Record<string, number>) => void
+    products: Products
+    sellers: Salesmen
+    stock: Stock
+    onUpdateStock: (newStock: Stock) => void
 }
 
 export function POSFlow({
     products,
-    stock,
     sellers,
+    stock,
     onUpdateStock,
 }: POSFlowProps) {
     // Local routing state for the checkout sequence

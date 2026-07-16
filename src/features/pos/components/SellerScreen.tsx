@@ -1,10 +1,10 @@
 import { useState } from "react"
 import { Check } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
-import type { Schemas } from "@/api/apiClient"
+import type { Salesmen } from "@/App"
 
 interface SellerScreenProps {
-    sellers: Schemas["SalesmanListResponse"]["items"]
+    sellers: Salesmen
     onNext: (salesmanId: string) => void
 }
 

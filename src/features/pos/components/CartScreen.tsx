@@ -1,13 +1,13 @@
 import { Plus, Minus, ArrowLeft, Pencil } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
-import type { Schemas } from "@/api/apiClient"
+import type { Products, Salesman, Stock } from "@/App"
 
 interface CartScreenProps {
-    seller: Schemas["SalesmanResponse"] | null
+    seller: Salesman
     catalog: {
-        products: Schemas["ProductListResponse"]["items"]
-        stock: Record<string, number>
+        products: Products
+        stock: Stock
     }
     cartState: {
         cart: Record<string, number>
