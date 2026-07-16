@@ -10,7 +10,6 @@ import dataclasses
 import logging
 import typing as t
 import collections
-from decimal import Decimal
 
 from caad_erp import constants, exceptions
 
@@ -27,13 +26,13 @@ class OutstandingDebt:
     timestamp_iso: str
     product_id: t.Optional[str]
     salesman_id: t.Optional[str]
-    quantity: Decimal
-    expected_amount: Decimal
-    amount_paid: Decimal
-    balance: Decimal
+    quantity: int
+    expected_amount: int
+    amount_paid: int
+    balance: int
 
 
-def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, Decimal]:
+def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, int]:
     """Compute inventory balances from the transaction logger.
 
     The routine iterates over the cached transaction list, ignoring entries
@@ -46,14 +45,14 @@ def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, Decimal]
             caches.
 
     Returns:
-        dict[str, Decimal]: Mapping of ``ProductID`` to cumulative quantity
+        dict[str, int]: Mapping of ``ProductID`` to cumulative quantity
             derived by summing ``quantity_change`` across transactions.
     """
-    inventory: t.Dict[str, Decimal] = {}
+    inventory: t.Dict[str, int] = {}
     for transaction in transactions._ensure_transactions_cache(context)["all"]:
         if transaction.product_id is None:
             continue
-        current = inventory.get(transaction.product_id, Decimal("0"))
+        current = inventory.get(transaction.product_id, 0)
         inventory[transaction.product_id] = current + \
             transaction.quantity_change
     logger.debug("Calculated inventory balances for %d products",
@@ -61,7 +60,7 @@ def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, Decimal]
     return inventory
 
 
-def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, Decimal]:
+def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, int]:
     """Produce aggregate revenue, cost, and profit metrics.
 
     Aggregate values are derived from cached transactions so repeated calls do
@@ -73,12 +72,12 @@ def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, Dec
             caches.
 
     Returns:
-        dict[str, Decimal]: t.Dictionary containing ``total_revenue``,
+        dict[str, int]: t.Dictionary containing ``total_revenue``,
             ``total_cost``, and ``profit`` values derived from cached
             transactions.
     """
-    total_revenue = Decimal("0")
-    total_cost = Decimal("0")
+    total_revenue = 0
+    total_cost = 0
     for transaction in transactions._ensure_transactions_cache(context)["all"]:
         total_revenue += transaction.total_revenue
         total_cost += transaction.total_cost
@@ -118,7 +117,7 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
     cache = transactions._ensure_transactions_cache(context)
     all_transactions = cache["all"]
 
-    payments_by_sale: dict[str, Decimal] = collections.defaultdict(lambda: Decimal("0.00"))
+    payments_by_sale: dict[str, int] = collections.defaultdict(int)
     voided_sales: set[str] = set()
 
     for entry in all_transactions:
@@ -135,7 +134,7 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
             voided_sales.add(entry.linked_transaction_id)
 
     balances: list[OutstandingDebt] = []
-    total_balance = Decimal("0.00")
+    total_balance = 0
 
     for entry in all_transactions:
         if entry.transaction_type != constants.TransactionType.SALE.value:
@@ -147,10 +146,10 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
 
         quantity = abs(entry.quantity_change)
         expected_from_transaction = (
-            -entry.total_revenue if entry.total_revenue < Decimal("0") else Decimal("0.00")
+            -entry.total_revenue if entry.total_revenue < 0 else 0
         )
 
-        expected_from_price = Decimal("0.00")
+        expected_from_price = 0
         if entry.product_id is not None:
             try:
                 product = products.get_product(context, entry.product_id)
@@ -165,17 +164,17 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
 
         expected_amount = (
             expected_from_transaction
-            if expected_from_transaction > Decimal("0.00")
+            if expected_from_transaction > 0
             else expected_from_price
         )
 
-        if expected_amount <= Decimal("0.00"):
+        if expected_amount <= 0:
             continue
 
         amount_paid = payments_by_sale.get(
-            entry.transaction_id, Decimal("0.00"))
+            entry.transaction_id, 0)
         balance = expected_amount - amount_paid
-        if balance <= Decimal("0.00"):
+        if balance <= 0:
             continue
 
         debt = OutstandingDebt(

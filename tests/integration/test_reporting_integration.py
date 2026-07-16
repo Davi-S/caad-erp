@@ -1,17 +1,17 @@
-from decimal import Decimal
-
 import pytest
 
 from caad_erp import bll, constants, dal
 
 
-def _add_product(context: bll.RuntimeContext, product_id: str, price: str = "10.00") -> None:
+def _add_product(
+    context: bll.RuntimeContext, product_id: str, price: int = 1000
+) -> None:
     bll.add_product(
         context,
         bll.ProductCommand(
             product_id=product_id,
             product_name=f"Product {product_id}",
-            sell_price=Decimal(price),
+            sell_price=price,
             is_active=True,
         ),
     )
@@ -44,8 +44,8 @@ def test_inventory_report_matches_transaction_history_after_mixed_operations(
         bll.OpenStockCommand(
             product_id="RP-P001",
             salesman_id="RP-S001",
-            quantity=Decimal("10"),
-            total_revenue=Decimal("0.00"),
+            quantity=10,
+            total_revenue=0,
         ),
     )
     sale = bll.record_sale(
@@ -53,8 +53,8 @@ def test_inventory_report_matches_transaction_history_after_mixed_operations(
         bll.SaleCommand(
             product_id="RP-P001",
             salesman_id="RP-S001",
-            quantity=Decimal("3"),
-            total_revenue=Decimal("30.00"),
+            quantity=3,
+            total_revenue=3000,
             payment_type=constants.PaymentType.CASH,
         ),
     )
@@ -63,8 +63,8 @@ def test_inventory_report_matches_transaction_history_after_mixed_operations(
         bll.RestockCommand(
             product_id="RP-P001",
             salesman_id="RP-S001",
-            quantity=Decimal("4"),
-            total_cost=Decimal("12.00"),
+            quantity=4,
+            total_cost=1200,
         ),
     )
     bll.record_write_off(
@@ -72,7 +72,7 @@ def test_inventory_report_matches_transaction_history_after_mixed_operations(
         bll.WriteOffCommand(
             product_id="RP-P001",
             salesman_id="RP-S001",
-            quantity=Decimal("2"),
+            quantity=2,
         ),
     )
     bll.record_void(
@@ -81,7 +81,7 @@ def test_inventory_report_matches_transaction_history_after_mixed_operations(
     )
 
     inventory = bll.calculate_inventory(initialized_context)
-    assert inventory["RP-P001"] == Decimal("12")
+    assert inventory["RP-P001"] == 12
 
 
 def test_profit_summary_matches_revenue_plus_cost_over_transaction_log(
@@ -100,8 +100,8 @@ def test_profit_summary_matches_revenue_plus_cost_over_transaction_log(
         bll.SaleCommand(
             product_id="RP-P002",
             salesman_id="RP-S002",
-            quantity=Decimal("1"),
-            total_revenue=Decimal("30.00"),
+            quantity=1,
+            total_revenue=3000,
             payment_type=constants.PaymentType.CASH,
         ),
     )
@@ -110,15 +110,15 @@ def test_profit_summary_matches_revenue_plus_cost_over_transaction_log(
         bll.RestockCommand(
             product_id="RP-P002",
             salesman_id="RP-S002",
-            quantity=Decimal("2"),
-            total_cost=Decimal("7.50"),
+            quantity=2,
+            total_cost=750,
         ),
     )
 
     summary = bll.calculate_profit_summary(initialized_context)
-    assert summary["total_revenue"] == Decimal("30.00")
-    assert summary["total_cost"] == Decimal("-7.50")
-    assert summary["profit"] == Decimal("22.50")
+    assert summary["total_revenue"] == 3000
+    assert summary["total_cost"] == -750
+    assert summary["profit"] == 2250
 
 
 def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
@@ -129,7 +129,7 @@ def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
     WHEN calculate_outstanding_debts is called
     THEN balances include only unpaid portions and exclude fully settled sales
     """
-    _add_product(initialized_context, "RP-P003", price="10.00")
+    _add_product(initialized_context, "RP-P003", price=1000)
     _add_salesman(initialized_context, "RP-S003")
 
     partially_paid_sale = bll.record_sale(
@@ -137,8 +137,8 @@ def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
         bll.SaleCommand(
             product_id="RP-P003",
             salesman_id="RP-S003",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("0.00"),
+            quantity=2,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -147,8 +147,8 @@ def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
         bll.SaleCommand(
             product_id="RP-P003",
             salesman_id="RP-S003",
-            quantity=Decimal("1"),
-            total_revenue=Decimal("0.00"),
+            quantity=1,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -158,7 +158,7 @@ def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
         bll.CreditPaymentCommand(
             linked_transaction_id=partially_paid_sale.transaction_id,
             salesman_id="RP-S003",
-            total_revenue=Decimal("5.00"),
+            total_revenue=500,
             payment_type=constants.PaymentType.CASH,
         ),
     )
@@ -167,7 +167,7 @@ def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
         bll.CreditPaymentCommand(
             linked_transaction_id=fully_paid_sale.transaction_id,
             salesman_id="RP-S003",
-            total_revenue=Decimal("10.00"),
+            total_revenue=1000,
             payment_type=constants.PaymentType.PIX,
         ),
     )
@@ -176,9 +176,8 @@ def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
     debts_by_id = {debt.transaction_id: debt for debt in report["balances"]}
     assert partially_paid_sale.transaction_id in debts_by_id
     assert fully_paid_sale.transaction_id not in debts_by_id
-    assert debts_by_id[partially_paid_sale.transaction_id].balance == Decimal(
-        "15.00")
-    assert report["total_outstanding"] == Decimal("15.00")
+    assert debts_by_id[partially_paid_sale.transaction_id].balance == 1500
+    assert report["total_outstanding"] == 1500
 
 
 def test_outstanding_debts_excludes_voided_credit_sales_in_end_to_end_flow(
@@ -189,7 +188,7 @@ def test_outstanding_debts_excludes_voided_credit_sales_in_end_to_end_flow(
     WHEN calculate_outstanding_debts is called
     THEN voided sale is excluded from debt balances and totals
     """
-    _add_product(initialized_context, "RP-P004", price="12.00")
+    _add_product(initialized_context, "RP-P004", price=1200)
     _add_salesman(initialized_context, "RP-S004")
 
     credit_sale = bll.record_sale(
@@ -197,8 +196,8 @@ def test_outstanding_debts_excludes_voided_credit_sales_in_end_to_end_flow(
         bll.SaleCommand(
             product_id="RP-P004",
             salesman_id="RP-S004",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("0.00"),
+            quantity=2,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -209,7 +208,7 @@ def test_outstanding_debts_excludes_voided_credit_sales_in_end_to_end_flow(
 
     report = bll.calculate_outstanding_debts(initialized_context)
     assert report["balances"] == []
-    assert report["total_outstanding"] == Decimal("0.00")
+    assert report["total_outstanding"] == 0
 
 
 @pytest.mark.parametrize("missing_reference_case", ["MISSING-RP-A", "MISSING-RP-B"])
@@ -232,9 +231,9 @@ def test_reporting_handles_missing_product_references_without_crashing(
             product_id=missing_reference_case,
             salesman_id="RP-S005",
             payment_type=constants.PaymentType.ON_CREDIT.value,
-            quantity_change=Decimal("-2"),
-            total_revenue=Decimal("0.00"),
-            total_cost=Decimal("0.00"),
+            quantity_change=-2,
+            total_revenue=0,
+            total_cost=0,
             linked_transaction_id=None,
             notes="synthetic missing product reference",
         ),
@@ -255,7 +254,7 @@ def test_reporting_outputs_remain_stable_after_context_reload(
     WHEN a fresh context is loaded and the same reports are generated
     THEN report outputs are consistent with pre-reload results
     """
-    _add_product(initialized_context, "RP-P006", price="9.00")
+    _add_product(initialized_context, "RP-P006", price=900)
     _add_salesman(initialized_context, "RP-S006")
 
     bll.record_open_stock(
@@ -263,8 +262,8 @@ def test_reporting_outputs_remain_stable_after_context_reload(
         bll.OpenStockCommand(
             product_id="RP-P006",
             salesman_id="RP-S006",
-            quantity=Decimal("7"),
-            total_revenue=Decimal("0.00"),
+            quantity=7,
+            total_revenue=0,
         ),
     )
     bll.record_sale(
@@ -272,8 +271,8 @@ def test_reporting_outputs_remain_stable_after_context_reload(
         bll.SaleCommand(
             product_id="RP-P006",
             salesman_id="RP-S006",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("18.00"),
+            quantity=2,
+            total_revenue=1800,
             payment_type=constants.PaymentType.CASH,
         ),
     )
@@ -302,8 +301,8 @@ def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balan
     WHEN calculate_outstanding_debts is executed
     THEN only positive remaining balances are reported and total outstanding is aggregated correctly
     """
-    _add_product(initialized_context, "RP-P007", price="10.00")
-    _add_product(initialized_context, "RP-P008", price="6.00")
+    _add_product(initialized_context, "RP-P007", price=1000)
+    _add_product(initialized_context, "RP-P008", price=600)
     _add_salesman(initialized_context, "RP-S007")
 
     overpaid_sale = bll.record_sale(
@@ -311,8 +310,8 @@ def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balan
         bll.SaleCommand(
             product_id="RP-P007",
             salesman_id="RP-S007",
-            quantity=Decimal("1"),
-            total_revenue=Decimal("0.00"),
+            quantity=1,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -321,8 +320,8 @@ def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balan
         bll.SaleCommand(
             product_id="RP-P008",
             salesman_id="RP-S007",
-            quantity=Decimal("3"),
-            total_revenue=Decimal("0.00"),
+            quantity=3,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -332,7 +331,7 @@ def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balan
         bll.CreditPaymentCommand(
             linked_transaction_id=overpaid_sale.transaction_id,
             salesman_id="RP-S007",
-            total_revenue=Decimal("12.00"),
+            total_revenue=1200,
             payment_type=constants.PaymentType.CASH,
         ),
     )
@@ -341,7 +340,7 @@ def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balan
         bll.CreditPaymentCommand(
             linked_transaction_id=partial_sale.transaction_id,
             salesman_id="RP-S007",
-            total_revenue=Decimal("4.00"),
+            total_revenue=400,
             payment_type=constants.PaymentType.PIX,
         ),
     )
@@ -351,10 +350,7 @@ def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balan
 
     assert overpaid_sale.transaction_id not in balances_by_id
     assert partial_sale.transaction_id in balances_by_id
-    assert balances_by_id[partial_sale.transaction_id].expected_amount == Decimal(
-        "18.00")
-    assert balances_by_id[partial_sale.transaction_id].amount_paid == Decimal(
-        "4.00")
-    assert balances_by_id[partial_sale.transaction_id].balance == Decimal(
-        "14.00")
-    assert report["total_outstanding"] == Decimal("14.00")
+    assert balances_by_id[partial_sale.transaction_id].expected_amount == 1800
+    assert balances_by_id[partial_sale.transaction_id].amount_paid == 400
+    assert balances_by_id[partial_sale.transaction_id].balance == 1400
+    assert report["total_outstanding"] == 1400

@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import argparse
@@ -16,7 +15,7 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     wb.remove(default)
     products = wb.create_sheet(constants.SheetName.PRODUCTS.value)
     products.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
-    products.append(["P001", "Cookie", Decimal("10.00"), True])
+    products.append(["P001", "Cookie", 1000, True])
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
@@ -84,7 +83,7 @@ def test_display_debts_report_prints_empty_state_when_no_balances(capsys) -> Non
     """
     # Arrange / Act
     debts._display_debts_report(
-        {"balances": [], "total_outstanding": Decimal("0")})
+        {"balances": [], "total_outstanding": 0})
 
     # Assert
     output = capsys.readouterr().out
@@ -101,10 +100,10 @@ def test_display_debts_report_prints_empty_state_when_no_balances(capsys) -> Non
                 timestamp_iso="2026-03-15T10:00:00+00:00",
                 product_id="P001",
                 salesman_id="S001",
-                quantity=Decimal("2"),
-                expected_amount=Decimal("20"),
-                amount_paid=Decimal("5"),
-                balance=Decimal("15"),
+                quantity=2,
+                expected_amount=2000,
+                amount_paid=500,
+                balance=1500,
             )
         ]
     ],
@@ -116,7 +115,7 @@ def test_display_debts_report_prints_table_for_outstanding_balances(debt_rows, c
     THEN tabular debt lines and total outstanding are printed
     """
     # Arrange
-    summary = {"balances": debt_rows, "total_outstanding": Decimal("15")}
+    summary = {"balances": debt_rows, "total_outstanding": 1500}
 
     # Act
     debts._display_debts_report(summary)
@@ -145,9 +144,9 @@ def test_run_debts_report_calls_bll_and_returns_zero(tmp_path: Path, capsys) -> 
             product_id="P001",
             salesman_id="S001",
             payment_type=constants.PaymentType.ON_CREDIT.value,
-            quantity_change=Decimal("-1"),
-            total_revenue=Decimal("0"),
-            total_cost=Decimal("0"),
+            quantity_change=-1,
+            total_revenue=0,
+            total_cost=0,
             linked_transaction_id=None,
             notes=None,
         ),

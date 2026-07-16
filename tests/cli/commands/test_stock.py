@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import argparse
@@ -93,7 +92,7 @@ def test_display_inventory_report_prints_sorted_rows_for_inventory(capsys) -> No
     THEN table header and sorted rows are printed
     """
     # Arrange
-    inventory = {"P002": Decimal("5"), "P001": Decimal("3")}
+    inventory = {"P002": 5, "P001": 3}
 
     # Act
     stock._display_inventory_report(inventory)
@@ -121,9 +120,9 @@ def test_run_stock_report_calls_bll_and_returns_zero(tmp_path: Path, capsys) -> 
             product_id="P001",
             salesman_id="S001",
             payment_type=None,
-            quantity_change=Decimal("5"),
-            total_revenue=Decimal("0"),
-            total_cost=Decimal("-5"),
+            quantity_change=5,
+            total_revenue=0,
+            total_cost=-500,
             linked_transaction_id=None,
             notes=None,
         ),

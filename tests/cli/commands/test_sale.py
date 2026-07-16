@@ -1,4 +1,3 @@
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import argparse
@@ -16,7 +15,7 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     wb.remove(default)
     products = wb.create_sheet(constants.SheetName.PRODUCTS.value)
     products.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
-    products.append(["P001", "Cookie", Decimal("2.50"), True])
+    products.append(["P001", "Cookie", 250, True])
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
@@ -93,14 +92,14 @@ def test_translate_sale_maps_args_to_sale_command() -> None:
     """
     GIVEN parsed sale args with valid values
     WHEN _translate_sale is called
-    THEN SaleCommand is built with Decimal conversions and enum payment type
+    THEN SaleCommand is built with integer conversions and enum payment type
     """
     # Arrange
     args = argparse.Namespace(
         product_id="P001",
-        quantity="2",
+        quantity=2,
         salesman_id="S001",
-        total_revenue="5.00",
+        total_revenue=500,
         payment_type=constants.PaymentType.PIX.value,
         notes="note",
     )
@@ -110,41 +109,9 @@ def test_translate_sale_maps_args_to_sale_command() -> None:
 
     # Assert
     assert command.product_id == "P001"
-    assert command.quantity == Decimal("2")
-    assert command.total_revenue == Decimal("5.00")
+    assert command.quantity == 2
+    assert command.total_revenue == 500
     assert command.payment_type == constants.PaymentType.PIX
-
-
-@pytest.mark.parametrize("invalid_numeric", ["", "abc", "1.2.3"])
-def test_translate_sale_raises_for_invalid_decimal_values(invalid_numeric) -> None:
-    """
-    GIVEN parsed sale args with invalid quantity or total-revenue text
-    WHEN _translate_sale is called
-    THEN decimal conversion error is raised
-    """
-    # Arrange
-    args_bad_qty = argparse.Namespace(
-        product_id="P001",
-        quantity=invalid_numeric,
-        salesman_id="S001",
-        total_revenue="5",
-        payment_type=constants.PaymentType.CASH.value,
-        notes=None,
-    )
-    args_bad_revenue = argparse.Namespace(
-        product_id="P001",
-        quantity="1",
-        salesman_id="S001",
-        total_revenue=invalid_numeric,
-        payment_type=constants.PaymentType.CASH.value,
-        notes=None,
-    )
-
-    # Act / Assert
-    with pytest.raises(InvalidOperation):
-        sale._translate_sale(args_bad_qty)
-    with pytest.raises(InvalidOperation):
-        sale._translate_sale(args_bad_revenue)
 
 
 @pytest.mark.parametrize("invalid_payment_type", ["", "CreditCard", "INVALID"])
@@ -181,7 +148,7 @@ def test_run_sale_calls_bll_and_returns_zero(tmp_path: Path) -> None:
         product_id="P001",
         quantity="2",
         salesman_id="S001",
-        total_revenue="5.00",
+        total_revenue=500,
         payment_type=constants.PaymentType.CASH.value,
         notes=None,
     )

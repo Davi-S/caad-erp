@@ -16,7 +16,7 @@ def test_list_products_returns_filtered_product_collection(
         json={
             "product_id": "P001",
             "product_name": "Soda",
-            "sell_price": "2.50",
+            "sell_price": 250,
             "is_active": True,
         },
     )
@@ -25,7 +25,7 @@ def test_list_products_returns_filtered_product_collection(
         json={
             "product_id": "P002",
             "product_name": "Juice",
-            "sell_price": "3.25",
+            "sell_price": 325,
             "is_active": False,
         },
     )
@@ -59,7 +59,7 @@ def test_create_product_returns_201_and_standard_response_with_product_data(
         json={
             "product_id": "P010",
             "product_name": "Water",
-            "sell_price": "1.25",
+            "sell_price": 125,
             "is_active": True,
         },
     )
@@ -69,7 +69,7 @@ def test_create_product_returns_201_and_standard_response_with_product_data(
     assert payload["detail"] == "Product created successfully"
     assert payload["data"]["product_id"] == "P010"
     assert payload["data"]["product_name"] == "Water"
-    assert payload["data"]["sell_price"] == "1.25"
+    assert payload["data"]["sell_price"] == 125
     assert payload["data"]["is_active"] is True
 
 
@@ -86,7 +86,7 @@ def test_deactivate_product_returns_updated_product_with_is_active_false(
         json={
             "product_id": "P100",
             "product_name": "Energy",
-            "sell_price": "4.50",
+            "sell_price": 450,
             "is_active": True,
         },
     )
@@ -116,9 +116,9 @@ def test_create_product_rejects_validation_errors_with_422(
     THEN API returns 422 with standardized validation_error payload
     """
     invalid_payloads = [
-        {"product_id": "", "product_name": "Soda", "sell_price": "1.00"},
-        {"product_id": "P001", "product_name": "", "sell_price": "1.00"},
-        {"product_id": "P001", "product_name": "Soda", "sell_price": "-1.00"},
+        {"product_id": "", "product_name": "Soda", "sell_price": 100},
+        {"product_id": "P001", "product_name": "", "sell_price": 100},
+        {"product_id": "P001", "product_name": "Soda", "sell_price": -100},
     ]
 
     for payload in invalid_payloads:
@@ -140,7 +140,7 @@ def test_create_product_maps_domain_failures_to_expected_error_codes(
         json={
             "product_id": "PX01",
             "product_name": "Cola",
-            "sell_price": "2.00",
+            "sell_price": 200,
             "is_active": True,
         },
     )
@@ -149,7 +149,7 @@ def test_create_product_maps_domain_failures_to_expected_error_codes(
         json={
             "product_id": "PX01",
             "product_name": "Cola Duplicate",
-            "sell_price": "2.50",
+            "sell_price": 250,
             "is_active": True,
         },
     )

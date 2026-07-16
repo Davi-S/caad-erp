@@ -1,5 +1,4 @@
 import datetime
-from decimal import Decimal
 from pathlib import Path
 
 import openpyxl
@@ -59,7 +58,7 @@ def _seed_product(workbook: Workbook, product_id: str, is_active: bool = True) -
         dal.ProductRow(
             product_id=product_id,
             product_name=f"Product {product_id}",
-            sell_price=Decimal("7.00"),
+            sell_price=700,
             is_active=is_active,
         ),
     )
@@ -83,9 +82,9 @@ def _seed_transaction(
     product_id: str | None,
     salesman_id: str | None,
     payment_type: str | None,
-    quantity_change: Decimal,
-    total_revenue: Decimal,
-    total_cost: Decimal,
+    quantity_change: int,
+    total_revenue: int,
+    total_cost: int,
     linked_transaction_id: str | None = None,
 ) -> dal.TransactionRow:
     row = dal.TransactionRow(
@@ -121,9 +120,9 @@ def test_ensure_transactions_cache_populates_missing_cache() -> None:
         "P1",
         "S1",
         constants.PaymentType.CASH.value,
-        Decimal("-1"),
-        Decimal("5"),
-        Decimal("0"),
+        -1,
+        500,
+        0,
     )
 
     # Act
@@ -150,9 +149,9 @@ def test_ensure_transactions_cache_reuses_existing_cache() -> None:
         "P1",
         "S1",
         constants.PaymentType.CASH.value,
-        Decimal("-1"),
-        Decimal("5"),
-        Decimal("0"),
+        -1,
+        500,
+        0,
     )
     first = transactions._ensure_transactions_cache(context)
     _seed_transaction(
@@ -162,9 +161,9 @@ def test_ensure_transactions_cache_reuses_existing_cache() -> None:
         "P1",
         "S1",
         None,
-        Decimal("1"),
-        Decimal("0"),
-        Decimal("-3"),
+        1,
+        0,
+        -300,
     )
 
     # Act
@@ -213,8 +212,8 @@ def test_generate_transaction_id_is_lexicographically_sortable() -> None:
     assert first_id < second_id
 
 
-@pytest.mark.parametrize("quantity", [Decimal("0.0001"), Decimal("1"), Decimal("99")])
-def test_require_positive_quantity_accepts_positive_values(quantity: Decimal) -> None:
+@pytest.mark.parametrize("quantity", [1, 99])
+def test_require_positive_quantity_accepts_positive_values(quantity: int) -> None:
     """
     GIVEN a strictly positive quantity
     WHEN _require_positive_quantity is called
@@ -224,8 +223,8 @@ def test_require_positive_quantity_accepts_positive_values(quantity: Decimal) ->
     transactions._require_positive_quantity(quantity)
 
 
-@pytest.mark.parametrize("quantity", [Decimal("0"), Decimal("-0.1"), Decimal("-5")])
-def test_require_positive_quantity_rejects_zero_or_negative(quantity: Decimal) -> None:
+@pytest.mark.parametrize("quantity", [0, -10, -5])
+def test_require_positive_quantity_rejects_zero_or_negative(quantity: int) -> None:
     """
     GIVEN a zero or negative quantity
     WHEN _require_positive_quantity is called
@@ -236,8 +235,8 @@ def test_require_positive_quantity_rejects_zero_or_negative(quantity: Decimal) -
         transactions._require_positive_quantity(quantity)
 
 
-@pytest.mark.parametrize("amount", [Decimal("0"), Decimal("0.01"), Decimal("5")])
-def test_require_nonnegative_money_accepts_nonnegative_values(amount: Decimal) -> None:
+@pytest.mark.parametrize("amount", [0, 1, 500])
+def test_require_nonnegative_money_accepts_nonnegative_values(amount: int) -> None:
     """
     GIVEN a nonnegative monetary amount
     WHEN _require_nonnegative_money is called
@@ -247,8 +246,8 @@ def test_require_nonnegative_money_accepts_nonnegative_values(amount: Decimal) -
     transactions._require_nonnegative_money(amount)
 
 
-@pytest.mark.parametrize("amount", [Decimal("-0.01"), Decimal("-5")])
-def test_require_nonnegative_money_rejects_negative_values(amount: Decimal) -> None:
+@pytest.mark.parametrize("amount", [-1, -500])
+def test_require_nonnegative_money_rejects_negative_values(amount: int) -> None:
     """
     GIVEN a negative monetary amount
     WHEN _require_nonnegative_money is called
@@ -275,9 +274,9 @@ def test_list_transactions_returns_copy_of_cached_log() -> None:
         "P1",
         "S1",
         constants.PaymentType.CASH.value,
-        Decimal("-1"),
-        Decimal("5"),
-        Decimal("0"),
+        -1,
+        500,
+        0,
     )
 
     # Act
@@ -304,9 +303,9 @@ def test_get_transaction_returns_matching_row() -> None:
         "P1",
         "S1",
         constants.PaymentType.CASH.value,
-        Decimal("-1"),
-        Decimal("5"),
-        Decimal("0"),
+        -1,
+        500,
+        0,
     )
 
     # Act
@@ -349,16 +348,16 @@ def test_record_sale_appends_transaction_and_invalidates_cache() -> None:
         transactions.SaleCommand(
             product_id="P1",
             salesman_id="S1",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("14"),
+            quantity=2,
+            total_revenue=1400,
             payment_type=constants.PaymentType.CASH,
         ),
     )
 
     # Assert
     assert created.transaction_type == constants.TransactionType.SALE.value
-    assert created.quantity_change == Decimal("-2")
-    assert created.total_revenue == Decimal("14")
+    assert created.quantity_change == -2
+    assert created.total_revenue == 1400
     assert "transactions" not in context._cache
 
 
@@ -382,8 +381,8 @@ def test_record_sale_rejects_inactive_product_or_salesman(inactive_party) -> Non
             transactions.SaleCommand(
                 product_id="P1",
                 salesman_id="S1",
-                quantity=Decimal("1"),
-                total_revenue=Decimal("7"),
+                quantity=1,
+                total_revenue=700,
                 payment_type=constants.PaymentType.CASH,
             ),
         )
@@ -413,15 +412,15 @@ def test_record_sale_propagates_product_or_salesman_missing_reference(
             transactions.SaleCommand(
                 product_id="P1",
                 salesman_id="S1",
-                quantity=Decimal("1"),
-                total_revenue=Decimal("7"),
+                quantity=1,
+                total_revenue=700,
                 payment_type=constants.PaymentType.CASH,
             ),
         )
 
 
-@pytest.mark.parametrize("invalid_quantity", [Decimal("0"), Decimal("-1")])
-def test_record_sale_rejects_nonpositive_quantity(invalid_quantity: Decimal) -> None:
+@pytest.mark.parametrize("invalid_quantity", [0, -1])
+def test_record_sale_rejects_nonpositive_quantity(invalid_quantity: int) -> None:
     """
     GIVEN a sale command with zero or negative quantity
     WHEN record_sale is called
@@ -441,14 +440,14 @@ def test_record_sale_rejects_nonpositive_quantity(invalid_quantity: Decimal) -> 
                 product_id="P1",
                 salesman_id="S1",
                 quantity=invalid_quantity,
-                total_revenue=Decimal("7"),
+                total_revenue=700,
                 payment_type=constants.PaymentType.CASH,
             ),
         )
 
 
-@pytest.mark.parametrize("invalid_revenue", [Decimal("-0.01"), Decimal("-10")])
-def test_record_sale_rejects_negative_revenue(invalid_revenue: Decimal) -> None:
+@pytest.mark.parametrize("invalid_revenue", [-1, -1000])
+def test_record_sale_rejects_negative_revenue(invalid_revenue: int) -> None:
     """
     GIVEN a sale command with negative total_revenue
     WHEN record_sale is called
@@ -467,7 +466,7 @@ def test_record_sale_rejects_negative_revenue(invalid_revenue: Decimal) -> None:
             transactions.SaleCommand(
                 product_id="P1",
                 salesman_id="S1",
-                quantity=Decimal("1"),
+                quantity=1,
                 total_revenue=invalid_revenue,
                 payment_type=constants.PaymentType.CASH,
             ),
@@ -484,8 +483,8 @@ def test_build_sale_transaction_applies_expected_field_mapping() -> None:
     command = transactions.SaleCommand(
         product_id="P1",
         salesman_id="S1",
-        quantity=Decimal("2"),
-        total_revenue=Decimal("10"),
+        quantity=2,
+        total_revenue=1000,
         payment_type=constants.PaymentType.CASH,
         notes="sale note",
     )
@@ -499,9 +498,9 @@ def test_build_sale_transaction_applies_expected_field_mapping() -> None:
     assert row.transaction_id == "TX1"
     assert row.timestamp_iso == ts.isoformat()
     assert row.transaction_type == constants.TransactionType.SALE.value
-    assert row.quantity_change == Decimal("-2")
-    assert row.total_revenue == Decimal("10")
-    assert row.total_cost == Decimal("0.00")
+    assert row.quantity_change == -2
+    assert row.total_revenue == 1000
+    assert row.total_cost == 0
     assert row.linked_transaction_id is None
     assert row.notes == "sale note"
 
@@ -516,8 +515,8 @@ def test_build_sale_transaction_serializes_payment_type_value() -> None:
     command = transactions.SaleCommand(
         product_id="P1",
         salesman_id="S1",
-        quantity=Decimal("1"),
-        total_revenue=Decimal("5"),
+        quantity=1,
+        total_revenue=500,
         payment_type=constants.PaymentType.PIX,
     )
 
@@ -551,15 +550,15 @@ def test_record_restock_appends_transaction_and_invalidates_cache() -> None:
         transactions.RestockCommand(
             product_id="P1",
             salesman_id="S1",
-            quantity=Decimal("3"),
-            total_cost=Decimal("12"),
+            quantity=3,
+            total_cost=1200,
         ),
     )
 
     # Assert
     assert created.transaction_type == constants.TransactionType.RESTOCK.value
-    assert created.quantity_change == Decimal("3")
-    assert created.total_cost == Decimal("-12")
+    assert created.quantity_change == 3
+    assert created.total_cost == -1200
     assert "transactions" not in context._cache
 
 
@@ -582,14 +581,14 @@ def test_record_restock_rejects_inactive_product_or_salesman() -> None:
             transactions.RestockCommand(
                 product_id="P1",
                 salesman_id="S1",
-                quantity=Decimal("1"),
-                total_cost=Decimal("2"),
+                quantity=1,
+                total_cost=300,
             ),
         )
 
 
-@pytest.mark.parametrize("invalid_quantity", [Decimal("0"), Decimal("-1")])
-def test_record_restock_rejects_nonpositive_quantity(invalid_quantity: Decimal) -> None:
+@pytest.mark.parametrize("invalid_quantity", [0, -1])
+def test_record_restock_rejects_nonpositive_quantity(invalid_quantity: int) -> None:
     """
     GIVEN a restock command with zero or negative quantity
     WHEN record_restock is called
@@ -609,7 +608,7 @@ def test_record_restock_rejects_nonpositive_quantity(invalid_quantity: Decimal) 
                 product_id="P1",
                 salesman_id="S1",
                 quantity=invalid_quantity,
-                total_cost=Decimal("2"),
+                total_cost=300,
             ),
         )
 
@@ -632,13 +631,13 @@ def test_record_restock_accepts_negative_input_cost_by_normalizing_with_abs() ->
         transactions.RestockCommand(
             product_id="P1",
             salesman_id="S1",
-            quantity=Decimal("2"),
-            total_cost=Decimal("-5"),
+            quantity=2,
+            total_cost=-500,
         ),
     )
 
     # Assert
-    assert created.total_cost == Decimal("-5")
+    assert created.total_cost == -500
 
 
 def test_build_restock_transaction_applies_expected_field_mapping() -> None:
@@ -651,8 +650,8 @@ def test_build_restock_transaction_applies_expected_field_mapping() -> None:
     command = transactions.RestockCommand(
         product_id="P1",
         salesman_id="S1",
-        quantity=Decimal("2"),
-        total_cost=Decimal("7"),
+        quantity=2,
+        total_cost=700,
         notes="restock note",
     )
 
@@ -665,9 +664,9 @@ def test_build_restock_transaction_applies_expected_field_mapping() -> None:
 
     # Assert
     assert row.transaction_type == constants.TransactionType.RESTOCK.value
-    assert row.quantity_change == Decimal("2")
-    assert row.total_revenue == Decimal("0.00")
-    assert row.total_cost == Decimal("-7")
+    assert row.quantity_change == 2
+    assert row.total_revenue == 0
+    assert row.total_cost == -700
     assert row.notes == "restock note"
 
 
@@ -681,14 +680,14 @@ def test_build_restock_transaction_enforces_negative_cost_sign() -> None:
     positive = transactions.RestockCommand(
         product_id="P1",
         salesman_id="S1",
-        quantity=Decimal("1"),
-        total_cost=Decimal("4"),
+        quantity=1,
+        total_cost=400,
     )
     negative = transactions.RestockCommand(
         product_id="P1",
         salesman_id="S1",
-        quantity=Decimal("1"),
-        total_cost=Decimal("-4"),
+        quantity=1,
+        total_cost=-400,
     )
     ts = datetime.datetime(2026, 3, 15, tzinfo=datetime.UTC)
 
@@ -699,8 +698,8 @@ def test_build_restock_transaction_enforces_negative_cost_sign() -> None:
         negative, transaction_id="B", timestamp=ts)
 
     # Assert
-    assert positive_row.total_cost == Decimal("-4")
-    assert negative_row.total_cost == Decimal("-4")
+    assert positive_row.total_cost == -400
+    assert negative_row.total_cost == -400
 
 
 def test_record_write_off_appends_transaction_and_invalidates_cache() -> None:
@@ -722,15 +721,15 @@ def test_record_write_off_appends_transaction_and_invalidates_cache() -> None:
         transactions.WriteOffCommand(
             product_id="P1",
             salesman_id="S1",
-            quantity=Decimal("2"),
+            quantity=2,
         ),
     )
 
     # Assert
     assert created.transaction_type == constants.TransactionType.WRITE_OFF.value
-    assert created.quantity_change == Decimal("-2")
-    assert created.total_revenue == Decimal("0.00")
-    assert created.total_cost == Decimal("0.00")
+    assert created.quantity_change == -2
+    assert created.total_revenue == 0
+    assert created.total_cost == 0
     assert "transactions" not in context._cache
 
 
@@ -754,13 +753,13 @@ def test_record_write_off_rejects_inactive_product_or_salesman(inactive_party) -
             transactions.WriteOffCommand(
                 product_id="P1",
                 salesman_id="S1",
-                quantity=Decimal("1"),
+                quantity=1,
             ),
         )
 
 
-@pytest.mark.parametrize("invalid_quantity", [Decimal("0"), Decimal("-1")])
-def test_record_write_off_rejects_nonpositive_quantity(invalid_quantity: Decimal) -> None:
+@pytest.mark.parametrize("invalid_quantity", [0, -1])
+def test_record_write_off_rejects_nonpositive_quantity(invalid_quantity: int) -> None:
     """
     GIVEN a write-off command with zero or negative quantity
     WHEN record_write_off is called
@@ -794,7 +793,7 @@ def test_build_write_off_transaction_applies_expected_field_mapping() -> None:
     command = transactions.WriteOffCommand(
         product_id="P1",
         salesman_id="S1",
-        quantity=Decimal("3"),
+        quantity=3,
         notes="damaged",
     )
 
@@ -807,9 +806,9 @@ def test_build_write_off_transaction_applies_expected_field_mapping() -> None:
 
     # Assert
     assert row.transaction_type == constants.TransactionType.WRITE_OFF.value
-    assert row.quantity_change == Decimal("-3")
-    assert row.total_revenue == Decimal("0.00")
-    assert row.total_cost == Decimal("0.00")
+    assert row.quantity_change == -3
+    assert row.total_revenue == 0
+    assert row.total_cost == 0
     assert row.notes == "damaged"
 
 
@@ -830,9 +829,9 @@ def test_record_credit_payment_appends_transaction_and_invalidates_cache() -> No
         "P1",
         "S1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-1"),
-        Decimal("0"),
-        Decimal("0"),
+        -1,
+        0,
+        0,
     )
     transactions.list_transactions(context)
 
@@ -842,7 +841,7 @@ def test_record_credit_payment_appends_transaction_and_invalidates_cache() -> No
         transactions.CreditPaymentCommand(
             linked_transaction_id="SALE1",
             salesman_id="S1",
-            total_revenue=Decimal("4"),
+            total_revenue=400,
             payment_type=constants.PaymentType.PIX,
         ),
     )
@@ -850,8 +849,8 @@ def test_record_credit_payment_appends_transaction_and_invalidates_cache() -> No
     # Assert
     assert created.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
     assert created.linked_transaction_id == "SALE1"
-    assert created.quantity_change == Decimal("0")
-    assert created.total_revenue == Decimal("4")
+    assert created.quantity_change == 0
+    assert created.total_revenue == 400
     assert "transactions" not in context._cache
 
 
@@ -872,9 +871,9 @@ def test_record_credit_payment_rejects_inactive_salesman() -> None:
         "P1",
         "S1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-1"),
-        Decimal("0"),
-        Decimal("0"),
+        -1,
+        0,
+        0,
     )
 
     # Act / Assert
@@ -884,7 +883,7 @@ def test_record_credit_payment_rejects_inactive_salesman() -> None:
             transactions.CreditPaymentCommand(
                 linked_transaction_id="SALE1",
                 salesman_id="S1",
-                total_revenue=Decimal("4"),
+                total_revenue=400,
                 payment_type=constants.PaymentType.CASH,
             ),
         )
@@ -908,14 +907,14 @@ def test_record_credit_payment_propagates_unknown_linked_transaction() -> None:
             transactions.CreditPaymentCommand(
                 linked_transaction_id="UNKNOWN",
                 salesman_id="S1",
-                total_revenue=Decimal("4"),
+                total_revenue=400,
                 payment_type=constants.PaymentType.CASH,
             ),
         )
 
 
-@pytest.mark.parametrize("invalid_revenue", [Decimal("-0.01"), Decimal("-2")])
-def test_record_credit_payment_rejects_negative_revenue(invalid_revenue: Decimal) -> None:
+@pytest.mark.parametrize("invalid_revenue", [-1, -200])
+def test_record_credit_payment_rejects_negative_revenue(invalid_revenue: int) -> None:
     """
     GIVEN a credit payment command with negative total_revenue
     WHEN record_credit_payment is called
@@ -932,9 +931,9 @@ def test_record_credit_payment_rejects_negative_revenue(invalid_revenue: Decimal
         "P1",
         "S1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-1"),
-        Decimal("0"),
-        Decimal("0"),
+        -1,
+        0,
+        0,
     )
 
     # Act / Assert
@@ -967,9 +966,9 @@ def test_record_credit_payment_rejects_ineligible_linked_sale() -> None:
         "P1",
         "S1",
         constants.PaymentType.CASH.value,
-        Decimal("-1"),
-        Decimal("7"),
-        Decimal("0"),
+        -1,
+        700,
+        0,
     )
 
     # Act / Assert
@@ -979,7 +978,7 @@ def test_record_credit_payment_rejects_ineligible_linked_sale() -> None:
             transactions.CreditPaymentCommand(
                 linked_transaction_id="SALE1",
                 salesman_id="S1",
-                total_revenue=Decimal("4"),
+                total_revenue=400,
                 payment_type=constants.PaymentType.CASH,
             ),
         )
@@ -995,7 +994,7 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
     command = transactions.CreditPaymentCommand(
         linked_transaction_id="SALE1",
         salesman_id="S1",
-        total_revenue=Decimal("6"),
+        total_revenue=600,
         payment_type=constants.PaymentType.PIX,
         notes="partial",
     )
@@ -1012,9 +1011,9 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
     assert row.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
     assert row.product_id == "P1"
     assert row.linked_transaction_id == "SALE1"
-    assert row.quantity_change == Decimal("0")
-    assert row.total_revenue == Decimal("6")
-    assert row.total_cost == Decimal("0.00")
+    assert row.quantity_change == 0
+    assert row.total_revenue == 600
+    assert row.total_cost == 0
     assert row.payment_type == constants.PaymentType.PIX.value
 
 
@@ -1028,9 +1027,9 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
             product_id="P1",
             salesman_id="S1",
             payment_type=None,
-            quantity_change=Decimal("1"),
-            total_revenue=Decimal("0"),
-            total_cost=Decimal("-1"),
+            quantity_change=1,
+            total_revenue=0,
+            total_cost=-100,
             linked_transaction_id=None,
             notes=None,
         ),
@@ -1041,9 +1040,9 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
             product_id="P1",
             salesman_id="S1",
             payment_type=constants.PaymentType.CASH.value,
-            quantity_change=Decimal("-1"),
-            total_revenue=Decimal("0"),
-            total_cost=Decimal("0"),
+            quantity_change=-1,
+            total_revenue=0,
+            total_cost=0,
             linked_transaction_id=None,
             notes=None,
         ),
@@ -1054,9 +1053,9 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
             product_id="P1",
             salesman_id="S1",
             payment_type=constants.PaymentType.ON_CREDIT.value,
-            quantity_change=Decimal("-1"),
-            total_revenue=Decimal("1"),
-            total_cost=Decimal("0"),
+            quantity_change=-1,
+            total_revenue=100,
+            total_cost=0,
             linked_transaction_id=None,
             notes=None,
         ),
@@ -1067,9 +1066,9 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
             product_id="P1",
             salesman_id="S1",
             payment_type=constants.PaymentType.ON_CREDIT.value,
-            quantity_change=Decimal("-1"),
-            total_revenue=Decimal("0"),
-            total_cost=Decimal("0"),
+            quantity_change=-1,
+            total_revenue=0,
+            total_cost=0,
             linked_transaction_id="OTHER",
             notes=None,
         ),
@@ -1100,9 +1099,9 @@ def test_validate_credit_sale_link_accepts_valid_credit_sale() -> None:
         product_id="P1",
         salesman_id="S1",
         payment_type=constants.PaymentType.ON_CREDIT.value,
-        quantity_change=Decimal("-1"),
-        total_revenue=Decimal("0"),
-        total_cost=Decimal("0"),
+        quantity_change=-1,
+        total_revenue=0,
+        total_cost=0,
         linked_transaction_id=None,
         notes=None,
     )
@@ -1130,16 +1129,16 @@ def test_record_open_stock_appends_transaction_and_invalidates_cache() -> None:
         transactions.OpenStockCommand(
             product_id="P1",
             salesman_id="S1",
-            quantity=Decimal("5"),
-            total_revenue=Decimal("25"),
+            quantity=5,
+            total_revenue=2500,
         ),
     )
 
     # Assert
     assert created.transaction_type == constants.TransactionType.OPEN_STOCK.value
-    assert created.quantity_change == Decimal("5")
-    assert created.total_revenue == Decimal("25")
-    assert created.total_cost == Decimal("0.00")
+    assert created.quantity_change == 5
+    assert created.total_revenue == 2500
+    assert created.total_cost == 0
     assert "transactions" not in context._cache
 
 
@@ -1163,14 +1162,14 @@ def test_record_open_stock_rejects_inactive_product_or_salesman(inactive_party) 
             transactions.OpenStockCommand(
                 product_id="P1",
                 salesman_id="S1",
-                quantity=Decimal("1"),
-                total_revenue=Decimal("1"),
+                quantity=1,
+                total_revenue=100,
             ),
         )
 
 
-@pytest.mark.parametrize("invalid_quantity", [Decimal("0"), Decimal("-1")])
-def test_record_open_stock_rejects_nonpositive_quantity(invalid_quantity: Decimal) -> None:
+@pytest.mark.parametrize("invalid_quantity", [0, -1])
+def test_record_open_stock_rejects_nonpositive_quantity(invalid_quantity: int) -> None:
     """
     GIVEN an open stock command with zero or negative quantity
     WHEN record_open_stock is called
@@ -1190,13 +1189,13 @@ def test_record_open_stock_rejects_nonpositive_quantity(invalid_quantity: Decima
                 product_id="P1",
                 salesman_id="S1",
                 quantity=invalid_quantity,
-                total_revenue=Decimal("1"),
+                total_revenue=100,
             ),
         )
 
 
-@pytest.mark.parametrize("invalid_revenue", [Decimal("-0.01"), Decimal("-3")])
-def test_record_open_stock_rejects_negative_revenue(invalid_revenue: Decimal) -> None:
+@pytest.mark.parametrize("invalid_revenue", [-1, -300])
+def test_record_open_stock_rejects_negative_revenue(invalid_revenue: int) -> None:
     """
     GIVEN an open stock command with negative total_revenue
     WHEN record_open_stock is called
@@ -1215,7 +1214,7 @@ def test_record_open_stock_rejects_negative_revenue(invalid_revenue: Decimal) ->
             transactions.OpenStockCommand(
                 product_id="P1",
                 salesman_id="S1",
-                quantity=Decimal("1"),
+                quantity=1,
                 total_revenue=invalid_revenue,
             ),
         )
@@ -1231,8 +1230,8 @@ def test_build_open_stock_transaction_applies_expected_field_mapping() -> None:
     command = transactions.OpenStockCommand(
         product_id="P1",
         salesman_id="S1",
-        quantity=Decimal("4"),
-        total_revenue=Decimal("20"),
+        quantity=4,
+        total_revenue=2000,
     )
 
     # Act
@@ -1244,9 +1243,9 @@ def test_build_open_stock_transaction_applies_expected_field_mapping() -> None:
 
     # Assert
     assert row.transaction_type == constants.TransactionType.OPEN_STOCK.value
-    assert row.quantity_change == Decimal("4")
-    assert row.total_revenue == Decimal("20")
-    assert row.total_cost == Decimal("0.00")
+    assert row.quantity_change == 4
+    assert row.total_revenue == 2000
+    assert row.total_cost == 0
 
 
 def test_record_void_appends_reversal_and_invalidates_cache() -> None:
@@ -1265,9 +1264,9 @@ def test_record_void_appends_reversal_and_invalidates_cache() -> None:
         "P1",
         "S1",
         constants.PaymentType.CASH.value,
-        Decimal("-2"),
-        Decimal("10"),
-        Decimal("0"),
+        -2,
+        1000,
+        0,
     )
     transactions.list_transactions(context)
 
@@ -1281,8 +1280,8 @@ def test_record_void_appends_reversal_and_invalidates_cache() -> None:
     # Assert
     assert reversal.transaction_type == constants.TransactionType.VOID.value
     assert reversal.linked_transaction_id == "SALE1"
-    assert reversal.quantity_change == Decimal("2")
-    assert reversal.total_revenue == Decimal("-10")
+    assert reversal.quantity_change == 2
+    assert reversal.total_revenue == -1000
     assert "transactions" not in context._cache
 
 
@@ -1323,9 +1322,9 @@ def test_record_void_rejects_ineligible_target_types() -> None:
             "P1",
             "S1",
             constants.PaymentType.CASH.value,
-            Decimal("0"),
-            Decimal("1"),
-            Decimal("0"),
+            0,
+            100,
+            0,
         )
 
         # Act / Assert
@@ -1350,9 +1349,9 @@ def test_build_void_transaction_negates_numeric_fields_and_links_original_id() -
         product_id="P1",
         salesman_id="S1",
         payment_type=constants.PaymentType.CASH.value,
-        quantity_change=Decimal("-2"),
-        total_revenue=Decimal("10"),
-        total_cost=Decimal("0"),
+        quantity_change=-2,
+        total_revenue=1000,
+        total_cost=0,
         linked_transaction_id=None,
         notes=None,
     )
@@ -1367,9 +1366,9 @@ def test_build_void_transaction_negates_numeric_fields_and_links_original_id() -
     # Assert
     assert row.transaction_type == constants.TransactionType.VOID.value
     assert row.linked_transaction_id == "SALE1"
-    assert row.quantity_change == Decimal("2")
-    assert row.total_revenue == Decimal("-10")
-    assert row.total_cost == Decimal("0")
+    assert row.quantity_change == 2
+    assert row.total_revenue == -1000
+    assert row.total_cost == 0
     assert row.notes == "void note"
 
 
@@ -1392,9 +1391,9 @@ def test_validate_void_target_rejects_ineligible_types(ineligible_type) -> None:
         product_id="P1",
         salesman_id="S1",
         payment_type=None,
-        quantity_change=Decimal("0"),
-        total_revenue=Decimal("0"),
-        total_cost=Decimal("0"),
+        quantity_change=0,
+        total_revenue=0,
+        total_cost=0,
         linked_transaction_id=None,
         notes=None,
     )
@@ -1418,9 +1417,9 @@ def test_validate_void_target_accepts_other_transaction_types() -> None:
         product_id="P1",
         salesman_id="S1",
         payment_type=constants.PaymentType.CASH.value,
-        quantity_change=Decimal("-1"),
-        total_revenue=Decimal("5"),
-        total_cost=Decimal("0"),
+        quantity_change=-1,
+        total_revenue=500,
+        total_cost=0,
         linked_transaction_id=None,
         notes=None,
     )

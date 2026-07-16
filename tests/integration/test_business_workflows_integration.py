@@ -1,17 +1,17 @@
-from decimal import Decimal
-
 import pytest
 
 from caad_erp import bll, constants, exceptions
 
 
-def _add_product(context: bll.RuntimeContext, product_id: str, price: str = "10.00") -> None:
+def _add_product(
+    context: bll.RuntimeContext, product_id: str, price: int = 1000
+) -> None:
     bll.add_product(
         context,
         bll.ProductCommand(
             product_id=product_id,
             product_name=f"Product {product_id}",
-            sell_price=Decimal(price),
+            sell_price=price,
             is_active=True,
         ),
     )
@@ -67,8 +67,7 @@ def test_deactivate_product_hides_item_from_active_listing_but_keeps_history(
         initialized_context,
         bll.ProductCommand(product_id="WF-P002", is_active=False),
     )
-    active_ids = {row.product_id for row in bll.list_products(
-        initialized_context)}
+    active_ids = {row.product_id for row in bll.list_products(initialized_context)}
     all_ids = {
         row.product_id
         for row in bll.list_products(initialized_context, include_inactive=True)
@@ -90,8 +89,7 @@ def test_deactivate_salesman_hides_item_from_active_listing_but_keeps_history(
         initialized_context,
         bll.SalesmanCommand(salesman_id="WF-S002", is_active=False),
     )
-    active_ids = {row.salesman_id for row in bll.list_salesmen(
-        initialized_context)}
+    active_ids = {row.salesman_id for row in bll.list_salesmen(initialized_context)}
     all_ids = {
         row.salesman_id
         for row in bll.list_salesmen(initialized_context, include_inactive=True)
@@ -115,8 +113,8 @@ def test_record_sale_updates_transaction_log_and_inventory_report(
         bll.OpenStockCommand(
             product_id="WF-P003",
             salesman_id="WF-S003",
-            quantity=Decimal("10"),
-            total_revenue=Decimal("0.00"),
+            quantity=10,
+            total_revenue=0,
         ),
     )
     sale = bll.record_sale(
@@ -124,14 +122,13 @@ def test_record_sale_updates_transaction_log_and_inventory_report(
         bll.SaleCommand(
             product_id="WF-P003",
             salesman_id="WF-S003",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("20.00"),
+            quantity=2,
+            total_revenue=2000,
             payment_type=constants.PaymentType.CASH,
         ),
     )
     assert sale.transaction_type == constants.TransactionType.SALE.value
-    assert bll.calculate_inventory(initialized_context)[
-        "WF-P003"] == Decimal("8")
+    assert bll.calculate_inventory(initialized_context)["WF-P003"] == 8
 
 
 def test_record_restock_updates_transaction_log_inventory_and_profit_summary(
@@ -149,15 +146,13 @@ def test_record_restock_updates_transaction_log_inventory_and_profit_summary(
         bll.RestockCommand(
             product_id="WF-P004",
             salesman_id="WF-S004",
-            quantity=Decimal("5"),
-            total_cost=Decimal("12.50"),
+            quantity=5,
+            total_cost=1250,
         ),
     )
     assert restock.transaction_type == constants.TransactionType.RESTOCK.value
-    assert bll.calculate_inventory(initialized_context)[
-        "WF-P004"] == Decimal("5")
-    assert bll.calculate_profit_summary(initialized_context)[
-        "total_cost"] == Decimal("-12.50")
+    assert bll.calculate_inventory(initialized_context)["WF-P004"] == 5
+    assert bll.calculate_profit_summary(initialized_context)["total_cost"] == -1250
 
 
 def test_record_write_off_updates_inventory_without_revenue_or_cost_change(
@@ -175,8 +170,8 @@ def test_record_write_off_updates_inventory_without_revenue_or_cost_change(
         bll.OpenStockCommand(
             product_id="WF-P005",
             salesman_id="WF-S005",
-            quantity=Decimal("5"),
-            total_revenue=Decimal("0.00"),
+            quantity=5,
+            total_revenue=0,
         ),
     )
     before = bll.calculate_profit_summary(initialized_context)
@@ -185,12 +180,11 @@ def test_record_write_off_updates_inventory_without_revenue_or_cost_change(
         bll.WriteOffCommand(
             product_id="WF-P005",
             salesman_id="WF-S005",
-            quantity=Decimal("2"),
+            quantity=2,
         ),
     )
     after = bll.calculate_profit_summary(initialized_context)
-    assert bll.calculate_inventory(initialized_context)[
-        "WF-P005"] == Decimal("3")
+    assert bll.calculate_inventory(initialized_context)["WF-P005"] == 3
     assert before == after
 
 
@@ -202,15 +196,15 @@ def test_credit_sale_then_payment_reduces_outstanding_debt(
     WHEN bll.record_credit_payment is executed against that sale
     THEN debts report shows reduced outstanding total and linked payment traceability
     """
-    _add_product(initialized_context, "WF-P006", price="10.00")
+    _add_product(initialized_context, "WF-P006", price=1000)
     _add_salesman(initialized_context, "WF-S006")
     sale = bll.record_sale(
         initialized_context,
         bll.SaleCommand(
             product_id="WF-P006",
             salesman_id="WF-S006",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("0.00"),
+            quantity=2,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -220,13 +214,13 @@ def test_credit_sale_then_payment_reduces_outstanding_debt(
         bll.CreditPaymentCommand(
             linked_transaction_id=sale.transaction_id,
             salesman_id="WF-S006",
-            total_revenue=Decimal("5.00"),
+            total_revenue=500,
             payment_type=constants.PaymentType.CASH,
         ),
     )
     after = bll.calculate_outstanding_debts(initialized_context)
-    assert before["total_outstanding"] == Decimal("20.00")
-    assert after["total_outstanding"] == Decimal("15.00")
+    assert before["total_outstanding"] == 2000
+    assert after["total_outstanding"] == 1500
 
 
 def test_void_transaction_reverses_inventory_and_financial_effects(
@@ -244,18 +238,16 @@ def test_void_transaction_reverses_inventory_and_financial_effects(
         bll.RestockCommand(
             product_id="WF-P007",
             salesman_id="WF-S007",
-            quantity=Decimal("4"),
-            total_cost=Decimal("10.00"),
+            quantity=4,
+            total_cost=1000,
         ),
     )
     bll.record_void(
         initialized_context,
         bll.VoidCommand(linked_transaction_id=restock.transaction_id),
     )
-    assert bll.calculate_inventory(initialized_context).get(
-        "WF-P007", Decimal("0")) == Decimal("0")
-    assert bll.calculate_profit_summary(initialized_context)[
-        "total_cost"] == Decimal("0.00")
+    assert bll.calculate_inventory(initialized_context).get("WF-P007", 0) == 0
+    assert bll.calculate_profit_summary(initialized_context)["total_cost"] == 0
 
 
 @pytest.mark.parametrize(
@@ -281,30 +273,32 @@ def test_invalid_workflows_raise_domain_errors_without_partial_state_changes(
 
     baseline = len(bll.list_transactions(context))
     if workflow_name == "sale_inactive_product":
-        bll.update_product(context, bll.ProductCommand(
-            product_id="WF-P008", is_active=False))
+        bll.update_product(
+            context, bll.ProductCommand(product_id="WF-P008", is_active=False)
+        )
         with pytest.raises(exceptions.BusinessRuleViolation):
             bll.record_sale(
                 context,
                 bll.SaleCommand(
                     product_id="WF-P008",
                     salesman_id="WF-S008",
-                    quantity=Decimal("1"),
-                    total_revenue=Decimal("1.00"),
+                    quantity=1,
+                    total_revenue=100,
                     payment_type=constants.PaymentType.CASH,
                 ),
             )
     elif workflow_name == "restock_inactive_salesman":
-        bll.update_salesman(context, bll.SalesmanCommand(
-            salesman_id="WF-S008", is_active=False))
+        bll.update_salesman(
+            context, bll.SalesmanCommand(salesman_id="WF-S008", is_active=False)
+        )
         with pytest.raises(exceptions.BusinessRuleViolation):
             bll.record_restock(
                 context,
                 bll.RestockCommand(
                     product_id="WF-P008",
                     salesman_id="WF-S008",
-                    quantity=Decimal("1"),
-                    total_cost=Decimal("1.00"),
+                    quantity=1,
+                    total_cost=100,
                 ),
             )
     else:
@@ -314,7 +308,7 @@ def test_invalid_workflows_raise_domain_errors_without_partial_state_changes(
                 bll.CreditPaymentCommand(
                     linked_transaction_id="UNKNOWN-TX",
                     salesman_id="WF-S008",
-                    total_revenue=Decimal("1.00"),
+                    total_revenue=100,
                     payment_type=constants.PaymentType.CASH,
                 ),
             )
@@ -337,8 +331,8 @@ def test_cache_consistency_after_multiple_mutations_and_reports(
         bll.OpenStockCommand(
             product_id="WF-P009",
             salesman_id="WF-S009",
-            quantity=Decimal("8"),
-            total_revenue=Decimal("0.00"),
+            quantity=8,
+            total_revenue=0,
         ),
     )
     _ = bll.list_products(initialized_context)
@@ -348,16 +342,17 @@ def test_cache_consistency_after_multiple_mutations_and_reports(
         bll.SaleCommand(
             product_id="WF-P009",
             salesman_id="WF-S009",
-            quantity=Decimal("3"),
-            total_revenue=Decimal("30.00"),
+            quantity=3,
+            total_revenue=3000,
             payment_type=constants.PaymentType.CASH,
         ),
     )
     inventory = bll.calculate_inventory(initialized_context)
     transactions = bll.list_transactions(initialized_context)
-    assert inventory["WF-P009"] == Decimal("5")
-    assert any(t.transaction_type ==
-               constants.TransactionType.SALE.value for t in transactions)
+    assert inventory["WF-P009"] == 5
+    assert any(
+        t.transaction_type == constants.TransactionType.SALE.value for t in transactions
+    )
 
 
 def test_data_persists_across_context_reload_for_full_workflow(
@@ -376,8 +371,8 @@ def test_data_persists_across_context_reload_for_full_workflow(
         bll.OpenStockCommand(
             product_id="WF-P010",
             salesman_id="WF-S010",
-            quantity=Decimal("6"),
-            total_revenue=Decimal("0.00"),
+            quantity=6,
+            total_revenue=0,
         ),
     )
     bll.record_sale(
@@ -385,19 +380,17 @@ def test_data_persists_across_context_reload_for_full_workflow(
         bll.SaleCommand(
             product_id="WF-P010",
             salesman_id="WF-S010",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("20.00"),
+            quantity=2,
+            total_revenue=2000,
             payment_type=constants.PaymentType.CASH,
         ),
     )
     bll.persist_context(initialized_context)
 
     reloaded = bll.load_context(integration_config_path)
-    assert bll.get_product(
-        reloaded, "WF-P010").product_name == "Product WF-P010"
-    assert bll.get_salesman(
-        reloaded, "WF-S010").salesman_name == "Salesman WF-S010"
-    assert bll.calculate_inventory(reloaded)["WF-P010"] == Decimal("4")
+    assert bll.get_product(reloaded, "WF-P010").product_name == "Product WF-P010"
+    assert bll.get_salesman(reloaded, "WF-S010").salesman_name == "Salesman WF-S010"
+    assert bll.calculate_inventory(reloaded)["WF-P010"] == 4
 
 
 def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
@@ -408,8 +401,8 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
     WHEN all reports are computed at the end of the chained workflow
     THEN inventory profit and outstanding debts reconcile with the combined ledger effects
     """
-    _add_product(initialized_context, "WF-P011", price="10.00")
-    _add_product(initialized_context, "WF-P012", price="5.00")
+    _add_product(initialized_context, "WF-P011", price=1000)
+    _add_product(initialized_context, "WF-P012", price=500)
     _add_salesman(initialized_context, "WF-S011")
     _add_salesman(initialized_context, "WF-S012")
 
@@ -418,8 +411,8 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
         bll.OpenStockCommand(
             product_id="WF-P011",
             salesman_id="WF-S011",
-            quantity=Decimal("10"),
-            total_revenue=Decimal("0.00"),
+            quantity=10,
+            total_revenue=0,
         ),
     )
     voided_sale = bll.record_sale(
@@ -427,8 +420,8 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
         bll.SaleCommand(
             product_id="WF-P011",
             salesman_id="WF-S011",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("20.00"),
+            quantity=2,
+            total_revenue=2000,
             payment_type=constants.PaymentType.CASH,
         ),
     )
@@ -441,8 +434,8 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
         bll.RestockCommand(
             product_id="WF-P012",
             salesman_id="WF-S012",
-            quantity=Decimal("12"),
-            total_cost=Decimal("18.00"),
+            quantity=12,
+            total_cost=1800,
         ),
     )
     credit_sale = bll.record_sale(
@@ -450,8 +443,8 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
         bll.SaleCommand(
             product_id="WF-P012",
             salesman_id="WF-S012",
-            quantity=Decimal("4"),
-            total_revenue=Decimal("0.00"),
+            quantity=4,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -460,7 +453,7 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
         bll.CreditPaymentCommand(
             linked_transaction_id=credit_sale.transaction_id,
             salesman_id="WF-S012",
-            total_revenue=Decimal("6.00"),
+            total_revenue=600,
             payment_type=constants.PaymentType.PIX,
         ),
     )
@@ -469,7 +462,7 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
         bll.WriteOffCommand(
             product_id="WF-P012",
             salesman_id="WF-S012",
-            quantity=Decimal("1"),
+            quantity=1,
         ),
     )
 
@@ -477,12 +470,12 @@ def test_multi_entity_workflow_reconciles_inventory_profit_and_debts(
     profit = bll.calculate_profit_summary(initialized_context)
     debts = bll.calculate_outstanding_debts(initialized_context)
 
-    assert inventory["WF-P011"] == Decimal("10")
-    assert inventory["WF-P012"] == Decimal("7")
-    assert profit["total_revenue"] == Decimal("6.00")
-    assert profit["total_cost"] == Decimal("-18.00")
-    assert profit["profit"] == Decimal("-12.00")
-    assert debts["total_outstanding"] == Decimal("14.00")
+    assert inventory["WF-P011"] == 10
+    assert inventory["WF-P012"] == 7
+    assert profit["total_revenue"] == 600
+    assert profit["total_cost"] == -1800
+    assert profit["profit"] == -1200
+    assert debts["total_outstanding"] == 1400
     assert len(debts["balances"]) == 1
     assert debts["balances"][0].transaction_id == credit_sale.transaction_id
 
@@ -495,7 +488,7 @@ def test_invalid_void_chains_raise_without_creating_partial_rows(
     WHEN invalid void attempts target a credit-payment row and then a void row
     THEN business errors are raised and transaction count only changes for the valid void
     """
-    _add_product(initialized_context, "WF-P013", price="9.00")
+    _add_product(initialized_context, "WF-P013", price=900)
     _add_salesman(initialized_context, "WF-S013")
 
     credit_sale = bll.record_sale(
@@ -503,8 +496,8 @@ def test_invalid_void_chains_raise_without_creating_partial_rows(
         bll.SaleCommand(
             product_id="WF-P013",
             salesman_id="WF-S013",
-            quantity=Decimal("2"),
-            total_revenue=Decimal("0.00"),
+            quantity=2,
+            total_revenue=0,
             payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
@@ -513,7 +506,7 @@ def test_invalid_void_chains_raise_without_creating_partial_rows(
         bll.CreditPaymentCommand(
             linked_transaction_id=credit_sale.transaction_id,
             salesman_id="WF-S013",
-            total_revenue=Decimal("5.00"),
+            total_revenue=500,
             payment_type=constants.PaymentType.CASH,
         ),
     )

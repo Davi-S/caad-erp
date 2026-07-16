@@ -9,7 +9,6 @@ memoized cache across requests.
 import logging
 import typing as t
 import dataclasses
-from decimal import Decimal
 
 from caad_erp import dal, exceptions
 
@@ -24,7 +23,7 @@ class ProductCommand:
 
     product_id: str
     product_name: t.Optional[str] = None
-    sell_price: t.Optional[Decimal] = None
+    sell_price: t.Optional[int] = None
     is_active: t.Optional[bool] = None
 
 
@@ -133,7 +132,7 @@ def update_product(
 
     if command.sell_price is not None:
         price = command.sell_price
-        if price < Decimal("0"):
+        if price < 0:
             logger.error(
                 "Product update rejected: negative sell_price '%s'", price)
             raise ValueError("Sell price must be zero or positive")
@@ -205,7 +204,7 @@ def add_product(
         raise ValueError("Sell price must be provided")
 
     price = command.sell_price
-    if price < Decimal("0"):
+    if price < 0:
         logger.error(
             "Product creation rejected: negative sell_price '%s'", price)
         raise ValueError("Sell price must be zero or positive")

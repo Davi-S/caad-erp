@@ -72,8 +72,9 @@ def _display_transaction_log(transactions: t.Iterable[object]) -> None:
         print(
             f"{getattr(transaction, 'transaction_id', ''):<18} {timestamp:<19} "
             f"{getattr(transaction, 'transaction_type', ''):<12} {product:<12} {salesman:<12} "
-            f"{getattr(transaction, 'quantity_change', ''):>8} {getattr(transaction, 'total_revenue', ''):>10} "
-            f"{getattr(transaction, 'total_cost', ''):>10} {notes}"
+            f"{getattr(transaction, 'quantity_change', ''):>8} "
+            f"{getattr(transaction, 'total_revenue', 0) / 100:>10.2f} "
+            f"{getattr(transaction, 'total_cost', 0) / 100:>10.2f} {notes}"
         )
 
 
