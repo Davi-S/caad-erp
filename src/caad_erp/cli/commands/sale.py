@@ -1,5 +1,4 @@
 import argparse
-from decimal import Decimal
 
 from caad_erp import bll, constants
 
@@ -65,8 +64,8 @@ def _translate_sale(args: argparse.Namespace) -> bll.SaleCommand:
     return bll.SaleCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
-        quantity=Decimal(args.quantity),
-        total_revenue=Decimal(args.total_revenue),
+        quantity=int(args.quantity),
+        total_revenue=int(args.total_revenue),
         payment_type=payment,
         notes=args.notes,
     )

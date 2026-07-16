@@ -1,6 +1,5 @@
 import argparse
 import typing as t
-from decimal import Decimal
 
 from caad_erp import bll
 
@@ -41,7 +40,7 @@ def register_debts_command() -> command_spec.CommandSpec:
     )
 
 
-def _display_debts_report(summary: t.Mapping[str, object]) -> None:
+def _display_debts_report(summary: t.Mapping[str, t.Any]) -> None:
     """Print outstanding credit balances with a running total.
 
     Args:
@@ -57,7 +56,7 @@ def _display_debts_report(summary: t.Mapping[str, object]) -> None:
 
     if not balances:
         print("No outstanding credit balances.")
-        print(f"Total outstanding: {total_outstanding}")
+        print(f"Total outstanding: {total_outstanding / 100:.2f}")
         return
 
     print("Outstanding credit balances:")
@@ -73,11 +72,11 @@ def _display_debts_report(summary: t.Mapping[str, object]) -> None:
         salesman = entry.salesman_id or "-"
         print(
             f"{entry.transaction_id:<18} {product:<12} {salesman:<12} "
-            f"{entry.quantity:>9} {entry.expected_amount:>10} "
-            f"{entry.amount_paid:>10} {entry.balance:>10}"
+            f"{entry.quantity:>9} {entry.expected_amount / 100:>10.2f} "
+            f"{entry.amount_paid / 100:>10.2f} {entry.balance / 100:>10.2f}"
         )
 
-    print(f"\nTotal outstanding: {total_outstanding}")
+    print(f"\nTotal outstanding: {total_outstanding / 100:.2f}")
 
 
 def _run_debts_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
