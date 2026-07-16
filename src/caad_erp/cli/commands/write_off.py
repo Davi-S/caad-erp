@@ -46,11 +46,11 @@ def _translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:
 
     Returns:
         bll.WriteOffCommand: Domain command capturing write-off details.
-            Quantity is coerced to :class:`~decimal.Decimal`.
+            Quantity is coerced to integer.
 
     Raises:
-        decimal.InvalidOperation: If ``--quantity`` cannot be parsed as a valid
-            decimal number.
+        ValueError: If ``--quantity`` cannot be parsed as a valid
+            integer number.
     """
     return bll.WriteOffCommand(
         product_id=args.product_id,

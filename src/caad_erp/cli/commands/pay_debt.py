@@ -51,14 +51,13 @@ def _translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:
             options.
 
     Returns:
-        bll.CreditPaymentCommand: Domain command conveying the payment
-            details. Monetary amounts are coerced to
-            :class:`~decimal.Decimal`, and the payment type string is converted
-            to :class:`~caad_erp.constants.PaymentType`.
+        bll.CreditPaymentCommand: Domain command conveying the payment details.
+            Monetary amounts are coerced to integers, and the payment type
+            string is converted to :class:`~caad_erp.constants.PaymentType`.
 
     Raises:
-        decimal.InvalidOperation: If ``--total-revenue`` cannot be parsed as a
-            valid decimal number.
+        ValueError: If ``--total-revenue`` cannot be parsed as a valid integer
+            number.
         ValueError: If ``--payment-type`` does not correspond to an allowed
             :class:`~caad_erp.constants.PaymentType` value.
     """

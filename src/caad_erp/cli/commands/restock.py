@@ -47,11 +47,11 @@ def _translate_restock(args: argparse.Namespace) -> bll.RestockCommand:
 
     Returns:
         bll.RestockCommand: Domain command capturing restock details.
-            Quantity and cost values are coerced to :class:`~decimal.Decimal`.
+            Quantity and cost values are coerced to integers.
 
     Raises:
-        decimal.InvalidOperation: If ``--quantity`` or ``--total-cost`` cannot
-            be parsed as valid decimal numbers.
+        ValueError: If ``--quantity`` or ``--total-cost`` cannot
+            be parsed as valid integer numbers.
     """
     return bll.RestockCommand(
         product_id=args.product_id,
