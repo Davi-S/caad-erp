@@ -1,5 +1,4 @@
 import argparse
-from decimal import Decimal
 
 from caad_erp import bll, constants
 
@@ -67,7 +66,7 @@ def _translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:
     return bll.CreditPaymentCommand(
         linked_transaction_id=args.linked_transaction_id,
         salesman_id=args.salesman_id,
-        total_revenue=Decimal(args.total_revenue),
+        total_revenue=int(args.total_revenue),
         payment_type=payment,
         notes=args.notes,
     )

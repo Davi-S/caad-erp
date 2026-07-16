@@ -1,5 +1,4 @@
 import argparse
-from decimal import Decimal
 
 from caad_erp import bll
 
@@ -56,7 +55,7 @@ def _translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:
     return bll.WriteOffCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
-        quantity=Decimal(args.quantity),
+        quantity=int(args.quantity),
         notes=args.notes,
     )
 

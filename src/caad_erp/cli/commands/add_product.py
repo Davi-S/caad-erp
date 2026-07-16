@@ -1,5 +1,4 @@
 import argparse
-from decimal import Decimal
 
 from caad_erp import bll
 
@@ -59,7 +58,7 @@ def _translate_add_product(args: argparse.Namespace) -> bll.ProductCommand:
     return bll.ProductCommand(
         product_id=args.product_id,
         product_name=args.product_name,
-        sell_price=Decimal(args.sell_price),
+        sell_price=int(args.sell_price),
         is_active=not getattr(args, "inactive", False),
     )
 
