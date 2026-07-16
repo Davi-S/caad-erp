@@ -35,6 +35,13 @@ export function useCart(products: Products, stock: Stock) {
     const clearCart = () => {
         setCart({})
     }
+    const removeItem = (id: string) => {
+        setCart((prevCart) => {
+            const { [id]: removedItem, ...restOfCart } = prevCart
+            return restOfCart
+        })
+    }
+
 
     return {
         cart,
@@ -44,5 +51,6 @@ export function useCart(products: Products, stock: Stock) {
         inc,
         dec,
         clearCart,
+        removeItem,
     }
 }
