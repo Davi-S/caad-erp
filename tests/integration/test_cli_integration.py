@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 import io
 import sys
@@ -28,7 +27,7 @@ def test_cli_main_executes_mutating_command_and_persists_changes(
             "-n",
             "CLI Product",
             "-p",
-            "11.50",
+            "1150",
         ]
     )
 
@@ -81,7 +80,7 @@ def test_cli_main_returns_business_rule_exit_code_for_domain_violation(
             "-n",
             "Inactive Product",
             "-p",
-            "5.00",
+            "500",
             "-x",
         ]
     )
@@ -108,7 +107,7 @@ def test_cli_main_returns_business_rule_exit_code_for_domain_violation(
             "-s",
             "CLI-S001",
             "-r",
-            "5.00",
+            "500",
             "-p",
             constants.PaymentType.CASH.value,
         ]
@@ -198,7 +197,7 @@ def test_cli_repl_session_persists_successful_mutating_commands(
     """
     original_stdin = sys.stdin
     sys.stdin = io.StringIO(
-        "add-product -i REPL-P001 -n ReplProduct -p 7.00\nexit\n")
+        "add-product -i REPL-P001 -n ReplProduct -p 700\nexit\n")
 
     parser = cli_parser.build_parser()
     table = cli_parser.configure_subcommands(parser)
@@ -223,8 +222,8 @@ def test_cli_repl_session_recovers_from_command_errors_and_continues(
     """
     original_stdin = sys.stdin
     sys.stdin = io.StringIO(
-        "sale -i UNKNOWN -q 1 -s GRR00000000 -r 1.00 -p Cash\n"
-        "add-product -i REPL-P002 -n AfterError -p 8.00\n"
+        "sale -i UNKNOWN -q 1 -s GRR00000000 -r 100 -p Cash\n"
+        "add-product -i REPL-P002 -n AfterError -p 800\n"
         "exit\n"
     )
 
@@ -279,7 +278,7 @@ def test_cli_one_shot_credit_lifecycle_persists_and_matches_reports(
             "--product-name",
             "Credit Product",
             "--sell-price",
-            "8.00",
+            "800",
         ]
     )
     add_salesman_result = cli_parser.main(
@@ -305,7 +304,7 @@ def test_cli_one_shot_credit_lifecycle_persists_and_matches_reports(
             "--salesman-id",
             "CLI-S003",
             "--total-revenue",
-            "0.00",
+            "0",
             "--payment-type",
             constants.PaymentType.ON_CREDIT.value,
         ]
@@ -328,7 +327,7 @@ def test_cli_one_shot_credit_lifecycle_persists_and_matches_reports(
             "--linked-transaction-id",
             sale_transaction.transaction_id,
             "--total-revenue",
-            "10.00",
+            "1000",
             "--salesman-id",
             "CLI-S003",
             "--payment-type",
@@ -361,5 +360,5 @@ def test_cli_one_shot_credit_lifecycle_persists_and_matches_reports(
     assert debts_result == 0
     assert log_result == 0
     assert len(transactions) == 2
-    assert debts_report["total_outstanding"] == Decimal("14.00")
+    assert debts_report["total_outstanding"] == 1400
     assert debts_report["balances"][0].transaction_id == sale_transaction.transaction_id
