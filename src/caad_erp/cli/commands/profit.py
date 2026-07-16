@@ -1,5 +1,4 @@
 import argparse
-from decimal import Decimal
 import typing as t
 
 from caad_erp import bll
@@ -41,23 +40,23 @@ def register_profit_command() -> command_spec.CommandSpec:
     )
 
 
-def _display_profit_summary(summary: t.Mapping[str, Decimal]) -> None:
+def _display_profit_summary(summary: t.Mapping[str, int]) -> None:
     """Print the aggregated revenue, cost, and profit metrics.
 
     Args:
-        summary (Mapping[str, Decimal]): Output from
+        summary (Mapping[str, int]): Output from
             :func:`bll.calculate_profit_summary` containing the totals to
             display.
     """
 
-    total_revenue = summary.get("total_revenue", Decimal("0.00"))
-    total_cost = summary.get("total_cost", Decimal("0.00"))
+    total_revenue = summary.get("total_revenue", 0)
+    total_cost = summary.get("total_cost", 0)
     profit = summary.get("profit", total_revenue + total_cost)
 
     print("Profit summary:")
-    print(f"  Total revenue : {total_revenue}")
-    print(f"  Total cost    : {total_cost}")
-    print(f"  Profit        : {profit}")
+    print(f"  Total revenue : {total_revenue / 100:.2f}")
+    print(f"  Total cost    : {total_cost / 100:.2f}")
+    print(f"  Profit        : {profit / 100:.2f}")
 
 
 def _run_profit_report(context: bll.RuntimeContext, args: argparse.Namespace) -> int:

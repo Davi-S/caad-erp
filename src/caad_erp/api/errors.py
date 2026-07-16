@@ -7,7 +7,6 @@ to appropriate HTTP status codes and response formats.
 import dataclasses
 import logging
 import typing as t
-from decimal import Decimal
 
 import fastapi
 import fastapi.encoders
@@ -61,7 +60,7 @@ class ErrorResponseBuilder:
         validation_errors = fastapi.encoders.jsonable_encoder(
             exc.errors(),
             custom_encoder={
-                Decimal: str,
+                int: str,
                 Exception: str,
             },
         )

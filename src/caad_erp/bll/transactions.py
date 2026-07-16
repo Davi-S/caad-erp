@@ -11,7 +11,6 @@ import datetime
 import logging
 import typing as t
 import dataclasses
-from decimal import Decimal
 
 from caad_erp import constants, dal, exceptions
 
@@ -26,8 +25,8 @@ class SaleCommand:
 
     product_id: str
     salesman_id: str
-    quantity: Decimal
-    total_revenue: Decimal
+    quantity: int
+    total_revenue: int
     payment_type: constants.PaymentType
     notes: t.Optional[str] = None
 
@@ -38,8 +37,8 @@ class RestockCommand:
 
     product_id: str
     salesman_id: str
-    quantity: Decimal
-    total_cost: Decimal
+    quantity: int
+    total_cost: int
     notes: t.Optional[str] = None
 
 
@@ -49,7 +48,7 @@ class WriteOffCommand:
 
     product_id: str
     salesman_id: str
-    quantity: Decimal
+    quantity: int
     notes: t.Optional[str] = None
 
 
@@ -59,7 +58,7 @@ class CreditPaymentCommand:
 
     linked_transaction_id: str
     salesman_id: str
-    total_revenue: Decimal
+    total_revenue: int
     payment_type: constants.PaymentType
     notes: t.Optional[str] = None
 
@@ -70,8 +69,8 @@ class OpenStockCommand:
 
     product_id: str
     salesman_id: str
-    quantity: Decimal
-    total_revenue: Decimal
+    quantity: int
+    total_revenue: int
 
 
 @dataclasses.dataclass(frozen=True)
@@ -82,6 +81,7 @@ class VoidCommand:
     notes: t.Optional[str] = None
 
 
+# Type this correctly so it returns t.Dict[str, dal.TransactionRow]
 def _ensure_transactions_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
     """Populate the transaction log cache bucket on demand.
 
@@ -130,11 +130,11 @@ def _generate_transaction_id(when: datetime.datetime) -> str:
     return when.strftime('%Y%m%d%H%M%S%f')
 
 
-def _require_positive_quantity(quantity: Decimal) -> None:
+def _require_positive_quantity(quantity: int) -> None:
     """Validate that a quantity is strictly positive.
 
     Args:
-        quantity (Decimal): Quantity supplied by a command object.
+        quantity (int): Quantity supplied by a command object.
 
     Raises:
         ValueError: If ``quantity`` is zero or negative.
@@ -144,25 +144,25 @@ def _require_positive_quantity(quantity: Decimal) -> None:
     magnitudes here. Using :class:`ValueError` keeps the guard consistent with
     other validation helpers in the module.
     """
-    if quantity <= Decimal("0"):
+    if quantity <= 0:
         logger.error("Quantity validation failed: %s", quantity)
         raise ValueError("Quantity must be greater than zero")
 
 
-def _require_nonnegative_money(amount: Decimal) -> None:
+def _require_nonnegative_money(amount: int) -> None:
     """Validate that a monetary value is nonnegative.
 
     Args:
-        amount (Decimal): Currency value supplied by a command object.
+        amount (int): Currency value supplied by a command object.
 
     Raises:
         ValueError: If ``amount`` is less than zero.
 
-    Monetary fields are stored as signed decimals within the transaction logger.
+    Monetary fields are stored as signed integers within the transaction logger.
     This helper ensures upstream workflows never pass negative revenue or cost
     figures without explicitly opting into that behavior.
     """
-    if amount < Decimal("0"):
+    if amount < 0:
         logger.error("Monetary value validation failed: %s", amount)
         raise ValueError("Amount must be zero or positive")
 
@@ -296,7 +296,7 @@ def _build_sale_transaction(command: SaleCommand, *, transaction_id: str, timest
         payment_type=command.payment_type.value,
         quantity_change=quantity_change,
         total_revenue=command.total_revenue,
-        total_cost=Decimal("0.00"),
+        total_cost=0,
         linked_transaction_id=None,
         notes=command.notes,
     )
@@ -380,7 +380,7 @@ def _build_restock_transaction(command: RestockCommand, *, transaction_id: str, 
         salesman_id=command.salesman_id,
         payment_type=None,
         quantity_change=quantity_change,
-        total_revenue=Decimal("0.00"),
+        total_revenue=0,
         total_cost=cost_value,
         linked_transaction_id=None,
         notes=command.notes,
@@ -461,8 +461,8 @@ def _build_write_off_transaction(command: WriteOffCommand, *, transaction_id: st
         salesman_id=command.salesman_id,
         payment_type=None,
         quantity_change=quantity_change,
-        total_revenue=Decimal("0.00"),
-        total_cost=Decimal("0.00"),
+        total_revenue=0,
+        total_cost=0,
         linked_transaction_id=None,
         notes=command.notes,
     )
@@ -546,9 +546,9 @@ def _build_credit_payment_transaction(command: CreditPaymentCommand, *, transact
         product_id=product_id,
         salesman_id=command.salesman_id,
         payment_type=command.payment_type.value,
-        quantity_change=Decimal("0"),
+        quantity_change=0,
         total_revenue=command.total_revenue,
-        total_cost=Decimal("0.00"),
+        total_cost=0,
         linked_transaction_id=command.linked_transaction_id,
         notes=command.notes,
     )
@@ -585,7 +585,7 @@ def _validate_credit_sale_link(transaction: dal.TransactionRow) -> None:
         )
         raise exceptions.BusinessRuleViolation(
             "Linked sale is not recorded as credit")
-    if transaction.total_revenue > Decimal("0"):
+    if transaction.total_revenue > 0:
         logger.error(
             "Credit payment validation failed: transaction '%s' already reports revenue",
             transaction.transaction_id,
@@ -680,7 +680,7 @@ def _build_open_stock_transaction(command: OpenStockCommand, *, transaction_id: 
         payment_type=None,
         quantity_change=quantity_change,
         total_revenue=command.total_revenue,
-        total_cost=Decimal("0.00"),
+        total_cost=0,
         linked_transaction_id=None,
         notes=None,
     )

@@ -1,7 +1,6 @@
 import asyncio
 import inspect
 from pathlib import Path
-from decimal import Decimal
 
 import pytest
 
@@ -29,7 +28,7 @@ def test_mutating_endpoint_wraps_sync_handler_and_persists_after_success(
             bll.ProductCommand(
                 product_id="PM001",
                 product_name="Persisted Product",
-                sell_price=Decimal("2.00"),
+                sell_price=200,
                 is_active=True,
             ),
         )
@@ -86,7 +85,7 @@ def test_mutating_endpoint_wraps_async_handler_and_persists_after_success(
             bll.ProductCommand(
                 product_id="PM002",
                 product_name="Persisted Async Product",
-                sell_price=Decimal("3.00"),
+                sell_price=300,
                 is_active=True,
             ),
         )

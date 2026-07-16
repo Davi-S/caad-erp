@@ -68,7 +68,7 @@ def _display_products_report(
             print(
                 f"{getattr(row, 'product_id', ''):<20} "
                 f"{getattr(row, 'product_name', ''):<30} "
-                f"{getattr(row, 'sell_price', ''):>12} "
+                f"{getattr(row, 'sell_price', 0) / 100:>12.2f} "
                 f"{('yes' if getattr(row, 'is_active', False) else 'no'):>7}"
             )
         return
@@ -79,7 +79,7 @@ def _display_products_report(
         print(
             f"{getattr(row, 'product_id', ''):<20} "
             f"{getattr(row, 'product_name', ''):<30} "
-            f"{getattr(row, 'sell_price', ''):>12}"
+            f"{getattr(row, 'sell_price', 0) / 100:>12.2f}"
         )
 
 

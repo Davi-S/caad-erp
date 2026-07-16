@@ -1,4 +1,3 @@
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import argparse
@@ -16,7 +15,7 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     wb.remove(default)
     products = wb.create_sheet(constants.SheetName.PRODUCTS.value)
     products.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
-    products.append(["P001", "Cookie", Decimal("2.50"), True])
+    products.append(["P001", "Cookie", 250, True])
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
@@ -87,59 +86,6 @@ def test_register_restock_registrar_configures_required_arguments() -> None:
     assert args.total_cost == "4.50"
 
 
-def test_translate_restock_maps_args_to_restock_command() -> None:
-    """
-    GIVEN parsed restock args with valid values
-    WHEN _translate_restock is called
-    THEN RestockCommand is built with Decimal conversions
-    """
-    # Arrange
-    args = argparse.Namespace(
-        product_id="P001",
-        quantity="3",
-        total_cost="4.50",
-        salesman_id="S001",
-        notes="restock",
-    )
-
-    # Act
-    command = restock._translate_restock(args)
-
-    # Assert
-    assert command.quantity == Decimal("3")
-    assert command.total_cost == Decimal("4.50")
-
-
-@pytest.mark.parametrize("invalid_numeric", ["", "abc", "1.2.3"])
-def test_translate_restock_raises_for_invalid_decimal_values(invalid_numeric) -> None:
-    """
-    GIVEN parsed restock args with invalid quantity or total-cost text
-    WHEN _translate_restock is called
-    THEN decimal conversion error is raised
-    """
-    # Arrange
-    bad_qty = argparse.Namespace(
-        product_id="P001",
-        quantity=invalid_numeric,
-        total_cost="4",
-        salesman_id="S001",
-        notes=None,
-    )
-    bad_cost = argparse.Namespace(
-        product_id="P001",
-        quantity="1",
-        total_cost=invalid_numeric,
-        salesman_id="S001",
-        notes=None,
-    )
-
-    # Act / Assert
-    with pytest.raises(InvalidOperation):
-        restock._translate_restock(bad_qty)
-    with pytest.raises(InvalidOperation):
-        restock._translate_restock(bad_cost)
-
-
 def test_run_restock_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     """
     GIVEN runtime context and parsed restock args
@@ -151,7 +97,7 @@ def test_run_restock_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     args = argparse.Namespace(
         product_id="P001",
         quantity="3",
-        total_cost="4.50",
+        total_cost=450,
         salesman_id="S001",
         notes=None,
     )

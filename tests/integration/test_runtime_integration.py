@@ -1,5 +1,4 @@
 from pathlib import Path
-from decimal import Decimal
 
 import pytest
 
@@ -124,7 +123,7 @@ def test_persist_context_writes_mutations_to_disk_for_reloaded_context(
         bll.ProductCommand(
             product_id="PERSIST-001",
             product_name="Persist Product",
-            sell_price=Decimal("3.50"),
+            sell_price=350,
             is_active=True,
         ),
     )
@@ -151,7 +150,7 @@ def test_cache_invalidation_for_specific_bucket_refreshes_subsequent_reads(
         dal_products.ProductRow(
             product_id="CACHE-001",
             product_name="Cache Product",
-            sell_price=Decimal("2.00"),
+            sell_price=200,
             is_active=True,
         ),
     )
