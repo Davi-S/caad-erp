@@ -1,5 +1,4 @@
 import argparse
-from decimal import Decimal
 
 from caad_erp import bll
 
@@ -48,17 +47,17 @@ def _translate_restock(args: argparse.Namespace) -> bll.RestockCommand:
 
     Returns:
         bll.RestockCommand: Domain command capturing restock details.
-            Quantity and cost values are coerced to :class:`~decimal.Decimal`.
+            Quantity and cost values are coerced to integers.
 
     Raises:
-        decimal.InvalidOperation: If ``--quantity`` or ``--total-cost`` cannot
-            be parsed as valid decimal numbers.
+        ValueError: If ``--quantity`` or ``--total-cost`` cannot
+            be parsed as valid integer numbers.
     """
     return bll.RestockCommand(
         product_id=args.product_id,
         salesman_id=args.salesman_id,
-        quantity=Decimal(args.quantity),
-        total_cost=Decimal(args.total_cost),
+        quantity=int(args.quantity),
+        total_cost=int(args.total_cost),
         notes=args.notes,
     )
 

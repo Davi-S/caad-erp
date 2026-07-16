@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import argparse
@@ -15,7 +14,7 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     wb.remove(default)
     products = wb.create_sheet(constants.SheetName.PRODUCTS.value)
     products.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
-    products.append(["P001", "Cookie", Decimal("2.50"), True])
+    products.append(["P001", "Cookie", 250, True])
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)

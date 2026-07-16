@@ -9,7 +9,6 @@ between worksheet row tuples and typed dataclasses.
 import dataclasses
 import logging
 import typing as t
-from decimal import Decimal
 
 from openpyxl.workbook import Workbook
 
@@ -29,7 +28,7 @@ class ProductRow:
 
     product_id: str
     product_name: str
-    sell_price: Decimal
+    sell_price: int
     is_active: bool
 
 
@@ -131,8 +130,7 @@ def _serialize_product(record: ProductRow) -> list[object]:
 def _deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
     """Convert a raw worksheet row into a strongly typed product record.
 
-    The converter normalizes numeric values into :class:`~decimal.Decimal`
-    instances and coerces id/name fields to ``str`` to avoid surprises caused by
+    The converter coerces id/name fields to ``str`` to avoid surprises caused by
     Excel automatically interpreting numbers.
 
     Args:
@@ -148,7 +146,7 @@ def _deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
     sell_raw = raw_row[2]
     is_active = raw_row[3]
 
-    sell_price = Decimal(str(sell_raw)) if sell_raw is not None else Decimal("0.00")
+    sell_price = int(str(sell_raw)) if sell_raw is not None else 0
     return ProductRow(
         product_id=str(product_id),
         product_name=str(product_name),
