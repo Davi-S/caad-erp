@@ -16,6 +16,7 @@ interface CartScreenProps {
         isEmpty: boolean
         inc: (id: string) => void
         dec: (id: string) => void
+        removeItem: (id: string) => void
     }
     actions: {
         onBack: () => void
@@ -30,7 +31,7 @@ export function CartScreen({
     actions
 }: CartScreenProps) {
     const { products, stock } = catalog
-    const { cart, cartIterable, total, isEmpty, inc, dec } = cartState
+    const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
     const { onBack, onClose } = actions
     const availableFor = (id: string) => stock[id]
 
@@ -61,7 +62,7 @@ export function CartScreen({
                         return (
                             <button
                                 key={product.product_id}
-                                onClick={() => inc(product.product_id)}
+                                onClick={() => cart[product.product_id] > 0 ? removeItem(product.product_id) : inc(product.product_id)}
                                 disabled={soldOut}
                                 className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative bg-card border border-solid border-paperLine disabled:opacity-45"
                             >
@@ -117,7 +118,7 @@ export function CartScreen({
                                             <Plus size={12} className="text-inkSoft" />
                                         </button>
                                     </div>
-                                    <span className="font-mono text-ink text-[13px] min-w-[62px] text-right">
+                                    <span className="font-mono text-ink text-[13px] min-w-15.56 text-right">
                                         {brl(quantity * product.sell_price)}
                                     </span>
                                 </div>
