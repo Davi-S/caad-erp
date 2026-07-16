@@ -1,6 +1,5 @@
 import argparse
 import typing as t
-from decimal import Decimal
 
 from caad_erp import bll
 
@@ -41,11 +40,11 @@ def register_stock_command() -> command_spec.CommandSpec:
     )
 
 
-def _display_inventory_report(inventory: t.Mapping[str, Decimal]) -> None:
+def _display_inventory_report(inventory: t.Mapping[str, int]) -> None:
     """Print the current inventory quantities in a fixed-width table.
 
     Args:
-        inventory (Mapping[str, Decimal]): Mapping of product identifiers to
+        inventory (Mapping[str, int]): Mapping of product identifiers to
             the on-hand quantity calculated by the business layer.
     """
 
