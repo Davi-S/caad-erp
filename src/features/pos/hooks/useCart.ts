@@ -1,13 +1,14 @@
 import { useState } from "react"
-import type { Schemas } from "@/api/apiClient"
+import type { Products, Stock } from "@/App"
 
-export function useCart(products: Schemas["ProductListResponse"]["items"], stock: Record<string, number>) {
+export function useCart(products: Products, stock: Stock) {
     // Core state. Single source of truth. Simplest representation of the cart
     const [cart, setCart] = useState<Record<string, number>>({})
 
     // Derived states used for clear intent and easy of use of other values 
-    const total = products.reduce((sum, item) => sum + (cart[item.product_id] || 0) * Number(item.sell_price), 0)
+    const total = products.reduce((sum, item) => sum + (cart[item.product_id] || 0) * item.sell_price, 0)
     const isEmpty = Object.keys(cart).length === 0
+    const cartIterable = Object.entries(cart)
 
     // Actions
     const inc = (id: string) => {
@@ -37,6 +38,7 @@ export function useCart(products: Schemas["ProductListResponse"]["items"], stock
 
     return {
         cart,
+        cartIterable,
         total,
         isEmpty,
         inc,

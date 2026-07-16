@@ -2,8 +2,8 @@ import { useState } from "react"
 import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
 import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
-import type { Schemas } from "@/api/apiClient"
 import type { CheckoutStatus } from "../hooks/useCheckout"
+import type { PaymentType } from "@/App"
 
 const QR_GRID = buildQrGrid()
 
@@ -14,8 +14,7 @@ interface PaymentScreenProps {
         error: string | null
     }
     actions: {
-        onConfirm: (method: Schemas["PaymentType"]
-        ) => void
+        onConfirm: (method: PaymentType) => void
         onNewSale: () => void
         onEdit: () => void
         onCancel: () => void
@@ -23,7 +22,7 @@ interface PaymentScreenProps {
 }
 
 export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) {
-    const [method, setMethod] = useState<Schemas["PaymentType"]>("PIX")
+    const [method, setMethod] = useState<PaymentType>("PIX")
     const [copied, setCopied] = useState(false)
 
     const { status, error } = checkout

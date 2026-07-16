@@ -1,5 +1,5 @@
 import { useState } from "react"
-import type { Schemas } from "@/api/apiClient"
+import type { SalesRequests } from "@/App"
 import { api } from "@/api/apiClient"
 
 export type CheckoutStatus = "idle" | "confirming" | "confirmed" | "error"
@@ -9,7 +9,7 @@ export function useCheckout() {
     const [error, setError] = useState<string | null>(null)
 
     const confirmPayment = async (
-        salesRequests: Schemas["SaleRequest"][],
+        salesRequests: SalesRequests,
         onUpdateStock: (newStock: Record<string, number>) => void
     ) => {
         setStatus("confirming")
@@ -28,7 +28,7 @@ export function useCheckout() {
             const stockMap: Record<string, number> = {}
             const items = freshStockResponse.data["items"]
             for (const item of items) {
-                stockMap[item.product_id] = Number(item.quantity)
+                stockMap[item.product_id] = item.quantity
             }
             onUpdateStock(stockMap)
 
