@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -9,15 +8,11 @@ from caad_erp.api import app as api_app
 from caad_erp.api import runtime as api_runtime
 
 
-def _as_decimal(value: object) -> Decimal:
-    return Decimal(str(value))
-
-
 def _create_product(
     client: TestClient,
     product_id: str,
     *,
-    sell_price: str = "10.00",
+    sell_price: int = 1000,
     is_active: bool = True,
 ) -> dict:
     response = client.post(
@@ -264,8 +259,8 @@ def test_report_endpoints_return_consistent_http_contracts(
         json={
             "product_id": "API-REP-P",
             "salesman_id": "API-REP-S",
-            "quantity": "5",
-            "total_cost": "10.00",
+            "quantity": 5,
+            "total_cost": 1000,
         },
     )
     sale_response = api_client.post(
@@ -273,8 +268,8 @@ def test_report_endpoints_return_consistent_http_contracts(
         json={
             "product_id": "API-REP-P",
             "salesman_id": "API-REP-S",
-            "quantity": "2",
-            "total_revenue": "20.00",
+            "quantity": 2,
+            "total_revenue": 2000,
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
@@ -283,8 +278,8 @@ def test_report_endpoints_return_consistent_http_contracts(
         json={
             "product_id": "API-REP-P",
             "salesman_id": "API-REP-S",
-            "quantity": "1",
-            "total_revenue": "0.00",
+            "quantity": 1,
+            "total_revenue": 0,
             "payment_type": constants.PaymentType.ON_CREDIT.value,
         },
     )
@@ -299,13 +294,13 @@ def test_report_endpoints_return_consistent_http_contracts(
     if report_endpoint == "stock":
         item = next(i for i in payload["items"]
                     if i["product_id"] == "API-REP-P")
-        assert _as_decimal(item["quantity"]) == Decimal("2")
+        assert item["quantity"] == 2
     elif report_endpoint == "profit":
-        assert _as_decimal(payload["total_revenue"]) == Decimal("20.00")
-        assert _as_decimal(payload["total_cost"]) == Decimal("-10.00")
-        assert _as_decimal(payload["profit"]) == Decimal("10.00")
+        assert payload["total_revenue"] == 2000
+        assert payload["total_cost"] == -1000
+        assert payload["profit"] == 1000
     elif report_endpoint == "debts":
-        assert _as_decimal(payload["total_outstanding"]) == Decimal("10.00")
+        assert payload["total_outstanding"] == 1000
         assert len(payload["balances"]) == 1
     else:
         assert len(payload["transactions"]) >= 3
@@ -374,8 +369,8 @@ def test_api_returns_422_for_invalid_request_payloads(
             {
                 "product_id": "ANY-P",
                 "salesman_id": "ANY-S",
-                "quantity": "not-a-decimal",
-                "total_revenue": "5.00",
+                "quantity": -1,
+                "total_revenue": 500,
                 "payment_type": constants.PaymentType.CASH.value,
             },
         ),
@@ -384,8 +379,8 @@ def test_api_returns_422_for_invalid_request_payloads(
             {
                 "product_id": "ANY-P",
                 "salesman_id": "ANY-S",
-                "quantity": "1",
-                "total_cost": "not-a-decimal",
+                "quantity": 1,
+                "total_cost": -1,
             },
         ),
         "void_missing_linked_transaction_id": (
@@ -397,7 +392,7 @@ def test_api_returns_422_for_invalid_request_payloads(
             {
                 "linked_transaction_id": "TX-UNKNOWN",
                 "salesman_id": "ANY-S",
-                "total_revenue": "2.00",
+                "total_revenue": 200,
                 "payment_type": constants.PaymentType.ON_CREDIT.value,
             },
         ),
@@ -443,8 +438,8 @@ def test_api_maps_missing_references_to_404(
             json={
                 "product_id": "UNKNOWN-P",
                 "salesman_id": "MR-S001",
-                "quantity": "1",
-                "total_revenue": "5.00",
+                "quantity": 1,
+                "total_revenue": 500,
                 "payment_type": constants.PaymentType.CASH.value,
             },
         )
@@ -455,8 +450,8 @@ def test_api_maps_missing_references_to_404(
             json={
                 "product_id": "MR-P001",
                 "salesman_id": "UNKNOWN-S",
-                "quantity": "1",
-                "total_revenue": "5.00",
+                "quantity": 1,
+                "total_revenue": 500,
                 "payment_type": constants.PaymentType.CASH.value,
             },
         )
@@ -467,7 +462,7 @@ def test_api_maps_missing_references_to_404(
             json={
                 "linked_transaction_id": "UNKNOWN-TX",
                 "salesman_id": "MR-S002",
-                "total_revenue": "3.00",
+                "total_revenue": 300,
                 "payment_type": constants.PaymentType.CASH.value,
             },
         )
@@ -504,7 +499,7 @@ def test_api_maps_business_rule_violations_to_409(
             json={
                 "product_id": "BR-P001",
                 "product_name": "Duplicate",
-                "sell_price": "2.00",
+                "sell_price": 200,
                 "is_active": True,
             },
         )
@@ -526,8 +521,8 @@ def test_api_maps_business_rule_violations_to_409(
             json={
                 "product_id": "BR-P002",
                 "salesman_id": "BR-S002",
-                "quantity": "1",
-                "total_revenue": "5.00",
+                "quantity": 1,
+                "total_revenue": 500,
                 "payment_type": constants.PaymentType.CASH.value,
             },
         )
@@ -539,8 +534,8 @@ def test_api_maps_business_rule_violations_to_409(
             json={
                 "product_id": "BR-P003",
                 "salesman_id": "BR-S003",
-                "quantity": "2",
-                "total_cost": "3.00",
+                "quantity": 2,
+                "total_cost": 300,
             },
         )
     else:
@@ -551,8 +546,8 @@ def test_api_maps_business_rule_violations_to_409(
             json={
                 "product_id": "BR-P004",
                 "salesman_id": "BR-S004",
-                "quantity": "2",
-                "total_revenue": "0.00",
+                "quantity": 2,
+                "total_revenue": 0,
                 "payment_type": constants.PaymentType.ON_CREDIT.value,
             },
         )
@@ -563,7 +558,7 @@ def test_api_maps_business_rule_violations_to_409(
             json={
                 "linked_transaction_id": credit_sale_id,
                 "salesman_id": "BR-S004",
-                "total_revenue": "5.00",
+                "total_revenue": 500,
                 "payment_type": constants.PaymentType.CASH.value,
             },
         )
@@ -591,7 +586,7 @@ def test_api_maps_domain_and_validation_failures_without_internal_crash(
     missing_reference = api_client.post("/products/UNKNOWN/deactivate")
     validation_error = api_client.post(
         "/products",
-        json={"product_id": "", "product_name": "x", "sell_price": "1.00"},
+        json={"product_id": "", "product_name": "x", "sell_price": 100},
     )
 
     assert missing_reference.status_code == 404
@@ -656,7 +651,7 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
     WHEN stock profit debts and log endpoints are requested repeatedly
     THEN observed report values remain internally consistent with transaction history
     """
-    _create_product(api_client, "CONS-P001", sell_price="10.00")
+    _create_product(api_client, "CONS-P001", sell_price=1000)
     _create_salesman(api_client, "CONS-S001")
 
     restock_response = api_client.post(
@@ -664,8 +659,8 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
         json={
             "product_id": "CONS-P001",
             "salesman_id": "CONS-S001",
-            "quantity": "10",
-            "total_cost": "15.00",
+            "quantity": 10,
+            "total_cost": 1500,
         },
     )
     assert restock_response.status_code == 201
@@ -675,8 +670,8 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
         json={
             "product_id": "CONS-P001",
             "salesman_id": "CONS-S001",
-            "quantity": "3",
-            "total_revenue": "30.00",
+            "quantity": 3,
+            "total_revenue": 3000,
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
@@ -692,7 +687,7 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
         json={
             "product_id": "CONS-P001",
             "salesman_id": "CONS-S001",
-            "quantity": "2",
+            "quantity": 2,
         },
     )
     assert write_off_response.status_code == 201
@@ -702,8 +697,8 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
         json={
             "product_id": "CONS-P001",
             "salesman_id": "CONS-S001",
-            "quantity": "1",
-            "total_revenue": "0.00",
+            "quantity": 1,
+            "total_revenue": 0,
             "payment_type": constants.PaymentType.ON_CREDIT.value,
         },
     )
@@ -722,15 +717,15 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
     stock_item = next(
         item for item in stock_final.json()["items"] if item["product_id"] == "CONS-P001"
     )
-    assert _as_decimal(stock_item["quantity"]) == Decimal("4")
+    assert stock_item["quantity"] == 4
 
     profit_payload = profit_final.json()
-    assert _as_decimal(profit_payload["total_revenue"]) == Decimal("30.00")
-    assert _as_decimal(profit_payload["total_cost"]) == Decimal("-15.00")
-    assert _as_decimal(profit_payload["profit"]) == Decimal("15.00")
+    assert profit_payload["total_revenue"] == 3000
+    assert profit_payload["total_cost"] == -1500
+    assert profit_payload["profit"] == 1500
 
     debts_payload = debts_final.json()
-    assert _as_decimal(debts_payload["total_outstanding"]) == Decimal("10.00")
+    assert debts_payload["total_outstanding"] == 1000
     assert len(debts_payload["balances"]) == 1
 
     transaction_types = {tx["transaction_type"]
