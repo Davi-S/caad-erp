@@ -62,8 +62,8 @@ export function POSFlow({
                 checkout={{ status, error }}
                 actions={{
                     onConfirm: (method) => {
-                        const salesRequests = Object.entries(cartState.cart).map(([productId, quantity]) => {
-                            const productPrice = Number(products.find(p => p.product_id === productId).sell_price)
+                        const salesRequests = cartState.cartIterable.map(([productId, quantity]) => {
+                            const productPrice = products.find(p => p.product_id === productId).sell_price
                             return {
                                 product_id: productId,
                                 salesman_id: selectedSellerId,

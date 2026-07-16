@@ -47,7 +47,7 @@ export default function App() {
         const stockMap: Record<string, number> = {}
         const stockItems = stockRes.data["items"]
         for (const item of stockItems) {
-            stockMap[item.product_id] = Number(item.quantity)
+            stockMap[item.product_id] = item.quantity
         }
         setStock(stockMap)
 

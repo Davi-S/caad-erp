@@ -6,8 +6,9 @@ export function useCart(products: Products, stock: Stock) {
     const [cart, setCart] = useState<Record<string, number>>({})
 
     // Derived states used for clear intent and easy of use of other values 
-    const total = products.reduce((sum, item) => sum + (cart[item.product_id] || 0) * Number(item.sell_price), 0)
+    const total = products.reduce((sum, item) => sum + (cart[item.product_id] || 0) * item.sell_price, 0)
     const isEmpty = Object.keys(cart).length === 0
+    const cartIterable = Object.entries(cart)
 
     // Actions
     const inc = (id: string) => {
@@ -37,6 +38,7 @@ export function useCart(products: Products, stock: Stock) {
 
     return {
         cart,
+        cartIterable,
         total,
         isEmpty,
         inc,

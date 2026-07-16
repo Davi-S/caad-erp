@@ -28,7 +28,7 @@ export function useCheckout() {
             const stockMap: Record<string, number> = {}
             const items = freshStockResponse.data["items"]
             for (const item of items) {
-                stockMap[item.product_id] = Number(item.quantity)
+                stockMap[item.product_id] = item.quantity
             }
             onUpdateStock(stockMap)
 
