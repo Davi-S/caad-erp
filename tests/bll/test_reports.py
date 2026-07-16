@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import openpyxl
@@ -51,7 +50,7 @@ def _make_context(workbook: Workbook) -> runtime.RuntimeContext:
     return runtime.RuntimeContext(settings=settings, workbook=workbook)
 
 
-def _seed_product(workbook: Workbook, product_id: str, sell_price: Decimal) -> None:
+def _seed_product(workbook: Workbook, product_id: str, sell_price: int) -> None:
     dal.append_product(
         workbook,
         dal.ProductRow(
@@ -69,9 +68,9 @@ def _seed_transaction(
     transaction_type: str,
     product_id: str | None,
     payment_type: str | None,
-    quantity_change: Decimal,
-    total_revenue: Decimal,
-    total_cost: Decimal,
+    quantity_change: int,
+    total_revenue: int,
+    total_cost: int,
     linked_transaction_id: str | None = None,
 ) -> None:
     dal.append_transaction(
@@ -107,9 +106,9 @@ def test_calculate_inventory_sums_quantity_by_product() -> None:
         constants.TransactionType.RESTOCK.value,
         "P1",
         None,
-        Decimal("5"),
-        Decimal("0"),
-        Decimal("-10"),
+        5,
+        0,
+        -1000,
     )
     _seed_transaction(
         workbook,
@@ -117,9 +116,9 @@ def test_calculate_inventory_sums_quantity_by_product() -> None:
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.CASH.value,
-        Decimal("-2"),
-        Decimal("6"),
-        Decimal("0"),
+        -2,
+        600,
+        0,
     )
     _seed_transaction(
         workbook,
@@ -127,16 +126,16 @@ def test_calculate_inventory_sums_quantity_by_product() -> None:
         constants.TransactionType.RESTOCK.value,
         "P2",
         None,
-        Decimal("3"),
-        Decimal("0"),
-        Decimal("-4"),
+        3,
+        0,
+        -400,
     )
 
     # Act
     inventory = reports.calculate_inventory(context)
 
     # Assert
-    assert inventory == {"P1": Decimal("3"), "P2": Decimal("3")}
+    assert inventory == {"P1": 3, "P2": 3}
 
 
 def test_calculate_inventory_ignores_entries_without_product_id() -> None:
@@ -154,9 +153,9 @@ def test_calculate_inventory_ignores_entries_without_product_id() -> None:
         constants.TransactionType.CREDIT_PAYMENT.value,
         None,
         constants.PaymentType.PIX.value,
-        Decimal("0"),
-        Decimal("10"),
-        Decimal("0"),
+        0,
+        1000,
+        0,
         linked_transaction_id="SALE1",
     )
 
@@ -198,9 +197,9 @@ def test_calculate_profit_summary_returns_revenue_cost_and_profit() -> None:
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.CASH.value,
-        Decimal("-1"),
-        Decimal("10"),
-        Decimal("0"),
+        -1,
+        1000,
+        0,
     )
     _seed_transaction(
         workbook,
@@ -208,9 +207,9 @@ def test_calculate_profit_summary_returns_revenue_cost_and_profit() -> None:
         constants.TransactionType.RESTOCK.value,
         "P1",
         None,
-        Decimal("2"),
-        Decimal("0"),
-        Decimal("-3"),
+        2,
+        0,
+        -300,
     )
 
     # Act
@@ -218,9 +217,9 @@ def test_calculate_profit_summary_returns_revenue_cost_and_profit() -> None:
 
     # Assert
     assert set(summary.keys()) == {"total_revenue", "total_cost", "profit"}
-    assert summary["total_revenue"] == Decimal("10")
-    assert summary["total_cost"] == Decimal("-3")
-    assert summary["profit"] == Decimal("7")
+    assert summary["total_revenue"] == 1000
+    assert summary["total_cost"] == -300
+    assert summary["profit"] == 700
 
 
 def test_calculate_profit_summary_uses_additive_profit_formula() -> None:
@@ -238,9 +237,9 @@ def test_calculate_profit_summary_uses_additive_profit_formula() -> None:
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.CASH.value,
-        Decimal("-1"),
-        Decimal("50"),
-        Decimal("0"),
+        -1,
+        5000,
+        0,
     )
     _seed_transaction(
         workbook,
@@ -248,9 +247,9 @@ def test_calculate_profit_summary_uses_additive_profit_formula() -> None:
         constants.TransactionType.RESTOCK.value,
         "P1",
         None,
-        Decimal("1"),
-        Decimal("0"),
-        Decimal("-20"),
+        1,
+        0,
+        -2000,
     )
 
     # Act
@@ -259,7 +258,7 @@ def test_calculate_profit_summary_uses_additive_profit_formula() -> None:
     # Assert
     assert summary["profit"] == summary["total_revenue"] + \
         summary["total_cost"]
-    assert summary["profit"] == Decimal("30")
+    assert summary["profit"] == 3000
 
 
 def test_calculate_profit_summary_returns_zeros_for_empty_transactions() -> None:
@@ -276,9 +275,9 @@ def test_calculate_profit_summary_returns_zeros_for_empty_transactions() -> None
 
     # Assert
     assert summary == {
-        "total_revenue": Decimal("0"),
-        "total_cost": Decimal("0"),
-        "profit": Decimal("0"),
+        "total_revenue": 0,
+        "total_cost": 0,
+        "profit": 0,
     }
 
 
@@ -291,16 +290,16 @@ def test_calculate_outstanding_debts_returns_balances_and_total() -> None:
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", Decimal("8"))
+    _seed_product(workbook, "P1", 800)
     _seed_transaction(
         workbook,
         "SALE1",
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-2"),
-        Decimal("0"),
-        Decimal("0"),
+        -2,
+        0,
+        0,
     )
     _seed_transaction(
         workbook,
@@ -308,9 +307,9 @@ def test_calculate_outstanding_debts_returns_balances_and_total() -> None:
         constants.TransactionType.CREDIT_PAYMENT.value,
         "P1",
         constants.PaymentType.CASH.value,
-        Decimal("0"),
-        Decimal("5"),
-        Decimal("0"),
+        0,
+        500,
+        0,
         linked_transaction_id="SALE1",
     )
 
@@ -321,10 +320,10 @@ def test_calculate_outstanding_debts_returns_balances_and_total() -> None:
     assert len(result["balances"]) == 1
     debt = result["balances"][0]
     assert debt.transaction_id == "SALE1"
-    assert debt.expected_amount == Decimal("16")
-    assert debt.amount_paid == Decimal("5")
-    assert debt.balance == Decimal("11")
-    assert result["total_outstanding"] == Decimal("11")
+    assert debt.expected_amount == 1600
+    assert debt.amount_paid == 500
+    assert debt.balance == 1100
+    assert result["total_outstanding"] == 1100
 
 
 def test_calculate_outstanding_debts_returns_empty_result_for_no_transactions() -> None:
@@ -341,7 +340,7 @@ def test_calculate_outstanding_debts_returns_empty_result_for_no_transactions() 
 
     # Assert
     assert result["balances"] == []
-    assert result["total_outstanding"] == Decimal("0.00")
+    assert result["total_outstanding"] == 0
 
 
 def test_calculate_outstanding_debts_ignores_non_credit_sales() -> None:
@@ -353,16 +352,16 @@ def test_calculate_outstanding_debts_ignores_non_credit_sales() -> None:
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", Decimal("10"))
+    _seed_product(workbook, "P1", 1000)
     _seed_transaction(
         workbook,
         "SALE1",
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.CASH.value,
-        Decimal("-2"),
-        Decimal("20"),
-        Decimal("0"),
+        -2,
+        2000,
+        0,
     )
 
     # Act
@@ -370,7 +369,7 @@ def test_calculate_outstanding_debts_ignores_non_credit_sales() -> None:
 
     # Assert
     assert result["balances"] == []
-    assert result["total_outstanding"] == Decimal("0.00")
+    assert result["total_outstanding"] == 0
 
 
 def test_calculate_outstanding_debts_ignores_voided_sales() -> None:
@@ -382,16 +381,16 @@ def test_calculate_outstanding_debts_ignores_voided_sales() -> None:
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", Decimal("10"))
+    _seed_product(workbook, "P1", 1000)
     _seed_transaction(
         workbook,
         "SALE1",
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-1"),
-        Decimal("0"),
-        Decimal("0"),
+        -1,
+        0,
+        0,
     )
     _seed_transaction(
         workbook,
@@ -399,9 +398,9 @@ def test_calculate_outstanding_debts_ignores_voided_sales() -> None:
         constants.TransactionType.VOID.value,
         "P1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("1"),
-        Decimal("0"),
-        Decimal("0"),
+        1,
+        0,
+        0,
         linked_transaction_id="SALE1",
     )
 
@@ -427,9 +426,9 @@ def test_calculate_outstanding_debts_ignores_non_sale_transactions() -> None:
         constants.TransactionType.RESTOCK.value,
         "P1",
         None,
-        Decimal("2"),
-        Decimal("0"),
-        Decimal("-5"),
+        2,
+        0,
+        -500,
     )
 
     # Act
@@ -449,7 +448,7 @@ def test_calculate_outstanding_debts_prefers_expected_amount_source(expected_sou
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", Decimal("9"))
+    _seed_product(workbook, "P1", 900)
 
     if expected_source == "transaction":
         # Expected amount should come from negative total_revenue magnitude (12)
@@ -459,11 +458,11 @@ def test_calculate_outstanding_debts_prefers_expected_amount_source(expected_sou
             constants.TransactionType.SALE.value,
             "P1",
             constants.PaymentType.ON_CREDIT.value,
-            Decimal("-2"),
-            Decimal("-12"),
-            Decimal("0"),
+            -2,
+            -1200,
+            0,
         )
-        expected_amount = Decimal("12")
+        expected_amount = 1200
     else:
         # Expected amount should come from price * quantity (9 * 2 = 18)
         _seed_transaction(
@@ -472,11 +471,11 @@ def test_calculate_outstanding_debts_prefers_expected_amount_source(expected_sou
             constants.TransactionType.SALE.value,
             "P1",
             constants.PaymentType.ON_CREDIT.value,
-            Decimal("-2"),
-            Decimal("0"),
-            Decimal("0"),
+            -2,
+            0,
+            0,
         )
-        expected_amount = Decimal("18")
+        expected_amount = 1800
 
     # Act
     result = reports.calculate_outstanding_debts(context)
@@ -495,16 +494,16 @@ def test_calculate_outstanding_debts_skips_fully_settled_or_nonpositive_balances
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", Decimal("10"))
+    _seed_product(workbook, "P1", 1000)
     _seed_transaction(
         workbook,
         "SALE1",
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-1"),
-        Decimal("0"),
-        Decimal("0"),
+        -1,
+        0,
+        0,
     )
     _seed_transaction(
         workbook,
@@ -512,9 +511,9 @@ def test_calculate_outstanding_debts_skips_fully_settled_or_nonpositive_balances
         constants.TransactionType.CREDIT_PAYMENT.value,
         "P1",
         constants.PaymentType.CASH.value,
-        Decimal("0"),
-        Decimal("10"),
-        Decimal("0"),
+        0,
+        1000,
+        0,
         linked_transaction_id="SALE1",
     )
 
@@ -523,7 +522,7 @@ def test_calculate_outstanding_debts_skips_fully_settled_or_nonpositive_balances
 
     # Assert
     assert result["balances"] == []
-    assert result["total_outstanding"] == Decimal("0.00")
+    assert result["total_outstanding"] == 0
 
 
 def test_calculate_outstanding_debts_skips_entries_with_nonpositive_expected_amount() -> None:
@@ -535,16 +534,16 @@ def test_calculate_outstanding_debts_skips_entries_with_nonpositive_expected_amo
     # Arrange
     workbook = _make_workbook()
     context = _make_context(workbook)
-    _seed_product(workbook, "P1", Decimal("0"))
+    _seed_product(workbook, "P1", 0)
     _seed_transaction(
         workbook,
         "SALE1",
         constants.TransactionType.SALE.value,
         "P1",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-2"),
-        Decimal("0"),
-        Decimal("0"),
+        -2,
+        0,
+        0,
     )
 
     # Act
@@ -569,9 +568,9 @@ def test_calculate_outstanding_debts_handles_missing_product_reference_gracefull
         constants.TransactionType.SALE.value,
         "UNKNOWN_PRODUCT",
         constants.PaymentType.ON_CREDIT.value,
-        Decimal("-1"),
-        Decimal("0"),
-        Decimal("0"),
+        -1,
+        0,
+        0,
     )
 
     # Act
@@ -579,4 +578,4 @@ def test_calculate_outstanding_debts_handles_missing_product_reference_gracefull
 
     # Assert
     assert result["balances"] == []
-    assert result["total_outstanding"] == Decimal("0.00")
+    assert result["total_outstanding"] == 0
