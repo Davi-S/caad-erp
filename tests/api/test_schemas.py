@@ -1,5 +1,4 @@
 import pytest
-from decimal import Decimal
 
 import pydantic
 
@@ -30,7 +29,7 @@ def test_request_models_accept_valid_payloads(request_type: str) -> None:
         "ProductCreateRequest": {
             "product_id": "P001",
             "product_name": "Soda",
-            "sell_price": "2.50",
+            "sell_price": 250,
             "is_active": True,
         },
         "SalesmanCreateRequest": {
@@ -41,20 +40,20 @@ def test_request_models_accept_valid_payloads(request_type: str) -> None:
         "SaleRequest": {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "2",
-            "total_revenue": "5.00",
+            "quantity": 2,
+            "total_revenue": 500,
             "payment_type": constants.PaymentType.CASH,
         },
         "RestockRequest": {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "2",
-            "total_cost": "3.50",
+            "quantity": 2,
+            "total_cost": 350,
         },
         "WriteOffRequest": {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "1",
+            "quantity": 1,
         },
         "VoidRequest": {
             "linked_transaction_id": "TX001",
@@ -62,7 +61,7 @@ def test_request_models_accept_valid_payloads(request_type: str) -> None:
         "PayDebtRequest": {
             "linked_transaction_id": "TX001",
             "salesman_id": "S001",
-            "total_revenue": "2.00",
+            "total_revenue": 200,
             "payment_type": constants.PaymentType.CASH,
         },
     }
@@ -99,7 +98,7 @@ def test_response_models_serialize_domain_values_to_expected_shape(response_type
         "ProductResponse": {
             "product_id": "P001",
             "product_name": "Soda",
-            "sell_price": Decimal("2.50"),
+            "sell_price": 250,
             "is_active": True,
         },
         "SalesmanResponse": {
@@ -114,19 +113,19 @@ def test_response_models_serialize_domain_values_to_expected_shape(response_type
             "product_id": "P001",
             "salesman_id": "S001",
             "payment_type": constants.PaymentType.CASH.value,
-            "quantity_change": Decimal("-2"),
-            "total_revenue": Decimal("5.00"),
-            "total_cost": Decimal("0.00"),
+            "quantity_change": -2,
+            "total_revenue": 500,
+            "total_cost": 0,
             "linked_transaction_id": None,
             "notes": None,
         },
         "StockReportResponse": {
-            "items": [{"product_id": "P001", "quantity": Decimal("3")}],
+            "items": [{"product_id": "P001", "quantity": 3}],
         },
         "ProfitReportResponse": {
-            "total_revenue": Decimal("10.00"),
-            "total_cost": Decimal("-3.00"),
-            "profit": Decimal("7.00"),
+            "total_revenue": 1000,
+            "total_cost": -300,
+            "profit": 700,
         },
         "DebtsReportResponse": {
             "balances": [
@@ -135,13 +134,13 @@ def test_response_models_serialize_domain_values_to_expected_shape(response_type
                     "timestamp_iso": "2026-01-01T00:00:00+00:00",
                     "product_id": "P001",
                     "salesman_id": "S001",
-                    "quantity": Decimal("2"),
-                    "expected_amount": Decimal("10.00"),
-                    "amount_paid": Decimal("4.00"),
-                    "balance": Decimal("6.00"),
+                    "quantity": 2,
+                    "expected_amount": 1000,
+                    "amount_paid": 400,
+                    "balance": 600,
                 }
             ],
-            "total_outstanding": Decimal("6.00"),
+            "total_outstanding": 600,
         },
         "LogReportResponse": {
             "transactions": [
@@ -152,9 +151,9 @@ def test_response_models_serialize_domain_values_to_expected_shape(response_type
                     "product_id": "P001",
                     "salesman_id": "S001",
                     "payment_type": constants.PaymentType.CASH.value,
-                    "quantity_change": Decimal("-2"),
-                    "total_revenue": Decimal("5.00"),
-                    "total_cost": Decimal("0.00"),
+                    "quantity_change": -2,
+                    "total_revenue": 500,
+                    "total_cost": 0,
                     "linked_transaction_id": None,
                     "notes": None,
                 }
@@ -195,17 +194,17 @@ def test_request_models_reject_invalid_payloads_by_constraint(invalid_case: str)
         "blank_product_id": (schemas.ProductCreateRequest, {
             "product_id": "",
             "product_name": "Soda",
-            "sell_price": "1.00",
+            "sell_price": 100,
         }),
         "blank_product_name": (schemas.ProductCreateRequest, {
             "product_id": "P001",
             "product_name": "",
-            "sell_price": "1.00",
+            "sell_price": 100,
         }),
         "negative_sell_price": (schemas.ProductCreateRequest, {
             "product_id": "P001",
             "product_name": "Soda",
-            "sell_price": "-1.00",
+            "sell_price": -100,
         }),
         "blank_salesman_id": (schemas.SalesmanCreateRequest, {
             "salesman_id": "",
@@ -218,39 +217,39 @@ def test_request_models_reject_invalid_payloads_by_constraint(invalid_case: str)
         "non_positive_quantity_sale": (schemas.SaleRequest, {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "0",
+            "quantity": 0,
             "total_revenue": "1.00",
             "payment_type": constants.PaymentType.CASH,
         }),
         "non_positive_quantity_restock": (schemas.RestockRequest, {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "0",
+            "quantity": 0,
             "total_cost": "1.00",
         }),
         "non_positive_quantity_write_off": (schemas.WriteOffRequest, {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "0",
+            "quantity": 0,
         }),
         "negative_total_revenue_sale": (schemas.SaleRequest, {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "1",
-            "total_revenue": "-1.00",
+            "quantity": 1,
+            "total_revenue": -100,
             "payment_type": constants.PaymentType.CASH,
         }),
         "negative_total_revenue_pay_debt": (schemas.PayDebtRequest, {
             "linked_transaction_id": "TX001",
             "salesman_id": "S001",
-            "total_revenue": "-1.00",
+            "total_revenue": -100,
             "payment_type": constants.PaymentType.CASH,
         }),
         "negative_total_cost_restock": (schemas.RestockRequest, {
             "product_id": "P001",
             "salesman_id": "S001",
-            "quantity": "1",
-            "total_cost": "-1.00",
+            "quantity": 1,
+            "total_cost": -100,
         }),
         "blank_linked_transaction_id_void": (schemas.VoidRequest, {
             "linked_transaction_id": "",
@@ -272,7 +271,7 @@ def test_pay_debt_request_rejects_on_credit_payment_type() -> None:
         schemas.PayDebtRequest(
             linked_transaction_id="TX001",
             salesman_id="S001",
-            total_revenue="2.00",
+            total_revenue=200,
             payment_type=constants.PaymentType.ON_CREDIT,
         )
 

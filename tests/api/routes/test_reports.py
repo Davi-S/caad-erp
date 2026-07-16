@@ -9,7 +9,7 @@ def _seed_report_data(client: TestClient) -> None:
         json={
             "product_id": "RP100",
             "product_name": "Report Product A",
-            "sell_price": "5.00",
+            "sell_price": 500,
             "is_active": True,
         },
     ).status_code == 201
@@ -18,7 +18,7 @@ def _seed_report_data(client: TestClient) -> None:
         json={
             "product_id": "RP200",
             "product_name": "Report Product B",
-            "sell_price": "7.00",
+            "sell_price": 700,
             "is_active": True,
         },
     ).status_code == 201
@@ -36,8 +36,8 @@ def _seed_report_data(client: TestClient) -> None:
         json={
             "product_id": "RP100",
             "salesman_id": "RS100",
-            "quantity": "5",
-            "total_cost": "10.00",
+            "quantity": 5,
+            "total_cost": 1000,
         },
     ).status_code == 201
     assert client.post(
@@ -45,8 +45,8 @@ def _seed_report_data(client: TestClient) -> None:
         json={
             "product_id": "RP200",
             "salesman_id": "RS100",
-            "quantity": "3",
-            "total_cost": "6.00",
+            "quantity": 3,
+            "total_cost": 600,
         },
     ).status_code == 201
     assert client.post(
@@ -54,8 +54,8 @@ def _seed_report_data(client: TestClient) -> None:
         json={
             "product_id": "RP100",
             "salesman_id": "RS100",
-            "quantity": "2",
-            "total_revenue": "10.00",
+            "quantity": 2,
+            "total_revenue": 1000,
             "payment_type": constants.PaymentType.CASH.value,
         },
     ).status_code == 201
@@ -64,8 +64,8 @@ def _seed_report_data(client: TestClient) -> None:
         json={
             "product_id": "RP200",
             "salesman_id": "RS100",
-            "quantity": "1",
-            "total_revenue": "7.00",
+            "quantity": 1,
+            "total_revenue": 700,
             "payment_type": constants.PaymentType.ON_CREDIT.value,
         },
     ).status_code == 201
@@ -128,7 +128,7 @@ def test_debts_report_contains_outstanding_credit_balances(
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total_outstanding"] != "0"
+    assert payload["total_outstanding"] != 0
     assert any(item["product_id"] == "RP200" for item in payload["balances"])
 
 
@@ -171,7 +171,7 @@ def test_reports_endpoints_remain_valid_with_empty_dataset(
     assert stock.json()["items"] == []
 
     assert profit.status_code == 200
-    assert profit.json()["total_revenue"] == "0"
+    assert profit.json()["total_revenue"] == 0
 
     assert debts.status_code == 200
     assert debts.json()["balances"] == []
