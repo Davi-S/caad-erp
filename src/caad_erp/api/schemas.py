@@ -7,7 +7,6 @@ objects.
 """
 
 import typing as t
-from decimal import Decimal
 
 import pydantic
 
@@ -31,7 +30,7 @@ class ProductCreateRequest(pydantic.BaseModel):
 
     product_id: str = pydantic.Field(..., min_length=1)
     product_name: str = pydantic.Field(..., min_length=1)
-    sell_price: Decimal = pydantic.Field(..., ge=0)
+    sell_price: int = pydantic.Field(..., ge=0)
     is_active: bool = True
 
 
@@ -40,7 +39,7 @@ class ProductResponse(pydantic.BaseModel):
 
     product_id: str
     product_name: str
-    sell_price: Decimal
+    sell_price: int
     is_active: bool
 
 
@@ -65,8 +64,8 @@ class SaleRequest(pydantic.BaseModel):
 
     product_id: str = pydantic.Field(..., min_length=1)
     salesman_id: str = pydantic.Field(..., min_length=1)
-    quantity: Decimal = pydantic.Field(..., gt=0)
-    total_revenue: Decimal = pydantic.Field(..., ge=0)
+    quantity: int = pydantic.Field(..., gt=0)
+    total_revenue: int = pydantic.Field(..., ge=0)
     payment_type: constants.PaymentType
     notes: t.Optional[str] = None
 
@@ -76,8 +75,8 @@ class RestockRequest(pydantic.BaseModel):
 
     product_id: str = pydantic.Field(..., min_length=1)
     salesman_id: str = pydantic.Field(..., min_length=1)
-    quantity: Decimal = pydantic.Field(..., gt=0)
-    total_cost: Decimal = pydantic.Field(..., ge=0)
+    quantity: int = pydantic.Field(..., gt=0)
+    total_cost: int = pydantic.Field(..., ge=0)
     notes: t.Optional[str] = None
 
 
@@ -86,7 +85,7 @@ class WriteOffRequest(pydantic.BaseModel):
 
     product_id: str = pydantic.Field(..., min_length=1)
     salesman_id: str = pydantic.Field(..., min_length=1)
-    quantity: Decimal = pydantic.Field(..., gt=0)
+    quantity: int = pydantic.Field(..., gt=0)
     notes: t.Optional[str] = None
 
 
@@ -102,7 +101,7 @@ class PayDebtRequest(pydantic.BaseModel):
 
     linked_transaction_id: str = pydantic.Field(..., min_length=1)
     salesman_id: str = pydantic.Field(..., min_length=1)
-    total_revenue: Decimal = pydantic.Field(..., ge=0)
+    total_revenue: int = pydantic.Field(..., ge=0)
     payment_type: constants.PaymentType
     notes: t.Optional[str] = None
 
@@ -140,9 +139,9 @@ class TransactionResponse(pydantic.BaseModel):
     product_id: t.Optional[str]
     salesman_id: t.Optional[str]
     payment_type: t.Optional[str]
-    quantity_change: Decimal
-    total_revenue: Decimal
-    total_cost: Decimal
+    quantity_change: int
+    total_revenue: int
+    total_cost: int
     linked_transaction_id: t.Optional[str]
     notes: t.Optional[str]
 
@@ -151,7 +150,7 @@ class StockItem(pydantic.BaseModel):
     """Single item in the stock report."""
 
     product_id: str
-    quantity: Decimal
+    quantity: int
 
 
 class StockReportResponse(pydantic.BaseModel):
@@ -163,9 +162,9 @@ class StockReportResponse(pydantic.BaseModel):
 class ProfitReportResponse(pydantic.BaseModel):
     """Response for the profit report endpoint."""
 
-    total_revenue: Decimal
-    total_cost: Decimal
-    profit: Decimal
+    total_revenue: int
+    total_cost: int
+    profit: int
 
 
 class DebtItem(pydantic.BaseModel):
@@ -175,17 +174,17 @@ class DebtItem(pydantic.BaseModel):
     timestamp_iso: str
     product_id: t.Optional[str]
     salesman_id: t.Optional[str]
-    quantity: Decimal
-    expected_amount: Decimal
-    amount_paid: Decimal
-    balance: Decimal
+    quantity: int
+    expected_amount: int
+    amount_paid: int
+    balance: int
 
 
 class DebtsReportResponse(pydantic.BaseModel):
     """Response for the debts report endpoint."""
 
     balances: t.List[DebtItem]
-    total_outstanding: Decimal
+    total_outstanding: int
 
 
 class LogReportResponse(pydantic.BaseModel):
