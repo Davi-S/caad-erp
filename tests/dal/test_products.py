@@ -1,5 +1,3 @@
-from decimal import Decimal
-from decimal import InvalidOperation
 
 import pytest
 
@@ -9,7 +7,7 @@ from caad_erp.dal import products
 def _sample_product(
     product_id: str = "P-001",
     product_name: str = "Soda",
-    sell_price: Decimal = Decimal("5.50"),
+    sell_price: int = 550,
     is_active: bool = True,
 ) -> products.ProductRow:
     return products.ProductRow(
@@ -27,7 +25,7 @@ def test_iter_products_yields_product_row_instances(products_workbook) -> None:
     THEN it yields ProductRow instances
     """
     # Arrange
-    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    products_workbook["Products"].append(["P-001", "Soda", 550, True])
 
     # Act
     records = list(products.iter_products(products_workbook))
@@ -44,10 +42,10 @@ def test_iter_products_yields_all_non_empty_rows(products_workbook) -> None:
     """
     # Arrange
     sheet = products_workbook["Products"]
-    sheet.append(["P-001", "Soda", Decimal("5.50"), True])
+    sheet.append(["P-001", "Soda", 550, True])
     sheet.append([None, None, None, None])
-    sheet.append(["P-002", "Juice", Decimal("6.00"), True])
-    sheet.append(["P-003", "Water", Decimal("3.00"), False])
+    sheet.append(["P-002", "Juice", 600, True])
+    sheet.append(["P-003", "Water", 300, False])
 
     # Act
     records = list(products.iter_products(products_workbook))
@@ -78,7 +76,7 @@ def test_iter_products_skips_fully_empty_rows(products_workbook) -> None:
     # Arrange
     sheet = products_workbook["Products"]
     sheet.append([None, None, None, None])
-    sheet.append(["P-001", "Soda", Decimal("5.50"), True])
+    sheet.append(["P-001", "Soda", 550, True])
     sheet.append([None, None, None, None])
 
     # Act
@@ -132,7 +130,7 @@ def test_append_product_stores_correct_values(products_workbook) -> None:
     last_row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[-1]
 
     # Assert
-    assert last_row == ("P-001", "Soda", Decimal("5.50"), True)
+    assert last_row == ("P-001", "Soda", 550, True)
 
 def test_append_product_column_ordering(products_workbook) -> None:
     """
@@ -144,7 +142,7 @@ def test_append_product_column_ordering(products_workbook) -> None:
     record = products.ProductRow(
         product_id="P-010",
         product_name="Energy Drink",
-        sell_price=Decimal("9.90"),
+        sell_price=990,
         is_active=False,
     )
 
@@ -153,24 +151,7 @@ def test_append_product_column_ordering(products_workbook) -> None:
     last_row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[-1]
 
     # Assert
-    assert last_row == ("P-010", "Energy Drink", Decimal("9.90"), False)
-
-def test_append_product_preserves_decimal_sell_price(products_workbook) -> None:
-    """
-    GIVEN a product record with Decimal sell_price
-    WHEN append_product is called
-    THEN sell_price remains Decimal in storage
-    """
-    # Arrange
-    record = _sample_product(sell_price=Decimal("12.99"))
-
-    # Act
-    products.append_product(products_workbook, record)
-    stored_price = products_workbook["Products"].cell(row=2, column=3).value
-
-    # Assert
-    assert stored_price == Decimal("12.99")
-    assert isinstance(stored_price, Decimal)
+    assert last_row == ("P-010", "Energy Drink", 990, False)
 
 def test_append_product_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
@@ -192,7 +173,7 @@ def test_update_product_updates_single_field(products_workbook) -> None:
     THEN only that field is updated
     """
     # Arrange
-    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    products_workbook["Products"].append(["P-001", "Soda", 550, True])
 
     # Act
     products.update_product(
@@ -203,7 +184,7 @@ def test_update_product_updates_single_field(products_workbook) -> None:
     row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
 
     # Assert
-    assert row == ("P-001", "Soda Zero", Decimal("5.50"), True)
+    assert row == ("P-001", "Soda Zero", 550, True)
 
 def test_update_product_updates_multiple_fields_simultaneously(products_workbook) -> None:
     """
@@ -212,18 +193,18 @@ def test_update_product_updates_multiple_fields_simultaneously(products_workbook
     THEN all requested fields are updated
     """
     # Arrange
-    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    products_workbook["Products"].append(["P-001", "Soda", 500, True])
 
     # Act
     products.update_product(
         products_workbook,
         "P-001",
-        field_values={"ProductName": "Soda Zero", "SellPrice": Decimal("6.25")},
+        field_values={"ProductName": "Soda Zero", "SellPrice": 625},
     )
     row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
 
     # Assert
-    assert row == ("P-001", "Soda Zero", Decimal("6.25"), True)
+    assert row == ("P-001", "Soda Zero", 625, True)
 
 def test_update_product_leaves_other_fields_unchanged(products_workbook) -> None:
     """
@@ -232,7 +213,7 @@ def test_update_product_leaves_other_fields_unchanged(products_workbook) -> None
     THEN unselected fields remain unchanged
     """
     # Arrange
-    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    products_workbook["Products"].append(["P-001", "Soda", 550, True])
 
     # Act
     products.update_product(
@@ -244,7 +225,7 @@ def test_update_product_leaves_other_fields_unchanged(products_workbook) -> None
 
     # Assert
     assert row[0] == "P-001"
-    assert row[2] == Decimal("5.50")
+    assert row[2] == 550
     assert row[3] is True
 
 def test_update_product_raises_key_error_for_missing_product_id(products_workbook) -> None:
@@ -254,7 +235,7 @@ def test_update_product_raises_key_error_for_missing_product_id(products_workboo
     THEN it raises KeyError
     """
     # Arrange
-    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    products_workbook["Products"].append(["P-001", "Soda", 550, True])
 
     # Act / Assert
     with pytest.raises(KeyError, match="Product not found"):
@@ -271,7 +252,7 @@ def test_update_product_raises_key_error_for_unknown_column_name(products_workbo
     THEN it raises KeyError
     """
     # Arrange
-    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    products_workbook["Products"].append(["P-001", "Soda", 550, True])
 
     # Act / Assert
     with pytest.raises(KeyError, match="Unknown product field"):
@@ -301,7 +282,7 @@ def test_update_product_empty_field_values_is_no_op(products_workbook) -> None:
     THEN no workbook values are changed
     """
     # Arrange
-    products_workbook["Products"].append(["P-001", "Soda", Decimal("5.50"), True])
+    products_workbook["Products"].append(["P-001", "Soda", 550, True])
     before = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
 
     # Act
@@ -321,7 +302,7 @@ def test_serialize_product_returns_correct_column_order() -> None:
     record = products.ProductRow(
         product_id="P-001",
         product_name="Soda",
-        sell_price=Decimal("5.50"),
+        sell_price=550,
         is_active=False,
     )
 
@@ -329,23 +310,8 @@ def test_serialize_product_returns_correct_column_order() -> None:
     serialized = products._serialize_product(record)
 
     # Assert
-    assert serialized == ["P-001", "Soda", Decimal("5.50"), False]
+    assert serialized == ["P-001", "Soda", 550, False]
 
-def test_serialize_product_preserves_decimal_type_for_sell_price() -> None:
-    """
-    GIVEN a ProductRow with Decimal sell_price
-    WHEN _serialize_product is called
-    THEN sell_price remains Decimal in the output list
-    """
-    # Arrange
-    record = _sample_product(sell_price=Decimal("9.99"))
-
-    # Act
-    serialized = products._serialize_product(record)
-
-    # Assert
-    assert serialized[2] == Decimal("9.99")
-    assert isinstance(serialized[2], Decimal)
 
 def test_deserialize_product_returns_product_row_instance() -> None:
     """
@@ -354,7 +320,7 @@ def test_deserialize_product_returns_product_row_instance() -> None:
     THEN it returns a ProductRow instance
     """
     # Arrange
-    raw_row = ["P-001", "Soda", Decimal("5.50"), True]
+    raw_row = ["P-001", "Soda", 550, True]
 
     # Act
     result = products._deserialize_product(raw_row)
@@ -365,8 +331,8 @@ def test_deserialize_product_returns_product_row_instance() -> None:
 @pytest.mark.parametrize(
     "raw_row, expected_product_id, expected_product_name",
     [
-        ([123, 456, Decimal("1.00"), True], "123", "456"),
-        (["P-001", 789, Decimal("2.00"), False], "P-001", "789"),
+        ([123, 456, 100, True], "123", "456"),
+        (["P-001", 789, 200, False], "P-001", "789"),
     ],
 )
 def test_deserialize_product_coerces_text_fields_to_str(
@@ -393,10 +359,8 @@ def test_deserialize_product_coerces_text_fields_to_str(
 @pytest.mark.parametrize(
     "raw_row, expected_sell_price",
     [
-        (["P-001", "Soda", None, True], Decimal("0.00")),
-        (["P-001", "Soda", 5, True], Decimal("5")),
-        (["P-001", "Soda", 5.5, True], Decimal("5.5")),
-        (["P-001", "Soda", "10.25", True], Decimal("10.25")),
+        (["P-001", "Soda", None, True], 0),
+        (["P-001", "Soda", 5, True], 5),
     ],
 )
 def test_deserialize_product_normalizes_sell_price(
@@ -404,9 +368,9 @@ def test_deserialize_product_normalizes_sell_price(
     expected_sell_price,
 ) -> None:
     """
-    GIVEN raw rows with SellPrice as numeric float or None
+    GIVEN raw rows with SellPrice as None
     WHEN _deserialize_product is called
-    THEN SellPrice is normalized to the expected Decimal value
+    THEN SellPrice is normalized to the expected integer value
     """
     # Arrange
 
@@ -415,7 +379,7 @@ def test_deserialize_product_normalizes_sell_price(
 
     # Assert
     assert result.sell_price == expected_sell_price
-    assert isinstance(result.sell_price, Decimal)
+    assert isinstance(result.sell_price, int)
 
 def test_deserialize_product_coerces_is_active_to_bool() -> None:
     """
@@ -424,8 +388,8 @@ def test_deserialize_product_coerces_is_active_to_bool() -> None:
     THEN IsActive is coerced to bool
     """
     # Arrange
-    raw_true = ["P-001", "Soda", Decimal("5.50"), 1]
-    raw_false = ["P-002", "Water", Decimal("3.00"), 0]
+    raw_true = ["P-001", "Soda", 550, 1]
+    raw_false = ["P-002", "Water", 300, 0]
 
     # Act
     result_true = products._deserialize_product(raw_true)
@@ -437,7 +401,7 @@ def test_deserialize_product_coerces_is_active_to_bool() -> None:
     assert isinstance(result_true.is_active, bool)
     assert isinstance(result_false.is_active, bool)
 
-@pytest.mark.parametrize("raw_row", [["P-001"], ["P-001", "Soda"], ["P-001", "Soda", Decimal("1.00")]])
+@pytest.mark.parametrize("raw_row", [["P-001"], ["P-001", "Soda"], ["P-001", "Soda", 100]])
 def test_deserialize_product_raises_index_error_for_short_row(raw_row) -> None:
     """
     GIVEN a short raw row missing required columns
@@ -455,16 +419,17 @@ def test_deserialize_product_raises_index_error_for_short_row(raw_row) -> None:
     [
         ["P-001", "Soda", "abc", True],
         ["P-001", "Soda", "12,34", True],
+        ["P-001", "Soda", 12.34, True],
     ],
 )
-def test_deserialize_product_raises_decimal_error_for_invalid_sell_price(raw_row) -> None:
+def test_deserialize_product_raises_value_error_for_invalid_sell_price(raw_row) -> None:
     """
-    GIVEN a raw row with invalid SellPrice text
+    GIVEN a raw row with invalid SellPrice
     WHEN _deserialize_product is called
-    THEN it raises a decimal conversion error
+    THEN it raises a value error
     """
     # Arrange
 
     # Act / Assert
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(ValueError):
         products._deserialize_product(raw_row)
