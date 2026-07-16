@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -24,7 +23,7 @@ def _seed_product(
     workbook: Workbook,
     product_id: str,
     product_name: str = "Product",
-    sell_price: Decimal = Decimal("5.00"),
+    sell_price: int = 500,
     is_active: bool = True,
 ) -> dal.ProductRow:
     row = dal.ProductRow(
@@ -164,12 +163,12 @@ def test_update_product_returns_updated_record_on_success(products_workbook: Wor
     # Arrange
     context = _make_context(products_workbook)
     _seed_product(products_workbook, "P001", product_name="Old",
-                  sell_price=Decimal("2.00"))
+                  sell_price=200)
     products.list_products(context, include_inactive=True)  # populate cache
     command = products.ProductCommand(
         product_id="P001",
         product_name="Updated",
-        sell_price=Decimal("9.00"),
+        sell_price=900,
     )
 
     # Act
@@ -178,7 +177,7 @@ def test_update_product_returns_updated_record_on_success(products_workbook: Wor
     # Assert
     assert updated.product_id == "P001"
     assert updated.product_name == "Updated"
-    assert updated.sell_price == Decimal("9.00")
+    assert updated.sell_price == 900
     # Cache should have been invalidated and repopulated with fresh values
     assert products.get_product(context, "P001").product_name == "Updated"
 
@@ -236,10 +235,10 @@ def test_update_product_rejects_blank_product_name(products_workbook: Workbook) 
         products.update_product(context, command)
 
 
-@pytest.mark.parametrize("sell_price", [Decimal("-0.01"), Decimal("-1.00"), Decimal("-100")])
+@pytest.mark.parametrize("sell_price", [-1, -100, -10000])
 def test_update_product_rejects_negative_sell_price(
     products_workbook: Workbook,
-    sell_price: Decimal,
+    sell_price: int,
 ) -> None:
     """
     GIVEN an update command with negative sell_price
@@ -298,16 +297,16 @@ def test_update_product_accepts_zero_sell_price(products_workbook: Workbook) -> 
     """
     # Arrange
     context = _make_context(products_workbook)
-    _seed_product(products_workbook, "P001", sell_price=Decimal("1.00"))
+    _seed_product(products_workbook, "P001", sell_price=100)
 
     # Act
     updated = products.update_product(
         context,
-        products.ProductCommand(product_id="P001", sell_price=Decimal("0")),
+        products.ProductCommand(product_id="P001", sell_price=0),
     )
 
     # Assert
-    assert updated.sell_price == Decimal("0")
+    assert updated.sell_price == 0
 
 
 def test_add_product_returns_record_on_success(products_workbook: Workbook) -> None:
@@ -321,7 +320,7 @@ def test_add_product_returns_record_on_success(products_workbook: Workbook) -> N
     command = products.ProductCommand(
         product_id="P001",
         product_name="Widget",
-        sell_price=Decimal("3.50"),
+        sell_price=350,
         is_active=True,
     )
 
@@ -331,7 +330,7 @@ def test_add_product_returns_record_on_success(products_workbook: Workbook) -> N
     # Assert
     assert result.product_id == "P001"
     assert result.product_name == "Widget"
-    assert result.sell_price == Decimal("3.50")
+    assert result.sell_price == 350
     assert result.is_active is True
     assert products.get_product(context, "P001").product_name == "Widget"
 
@@ -353,7 +352,7 @@ def test_add_product_trims_product_id_and_name_before_persisting(
         products.ProductCommand(
             product_id="  P001  ",
             product_name="  Widget  ",
-            sell_price=Decimal("3.50"),
+            sell_price=350,
             is_active=True,
         ),
     )
@@ -379,7 +378,7 @@ def test_add_product_rejects_blank_product_id(products_workbook: Workbook) -> No
             products.ProductCommand(
                 product_id="   ",
                 product_name="Widget",
-                sell_price=Decimal("3.50"),
+                sell_price=350,
                 is_active=True,
             ),
         )
@@ -405,7 +404,7 @@ def test_add_product_requires_nonblank_product_name(
             products.ProductCommand(
                 product_id="P001",
                 product_name=product_name,
-                sell_price=Decimal("3.50"),
+                sell_price=350,
                 is_active=True,
             ),
         )
@@ -433,10 +432,10 @@ def test_add_product_requires_sell_price(products_workbook: Workbook) -> None:
         )
 
 
-@pytest.mark.parametrize("sell_price", [Decimal("-0.01"), Decimal("-1.00"), Decimal("-50")])
+@pytest.mark.parametrize("sell_price", [-1, -100, -5000])
 def test_add_product_rejects_negative_sell_price(
     products_workbook: Workbook,
-    sell_price: Decimal,
+    sell_price: int,
 ) -> None:
     """
     GIVEN a creation command with negative sell_price
@@ -475,7 +474,7 @@ def test_add_product_requires_is_active(products_workbook: Workbook) -> None:
             products.ProductCommand(
                 product_id="P001",
                 product_name="Widget",
-                sell_price=Decimal("3.50"),
+                sell_price=350,
                 is_active=None,
             ),
         )
@@ -498,7 +497,7 @@ def test_add_product_rejects_duplicate_product_id(products_workbook: Workbook) -
             products.ProductCommand(
                 product_id="P001",
                 product_name="Duplicate",
-                sell_price=Decimal("3.50"),
+                sell_price=350,
                 is_active=True,
             ),
         )
@@ -519,10 +518,10 @@ def test_add_product_accepts_zero_sell_price(products_workbook: Workbook) -> Non
         products.ProductCommand(
             product_id="P001",
             product_name="Free Item",
-            sell_price=Decimal("0"),
+            sell_price=0,
             is_active=True,
         ),
     )
 
     # Assert
-    assert created.sell_price == Decimal("0")
+    assert created.sell_price == 0
