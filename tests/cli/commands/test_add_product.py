@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import argparse
@@ -101,7 +100,7 @@ def test_translate_add_product_maps_args_to_product_command(
     args = argparse.Namespace(
         product_id="P001",
         product_name="Cookie",
-        sell_price="2.50",
+        sell_price=250,
         inactive=inactive_flag,
     )
 
@@ -111,28 +110,8 @@ def test_translate_add_product_maps_args_to_product_command(
     # Assert
     assert command.product_id == "P001"
     assert command.product_name == "Cookie"
-    assert command.sell_price == Decimal("2.50")
+    assert command.sell_price == 250
     assert command.is_active is expected_is_active
-
-
-@pytest.mark.parametrize("invalid_sell_price", ["", "abc", "2.3.4"])
-def test_translate_add_product_raises_for_invalid_decimal(invalid_sell_price) -> None:
-    """
-    GIVEN parsed add-product args with non-decimal sell_price text
-    WHEN _translate_add_product is called
-    THEN decimal conversion error is raised
-    """
-    # Arrange
-    args = argparse.Namespace(
-        product_id="P001",
-        product_name="Cookie",
-        sell_price=invalid_sell_price,
-        inactive=False,
-    )
-
-    # Act / Assert
-    with pytest.raises(Exception):
-        add_product._translate_add_product(args)
 
 
 def test_run_add_product_calls_bll_and_returns_zero(tmp_path: Path) -> None:
@@ -146,7 +125,7 @@ def test_run_add_product_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     args = argparse.Namespace(
         product_id="P001",
         product_name="Cookie",
-        sell_price="2.50",
+        sell_price=250,
         inactive=False,
     )
 
@@ -157,4 +136,4 @@ def test_run_add_product_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     assert exit_code == 0
     created = bll.get_product(context, "P001")
     assert created.product_name == "Cookie"
-    assert created.sell_price == Decimal("2.50")
+    assert created.sell_price == 250
