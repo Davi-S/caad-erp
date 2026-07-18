@@ -24,7 +24,7 @@ export function useCheckout() {
         }
     })
 
-        return {
+    return {
         status: mutation.status,
         error: mutation.isError ? mutation.error.message : null,
         confirmPayment: mutation.mutate,
