@@ -3,15 +3,15 @@ import { Check } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { Salesmen } from "@/App"
 
-interface SelesmenScreenProps {
-    selesmen: Salesmen
+interface SalesmenScreenProps {
+    salesmen: Salesmen
     onNext: (salesmanId: string) => void
 }
 
-export function SelesmenScreen({
-    selesmen,
+export function SalesmenScreen({
+    salesmen,
     onNext
-}: SelesmenScreenProps) {
+}: SalesmenScreenProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     return (
         <ScreenShell>
@@ -22,24 +22,24 @@ export function SelesmenScreen({
                 </h1>
 
                 <div className="flex flex-col gap-2">
-                    {selesmen.length === 0 && (
+                    {salesmen.length === 0 && (
                         <p className="font-body text-inkFaint text-[13px]">
                             Nenhum vendedor cadastrado ainda no CAAD-ERP.
                         </p>
                     )}
-                    {selesmen.filter((seller) => seller.is_active).map((seller) => {
-                        const isSel = selectedId === seller.salesman_id
+                    {salesmen.filter((salesman) => salesman.is_active).map((salerman) => {
+                        const isSel = selectedId === salerman.salesman_id
                         return (
                             <button
-                                key={seller.salesman_id}
-                                onClick={() => setSelectedId(seller.salesman_id)}
+                                key={salerman.salesman_id}
+                                onClick={() => setSelectedId(salerman.salesman_id)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all border-[1.5px] border-solid ${isSel
                                     ? "bg-tealSoft border-teal"
                                     : "bg-card border-paperLine"
                                     }`}
                             >
                                 <span className="font-body text-ink font-semibold text-[15px]">
-                                    {seller.salesman_name}
+                                    {salerman.salesman_name}
                                 </span>
                                 {isSel && (
                                     <span className="ml-auto">

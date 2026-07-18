@@ -28,9 +28,9 @@ export default function App() {
         }
     })
     const {
-        data: selesmen,
-        isLoading: isSelesmenLoading,
-        isError: isSelesmenError,
+        data: salesmen,
+        isLoading: isSalesmenLoading,
+        isError: isSalesmenError,
         refetch: refetchSalesmen,
     } = useQuery({
         queryKey: ['salesmen'],
@@ -60,8 +60,8 @@ export default function App() {
         }
     })
 
-    const isLoading = isProductsLoading || isSelesmenLoading || isStockLoading
-    const isError = isProductsError || isSelesmenError || isStockError
+    const isLoading = isProductsLoading || isSalesmenLoading || isStockLoading
+    const isError = isProductsError || isSalesmenError || isStockError
 
 
     return (
@@ -76,10 +76,10 @@ export default function App() {
                 />
             )}
 
-            {!isLoading && !isError && products && selesmen && stock && (
+            {!isLoading && !isError && products && salesmen && stock && (
                 <POSFlow
                     products={products}
-                    selesmen={selesmen}
+                    salesmen={salesmen}
                     stock={stock}
                 />
             )}

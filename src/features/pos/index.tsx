@@ -1,37 +1,37 @@
 import { useState } from "react"
 import { useCart } from "./hooks/useCart"
 import { useCheckout } from "./hooks/useCheckout"
-import { SelesmenScreen } from "./components/SelesmenScreen"
+import { SalesmenScreen } from "./components/SalesmenScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
 import type { Products, Salesmen, Stock } from "@/App"
 
 interface POSFlowProps {
     products: Products
-    selesmen: Salesmen
+    salesmen: Salesmen
     stock: Stock
 }
 
 export function POSFlow({
     products,
-    selesmen: sellers,
+    salesmen,
     stock,
 }: POSFlowProps) {
     // Local routing state for the checkout sequence
-    const [screen, setScreen] = useState<"selesmen" | "cart" | "payment">("selesmen")
-    const [selectedSelesmanId, setSelectedSellerId] = useState<string | null>(null)
-    const selectedSeller = sellers.find((s) => s.salesman_id === selectedSelesmanId) || null
+    const [screen, setScreen] = useState<"salesmen" | "cart" | "payment">("salesmen")
+    const [selectedSalesmanId, setSelectedSalesmanId] = useState<string | null>(null)
+    const selectedSalesman = salesmen.find((s) => s.salesman_id === selectedSalesmanId) || null
 
     // Hooks
     const cartState = useCart(products, stock)
     const { status, error, confirmPayment, resetCheckout } = useCheckout()
 
-    if (screen === "selesmen") {
+    if (screen === "salesmen") {
         return (
-            <SelesmenScreen
-                selesmen={sellers}
-                // SellerScreen will return the selected seller's id
-                onNext={(id) => { setSelectedSellerId(id); setScreen("cart") }}
+            <SalesmenScreen
+                salesmen={salesmen}
+                // Will return the selected salesman's id
+                onNext={(id) => { setSelectedSalesmanId(id); setScreen("cart") }}
             />
         )
     }
@@ -39,11 +39,11 @@ export function POSFlow({
     if (screen === "cart") {
         return (
             <CartScreen
-                selesman={selectedSeller}
+                salesman={selectedSalesman}
                 catalog={{ products, stock }}
                 cartState={cartState} // Passes the entire hook result at once
                 actions={{
-                    onBack: () => setScreen("selesmen"),
+                    onBack: () => setScreen("salesmen"),
                     onClose: () => {
                         resetCheckout()
                         setScreen("payment")
@@ -64,7 +64,7 @@ export function POSFlow({
                             const productPrice = products.find(p => p.product_id === productId).sell_price
                             return {
                                 product_id: productId,
-                                salesman_id: selectedSelesmanId,
+                                salesman_id: selectedSalesmanId,
                                 quantity: quantity,
                                 total_revenue: quantity * productPrice,
                                 payment_type: method,
@@ -76,11 +76,7 @@ export function POSFlow({
                     onNewSale: () => {
                         cartState.clearCart()
                         resetCheckout()
-                        // Currently keeping the same seller. But in the future,
-                        // may be better to force the users to always select a
-                        // seller to prevent a new sell with the previous
-                        // seller's name
-                        setScreen("cart")
+                        setScreen("salesmen")
                     },
                     onEdit: () => {
                         // Simply send them back to the cart. 
@@ -89,7 +85,7 @@ export function POSFlow({
                     onCancel: () => {
                         cartState.clearCart()
                         resetCheckout()
-                        setScreen("selesmen")
+                        setScreen("salesmen")
                     }
                 }}
             />
