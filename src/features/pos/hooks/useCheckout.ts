@@ -2,8 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { SalesRequests } from "@/App"
 import { api } from "@/api/apiClient"
 
-export type CheckoutStatus = "idle" | "confirming" | "confirmed" | "error"
-
 export function useCheckout() {
     const queryClient = useQueryClient()
 
@@ -26,12 +24,8 @@ export function useCheckout() {
         }
     })
 
-    const status: CheckoutStatus = mutation.isPending ? "confirming"
-        : mutation.isSuccess ? "confirmed"
-            : mutation.isError ? "error"
-                : "idle"
-    return {
-        status,
+        return {
+        status: mutation.status,
         error: mutation.isError ? mutation.error.message : null,
         confirmPayment: mutation.mutate,
         resetCheckout: mutation.reset
