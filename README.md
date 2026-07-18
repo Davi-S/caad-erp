@@ -12,7 +12,7 @@ inventory.
 
 The current implementation focuses on a three-step POS checkout flow:
 
-- **Seller Selection:** A starting screen that lists all active salespeople
+- **Salesman Selection:** A starting screen that lists all active salespeople
   retrieved from the backend, requiring the user to select who is conducting the
   sale before proceeding.
 
@@ -37,7 +37,7 @@ your local network.
 2. Install the frontend dependencies using your preferred package manager (e.g.,
    `npm install`).
 3. Start the local development server (e.g., `npm run dev`).
-4. The application will initialize by fetching the product catalog, seller list,
-   and current stock map. If the backend is unavailable, an error screen will
-   prompt you to retry.
+4. The application will initialize by fetching the product catalog, salesmen
+   list, and current stock map. If the backend is unavailable, an error screen
+   will prompt you to retry.
 

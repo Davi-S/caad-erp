@@ -4,7 +4,7 @@ import { brl } from "@/helpers"
 import type { Products, Salesman, Stock } from "@/App"
 
 interface CartScreenProps {
-    selesman: Salesman
+    salesman: Salesman
     catalog: {
         products: Products
         stock: Stock
@@ -25,7 +25,7 @@ interface CartScreenProps {
 }
 
 export function CartScreen({
-    selesman,
+    salesman: selesman,
     catalog,
     cartState,
     actions
