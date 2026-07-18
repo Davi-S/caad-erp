@@ -25,7 +25,10 @@ export function POSFlow() {
         return (
             <SalesmenScreen
                 // Will return the selected salesman's id
-                onNext={(id) => { setSelectedSalesmanId(id); setScreen("cart") }}
+                onNext={(id) => {
+                    setSelectedSalesmanId(id)
+                    setScreen("cart")
+                }}
             />
         )
     }
@@ -37,7 +40,7 @@ export function POSFlow() {
                 cartState={cartState} // Passes the entire hook result at once
                 actions={{
                     onBack: () => setScreen("salesmen"),
-                    onClose: () => {
+                    onNext: () => {
                         resetCheckout()
                         setScreen("payment")
                     }

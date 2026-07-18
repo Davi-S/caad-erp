@@ -18,7 +18,7 @@ interface CartScreenProps {
     }
     actions: {
         onBack: () => void
-        onClose: () => void
+        onNext: () => void
     }
 }
 
@@ -32,7 +32,7 @@ export function CartScreen({
     const { data: stock } = useStock()
 
     const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
-    const { onBack, onClose } = actions
+    const { onBack, onNext } = actions
     const availableFor = (id: string) => stock[id]
 
     return (
@@ -139,7 +139,7 @@ export function CartScreen({
                 </div>
                 <button
                     disabled={total === 0}
-                    onClick={onClose}
+                    onClick={onNext}
                     className="w-full py-3.5 rounded-2xl text-white font-display font-bold text-[15px] bg-teal disabled:bg-inkFaint disabled:opacity-60"
                 >
                     Fechar venda
