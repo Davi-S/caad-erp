@@ -1,60 +1,17 @@
-import { useQuery } from "@tanstack/react-query"
-import { api } from "./api/apiClient"
 import { StatusScreen } from "./components/StatusScreen"
 import { POSFlow } from "./features/pos/"
-import type { Stock } from "./types"
-
+import { useSalesmen } from "@/hooks/queries/useSalesmen"
+import { useProducts } from "@/hooks/queries/useProducts"
+import { useStock } from "@/hooks/queries/useStock"
 
 export default function App() {
-    const {
-        data: products,
-        isLoading: isProductsLoading,
-        isError: isProductsError,
-        refetch: refetchProducts,
-    } = useQuery({
-        queryKey: ['products'],
-        queryFn: async () => {
-            const res = await api.GET("/products")
-            if (res.error) throw new Error("Failed to fetch products")
-            return res.data["items"]
-        }
-    })
-    const {
-        data: salesmen,
-        isLoading: isSalesmenLoading,
-        isError: isSalesmenError,
-        refetch: refetchSalesmen,
-    } = useQuery({
-        queryKey: ['salesmen'],
-        queryFn: async () => {
-            const res = await api.GET("/salesmen")
-            if (res.error) throw new Error("Failed to fetch salesmen")
-            return res.data["items"]
-        }
-    })
-    const {
-        data: stock,
-        isLoading: isStockLoading,
-        isError: isStockError,
-        refetch: refetchStock,
-    } = useQuery({
-        queryKey: ['stock'],
-        queryFn: async () => {
-            const res = await api.GET("/reports/stock")
-            if (res.error) throw new Error("Failed to fetch stock")
 
-            // Transform data to the fast format
-            const stockMap: Stock = {}
-            for (const item of res.data["items"]) {
-                stockMap[item.product_id] = item.quantity
-            }
-            return stockMap
-        }
-    })
+    const { isLoading: isSalesmenLoading, isError: isSalesmenError, refetch: refetchSalesmen } = useSalesmen()
+    const { isLoading: isProductsLoading, isError: isProductsError, refetch: refetchProducts } = useProducts()
+    const { isLoading: isStockLoading, isError: isStockError, refetch: refetchStock } = useStock()
 
     const isLoading = isProductsLoading || isSalesmenLoading || isStockLoading
     const isError = isProductsError || isSalesmenError || isStockError
-
 
     return (
         <div className="w-full min-h-svh font-body bg-paper bg-[radial-gradient(circle,var(--color-paperLine)_1px,transparent_1px)] bg-size[18px_18px]">
@@ -68,13 +25,7 @@ export default function App() {
                 />
             )}
 
-            {!isLoading && !isError && products && salesmen && stock && (
-                <POSFlow
-                    products={products}
-                    salesmen={salesmen}
-                    stock={stock}
-                />
-            )}
+            {!isLoading && !isError && <POSFlow />}
         </div>
     )
 }

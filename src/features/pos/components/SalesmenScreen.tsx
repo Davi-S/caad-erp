@@ -1,18 +1,18 @@
 import { useState } from "react"
 import { Check } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
-import type { Salesmen } from "@/types"
+import { useSalesmen } from "@/hooks/queries/useSalesmen"
 
 interface SalesmenScreenProps {
-    salesmen: Salesmen
     onNext: (salesmanId: string) => void
 }
 
 export function SalesmenScreen({
-    salesmen,
     onNext
 }: SalesmenScreenProps) {
+    const { data: salesmen } = useSalesmen()
     const [selectedId, setSelectedId] = useState<string | null>(null)
+
     return (
         <ScreenShell>
             <div className="flex-1 flex flex-col px-4 sm:px-6 pt-4 pb-6 overflow-y-auto">
