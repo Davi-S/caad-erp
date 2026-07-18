@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "./api/apiClient"
 import { StatusScreen } from "./components/StatusScreen"
@@ -82,7 +81,6 @@ export default function App() {
                     products={products}
                     selesmen={selesmen}
                     stock={stock}
-                    onUpdateStock={() => { }}
                 />
             )}
         </div>

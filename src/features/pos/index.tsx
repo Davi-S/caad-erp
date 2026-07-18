@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useCart } from "./hooks/useCart"
 import { useCheckout } from "./hooks/useCheckout"
-import { SellerScreen } from "./components/SellerScreen"
+import { SelesmenScreen } from "./components/SelesmenScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
 import type { Products, Salesmen, Stock } from "@/App"
@@ -10,14 +10,12 @@ interface POSFlowProps {
     products: Products
     selesmen: Salesmen
     stock: Stock
-    onUpdateStock: (newStock: Stock) => void
 }
 
 export function POSFlow({
     products,
     selesmen: sellers,
     stock,
-    onUpdateStock,
 }: POSFlowProps) {
     // Local routing state for the checkout sequence
     const [screen, setScreen] = useState<"selesmen" | "cart" | "payment">("selesmen")
@@ -30,8 +28,8 @@ export function POSFlow({
 
     if (screen === "selesmen") {
         return (
-            <SellerScreen
-                sellers={sellers}
+            <SelesmenScreen
+                selesmen={sellers}
                 // SellerScreen will return the selected seller's id
                 onNext={(id) => { setSelectedSellerId(id); setScreen("cart") }}
             />
@@ -73,7 +71,7 @@ export function POSFlow({
                                 notes: null
                             }
                         })
-                        confirmPayment(salesRequests, onUpdateStock)
+                        confirmPayment(salesRequests)
                     },
                     onNewSale: () => {
                         cartState.clearCart()
