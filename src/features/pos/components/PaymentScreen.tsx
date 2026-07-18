@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
 import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
-import type { PaymentType } from "@/App"
+import type { PaymentType } from "@/types"
 import type { MutationStatus } from "@tanstack/react-query"
 
 const QR_GRID = buildQrGrid()

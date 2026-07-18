@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Check } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
-import type { Salesmen } from "@/App"
+import type { Salesmen } from "@/types"
 
 interface SalesmenScreenProps {
     salesmen: Salesmen
