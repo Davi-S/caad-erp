@@ -3,16 +3,16 @@ import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } 
 import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { PaymentType } from "@/types"
-import type { MutationStatus } from "@tanstack/react-query"
+import type { Salesman } from "@/types"
+import { useCart } from "../hooks/useCart"
+import { useCheckout } from "../hooks/useCheckout"
 
 const QR_GRID = buildQrGrid()
 
 interface PaymentScreenProps {
-    total: number
-    checkout: {
-        status: MutationStatus
-        error: string | null
-    }
+    salesman: Salesman
+    cartState: ReturnType<typeof useCart>
+    checkoutState: ReturnType<typeof useCheckout>
     actions: {
         onConfirm: (method: PaymentType) => void
         onNewSale: () => void
@@ -21,11 +21,11 @@ interface PaymentScreenProps {
     }
 }
 
-export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) {
+export function PaymentScreen({ cartState, checkoutState, actions }: PaymentScreenProps) {
     const [method, setMethod] = useState<PaymentType>("PIX")
     const [copied, setCopied] = useState(false)
 
-    const { status, error } = checkout
+    const { status, error } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
 
     const confirmed = status === "success"
@@ -75,7 +75,7 @@ export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) 
                             </span>
 
                             <span className="font-mono text-ink text-[32px] font-semibold mb-6">
-                                {brl(total)}
+                                {brl(cartState.total)}
                             </span>
 
                             {/* Payment Method Selector */}

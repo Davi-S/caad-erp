@@ -1,21 +1,15 @@
 import { Plus, Minus, ArrowLeft, Pencil } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
-import { useProducts } from "@/hooks/queries/useProducts"
-import { useStock } from "@/hooks/queries/useStock"
-import type { Salesman } from "@/types"
+import type { Salesman, Products, Stock } from "@/types"
+import { useCart } from "../hooks/useCart"
+
 
 interface CartScreenProps {
     salesman: Salesman
-    cartState: {
-        cart: Record<string, number>
-        cartIterable: [string, number][]
-        total: number
-        isEmpty: boolean
-        inc: (id: string) => void
-        dec: (id: string) => void
-        removeItem: (id: string) => void
-    }
+    products: Products
+    stock: Stock
+    cartState: ReturnType<typeof useCart>
     actions: {
         onBack: () => void
         onNext: () => void
@@ -23,14 +17,12 @@ interface CartScreenProps {
 }
 
 export function CartScreen({
-    salesman: selesman,
+    salesman,
+    products,
+    stock,
     cartState,
     actions
 }: CartScreenProps) {
-    // Get the "catalog"
-    const { data: products } = useProducts()
-    const { data: stock } = useStock()
-
     const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
     const { onBack, onNext } = actions
     const availableFor = (id: string) => stock[id]
@@ -43,7 +35,7 @@ export function CartScreen({
                         <ArrowLeft size={20} className="text-ink" />
                     </button>
                     <h1 className="font-display text-ink text-xl font-bold">
-                        Venda de {selesman?.salesman_name}
+                        Venda de {salesman?.salesman_name}
                     </h1>
                     <button onClick={onBack} className="ml-auto p-1">
                         <Pencil size={14} className="text-inkFaint" />
