@@ -1,14 +1,12 @@
 import { Plus, Minus, ArrowLeft, Pencil } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
-import type { Products, Salesman, Stock } from "@/types"
+import { useProducts } from "@/hooks/queries/useProducts"
+import { useStock } from "@/hooks/queries/useStock"
+import type { Salesman } from "@/types"
 
 interface CartScreenProps {
     salesman: Salesman
-    catalog: {
-        products: Products
-        stock: Stock
-    }
     cartState: {
         cart: Record<string, number>
         cartIterable: [string, number][]
@@ -26,11 +24,13 @@ interface CartScreenProps {
 
 export function CartScreen({
     salesman: selesman,
-    catalog,
     cartState,
     actions
 }: CartScreenProps) {
-    const { products, stock } = catalog
+    // Get the "catalog"
+    const { data: products } = useProducts()
+    const { data: stock } = useStock()
+
     const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
     const { onBack, onClose } = actions
     const availableFor = (id: string) => stock[id]

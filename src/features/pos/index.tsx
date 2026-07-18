@@ -4,32 +4,26 @@ import { useCheckout } from "./hooks/useCheckout"
 import { SalesmenScreen } from "./components/SalesmenScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
-import type { Products, Salesmen, Stock } from "@/types"
+import { useSalesmen } from "@/hooks/queries/useSalesmen"
+import { useProducts } from "@/hooks/queries/useProducts"
 
-interface POSFlowProps {
-    products: Products
-    salesmen: Salesmen
-    stock: Stock
-}
+export function POSFlow() {
+    // Get the API data from the queries
+    const { data: salesmen } = useSalesmen()
+    const { data: products } = useProducts()
 
-export function POSFlow({
-    products,
-    salesmen,
-    stock,
-}: POSFlowProps) {
     // Local routing state for the checkout sequence
     const [screen, setScreen] = useState<"salesmen" | "cart" | "payment">("salesmen")
     const [selectedSalesmanId, setSelectedSalesmanId] = useState<string | null>(null)
     const selectedSalesman = salesmen.find((s) => s.salesman_id === selectedSalesmanId) || null
 
     // Hooks
-    const cartState = useCart(products, stock)
+    const cartState = useCart()
     const { status, error, confirmPayment, resetCheckout } = useCheckout()
 
     if (screen === "salesmen") {
         return (
             <SalesmenScreen
-                salesmen={salesmen}
                 // Will return the selected salesman's id
                 onNext={(id) => { setSelectedSalesmanId(id); setScreen("cart") }}
             />
@@ -40,7 +34,6 @@ export function POSFlow({
         return (
             <CartScreen
                 salesman={selectedSalesman}
-                catalog={{ products, stock }}
                 cartState={cartState} // Passes the entire hook result at once
                 actions={{
                     onBack: () => setScreen("salesmen"),

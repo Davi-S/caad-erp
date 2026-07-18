@@ -1,7 +1,12 @@
 import { useState } from "react"
-import type { Products, Stock } from "@/types"
+import { useProducts } from "@/hooks/queries/useProducts"
+import { useStock } from "@/hooks/queries/useStock"
 
-export function useCart(products: Products, stock: Stock) {
+export function useCart() {
+    // Get the "catalog"
+    const { data: products } = useProducts()
+    const { data: stock } = useStock()
+
     // Core state. Single source of truth. Simplest representation of the cart
     const [cart, setCart] = useState<Record<string, number>>({})
 
