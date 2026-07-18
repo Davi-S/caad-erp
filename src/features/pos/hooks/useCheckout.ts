@@ -1,53 +1,39 @@
-import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { SalesRequests } from "@/App"
 import { api } from "@/api/apiClient"
 
 export type CheckoutStatus = "idle" | "confirming" | "confirmed" | "error"
 
 export function useCheckout() {
-    const [status, setStatus] = useState<CheckoutStatus>("idle")
-    const [error, setError] = useState<string | null>(null)
+    const queryClient = useQueryClient()
 
-    const confirmPayment = async (
-        salesRequests: SalesRequests,
-        onUpdateStock: (newStock: Record<string, number>) => void
-    ) => {
-        setStatus("confirming")
-        setError(null)
-
-        // TODO: Update this when the api updates to accept multiple products
-        // per sale.
-        try {
+    const mutation = useMutation({
+        // The function that actually performs the action
+        mutationFn: async (salesRequests: SalesRequests) => {
+            // TODO: Update this when the api updates to accept multiple products
+            // per sale.
             for (const saleRequest of salesRequests) {
-                await api.POST("/transactions/sale", { body: saleRequest })
+                const res = await api.POST("/transactions/sale", { body: saleRequest })
+                // Throwing an error here to trigger the mutation's error state
+                if (res.error) throw new Error("Falha ao registrar a venda.")
             }
-
-            // Ask the API for the fresh inventory numbers
-            const freshStockResponse = await api.GET("/reports/stock")
-            // Transform the array into a dictionary just like App.tsx does
-            const stockMap: Record<string, number> = {}
-            const items = freshStockResponse.data["items"]
-            for (const item of items) {
-                stockMap[item.product_id] = item.quantity
-            }
-            onUpdateStock(stockMap)
-
-            setStatus("confirmed")
-        } catch (err) {
-            setStatus("error")
-            setError("Falha ao registrar a venda.")
+        },
+        // What happens when the mutation succeeds
+        onSuccess: () => {
+            // This tells TanStack Query that the 'stock' cache is now invalid.
+            // It will automatically refetch the stock from the API in the background.
+            queryClient.invalidateQueries({ queryKey: ['stock'] })
         }
-    }
+    })
 
-    const resetCheckout = () => {
-        setStatus("idle")
-        setError(null)
-    }
-
+    const status: CheckoutStatus = mutation.isPending ? "confirming"
+        : mutation.isSuccess ? "confirmed"
+            : mutation.isError ? "error"
+                : "idle"
     return {
         status,
-        error,
-        confirmPayment,
-        resetCheckout
+        error: mutation.isError ? mutation.error.message : null,
+        confirmPayment: mutation.mutate,
+        resetCheckout: mutation.reset
     }
 }
