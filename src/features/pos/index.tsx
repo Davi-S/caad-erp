@@ -4,7 +4,7 @@ import { useCheckout } from "./hooks/useCheckout"
 import { SalesmenScreen } from "./components/SalesmenScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
-import type { Products, Salesmen, Stock } from "@/App"
+import type { Products, Salesmen, Stock } from "@/types"
 
 interface POSFlowProps {
     products: Products
