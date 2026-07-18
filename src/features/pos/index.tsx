@@ -1,39 +1,37 @@
 import { useState } from "react"
 import { useCart } from "./hooks/useCart"
 import { useCheckout } from "./hooks/useCheckout"
-import { SellerScreen } from "./components/SellerScreen"
+import { SalesmenScreen } from "./components/SalesmenScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
 import type { Products, Salesmen, Stock } from "@/App"
 
 interface POSFlowProps {
     products: Products
-    sellers: Salesmen
+    salesmen: Salesmen
     stock: Stock
-    onUpdateStock: (newStock: Stock) => void
 }
 
 export function POSFlow({
     products,
-    sellers,
+    salesmen,
     stock,
-    onUpdateStock,
 }: POSFlowProps) {
     // Local routing state for the checkout sequence
-    const [screen, setScreen] = useState<"seller" | "cart" | "payment">("seller")
-    const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null)
-    const selectedSeller = sellers.find((s) => s.salesman_id === selectedSellerId) || null
+    const [screen, setScreen] = useState<"salesmen" | "cart" | "payment">("salesmen")
+    const [selectedSalesmanId, setSelectedSalesmanId] = useState<string | null>(null)
+    const selectedSalesman = salesmen.find((s) => s.salesman_id === selectedSalesmanId) || null
 
     // Hooks
     const cartState = useCart(products, stock)
     const { status, error, confirmPayment, resetCheckout } = useCheckout()
 
-    if (screen === "seller") {
+    if (screen === "salesmen") {
         return (
-            <SellerScreen
-                sellers={sellers}
-                // SellerScreen will return the selected seller's id
-                onNext={(id) => { setSelectedSellerId(id); setScreen("cart") }}
+            <SalesmenScreen
+                salesmen={salesmen}
+                // Will return the selected salesman's id
+                onNext={(id) => { setSelectedSalesmanId(id); setScreen("cart") }}
             />
         )
     }
@@ -41,11 +39,11 @@ export function POSFlow({
     if (screen === "cart") {
         return (
             <CartScreen
-                seller={selectedSeller}
+                salesman={selectedSalesman}
                 catalog={{ products, stock }}
                 cartState={cartState} // Passes the entire hook result at once
                 actions={{
-                    onBack: () => setScreen("seller"),
+                    onBack: () => setScreen("salesmen"),
                     onClose: () => {
                         resetCheckout()
                         setScreen("payment")
@@ -66,23 +64,19 @@ export function POSFlow({
                             const productPrice = products.find(p => p.product_id === productId).sell_price
                             return {
                                 product_id: productId,
-                                salesman_id: selectedSellerId,
+                                salesman_id: selectedSalesmanId,
                                 quantity: quantity,
                                 total_revenue: quantity * productPrice,
                                 payment_type: method,
                                 notes: null
                             }
                         })
-                        confirmPayment(salesRequests, onUpdateStock)
+                        confirmPayment(salesRequests)
                     },
                     onNewSale: () => {
                         cartState.clearCart()
                         resetCheckout()
-                        // Currently keeping the same seller. But in the future,
-                        // may be better to force the users to always select a
-                        // seller to prevent a new sell with the previous
-                        // seller's name
-                        setScreen("cart")
+                        setScreen("salesmen")
                     },
                     onEdit: () => {
                         // Simply send them back to the cart. 
@@ -91,7 +85,7 @@ export function POSFlow({
                     onCancel: () => {
                         cartState.clearCart()
                         resetCheckout()
-                        setScreen("seller")
+                        setScreen("salesmen")
                     }
                 }}
             />

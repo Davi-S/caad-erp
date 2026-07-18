@@ -2,15 +2,15 @@ import { useState } from "react"
 import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
 import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
-import type { CheckoutStatus } from "../hooks/useCheckout"
 import type { PaymentType } from "@/App"
+import type { MutationStatus } from "@tanstack/react-query"
 
 const QR_GRID = buildQrGrid()
 
 interface PaymentScreenProps {
     total: number
     checkout: {
-        status: CheckoutStatus
+        status: MutationStatus
         error: string | null
     }
     actions: {
@@ -28,9 +28,9 @@ export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) 
     const { status, error } = checkout
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
 
-    const confirmed = status === "confirmed"
-    const confirming = status === "confirming"
-    const isLocked = confirming || confirmed
+    const confirmed = status === "success"
+    const confirming = status === "pending"
+    const isLocked = status === "pending" || status === "success"
 
     return (
         <ScreenShell>
