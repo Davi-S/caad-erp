@@ -4,7 +4,7 @@ import { brl } from "@/helpers"
 import type { Products, Salesman, Stock } from "@/App"
 
 interface CartScreenProps {
-    seller: Salesman
+    selesman: Salesman
     catalog: {
         products: Products
         stock: Stock
@@ -25,7 +25,7 @@ interface CartScreenProps {
 }
 
 export function CartScreen({
-    seller,
+    selesman,
     catalog,
     cartState,
     actions
@@ -43,7 +43,7 @@ export function CartScreen({
                         <ArrowLeft size={20} className="text-ink" />
                     </button>
                     <h1 className="font-display text-ink text-xl font-bold">
-                        Venda de {seller?.salesman_name}
+                        Venda de {selesman?.salesman_name}
                     </h1>
                     <button onClick={onBack} className="ml-auto p-1">
                         <Pencil size={14} className="text-inkFaint" />

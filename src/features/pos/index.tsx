@@ -8,27 +8,27 @@ import type { Products, Salesmen, Stock } from "@/App"
 
 interface POSFlowProps {
     products: Products
-    sellers: Salesmen
+    selesmen: Salesmen
     stock: Stock
     onUpdateStock: (newStock: Stock) => void
 }
 
 export function POSFlow({
     products,
-    sellers,
+    selesmen: sellers,
     stock,
     onUpdateStock,
 }: POSFlowProps) {
     // Local routing state for the checkout sequence
-    const [screen, setScreen] = useState<"seller" | "cart" | "payment">("seller")
-    const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null)
-    const selectedSeller = sellers.find((s) => s.salesman_id === selectedSellerId) || null
+    const [screen, setScreen] = useState<"selesmen" | "cart" | "payment">("selesmen")
+    const [selectedSelesmanId, setSelectedSellerId] = useState<string | null>(null)
+    const selectedSeller = sellers.find((s) => s.salesman_id === selectedSelesmanId) || null
 
     // Hooks
     const cartState = useCart(products, stock)
     const { status, error, confirmPayment, resetCheckout } = useCheckout()
 
-    if (screen === "seller") {
+    if (screen === "selesmen") {
         return (
             <SellerScreen
                 sellers={sellers}
@@ -41,11 +41,11 @@ export function POSFlow({
     if (screen === "cart") {
         return (
             <CartScreen
-                seller={selectedSeller}
+                selesman={selectedSeller}
                 catalog={{ products, stock }}
                 cartState={cartState} // Passes the entire hook result at once
                 actions={{
-                    onBack: () => setScreen("seller"),
+                    onBack: () => setScreen("selesmen"),
                     onClose: () => {
                         resetCheckout()
                         setScreen("payment")
@@ -66,7 +66,7 @@ export function POSFlow({
                             const productPrice = products.find(p => p.product_id === productId).sell_price
                             return {
                                 product_id: productId,
-                                salesman_id: selectedSellerId,
+                                salesman_id: selectedSelesmanId,
                                 quantity: quantity,
                                 total_revenue: quantity * productPrice,
                                 payment_type: method,
@@ -91,7 +91,7 @@ export function POSFlow({
                     onCancel: () => {
                         cartState.clearCart()
                         resetCheckout()
-                        setScreen("seller")
+                        setScreen("selesmen")
                     }
                 }}
             />

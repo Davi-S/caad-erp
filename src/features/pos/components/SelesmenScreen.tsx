@@ -3,15 +3,15 @@ import { Check } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { Salesmen } from "@/App"
 
-interface SellerScreenProps {
-    sellers: Salesmen
+interface SelesmenScreenProps {
+    selesmen: Salesmen
     onNext: (salesmanId: string) => void
 }
 
-export function SellerScreen({
-    sellers,
+export function SelesmenScreen({
+    selesmen,
     onNext
-}: SellerScreenProps) {
+}: SelesmenScreenProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     return (
         <ScreenShell>
@@ -22,12 +22,12 @@ export function SellerScreen({
                 </h1>
 
                 <div className="flex flex-col gap-2">
-                    {sellers.length === 0 && (
+                    {selesmen.length === 0 && (
                         <p className="font-body text-inkFaint text-[13px]">
                             Nenhum vendedor cadastrado ainda no CAAD-ERP.
                         </p>
                     )}
-                    {sellers.filter((seller) => seller.is_active).map((seller) => {
+                    {selesmen.filter((seller) => seller.is_active).map((seller) => {
                         const isSel = selectedId === seller.salesman_id
                         return (
                             <button
