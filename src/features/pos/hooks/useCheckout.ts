@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import type { SalesRequests } from "@/App"
+import type { SalesRequests } from "@/types"
 import { api } from "@/api/apiClient"
 
 export function useCheckout() {

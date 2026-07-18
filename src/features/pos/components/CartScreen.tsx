@@ -1,7 +1,7 @@
 import { Plus, Minus, ArrowLeft, Pencil } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
-import type { Products, Salesman, Stock } from "@/App"
+import type { Products, Salesman, Stock } from "@/types"
 
 interface CartScreenProps {
     salesman: Salesman
