@@ -18,7 +18,8 @@ export default function App() {
     const {
         data: products,
         isLoading: isProductsLoading,
-        isError: isProductsError
+        isError: isProductsError,
+        refetch: refetchProducts,
     } = useQuery({
         queryKey: ['products'],
         queryFn: async () => {
@@ -29,8 +30,9 @@ export default function App() {
     })
     const {
         data: selesmen,
-        isLoading: isSellersLoading,
-        isError: isSellersError
+        isLoading: isSelesmenLoading,
+        isError: isSelesmenError,
+        refetch: refetchSalesmen,
     } = useQuery({
         queryKey: ['salesmen'],
         queryFn: async () => {
@@ -42,7 +44,8 @@ export default function App() {
     const {
         data: stock,
         isLoading: isStockLoading,
-        isError: isStockError
+        isError: isStockError,
+        refetch: refetchStock,
     } = useQuery({
         queryKey: ['stock'],
         queryFn: async () => {
@@ -58,8 +61,8 @@ export default function App() {
         }
     })
 
-    const isLoading = isProductsLoading || isSellersLoading || isStockLoading
-    const isError = isProductsError || isSellersError || isStockError
+    const isLoading = isProductsLoading || isSelesmenLoading || isStockLoading
+    const isError = isProductsError || isSelesmenError || isStockError
 
 
     return (
@@ -70,7 +73,7 @@ export default function App() {
                 <StatusScreen
                     mode="error"
                     message="Failed to load initial data"
-                // Note: To retry, you would use queryClient.invalidateQueries() or refetch() here
+                    onRetry={() => { refetchProducts(), refetchStock(), refetchSalesmen() }}
                 />
             )}
 
@@ -79,7 +82,6 @@ export default function App() {
                     products={products}
                     selesmen={selesmen}
                     stock={stock}
-                    // We will handle onUpdateStock via Mutations next
                     onUpdateStock={() => { }}
                 />
             )}
