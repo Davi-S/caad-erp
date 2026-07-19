@@ -1,18 +1,18 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
 import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { PaymentType } from "@/types"
-import type { MutationStatus } from "@tanstack/react-query"
+import type { Salesman } from "@/types"
+import { useCart } from "../hooks/useCart"
+import { useCheckout } from "../hooks/useCheckout"
 
 const QR_GRID = buildQrGrid()
 
 interface PaymentScreenProps {
-    total: number
-    checkout: {
-        status: MutationStatus
-        error: string | null
-    }
+    salesman: Salesman
+    cartState: ReturnType<typeof useCart>
+    checkoutState: ReturnType<typeof useCheckout>
     actions: {
         onConfirm: (method: PaymentType) => void
         onNewSale: () => void
@@ -21,12 +21,16 @@ interface PaymentScreenProps {
     }
 }
 
-export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) {
+export function PaymentScreen({ salesman, cartState, checkoutState, actions }: PaymentScreenProps) {
     const [method, setMethod] = useState<PaymentType>("PIX")
     const [copied, setCopied] = useState(false)
 
-    const { status, error } = checkout
+    const { status, error, resetCheckout } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
+
+    useEffect(() => {
+        resetCheckout()
+    }, [])
 
     const confirmed = status === "success"
     const confirming = status === "pending"
@@ -35,23 +39,29 @@ export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) 
     return (
         <ScreenShell>
             {/* Top Navigation Bar */}
-            <div className="px-4 sm:px-6 pt-4 shrink-0 flex justify-between items-center mb-2">
-                <button
-                    onClick={onEdit}
-                    disabled={isLocked}
-                    className="flex items-center gap-1 p-1 -ml-1 text-ink disabled:opacity-30"
-                >
-                    <ArrowLeft size={20} />
-                    <span className="font-body text-sm font-medium">Editar itens</span>
-                </button>
+            <div className="px-4 sm:px-6 pt-4 shrink-0 mb-2">
+                <div className="flex justify-between items-center mb-3">
+                    <button
+                        onClick={onEdit}
+                        disabled={isLocked}
+                        className="flex items-center gap-1 p-1 -ml-1 text-ink disabled:opacity-30"
+                    >
+                        <ArrowLeft size={20} />
+                        <span className="font-body text-sm font-medium">Editar itens</span>
+                    </button>
 
-                <button
-                    onClick={onCancel}
-                    disabled={isLocked}
-                    className="font-body text-sm font-medium text-stamp disabled:opacity-30"
-                >
-                    Cancelar venda
-                </button>
+                    <button
+                        onClick={onCancel}
+                        disabled={isLocked}
+                        className="font-body text-sm font-medium text-stamp disabled:opacity-30"
+                    >
+                        Cancelar venda
+                    </button>
+                </div>
+
+                <h1 className="font-display text-ink text-xl font-bold text-center">
+                    Venda de {salesman?.salesman_name}
+                </h1>
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xs mx-auto">
@@ -75,7 +85,7 @@ export function PaymentScreen({ total, checkout, actions }: PaymentScreenProps) 
                             </span>
 
                             <span className="font-mono text-ink text-[32px] font-semibold mb-6">
-                                {brl(total)}
+                                {brl(cartState.total)}
                             </span>
 
                             {/* Payment Method Selector */}
