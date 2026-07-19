@@ -21,7 +21,7 @@ interface PaymentScreenProps {
     }
 }
 
-export function PaymentScreen({ cartState, checkoutState, actions }: PaymentScreenProps) {
+export function PaymentScreen({ salesman, cartState, checkoutState, actions }: PaymentScreenProps) {
     const [method, setMethod] = useState<PaymentType>("PIX")
     const [copied, setCopied] = useState(false)
 
@@ -39,23 +39,29 @@ export function PaymentScreen({ cartState, checkoutState, actions }: PaymentScre
     return (
         <ScreenShell>
             {/* Top Navigation Bar */}
-            <div className="px-4 sm:px-6 pt-4 shrink-0 flex justify-between items-center mb-2">
-                <button
-                    onClick={onEdit}
-                    disabled={isLocked}
-                    className="flex items-center gap-1 p-1 -ml-1 text-ink disabled:opacity-30"
-                >
-                    <ArrowLeft size={20} />
-                    <span className="font-body text-sm font-medium">Editar itens</span>
-                </button>
+            <div className="px-4 sm:px-6 pt-4 shrink-0 mb-2">
+                <div className="flex justify-between items-center mb-3">
+                    <button
+                        onClick={onEdit}
+                        disabled={isLocked}
+                        className="flex items-center gap-1 p-1 -ml-1 text-ink disabled:opacity-30"
+                    >
+                        <ArrowLeft size={20} />
+                        <span className="font-body text-sm font-medium">Editar itens</span>
+                    </button>
 
-                <button
-                    onClick={onCancel}
-                    disabled={isLocked}
-                    className="font-body text-sm font-medium text-stamp disabled:opacity-30"
-                >
-                    Cancelar venda
-                </button>
+                    <button
+                        onClick={onCancel}
+                        disabled={isLocked}
+                        className="font-body text-sm font-medium text-stamp disabled:opacity-30"
+                    >
+                        Cancelar venda
+                    </button>
+                </div>
+
+                <h1 className="font-display text-ink text-xl font-bold text-center">
+                    Venda de {salesman?.salesman_name}
+                </h1>
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xs mx-auto">
