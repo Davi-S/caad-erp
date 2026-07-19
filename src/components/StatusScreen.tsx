@@ -15,7 +15,7 @@ export function StatusScreen({ mode, message, onRetry }: {
                     <AlertTriangle size={28} className="text-stamp" />
                 )}
                 <p className="font-body text-ink text-sm font-semibold">
-                    {mode === "loading" ? "Carregando dados do CAAD-ERP..." : "Não deu pra falar com o CAAD-ERP"}
+                    {mode === "loading" ? "Carregando dados do CAAD-ERP..." : "Erro"}
                 </p>
                 {message && (
                     <p className="font-body text-inkFaint text-[13px]">
