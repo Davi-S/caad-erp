@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Check, Copy, ArrowLeft, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
 import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
@@ -25,8 +25,12 @@ export function PaymentScreen({ cartState, checkoutState, actions }: PaymentScre
     const [method, setMethod] = useState<PaymentType>("PIX")
     const [copied, setCopied] = useState(false)
 
-    const { status, error } = checkoutState
+    const { status, error, resetCheckout } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
+
+    useEffect(() => {
+        resetCheckout()
+    }, [])
 
     const confirmed = status === "success"
     const confirming = status === "pending"
