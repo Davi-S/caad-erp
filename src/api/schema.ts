@@ -69,34 +69,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/products/{product_id}/deactivate": {
+    "/products/{product_id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
         /**
-         * Deactivate Product
-         * @description Deactivate an existing product.
-         *
-         *     Args:
-         *         product_id: The ID of the product to deactivate.
-         *         context: Runtime context injected via dependency.
-         *
-         *     Returns:
-         *         StandardResponse containing the updated product data.
-         *
-         *     Raises:
-         *         HTTPException: 404 if product not found.
+         * Get Product
+         * @description Get a specific product by ID.
          */
-        post: operations["deactivate_product_products__product_id__deactivate_post"];
+        get: operations["get_product_products__product_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Product Details
+         * @description Update an existing product.
+         *
+         *     Can be used to modify the product's name, price, or toggle its active status.
+         */
+        patch: operations["update_product_details_products__product_id__patch"];
         trace?: never;
     };
     "/salesmen": {
@@ -141,34 +137,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/salesmen/{salesman_id}/deactivate": {
+    "/salesmen/{salesman_id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
         /**
-         * Deactivate Salesman
-         * @description Deactivate an existing salesman.
-         *
-         *     Args:
-         *         salesman_id: The ID of the salesman to deactivate.
-         *         context: Runtime context injected via dependency.
-         *
-         *     Returns:
-         *         StandardResponse containing the updated salesman data.
-         *
-         *     Raises:
-         *         HTTPException: 404 if salesman not found.
+         * Get Salesman
+         * @description Get a specific salesman by ID.
          */
-        post: operations["deactivate_salesman_salesmen__salesman_id__deactivate_post"];
+        get: operations["get_salesman_salesmen__salesman_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Salesman Details
+         * @description Update an existing salesman.
+         *
+         *     Can be used to modify the salesman's name or toggle their active status.
+         */
+        patch: operations["update_salesman_details_salesmen__salesman_id__patch"];
         trace?: never;
     };
     "/transactions/sale": {
@@ -545,6 +537,18 @@ export interface components {
             is_active: boolean;
         };
         /**
+         * ProductUpdateRequest
+         * @description Request payload for partially updating an existing product.
+         */
+        ProductUpdateRequest: {
+            /** Product Name */
+            product_name?: string | null;
+            /** Sell Price */
+            sell_price?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
          * ProfitReportResponse
          * @description Response for the profit report endpoint.
          */
@@ -623,6 +627,16 @@ export interface components {
             salesman_name: string;
             /** Is Active */
             is_active: boolean;
+        };
+        /**
+         * SalesmanUpdateRequest
+         * @description Request payload for partially updating an existing salesman.
+         */
+        SalesmanUpdateRequest: {
+            /** Salesman Name */
+            salesman_name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /**
          * StandardResponse
@@ -810,7 +824,7 @@ export interface operations {
             };
         };
     };
-    deactivate_product_products__product_id__deactivate_post: {
+    get_product_products__product_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -820,6 +834,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_product_details_products__product_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductUpdateRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -905,7 +954,7 @@ export interface operations {
             };
         };
     };
-    deactivate_salesman_salesmen__salesman_id__deactivate_post: {
+    get_salesman_salesmen__salesman_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -915,6 +964,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesmanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_salesman_details_salesmen__salesman_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                salesman_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalesmanUpdateRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
