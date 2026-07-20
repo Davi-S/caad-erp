@@ -16,7 +16,7 @@ export function GlobalError() {
     return (
         <ScreenShell>
             <Center style={{ flex: 1 }}>
-                <Stack align="center" gap="xs" maw={320}>
+                <Stack align="center" gap="xs">
                     <ThemeIcon variant="light" color="red" size={48} radius="xl">
                         <AlertTriangle size={24} />
                     </ThemeIcon>

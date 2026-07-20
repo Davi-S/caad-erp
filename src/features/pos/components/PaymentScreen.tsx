@@ -1,18 +1,25 @@
 import { useState, useEffect } from "react"
 import {
     ActionIcon, Alert, Badge, Button, Center,
-    Group, Paper, ScrollArea, SegmentedControl,
-    Stack, Text, Title
+    Group, Paper, SegmentedControl,
+    Stack, Text, Title, Box
 } from "@mantine/core"
+import { PixCanvas } from "react-qrcode-pix"
 import { Check, ArrowLeft, AlertTriangle, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
-import { brl, buildQrGrid, QR_SIZE } from "@/helpers"
+import { brl } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { PaymentType } from "@/types"
 import type { Salesman } from "@/types"
 import { useCart } from "../hooks/useCart"
 import { useCheckout } from "../hooks/useCheckout"
 
-const QR_GRID = buildQrGrid()
+// TODO: Move these to env variables or a config file
+// These describe the receiver of the payment, not the salesman or customer.
+const PIX_MERCHANT = {
+    pixkey: "+5541984005708",       // CPF, CNPJ, email, phone, or random key
+    merchant: "Davi Alves Sampaio", // max 25 chars, no accents (BACEN spec)
+    city: "CURITIBA",               // max 15 chars, no accents
+}
 
 interface PaymentScreenProps {
     salesman: Salesman
@@ -70,10 +77,22 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
             </Stack>
 
             {/* Middle Section */}
-            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
-                <Stack justify="center" style={{ minHeight: "100%" }} py="md">
-                    <Paper withBorder shadow="sm" radius="md" p="lg" mx="auto" w="100%" maw={360}>
-                        <Stack align="center" gap="xs">
+            <Box style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }} py="sm">
+                <Stack
+                    align="stretch"
+                    justify="center"
+                    style={{ flex: 1, minHeight: 0 }}
+                    mx="auto"
+                    w="100%"
+                >
+                    <Paper
+                        withBorder
+                        shadow="sm"
+                        radius="md"
+                        p="lg"
+                        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
+                    >
+                        <Stack align="center" gap="xs" style={{ flex: 1, minHeight: 0 }}>
                             <Badge
                                 color={confirmed ? "var(--mantine-primary-color-filled)" : "yellow"}
                                 variant={confirmed ? "filled" : "light"}
@@ -99,31 +118,29 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                 }}
                             />
 
-                            <Paper withBorder radius="md" p="md" mt="sm" w="100%" mih={180} style={{ borderStyle: "dashed" }}>
-                                <Center style={{ flexDirection: "column", height: "100%" }}>
+                            {/* Detached absolute container to perfectly scale the canvas top-down */}
+                            <Paper
+                                withBorder
+                                radius="md"
+                                mt="sm"
+                                w="100%"
+                                style={{ borderStyle: "dashed", flex: 1, minHeight: 0, position: "relative" }}
+                            >
+                                <Center style={{ position: "absolute", top: 16, bottom: 16, left: 16, right: 16 }}>
                                     {method === "PIX" && (
-                                        <Stack align="center" gap="sm" w="100%">
-                                            <div
-                                                style={{
-                                                    display: "grid",
-                                                    gridTemplateColumns: `repeat(${QR_SIZE}, 10px)`,
-                                                    gridTemplateRows: `repeat(${QR_SIZE}, 10px)`,
-                                                }}
-                                            >
-                                                {QR_GRID.flatMap((row, r) =>
-                                                    row.map((cell, c) => (
-                                                        <div
-                                                            key={r + "-" + c}
-                                                            style={{
-                                                                width: 10,
-                                                                height: 10,
-                                                                backgroundColor: cell ? "var(--mantine-color-dark-9)" : "transparent",
-                                                            }}
-                                                        />
-                                                    ))
-                                                )}
-                                            </div>
-                                        </Stack>
+                                        <PixCanvas
+                                            pixkey={PIX_MERCHANT.pixkey}
+                                            merchant={PIX_MERCHANT.merchant}
+                                            city={PIX_MERCHANT.city}
+                                            amount={cartState.total / 100}
+                                            internalProps={{
+                                                style: {
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    objectFit: "contain"
+                                                }
+                                            }}
+                                        />
                                     )}
 
                                     {method === "Cash" && (
@@ -149,15 +166,15 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                     </Paper>
 
                     {error && (
-                        <Alert color="red" icon={<AlertTriangle size={16} />} mx="auto" w="100%" maw={360}>
+                        <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm">
                             {error}
                         </Alert>
                     )}
                 </Stack>
-            </ScrollArea>
+            </Box>
 
             {/* Footer */}
-            <Stack mx="auto" w="100%" maw={360}>
+            <Stack mx="auto" w="100%">
                 {!confirmed ? (
                     <Button
                         size="lg"
