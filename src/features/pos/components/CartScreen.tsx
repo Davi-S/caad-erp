@@ -1,9 +1,12 @@
-import { Plus, Minus, ArrowLeft, Pencil } from "lucide-react"
+import {
+    ActionIcon, Indicator, Button, Center, Checkbox, Divider, Group,
+    ScrollArea, SimpleGrid, Stack, Text, ThemeIcon, Title
+} from "@mantine/core"
+import { Plus, Minus, ArrowLeft, ShoppingCart } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
 import type { Salesman, Products, Stock } from "@/types"
 import { useCart } from "../hooks/useCart"
-
 
 interface CartScreenProps {
     salesman: Salesman
@@ -29,114 +32,127 @@ export function CartScreen({
 
     return (
         <ScreenShell>
-            <div className="px-4 sm:px-6 pt-4 shrink-0">
-                <div className="flex items-center gap-2 mb-4">
-                    <button onClick={onBack} className="p-1 -ml-1">
-                        <ArrowLeft size={20} className="text-ink" />
-                    </button>
-                    <h1 className="font-display text-ink text-xl font-bold">
+            {/* Header */}
+            <Group wrap="nowrap">
+                <ActionIcon onClick={onBack} variant="subtle" size="lg">
+                    <ArrowLeft />
+                </ActionIcon>
+                <Stack gap={0}>
+                    <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                        Venda em andamento
+                    </Text>
+                    <Title order={1} size="h5">
                         Venda de {salesman?.salesman_name}
-                    </h1>
-                    <button onClick={onBack} className="ml-auto p-1">
-                        <Pencil size={14} className="text-inkFaint" />
-                    </button>
-                </div>
-            </div>
+                    </Title>
+                </Stack>
+            </Group>
 
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6">
-                <p className="text-xs uppercase tracking-widest mb-2 font-body text-inkFaint font-semibold">
-                    Toque para adicionar
-                </p>
-                <div className="grid grid-cols-3 gap-2 mb-5">
-                    {products.map((product) => {
-                        const available = availableFor(product.product_id)
-                        const soldOut = available !== undefined && available <= 0
-                        return (
-                            <button
-                                key={product.product_id}
-                                onClick={() => cart[product.product_id] > 0 ? removeItem(product.product_id) : inc(product.product_id)}
-                                disabled={soldOut}
-                                className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3 relative bg-card border border-solid border-paperLine disabled:opacity-45"
-                            >
-                                {cart[product.product_id] > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center w-5 h-5 bg-teal text-white font-mono text-[11px] font-semibold">
-                                        {cart[product.product_id]}
-                                    </span>
-                                )}
-                                <span className="font-body text-ink text-xs font-semibold text-center px-1">
-                                    {product.product_name}
-                                </span>
+            {/* Middle Section */}
+            <Stack style={{ flex: 1, minHeight: 0 }} py="lg">
+                <Stack gap="sm">
+                    <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                        Toque para adicionar
+                    </Text>
+                    <SimpleGrid cols={3} spacing="sm">
+                        {products.map((product) => {
+                            const available = availableFor(product.product_id)
+                            const soldOut = available !== undefined && available <= 0
+                            const quantity = cart[product.product_id] || 0
 
-                                <div className="flex flex-col items-center">
-                                    <span className="font-mono text-inkSoft text-[11px]">
-                                        {soldOut ? "Esgotado" : brl(product.sell_price)}
-                                    </span>
-                                    {!soldOut && available !== undefined && (
-                                        <span className="font-body text-inkFaint text-[9px] uppercase tracking-widest mt-0.5">
-                                            {available} disp.
-                                        </span>
-                                    )}
-                                </div>
-                            </button>
-                        )
-                    })}
-                </div>
-
-                <div className="pt-3 border-t border-dashed border-paperLine">
-                    {isEmpty ? (
-                        <div className="flex flex-col items-center text-center py-10 gap-2">
-                            <p className="font-body text-inkFaint text-[13px]">
-                                Nenhum item ainda.
-                                <br />
-                                Toque em um produto acima pra começar.
-                            </p>
-                        </div>
-                    ) : (
-                        cartIterable.map(([productId, quantity]) => {
-                            const product = products.find(p => p.product_id === productId)
                             return (
-                                <div key={productId} className="flex items-center gap-2 py-2">
-                                    <span className="flex-1 font-body text-ink text-sm font-medium">
-                                        {product.product_name}
-                                    </span>
-                                    <div className="flex items-center gap-2 rounded-full px-1 bg-paper border border-solid border-paperLine">
-                                        <button onClick={() => dec(productId)} className="p-1">
-                                            <Minus size={12} className="text-inkSoft" />
-                                        </button>
-                                        <span className="font-mono text-xs text-ink min-w-3.5 text-center">
-                                            {quantity}
-                                        </span>
-                                        <button onClick={() => inc(productId)} className="p-1">
-                                            <Plus size={12} className="text-inkSoft" />
-                                        </button>
-                                    </div>
-                                    <span className="font-mono text-ink text-[13px] min-w-15.56 text-right">
-                                        {brl(quantity * product.sell_price)}
-                                    </span>
-                                </div>
+                                <Indicator label={`${quantity}x`} size={18} disabled={quantity === 0} offset={6}>
+                                    <Checkbox.Card
+                                        key={product.product_id}
+                                        checked={quantity > 0}
+                                        onClick={() => quantity > 0 ? removeItem(product.product_id) : inc(product.product_id)}
+                                        disabled={soldOut}
+                                        radius="md"
+                                        p="sm"
+                                        style={{
+                                            position: "relative",
+                                            textAlign: "center",
+                                            backgroundColor: soldOut ? "var(--mantine-color-gray-1)" : undefined,
+                                        }}
+                                    >
+                                        <Stack gap={2} align="center">
+                                            <Text size="xs" fw={600} ta="center">
+                                                {product.product_name}
+                                            </Text>
+                                            <Text size="xs" fw={700} c={soldOut ? "dimmed" : "var(--mantine-primary-color-filled)"}>
+                                                {soldOut ? "Esgotado" : brl(product.sell_price)}
+                                            </Text>
+                                            {!soldOut && (
+                                                <Text size="10px" c="dimmed">
+                                                    {stock[product.product_id]}u disponíveis
+                                                </Text>
+                                            )}
+                                        </Stack>
+                                    </Checkbox.Card>
+                                </Indicator>
                             )
-                        })
-                    )}
-                </div>
-            </div>
+                        })}
+                    </SimpleGrid>
+                </Stack>
 
-            <div className="px-4 sm:px-6 pt-3 pb-7 shrink-0 border-t-[1.5px] border-dashed border-inkFaint">
-                <div className="flex items-baseline justify-between mb-3">
-                    <span className="font-body text-inkSoft text-[13px] font-semibold">
-                        Total
-                    </span>
-                    <span className="font-mono text-ink text-2xl font-semibold">
-                        {brl(total)}
-                    </span>
-                </div>
-                <button
-                    disabled={total === 0}
-                    onClick={onNext}
-                    className="w-full py-3.5 rounded-2xl text-white font-display font-bold text-[15px] bg-teal disabled:bg-inkFaint disabled:opacity-60"
-                >
+                {isEmpty ? (
+                    <Center style={{ flex: 1 }}>
+                        <Stack align="center" gap="xs">
+                            <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                                <ShoppingCart size={20} />
+                            </ThemeIcon>
+                            <Text c="dimmed" size="sm" ta="center">
+                                Nenhum item ainda.
+                            </Text>
+                        </Stack>
+                    </Center>
+                ) : (
+                    <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
+                        <Stack gap={4}>
+                            <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                                No carrinho
+                            </Text>
+                            {cartIterable.map(([productId, quantity], index) => {
+                                const product = products.find(p => p.product_id === productId)
+                                if (!product) return null
+                                return (
+                                    <div key={productId}>
+                                        {index > 0 && <Divider variant="dashed" my={4} />}
+                                        <Group justify="space-between" wrap="nowrap">
+                                            <Text size="sm" style={{ flex: 1 }}>{product.product_name}</Text>
+                                            <ActionIcon.Group>
+                                                <ActionIcon variant="light" size="sm" onClick={() => dec(productId)}>
+                                                    <Minus size={12} />
+                                                </ActionIcon>
+                                                <ActionIcon.GroupSection variant="light" size="sm" >
+                                                    {quantity}
+                                                </ActionIcon.GroupSection>
+                                                <ActionIcon variant="light" size="sm" onClick={() => inc(productId)}>
+                                                    <Plus size={12} />
+                                                </ActionIcon>
+                                            </ActionIcon.Group>
+                                            <Text size="sm" fw={600} ff="monospace" w={72} ta="right">
+                                                {brl(quantity * product.sell_price)}
+                                            </Text>
+                                        </Group>
+                                    </div>
+                                )
+                            })}
+                        </Stack>
+                    </ScrollArea>
+                )}
+            </Stack>
+
+            {/* Footer */}
+            <Stack gap="xs">
+                <Divider />
+                <Group justify="space-between">
+                    <Text fw={600}>Total</Text>
+                    <Text fw={700} size="lg" ff="monospace">{brl(total)}</Text>
+                </Group>
+                <Button size="lg" disabled={total === 0} onClick={onNext}>
                     Fechar venda
-                </button>
-            </div>
+                </Button>
+            </Stack>
         </ScreenShell>
     )
 }

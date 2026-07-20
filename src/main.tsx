@@ -8,7 +8,8 @@ import { salesmenQueryOptions } from "@/hooks/queries/useSalesmen"
 import { productsQueryOptions } from "@/hooks/queries/useProducts"
 import { stockQueryOptions } from "@/hooks/queries/useStock"
 import { GlobalError } from "./components/GlobalError.tsx"
-
+import '@mantine/core/styles.css'
+import { MantineProvider } from '@mantine/core'
 
 const queryClient = new QueryClient()
 
@@ -31,7 +32,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
+            <MantineProvider>
+                <RouterProvider router={router} />
+            </MantineProvider>
         </QueryClientProvider>
     </StrictMode>,
 )
