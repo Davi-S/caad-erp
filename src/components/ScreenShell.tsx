@@ -1,9 +1,21 @@
-export function ScreenShell({ children }) {
+import { Container } from '@mantine/core'
+
+export function ScreenShell({ children }: { children: React.ReactNode }) {
     return (
-        <div
-            className="relative w-full min-h-svh flex flex-col overflow-hidden bg-paper pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0px,env(safe-area-inset-left))] pr-[max(0px,env(safe-area-inset-right))]"
+        <Container
+            px="xl"
+            py="xl"
+            h="100svh"
+            bg="gray.0"
+            display="flex"
+            style={{
+                flexDirection: 'column',
+                overflow: 'hidden',
+                paddingTop: 'max(var(--mantine-spacing-xl), env(safe-area-inset-top))',
+                paddingBottom: 'max(var(--mantine-spacing-xl), env(safe-area-inset-bottom))',
+            }}
         >
             {children}
-        </div>
+        </Container>
     )
 }

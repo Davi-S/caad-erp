@@ -1,24 +1,38 @@
 import { useRouteError, useNavigate } from "react-router-dom"
-import { StatusScreen } from "./StatusScreen"
+import { Button, Center, Stack, Text, ThemeIcon, Title } from "@mantine/core"
+import { AlertTriangle } from "lucide-react"
+import { ScreenShell } from "./ScreenShell"
 
 export function GlobalError() {
     const error = useRouteError()
     const navigate = useNavigate()
 
-    let errorMessage = "An unexpected error occurred"
-    if (error instanceof Error) {
-        errorMessage = error.message
-    } else if (typeof error === "string") {
-        errorMessage = error
-    }
+    const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === "string"
+            ? error
+            : "Ocorreu um erro inesperado."
 
     return (
-        <div className="w-full min-h-svh font-body bg-paper bg-[radial-gradient(circle,var(--color-paperLine)_1px,transparent_1px)] bg-size[18px_18px]">
-            <StatusScreen
-                mode="error"
-                message={errorMessage}
-                onRetry={() => navigate(".", { replace: true })}
-            />
-        </div>
+        <ScreenShell>
+            <Center style={{ flex: 1 }}>
+                <Stack align="center" gap="xs" maw={320}>
+                    <ThemeIcon variant="light" color="red" size={48} radius="xl">
+                        <AlertTriangle size={24} />
+                    </ThemeIcon>
+
+                    <Stack align="center" gap={4}>
+                        <Title order={2} size="h4">Algo deu errado</Title>
+                        <Text c="dimmed" ta="center" size="sm">
+                            {errorMessage}
+                        </Text>
+                    </Stack>
+
+                    <Button onClick={() => navigate(".", { replace: true })} mt="sm" size="lg">
+                        Tentar de novo
+                    </Button>
+                </Stack>
+            </Center>
+        </ScreenShell>
     )
 }
