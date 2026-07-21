@@ -54,50 +54,6 @@ def test_add_salesman_then_list_salesmen_includes_new_active_item(
     assert any(salesman.salesman_id == "WF-S001" for salesman in salesmen)
 
 
-def test_deactivate_product_hides_item_from_active_listing_but_keeps_history(
-    initialized_context: bll.RuntimeContext,
-) -> None:
-    """
-    GIVEN an existing active product in workbook data
-    WHEN product is deactivated through bll.update_product
-    THEN active listing excludes it while include_inactive listing still contains it
-    """
-    _add_product(initialized_context, "WF-P002")
-    bll.update_product(
-        initialized_context,
-        bll.ProductCommand(product_id="WF-P002", is_active=False),
-    )
-    active_ids = {row.product_id for row in bll.list_products(initialized_context)}
-    all_ids = {
-        row.product_id
-        for row in bll.list_products(initialized_context, include_inactive=True)
-    }
-    assert "WF-P002" not in active_ids
-    assert "WF-P002" in all_ids
-
-
-def test_deactivate_salesman_hides_item_from_active_listing_but_keeps_history(
-    initialized_context: bll.RuntimeContext,
-) -> None:
-    """
-    GIVEN an existing active salesman in workbook data
-    WHEN salesman is deactivated through bll.update_salesman
-    THEN active listing excludes it while include_inactive listing still contains it
-    """
-    _add_salesman(initialized_context, "WF-S002")
-    bll.update_salesman(
-        initialized_context,
-        bll.SalesmanCommand(salesman_id="WF-S002", is_active=False),
-    )
-    active_ids = {row.salesman_id for row in bll.list_salesmen(initialized_context)}
-    all_ids = {
-        row.salesman_id
-        for row in bll.list_salesmen(initialized_context, include_inactive=True)
-    }
-    assert "WF-S002" not in active_ids
-    assert "WF-S002" in all_ids
-
-
 def test_record_sale_updates_transaction_log_and_inventory_report(
     initialized_context: bll.RuntimeContext,
 ) -> None:

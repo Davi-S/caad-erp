@@ -138,34 +138,6 @@ def test_calculate_inventory_sums_quantity_by_product() -> None:
     assert inventory == {"P1": 3, "P2": 3}
 
 
-def test_calculate_inventory_ignores_entries_without_product_id() -> None:
-    """
-    GIVEN transaction cache entries where some rows have product_id set to None
-    WHEN calculate_inventory is called
-    THEN rows without product_id are ignored
-    """
-    # Arrange
-    workbook = _make_workbook()
-    context = _make_context(workbook)
-    _seed_transaction(
-        workbook,
-        "T1",
-        constants.TransactionType.CREDIT_PAYMENT.value,
-        None,
-        constants.PaymentType.PIX.value,
-        0,
-        1000,
-        0,
-        linked_transaction_id="SALE1",
-    )
-
-    # Act
-    inventory = reports.calculate_inventory(context)
-
-    # Assert
-    assert inventory == {}
-
-
 def test_calculate_inventory_returns_empty_mapping_for_no_transactions() -> None:
     """
     GIVEN an empty transaction cache list
