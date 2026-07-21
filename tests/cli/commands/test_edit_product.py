@@ -109,7 +109,7 @@ def test_translate_edit_product_sets_fields_and_trims_id() -> None:
     # Assert
     assert command.product_id == "P001"
     assert command.product_name == "New Cookie"
-    assert command.sell_price == "300"
+    assert command.sell_price == 300
     assert command.is_active is False
 
 
@@ -135,5 +135,5 @@ def test_run_edit_product_calls_bll_update_and_returns_zero(tmp_path: Path) -> N
     assert exit_code == 0
     updated = bll.get_product(context, "P001")
     assert updated.product_name == "New Cookie"
-    assert updated.sell_price == "300"
+    assert updated.sell_price == 300
     assert updated.is_active is False
