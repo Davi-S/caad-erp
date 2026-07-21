@@ -49,14 +49,15 @@ def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, int]:
             derived by summing ``quantity_change`` across transactions.
     """
     inventory: t.Dict[str, int] = {}
-    for transaction in transactions._ensure_transactions_cache(context)["all"]:
-        if transaction.product_id is None:
-            continue
+    for transaction in transactions.list_transactions(context):
         current = inventory.get(transaction.product_id, 0)
-        inventory[transaction.product_id] = current + \
-            transaction.quantity_change
-    logger.debug("Calculated inventory balances for %d products",
-                 len(inventory))
+        inventory[transaction.product_id] = current + transaction.quantity_change
+    # Handle product with no transactions (sales nor restocks)
+    for product in products.list_products(context):
+        if product.product_id in inventory.keys():
+            continue
+        inventory[product.product_id] = 0
+    logger.debug("Calculated inventory balances for %d products", len(inventory))
     return inventory
 
 
@@ -122,8 +123,7 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
 
     for entry in all_transactions:
         if (
-            entry.transaction_type
-            == constants.TransactionType.CREDIT_PAYMENT.value
+            entry.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
             and entry.linked_transaction_id
         ):
             payments_by_sale[entry.linked_transaction_id] += entry.total_revenue
@@ -171,8 +171,7 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
         if expected_amount <= 0:
             continue
 
-        amount_paid = payments_by_sale.get(
-            entry.transaction_id, 0)
+        amount_paid = payments_by_sale.get(entry.transaction_id, 0)
         balance = expected_amount - amount_paid
         if balance <= 0:
             continue

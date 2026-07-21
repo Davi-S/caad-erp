@@ -20,19 +20,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -56,82 +58,17 @@ def test_register_list_products_command_returns_non_mutating_command_spec() -> N
     assert spec.is_mutating is False
 
 
-def test_register_list_products_registrar_configures_all_flag() -> None:
+def test_run_list_products_report_calls_bll_and_returns_zero(
+    tmp_path: Path, capsys
+) -> None:
     """
-    GIVEN subparser factory instance
-    WHEN list-products registrar is executed
-    THEN parser configures optional --all flag and command default
-    """
-    # Arrange
-    spec = list_products.register_list_products_command()
-    parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest="command")
-    spec.register(subparsers)
-
-    # Act
-    args = parser.parse_args(["list-products", "--all"])
-
-    # Assert
-    assert args.command == "list-products"
-    assert args.all is True
-
-
-@pytest.mark.parametrize("include_inactive", [False, True])
-def test_display_products_report_prints_empty_state_message(include_inactive, capsys) -> None:
-    """
-    GIVEN empty product iterable and include_inactive mode
-    WHEN _display_products_report is called
-    THEN mode-specific empty-state message is printed
-    """
-    # Arrange / Act
-    list_products._display_products_report(
-        [], include_inactive=include_inactive)
-
-    # Assert
-    output = capsys.readouterr().out
-    assert (
-        "No products found." in output
-        if include_inactive
-        else "No active products found." in output
-    )
-
-
-@pytest.mark.parametrize("include_inactive", [False, True])
-def test_display_products_report_prints_expected_columns_by_mode(include_inactive, capsys) -> None:
-    """
-    GIVEN non-empty product iterable and include_inactive mode
-    WHEN _display_products_report is called
-    THEN output columns differ according to mode and include active marker when required
-    """
-    # Arrange
-    rows = [
-        dal.ProductRow("P001", "Cookie", 250, True),
-        dal.ProductRow("P002", "Soda", 300, False),
-    ]
-
-    # Act
-    list_products._display_products_report(
-        rows, include_inactive=include_inactive)
-
-    # Assert
-    output = capsys.readouterr().out
-    assert "Product ID" in output
-    if include_inactive:
-        assert "Active" in output
-    else:
-        assert "Active" not in output
-
-
-@pytest.mark.parametrize("include_inactive", [False, True])
-def test_run_list_products_report_calls_bll_and_returns_zero(include_inactive, tmp_path: Path, capsys) -> None:
-    """
-    GIVEN runtime context and parsed list-products args with all flag mode
+    GIVEN runtime context and parsed list-products
     WHEN _run_list_products_report is called
-    THEN products are listed with include_inactive forwarded and zero is returned
+    THEN products are listed and zero is returned
     """
     # Arrange
     context = _make_context(tmp_path)
-    args = argparse.Namespace(all=include_inactive)
+    args = argparse.Namespace(product_id=None)
 
     # Act
     exit_code = list_products._run_list_products_report(context, args)
@@ -140,5 +77,25 @@ def test_run_list_products_report_calls_bll_and_returns_zero(include_inactive, t
     assert exit_code == 0
     output = capsys.readouterr().out
     assert "P001" in output
-    if include_inactive:
-        assert "P002" in output
+    assert "P002" in output
+
+def test_run_list_products_report_reports_only_specific_product(
+    tmp_path: Path, capsys
+) -> None:
+    """
+    GIVEN runtime context and parsed list-products with product id
+    WHEN _run_list_products_report is called
+    THEN only the product with the given id is listed and zero is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(product_id="P001")
+
+    # Act
+    exit_code = list_products._run_list_products_report(context, args)
+
+    # Assert
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "P001" in output
+    assert "P002" not in output

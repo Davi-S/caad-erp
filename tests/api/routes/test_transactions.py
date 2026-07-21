@@ -27,6 +27,7 @@ def _setup_product_and_salesman(client: TestClient) -> None:
 
 # happy path
 
+
 def test_transaction_mutation_endpoints_return_201_and_standard_response(
     api_client: TestClient,
 ) -> None:
@@ -123,11 +124,13 @@ def test_transaction_mutation_endpoints_persist_context_after_success(
 
     assert response.status_code == 201
     tx_id = response.json()["data"]["transaction_id"]
-    assert any(item["transaction_id"] ==
-               tx_id for item in report.json()["transactions"])
+    assert any(
+        item["transaction_id"] == tx_id for item in report.json()["transactions"]
+    )
 
 
 # sad path
+
 
 def test_transaction_endpoints_reject_invalid_payloads_with_422(
     api_client: TestClient,
@@ -199,7 +202,7 @@ def test_transaction_endpoints_map_domain_errors_to_http_contract(
     )
     assert missing_reference.status_code == 404
 
-    inactive_product = api_client.post("/products/TP001/deactivate")
+    inactive_product = api_client.patch("/products/TP001", json={"is_active": False})
     assert inactive_product.status_code == 200
 
     business_rule = api_client.post(
@@ -216,6 +219,7 @@ def test_transaction_endpoints_map_domain_errors_to_http_contract(
 
 
 # edge path
+
 
 def test_transaction_endpoints_return_503_when_runtime_context_is_unavailable(
     api_client_without_runtime: TestClient,

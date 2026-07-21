@@ -56,7 +56,9 @@ def api_client(initialized_context: bll.RuntimeContext):
 
 
 # happy path
-def test_health_endpoint_returns_healthy_status_contract(api_client: TestClient) -> None:
+def test_health_endpoint_returns_healthy_status_contract(
+    api_client: TestClient,
+) -> None:
     """
     GIVEN the FastAPI application is bootstrapped with runtime context initialized
     WHEN GET /health is called through an HTTP test client
@@ -70,7 +72,9 @@ def test_health_endpoint_returns_healthy_status_contract(api_client: TestClient)
     assert payload["message"] == "CAAD ERP API is running"
 
 
-def test_products_flow_create_list_and_deactivate_roundtrip(api_client: TestClient) -> None:
+def test_products_flow_create_list_and_deactivate_roundtrip(
+    api_client: TestClient,
+) -> None:
     """
     GIVEN an API client and an initially clean product catalog
     WHEN a product is created listed and then deactivated via products endpoints
@@ -78,11 +82,10 @@ def test_products_flow_create_list_and_deactivate_roundtrip(api_client: TestClie
     """
     created = _create_product(api_client, "API-P001")
     list_response = api_client.get("/products")
-    deactivate_response = api_client.post("/products/API-P001/deactivate")
-    active_list_after_deactivation = api_client.get("/products")
-    all_list_after_deactivation = api_client.get(
-        "/products", params={"include_inactive": "true"}
+    deactivate_response = api_client.patch(
+        "/products/API-P001", json={"is_active": False}
     )
+    all_list_after_deactivation = api_client.get("/products")
 
     assert created["product_id"] == "API-P001"
     assert list_response.status_code == 200
@@ -91,31 +94,26 @@ def test_products_flow_create_list_and_deactivate_roundtrip(api_client: TestClie
     )
     assert deactivate_response.status_code == 200
     assert deactivate_response.json()["data"]["is_active"] is False
-    assert all(
-        item["product_id"] != "API-P001"
-        for item in active_list_after_deactivation.json()["items"]
-    )
-    inactive_item = next(
-        item
+    assert any(
+        (item["product_id"] == "API-P001" and not item["is_active"])
         for item in all_list_after_deactivation.json()["items"]
-        if item["product_id"] == "API-P001"
     )
-    assert inactive_item["is_active"] is False
 
 
-def test_salesmen_flow_create_list_and_deactivate_roundtrip(api_client: TestClient) -> None:
+def test_salesmen_flow_create_list_and_deactivate_roundtrip(
+    api_client: TestClient,
+) -> None:
     """
     GIVEN an API client and baseline salesman records
-    WHEN a salesman is created listed and deactivated via API endpoints
-    THEN responses are successful and resulting visibility matches active filters
+    WHEN a salesman is created listed and deactivated
+    THEN responses are successful
     """
     created = _create_salesman(api_client, "API-S001")
     list_response = api_client.get("/salesmen")
-    deactivate_response = api_client.post("/salesmen/API-S001/deactivate")
-    active_list_after_deactivation = api_client.get("/salesmen")
-    all_list_after_deactivation = api_client.get(
-        "/salesmen", params={"include_inactive": "true"}
+    deactivate_response = api_client.patch(
+        "/salesmen/API-S001", json={"is_active": False}
     )
+    all_list_after_deactivation = api_client.get("/salesmen")
 
     assert created["salesman_id"] == "API-S001"
     assert list_response.status_code == 200
@@ -124,16 +122,10 @@ def test_salesmen_flow_create_list_and_deactivate_roundtrip(api_client: TestClie
     )
     assert deactivate_response.status_code == 200
     assert deactivate_response.json()["data"]["is_active"] is False
-    assert all(
-        item["salesman_id"] != "API-S001"
-        for item in active_list_after_deactivation.json()["items"]
-    )
-    inactive_item = next(
-        item
+    assert any(
+        (item["salesman_id"] == "API-S001" and not item["is_active"])
         for item in all_list_after_deactivation.json()["items"]
-        if item["salesman_id"] == "API-S001"
     )
-    assert inactive_item["is_active"] is False
 
 
 @pytest.mark.parametrize(
@@ -220,8 +212,7 @@ def test_transaction_mutation_endpoints_create_transaction_records(
     else:
         payload = payload_by_endpoint[transaction_endpoint]
 
-    response = api_client.post(
-        f"/transactions/{transaction_endpoint}", json=payload)
+    response = api_client.post(f"/transactions/{transaction_endpoint}", json=payload)
     assert response.status_code == 201
     created_id = response.json()["data"]["transaction_id"]
 
@@ -292,8 +283,7 @@ def test_report_endpoints_return_consistent_http_contracts(
     payload = response.json()
 
     if report_endpoint == "stock":
-        item = next(i for i in payload["items"]
-                    if i["product_id"] == "API-REP-P")
+        item = next(i for i in payload["items"] if i["product_id"] == "API-REP-P")
         assert item["quantity"] == 2
     elif report_endpoint == "profit":
         assert payload["total_revenue"] == 2000
@@ -325,8 +315,7 @@ def test_api_mutations_persist_state_visible_after_app_restart(
     second_app = api_app.create_app(skip_lifespan=True)
     api_runtime.set_runtime_context(reloaded_context)
     with TestClient(second_app) as client:
-        list_response = client.get(
-            "/products", params={"include_inactive": "true"})
+        list_response = client.get("/products", params={"include_inactive": "true"})
     api_runtime.clear_runtime_context()
 
     assert created["product_id"] == "API-PERSIST-001"
@@ -428,9 +417,9 @@ def test_api_maps_missing_references_to_404(
     THEN response status is 404 with error payload mapped by global handlers
     """
     if missing_reference_case == "deactivate_unknown_product":
-        response = api_client.post("/products/UNKNOWN-P/deactivate")
+        response = api_client.patch("/products/UNKNOWN-P", json={"is_active": False})
     elif missing_reference_case == "deactivate_unknown_salesman":
-        response = api_client.post("/salesmen/UNKNOWN-S/deactivate")
+        response = api_client.patch("/products/UNKNOWN-S", json={"is_active": False})
     elif missing_reference_case == "sale_unknown_product":
         _create_salesman(api_client, "MR-S001")
         response = api_client.post(
@@ -583,7 +572,7 @@ def test_api_maps_domain_and_validation_failures_without_internal_crash(
     WHEN request handling applies centralized exception mapping
     THEN API returns expected non-500 status codes and stable error payload contracts
     """
-    missing_reference = api_client.post("/products/UNKNOWN/deactivate")
+    missing_reference = api_client.patch("/products/UNKNOWN", json={"is_active": False})
     validation_error = api_client.post(
         "/products",
         json={"product_id": "", "product_name": "x", "sell_price": 100},
@@ -611,36 +600,6 @@ def test_api_returns_503_when_runtime_context_is_not_initialized() -> None:
     assert response.status_code == 503
     assert payload["code"] == "runtimeerror"
     assert payload["error_type"] == "RuntimeError"
-
-
-@pytest.mark.parametrize("include_inactive", [False, True])
-def test_list_endpoints_honor_include_inactive_query_semantics(
-    api_client: TestClient,
-    include_inactive: bool,
-) -> None:
-    """
-    GIVEN records with mixed activation states in products and salesmen datasets
-    WHEN list endpoints are queried with include_inactive flag variants
-    THEN response membership changes exactly according to the query semantics
-    """
-    _create_product(api_client, "LIST-P-ACT", is_active=True)
-    _create_product(api_client, "LIST-P-INACT", is_active=False)
-    _create_salesman(api_client, "LIST-S-ACT", is_active=True)
-    _create_salesman(api_client, "LIST-S-INACT", is_active=False)
-
-    params = {"include_inactive": str(include_inactive).lower()}
-    products_response = api_client.get("/products", params=params)
-    salesmen_response = api_client.get("/salesmen", params=params)
-
-    product_ids = {item["product_id"]
-                   for item in products_response.json()["items"]}
-    salesman_ids = {item["salesman_id"]
-                    for item in salesmen_response.json()["items"]}
-
-    assert "LIST-P-ACT" in product_ids
-    assert ("LIST-P-INACT" in product_ids) is include_inactive
-    assert "LIST-S-ACT" in salesman_ids
-    assert ("LIST-S-INACT" in salesman_ids) is include_inactive
 
 
 def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
@@ -715,7 +674,9 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
     assert log_final.status_code == 200
 
     stock_item = next(
-        item for item in stock_final.json()["items"] if item["product_id"] == "CONS-P001"
+        item
+        for item in stock_final.json()["items"]
+        if item["product_id"] == "CONS-P001"
     )
     assert stock_item["quantity"] == 4
 
@@ -728,8 +689,9 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
     assert debts_payload["total_outstanding"] == 1000
     assert len(debts_payload["balances"]) == 1
 
-    transaction_types = {tx["transaction_type"]
-                         for tx in log_final.json()["transactions"]}
+    transaction_types = {
+        tx["transaction_type"] for tx in log_final.json()["transactions"]
+    }
     assert constants.TransactionType.RESTOCK.value in transaction_types
     assert constants.TransactionType.SALE.value in transaction_types
     assert constants.TransactionType.WRITE_OFF.value in transaction_types

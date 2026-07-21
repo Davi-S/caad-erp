@@ -1,7 +1,6 @@
 """Salesman management endpoints for the CAAD ERP API.
 
-This module provides REST endpoints for creating and deactivating salesmen,
-mirroring the CLI commands add-salesman and deactivate-salesman.
+This module provides REST endpoints for managing salesmen,
 """
 
 import fastapi
@@ -15,21 +14,19 @@ router = fastapi.APIRouter(prefix="/salesmen", tags=["Salesmen"])
 
 @router.get("", response_model=schemas.SalesmanListResponse)
 def list_salesmen(
-    include_inactive: bool = False,
-    context: bll.RuntimeContext = fastapi.Depends(
-        runtime.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.SalesmanListResponse:
-    """List salesmen, optionally including inactive ones.
+    """List all salesmen.
+
+    Filtering by active status is a client-side concern.
 
     Args:
-        include_inactive: When True, inactive salesmen are included.
-            Mirrors the CLI ``--all`` flag. Defaults to False.
         context: Runtime context injected via dependency.
 
     Returns:
-        SalesmanListResponse containing the matching salesman records.
+        SalesmanListResponse containing every salesman record.
     """
-    salesmen = bll.list_salesmen(context, include_inactive=include_inactive)
+    salesmen = bll.list_salesmen(context)
     return schemas.SalesmanListResponse(
         items=[
             schemas.SalesmanResponse(
@@ -46,8 +43,7 @@ def list_salesmen(
 @persistence.mutating_endpoint
 def create_salesman(
     request: schemas.SalesmanCreateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(
-        runtime.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Create a new salesman.
 
@@ -79,35 +75,42 @@ def create_salesman(
     )
 
 
-@router.post("/{salesman_id}/deactivate", response_model=schemas.StandardResponse)
-@persistence.mutating_endpoint
-def deactivate_salesman(
+@router.get("/{salesman_id}", response_model=schemas.SalesmanResponse)
+def get_salesman(
     salesman_id: str,
-    context: bll.RuntimeContext = fastapi.Depends(
-        runtime.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+) -> schemas.SalesmanResponse:
+    """Get a specific salesman by ID."""
+    salesmen = bll.list_salesmen(context)
+    salesman = list(filter(lambda row: row.salesman_id == salesman_id, salesmen))[0]
+    return schemas.SalesmanResponse(
+        salesman_id=salesman.salesman_id,
+        salesman_name=salesman.salesman_name,
+        is_active=salesman.is_active,
+    )
+
+
+@router.patch("/{salesman_id}", response_model=schemas.StandardResponse)
+@persistence.mutating_endpoint
+def update_salesman_details(
+    salesman_id: str,
+    request: schemas.SalesmanUpdateRequest,
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
-    """Deactivate an existing salesman.
+    """Update an existing salesman.
 
-    Args:
-        salesman_id: The ID of the salesman to deactivate.
-        context: Runtime context injected via dependency.
-
-    Returns:
-        StandardResponse containing the updated salesman data.
-
-    Raises:
-        HTTPException: 404 if salesman not found.
+    Can be used to modify the salesman's name or toggle their active status.
     """
     salesman = bll.update_salesman(
         context,
         bll.SalesmanCommand(
             salesman_id=salesman_id,
-            salesman_name=None,
-            is_active=False,
+            salesman_name=request.salesman_name,
+            is_active=request.is_active,
         ),
     )
     return schemas.StandardResponse(
-        detail="Salesman deactivated successfully",
+        detail="Salesman updated successfully",
         data=schemas.SalesmanResponse(
             salesman_id=salesman.salesman_id,
             salesman_name=salesman.salesman_name,
