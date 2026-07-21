@@ -15,21 +15,19 @@ router = fastapi.APIRouter(prefix="/products", tags=["Products"])
 
 @router.get("", response_model=schemas.ProductListResponse)
 def list_products(
-    include_inactive: bool = False,
-    context: bll.RuntimeContext = fastapi.Depends(
-        runtime.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.ProductListResponse:
-    """List products, optionally including inactive ones.
+    """List all products.
+
+    Filtering by active status is a client-side concern.
 
     Args:
-        include_inactive: When True, inactive products are included.
-            Mirrors the CLI ``--all`` flag. Defaults to False.
         context: Runtime context injected via dependency.
 
     Returns:
-        ProductListResponse containing the matching product records.
+        ProductListResponse containing every product record.
     """
-    products = bll.list_products(context, include_inactive=include_inactive)
+    products = bll.list_products(context)
     return schemas.ProductListResponse(
         items=[
             schemas.ProductResponse(
@@ -47,8 +45,7 @@ def list_products(
 @persistence.mutating_endpoint
 def create_product(
     request: schemas.ProductCreateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(
-        runtime.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Create a new product.
 
@@ -86,8 +83,7 @@ def create_product(
 @persistence.mutating_endpoint
 def deactivate_product(
     product_id: str,
-    context: bll.RuntimeContext = fastapi.Depends(
-        runtime.get_runtime_context),
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Deactivate an existing product.
 
