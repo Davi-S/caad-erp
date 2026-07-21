@@ -79,8 +79,15 @@ def create_salesman(
 def get_salesman(
     salesman_id: str,
     context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
-) -> schemas.StandardResponse:
-    """Deactivate an existing salesman.
+) -> schemas.SalesmanResponse:
+    """Get a specific salesman by ID."""
+    salesmen = bll.list_salesmen(context)
+    salesman = list(filter(lambda row: row.salesman_id == salesman_id, salesmen))[0]
+    return schemas.SalesmanResponse(
+        salesman_id=salesman.salesman_id,
+        salesman_name=salesman.salesman_name,
+        is_active=salesman.is_active,
+    )
 
 
 @router.patch("/{salesman_id}", response_model=schemas.StandardResponse)

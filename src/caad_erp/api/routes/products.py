@@ -82,8 +82,16 @@ def create_product(
 def get_product(
     product_id: str,
     context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
-) -> schemas.StandardResponse:
-    """Deactivate an existing product.
+) -> schemas.ProductResponse:
+    """Get a specific product by ID."""
+    products = bll.list_products(context)
+    product = list(filter(lambda row: row.product_id == product_id, products))[0]
+    return schemas.ProductResponse(
+        product_id=product.product_id,
+        product_name=product.product_name,
+        sell_price=product.sell_price,
+        is_active=product.is_active,
+    )
 
 
 @router.patch("/{product_id}", response_model=schemas.StandardResponse)
