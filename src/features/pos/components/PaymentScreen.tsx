@@ -36,8 +36,11 @@ interface PaymentScreenProps {
 const METHOD_OPTIONS = [
     { value: "PIX", label: <MethodLabel icon={<QrCode size={16} />} text="Pix" /> },
     { value: "Cash", label: <MethodLabel icon={<Banknote size={16} />} text="Dinheiro" /> },
-    { value: "OnCredit", label: <MethodLabel icon={<CreditCard size={16} />} text="Fiado" /> },
-    { value: "Other", label: <MethodLabel icon={<MoreHorizontal size={16} />} text="Outro" /> },
+    // do not sell on credit yet, for it may require move complexity on the
+    // debt payment and salesman debt maters. Same for "other" payments. Keep it
+    // simple for now
+    // { value: "OnCredit", label: <MethodLabel icon={<CreditCard size={16} />} text="Fiado" /> },
+    // { value: "Other", label: <MethodLabel icon={<MoreHorizontal size={16} />} text="Outro" /> },
 ]
 
 export function PaymentScreen({ salesman, cartState, checkoutState, actions }: PaymentScreenProps) {
