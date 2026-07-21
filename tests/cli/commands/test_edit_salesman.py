@@ -75,6 +75,7 @@ def test_register_edit_salesman_registrar_configures_arguments() -> None:
             "--salesman-name",
             "John",
             "--salesman-is-active",
+            "False",
         ]
     )
 
@@ -82,7 +83,7 @@ def test_register_edit_salesman_registrar_configures_arguments() -> None:
     assert args.command == "edit-salesman"
     assert args.salesman_id == "S001"
     assert args.salesman_name == "John"
-    assert args.salesman_is_active is True
+    assert args.salesman_is_active is False
 
 
 def test_translate_edit_salesman_sets_fields_and_trims_id() -> None:
@@ -93,7 +94,7 @@ def test_translate_edit_salesman_sets_fields_and_trims_id() -> None:
     """
     # Arrange
     args = argparse.Namespace(
-        salesman_id="  S001  ", salesman_name="John", salesman_is_active=True
+        salesman_id="  S001  ", salesman_name="John", salesman_is_active=False
     )
 
     # Act
@@ -102,7 +103,7 @@ def test_translate_edit_salesman_sets_fields_and_trims_id() -> None:
     # Assert
     assert command.salesman_id == "S001"
     assert command.salesman_name == "John"
-    assert command.is_active is True
+    assert command.is_active is False
 
 
 def test_run_edit_salesman_calls_bll_update_and_returns_zero(tmp_path: Path) -> None:

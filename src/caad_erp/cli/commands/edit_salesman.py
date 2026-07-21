@@ -5,6 +5,16 @@ from caad_erp import bll
 from .. import command_spec
 
 
+def _str_to_bool(value: str) -> bool:
+    """Safely parse boolean values from CLI string inputs."""
+    value_lower = str(value).lower()
+    if value_lower in ("yes", "true", "t", "y", "1"):
+        return True
+    elif value_lower in ("no", "false", "f", "n", "0"):
+        return False
+    raise argparse.ArgumentTypeError(f"Boolean value expected, got '{value}'.")
+
+
 def register_edit_salesman_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``edit-salesman`` sub-command.
 
@@ -31,7 +41,11 @@ def register_edit_salesman_command() -> command_spec.CommandSpec:
         parser.add_argument("-i", "--salesman-id", required=True)
         parser.add_argument("-n", "--salesman-name", required=False, default=None)
         parser.add_argument(
-            "-a", "--salesman-is-active", required=False, action="store_true"
+            "-a",
+            "--salesman-is-active",
+            required=False,
+            default=None,
+            type=_str_to_bool,
         )
 
         parser.set_defaults(command=name)

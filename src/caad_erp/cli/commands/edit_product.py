@@ -5,6 +5,16 @@ from caad_erp import bll
 from .. import command_spec
 
 
+def _str_to_bool(value: str) -> bool:
+    """Safely parse boolean values from CLI string inputs."""
+    value_lower = str(value).lower()
+    if value_lower in ("yes", "true", "t", "y", "1"):
+        return True
+    elif value_lower in ("no", "false", "f", "n", "0"):
+        return False
+    raise argparse.ArgumentTypeError(f"Boolean value expected, got '{value}'.")
+
+
 def register_edit_product_command() -> command_spec.CommandSpec:
     """Create CLI wiring for the ``edit-product`` sub-command.
 
@@ -32,7 +42,7 @@ def register_edit_product_command() -> command_spec.CommandSpec:
         parser.add_argument("-n", "--product-name", required=False, default=None)
         parser.add_argument("-p", "--product-sell-price", required=False, default=None)
         parser.add_argument(
-            "-a", "--product-is-active", required=False, action="store_true"
+            "-a", "--product-is-active", required=False, default=None, type=_str_to_bool
         )
         parser.set_defaults(command=name)
         return parser
@@ -56,8 +66,8 @@ def _translate_edit_product(args: argparse.Namespace) -> bll.ProductCommand:
     return bll.ProductCommand(
         product_id=args.product_id.strip(),
         product_name=args.product_name,
-        sell_price=int(args.product_sell_price) if args.product_sell_price else None,
-        is_active=args.inactive,
+        sell_price=args.product_sell_price,
+        is_active=args.product_is_active,
     )
 
 

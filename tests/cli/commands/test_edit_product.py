@@ -77,6 +77,7 @@ def test_register_edit_product_registrar_configures_arguments() -> None:
             "--product-sell-price",
             "300",
             "--product-is-active",
+            "False",
         ]
     )
 
@@ -85,7 +86,7 @@ def test_register_edit_product_registrar_configures_arguments() -> None:
     assert args.product_id == "P001"
     assert args.product_name == "New Cookie"
     assert args.product_sell_price == "300"
-    assert args.product_is_active is True
+    assert args.product_is_active is False
 
 
 def test_translate_edit_product_sets_fields_and_trims_id() -> None:
@@ -95,12 +96,11 @@ def test_translate_edit_product_sets_fields_and_trims_id() -> None:
     THEN ProductCommand is produced with trimmed id and updated fields
     """
     # Arrange
-    # Note: providing 'inactive' to match the current implementation in edit_product.py
     args = argparse.Namespace(
         product_id="  P001  ",
         product_name="New Cookie",
         product_sell_price="300",
-        inactive=True,
+        product_is_active=False,
     )
 
     # Act
@@ -109,8 +109,8 @@ def test_translate_edit_product_sets_fields_and_trims_id() -> None:
     # Assert
     assert command.product_id == "P001"
     assert command.product_name == "New Cookie"
-    assert command.sell_price == 300
-    assert command.is_active is True
+    assert command.sell_price == "300"
+    assert command.is_active is False
 
 
 def test_run_edit_product_calls_bll_update_and_returns_zero(tmp_path: Path) -> None:
@@ -125,7 +125,7 @@ def test_run_edit_product_calls_bll_update_and_returns_zero(tmp_path: Path) -> N
         product_id="P001",
         product_name="New Cookie",
         product_sell_price="300",
-        inactive=False,
+        product_is_active=False,
     )
 
     # Act
@@ -135,5 +135,5 @@ def test_run_edit_product_calls_bll_update_and_returns_zero(tmp_path: Path) -> N
     assert exit_code == 0
     updated = bll.get_product(context, "P001")
     assert updated.product_name == "New Cookie"
-    assert updated.sell_price == 300
+    assert updated.sell_price == "300"
     assert updated.is_active is False
