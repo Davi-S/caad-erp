@@ -36,15 +36,15 @@ export interface paths {
         };
         /**
          * List Products
-         * @description List products, optionally including inactive ones.
+         * @description List all products.
+         *
+         *     Filtering by active status is a client-side concern.
          *
          *     Args:
-         *         include_inactive: When True, inactive products are included.
-         *             Mirrors the CLI ``--all`` flag. Defaults to False.
          *         context: Runtime context injected via dependency.
          *
          *     Returns:
-         *         ProductListResponse containing the matching product records.
+         *         ProductListResponse containing every product record.
          */
         get: operations["list_products_products_get"];
         put?: never;
@@ -104,15 +104,15 @@ export interface paths {
         };
         /**
          * List Salesmen
-         * @description List salesmen, optionally including inactive ones.
+         * @description List all salesmen.
+         *
+         *     Filtering by active status is a client-side concern.
          *
          *     Args:
-         *         include_inactive: When True, inactive salesmen are included.
-         *             Mirrors the CLI ``--all`` flag. Defaults to False.
          *         context: Runtime context injected via dependency.
          *
          *     Returns:
-         *         SalesmanListResponse containing the matching salesman records.
+         *         SalesmanListResponse containing every salesman record.
          */
         get: operations["list_salesmen_salesmen_get"];
         put?: never;
@@ -762,9 +762,7 @@ export interface operations {
     };
     list_products_products_get: {
         parameters: {
-            query?: {
-                include_inactive?: boolean;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -778,15 +776,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -892,9 +881,7 @@ export interface operations {
     };
     list_salesmen_salesmen_get: {
         parameters: {
-            query?: {
-                include_inactive?: boolean;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -908,15 +895,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SalesmanListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
