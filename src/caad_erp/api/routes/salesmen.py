@@ -14,20 +14,19 @@ router = fastapi.APIRouter(prefix="/salesmen", tags=["Salesmen"])
 
 @router.get("", response_model=schemas.SalesmanListResponse)
 def list_salesmen(
-    include_inactive: bool = False,
     context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.SalesmanListResponse:
-    """List salesmen, optionally including inactive ones.
+    """List all salesmen.
+
+    Filtering by active status is a client-side concern.
 
     Args:
-        include_inactive: When True, inactive salesmen are included.
-            Mirrors the CLI ``--all`` flag. Defaults to False.
         context: Runtime context injected via dependency.
 
     Returns:
-        SalesmanListResponse containing the matching salesman records.
+        SalesmanListResponse containing every salesman record.
     """
-    salesmen = bll.list_salesmen(context, include_inactive=include_inactive)
+    salesmen = bll.list_salesmen(context)
     return schemas.SalesmanListResponse(
         items=[
             schemas.SalesmanResponse(
@@ -80,15 +79,8 @@ def create_salesman(
 def get_salesman(
     salesman_id: str,
     context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
-) -> schemas.SalesmanResponse:
-    """Get a specific salesman by ID."""
-    salesmen = bll.list_salesmen(context, include_inactive=True)
-    salesman = list(filter(lambda row: row.salesman_id == salesman_id, salesmen))[0]
-    return schemas.SalesmanResponse(
-        salesman_id=salesman.salesman_id,
-        salesman_name=salesman.salesman_name,
-        is_active=salesman.is_active,
-    )
+) -> schemas.StandardResponse:
+    """Deactivate an existing salesman.
 
 
 @router.patch("/{salesman_id}", response_model=schemas.StandardResponse)

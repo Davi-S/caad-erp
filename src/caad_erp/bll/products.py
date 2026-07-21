@@ -30,57 +30,40 @@ class ProductCommand:
 def _ensure_products_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
     """Populate the product cache bucket on demand.
 
-    By storing both the full list and derivative structures, higher-level
-    helpers can service different query patterns without touching the workbook
-    again.
-
     Args:
         context (RuntimeContext): Runtime state used to access the workbook and
             shared caches.
 
     Returns:
-        dict[str, t.Any]: Bucket containing ``all`` products, ``active``
-            products, and a ``by_id`` lookup dictionary. Reuses prior
-            computations when available.
+        dict[str, t.Any]: Bucket containing ``all`` products and a ``by_id``
+            lookup dictionary. Reuses prior computations when available.
     """
 
     bucket = runtime.get_cache_bucket(context, "products")
     if "all" not in bucket:
         all_products = list(dal.iter_products(context.workbook))
         bucket["all"] = all_products
-        bucket["active"] = [
-            product for product in all_products if product.is_active]
-        bucket["by_id"] = {
-            product.product_id: product for product in all_products}
+        bucket["by_id"] = {product.product_id: product for product in all_products}
         logger.debug(
-            "Populated products cache with %d entries (%d active)",
+            "Populated products cache with %d entries",
             len(all_products),
-            len(bucket["active"]),
         )
     return bucket
 
 
-def list_products(context: runtime.RuntimeContext, *, include_inactive: bool = False) -> t.List[dal.ProductRow]:
-    """Return cached product rows optionally filtered by active status.
-
-    The helper interrogates the memoized product bucket so the workbook is not
-    re-scanned between calls. When ``include_inactive`` is ``False`` only rows
-    whose ``ProductRow.is_active`` flag evaluates to ``True`` are returned,
-    preserving the default behavior expected by point-of-sale workflows.
+def list_products(context: runtime.RuntimeContext) -> t.List[dal.ProductRow]:
+    """Return every cached product row.
 
     Args:
         context (RuntimeContext): Runtime context providing workbook access and
             caches.
-        include_inactive (bool): When ``True`` the result includes soft-deleted
-            or inactive products. The default is to surface only active entries.
 
     Returns:
         list[dal.ProductRow]: Copy of the cached product dataset in
             sheet order.
     """
     cache = _ensure_products_cache(context)
-    source = cache["all"] if include_inactive else cache["active"]
-    return list(source)
+    return list(cache["all"])
 
 
 def get_product(context: runtime.RuntimeContext, product_id: str) -> dal.ProductRow:
@@ -107,7 +90,8 @@ def get_product(context: runtime.RuntimeContext, product_id: str) -> dal.Product
     except KeyError as exc:
         logger.warning("Product lookup failed for id '%s'", product_id)
         raise exceptions.MissingReferenceError(
-            f"Unknown product id: {product_id}") from exc
+            f"Unknown product id: {product_id}"
+        ) from exc
 
 
 def update_product(
@@ -133,8 +117,7 @@ def update_product(
     if command.sell_price is not None:
         price = command.sell_price
         if price < 0:
-            logger.error(
-                "Product update rejected: negative sell_price '%s'", price)
+            logger.error("Product update rejected: negative sell_price '%s'", price)
             raise ValueError("Sell price must be zero or positive")
 
         field_values["SellPrice"] = price
@@ -147,12 +130,12 @@ def update_product(
         raise ValueError("At least one field must be provided to update")
 
     try:
-        dal.update_product(
-            context.workbook, normalized_id, field_values=field_values)
+        dal.update_product(context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
         logger.warning("Product update failed for id '%s'", normalized_id)
         raise exceptions.MissingReferenceError(
-            f"Unknown product id: {normalized_id}") from exc
+            f"Unknown product id: {normalized_id}"
+        ) from exc
 
     runtime.invalidate_cache(context, "products")
     updated = get_product(context, normalized_id)
@@ -205,8 +188,7 @@ def add_product(
 
     price = command.sell_price
     if price < 0:
-        logger.error(
-            "Product creation rejected: negative sell_price '%s'", price)
+        logger.error("Product creation rejected: negative sell_price '%s'", price)
         raise ValueError("Sell price must be zero or positive")
 
     if command.is_active is None:
@@ -215,10 +197,10 @@ def add_product(
 
     bucket = _ensure_products_cache(context)
     if normalized_id in bucket["by_id"]:
-        logger.error(
-            "Product creation rejected: duplicate id '%s'", normalized_id)
+        logger.error("Product creation rejected: duplicate id '%s'", normalized_id)
         raise exceptions.BusinessRuleViolation(
-            f"Product '{normalized_id}' already exists")
+            f"Product '{normalized_id}' already exists"
+        )
 
     record = dal.ProductRow(
         product_id=normalized_id,
