@@ -56,7 +56,7 @@ def _translate_edit_product(args: argparse.Namespace) -> bll.ProductCommand:
     return bll.ProductCommand(
         product_id=args.product_id.strip(),
         product_name=args.product_name,
-        sell_price=args.product_sell_price,
+        sell_price=int(args.product_sell_price) if args.product_sell_price else None,
         is_active=args.inactive,
     )
 

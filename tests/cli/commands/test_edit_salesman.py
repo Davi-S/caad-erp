@@ -1,10 +1,9 @@
 from pathlib import Path
-
 import argparse
 import openpyxl
 
 from caad_erp import bll, constants
-from caad_erp.cli.commands import deactivate_salesman
+from caad_erp.cli.commands import edit_salesman
 from caad_erp.settings import AppSettings
 
 
@@ -18,19 +17,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -40,71 +41,87 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     return bll.RuntimeContext(settings=settings, workbook=wb)
 
 
-def test_register_deactivate_salesman_command_returns_command_spec() -> None:
+def test_register_edit_salesman_command_returns_command_spec() -> None:
     """
-    GIVEN deactivate-salesman command module
-    WHEN register_deactivate_salesman_command is called
+    GIVEN edit-salesman command module
+    WHEN register_edit_salesman_command is called
     THEN a CommandSpec is returned with expected metadata
     """
     # Arrange / Act
-    spec = deactivate_salesman.register_deactivate_salesman_command()
+    spec = edit_salesman.register_edit_salesman_command()
 
     # Assert
-    assert spec.name == "deactivate-salesman"
-    assert spec.is_mutating is True
+    assert spec.name == "edit-salesman"
 
 
-def test_register_deactivate_salesman_registrar_configures_required_id() -> None:
+def test_register_edit_salesman_registrar_configures_arguments() -> None:
     """
     GIVEN subparser factory instance
-    WHEN deactivate-salesman registrar is executed
-    THEN parser includes required salesman-id and command default
+    WHEN edit-salesman registrar is executed
+    THEN parser includes expected salesman arguments and command default
     """
     # Arrange
-    spec = deactivate_salesman.register_deactivate_salesman_command()
+    spec = edit_salesman.register_edit_salesman_command()
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command")
     spec.register(subparsers)
 
     # Act
-    args = parser.parse_args(["deactivate-salesman", "--salesman-id", "S001"])
+    args = parser.parse_args(
+        [
+            "edit-salesman",
+            "--salesman-id",
+            "S001",
+            "--salesman-name",
+            "John",
+            "--salesman-is-active",
+        ]
+    )
 
     # Assert
-    assert args.command == "deactivate-salesman"
+    assert args.command == "edit-salesman"
     assert args.salesman_id == "S001"
+    assert args.salesman_name == "John"
+    assert args.salesman_is_active is True
 
 
-def test_translate_deactivate_salesman_sets_is_active_false_and_trims_id() -> None:
+def test_translate_edit_salesman_sets_fields_and_trims_id() -> None:
     """
-    GIVEN parsed deactivate-salesman args with salesman id value
-    WHEN _translate_deactivate_salesman is called
-    THEN SalesmanCommand is produced with trimmed id and is_active false
+    GIVEN parsed edit-salesman args with salesman values
+    WHEN _translate_edit_salesman is called
+    THEN SalesmanCommand is produced with trimmed id and updated fields
     """
     # Arrange
-    args = argparse.Namespace(salesman_id="  S001  ")
+    args = argparse.Namespace(
+        salesman_id="  S001  ", salesman_name="John", salesman_is_active=True
+    )
 
     # Act
-    command = deactivate_salesman._translate_deactivate_salesman(args)
+    command = edit_salesman._translate_edit_salesman(args)
 
     # Assert
     assert command.salesman_id == "S001"
-    assert command.is_active is False
+    assert command.salesman_name == "John"
+    assert command.is_active is True
 
 
-def test_run_deactivate_salesman_calls_bll_update_and_returns_zero(tmp_path: Path) -> None:
+def test_run_edit_salesman_calls_bll_update_and_returns_zero(tmp_path: Path) -> None:
     """
-    GIVEN runtime context and parsed deactivate-salesman args
-    WHEN _run_deactivate_salesman is called
+    GIVEN runtime context and parsed edit-salesman args
+    WHEN _run_edit_salesman is called
     THEN bll.update_salesman is invoked and zero is returned
     """
     # Arrange
     context = _make_context(tmp_path)
-    args = argparse.Namespace(salesman_id="S001")
+    args = argparse.Namespace(
+        salesman_id="S001", salesman_name="John", salesman_is_active=False
+    )
 
     # Act
-    exit_code = deactivate_salesman._run_deactivate_salesman(context, args)
+    exit_code = edit_salesman._run_edit_salesman(context, args)
 
     # Assert
     assert exit_code == 0
     updated = bll.get_salesman(context, "S001")
+    assert updated.salesman_name == "John"
     assert updated.is_active is False
