@@ -3,13 +3,14 @@ from fastapi.testclient import TestClient
 
 # happy path
 
-def test_list_products_returns_filtered_product_collection(
+
+def test_list_products_returns_all_product_collection(
     api_client: TestClient,
 ) -> None:
     """
     GIVEN product records exist with active and inactive variants
-    WHEN GET /products is called with include_inactive filter values
-    THEN response returns ProductListResponse honoring requested visibility rules
+    WHEN GET /products is called
+    THEN response returns ProductListResponse with active and inactive products
     """
     create_active = api_client.post(
         "/products",
@@ -32,18 +33,13 @@ def test_list_products_returns_filtered_product_collection(
     assert create_active.status_code == 201
     assert create_inactive.status_code == 201
 
-    active_only = api_client.get("/products")
-    with_inactive = api_client.get(
-        "/products", params={"include_inactive": "true"})
+    products_response = api_client.get("/products")
 
-    active_ids = {item["product_id"] for item in active_only.json()["items"]}
-    all_ids = {item["product_id"] for item in with_inactive.json()["items"]}
+    all_ids = {item["product_id"] for item in products_response.json()["items"]}
 
-    assert active_only.status_code == 200
-    assert with_inactive.status_code == 200
-    assert "P001" in active_ids
-    assert "P002" not in active_ids
-    assert {"P001", "P002"}.issubset(all_ids)
+    assert products_response.status_code == 200
+    assert "P001" in all_ids
+    assert "P002" in all_ids
 
 
 def test_create_product_returns_201_and_standard_response_with_product_data(
@@ -78,7 +74,7 @@ def test_deactivate_product_returns_updated_product_with_is_active_false(
 ) -> None:
     """
     GIVEN an existing active product id
-    WHEN POST /products/{product_id}/deactivate is called
+    WHEN PATCH /products/{product_id} is called
     THEN response indicates success and returned product reflects inactive state
     """
     create_response = api_client.post(
@@ -92,20 +88,24 @@ def test_deactivate_product_returns_updated_product_with_is_active_false(
     )
     assert create_response.status_code == 201
 
-    deactivate_response = api_client.post("/products/P100/deactivate")
-    active_only = api_client.get("/products")
-    with_inactive = api_client.get(
-        "/products", params={"include_inactive": "true"})
+    deactivate_response = api_client.patch(
+        "/products/P100",
+        json={
+            "is_active": False,
+        },
+    )
+    all_products = api_client.get("/products")
 
     assert deactivate_response.status_code == 200
     assert deactivate_response.json()["data"]["is_active"] is False
-    assert all(item["product_id"] !=
-               "P100" for item in active_only.json()["items"])
-    assert any(item["product_id"] ==
-               "P100" for item in with_inactive.json()["items"])
+    assert any(
+        (item["product_id"] == "P100" and not item["is_active"])
+        for item in all_products.json()["items"]
+    )
 
 
 # sad path
+
 
 def test_create_product_rejects_validation_errors_with_422(
     api_client: TestClient,
@@ -164,16 +164,17 @@ def test_deactivate_product_returns_404_when_product_is_missing(
 ) -> None:
     """
     GIVEN a product id not present in storage
-    WHEN POST /products/{product_id}/deactivate is called
+    WHEN PATCH /products/{product_id} is called
     THEN endpoint returns 404 via MissingReferenceError mapping
     """
-    response = api_client.post("/products/UNKNOWN/deactivate")
+    response = api_client.patch("/products/UNKNOWN", json={"is_active": False})
 
     assert response.status_code == 404
     assert response.json()["error_type"] == "MissingReferenceError"
 
 
 # edge path
+
 
 def test_products_endpoints_return_503_when_runtime_context_is_unavailable(
     api_client_without_runtime: TestClient,

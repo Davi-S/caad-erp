@@ -36,7 +36,9 @@ def _seed_product(
     return row
 
 
-def test_ensure_products_cache_populates_missing_cache(products_workbook: Workbook) -> None:
+def test_ensure_products_cache_populates_missing_cache(
+    products_workbook: Workbook,
+) -> None:
     """
     GIVEN a runtime context with an empty products cache bucket
     WHEN _ensure_products_cache is called
@@ -52,12 +54,12 @@ def test_ensure_products_cache_populates_missing_cache(products_workbook: Workbo
 
     # Assert
     assert len(bucket["all"]) == 2
-    assert len(bucket["active"]) == 1
-    assert bucket["active"][0].product_id == "P001"
     assert set(bucket["by_id"].keys()) == {"P001", "P002"}
 
 
-def test_ensure_products_cache_reuses_existing_cache(products_workbook: Workbook) -> None:
+def test_ensure_products_cache_reuses_existing_cache(
+    products_workbook: Workbook,
+) -> None:
     """
     GIVEN a runtime context with a pre-populated products cache bucket
     WHEN _ensure_products_cache is called
@@ -80,15 +82,13 @@ def test_ensure_products_cache_reuses_existing_cache(products_workbook: Workbook
     assert "P002" not in second_bucket["by_id"]
 
 
-@pytest.mark.parametrize("include_inactive", [False, True])
-def test_list_products_returns_expected_subset(
+def test_list_products_returns_all_products(
     products_workbook: Workbook,
-    include_inactive: bool,
 ) -> None:
     """
-    GIVEN a cached products bucket with active and inactive records
+    GIVEN a cached products bucket
     WHEN list_products is called
-    THEN it returns records matching the include_inactive filter
+    THEN it returns all records
     """
     # Arrange
     context = _make_context(products_workbook)
@@ -96,16 +96,15 @@ def test_list_products_returns_expected_subset(
     _seed_product(products_workbook, "P002", is_active=False)
 
     # Act
-    result = products.list_products(context, include_inactive=include_inactive)
+    result = products.list_products(context)
 
     # Assert
-    if include_inactive:
-        assert [row.product_id for row in result] == ["P001", "P002"]
-    else:
-        assert [row.product_id for row in result] == ["P001"]
+    assert [row.product_id for row in result] == ["P001", "P002"]
 
 
-def test_list_products_returns_copy_not_original_reference(products_workbook: Workbook) -> None:
+def test_list_products_returns_copy_not_original_reference(
+    products_workbook: Workbook,
+) -> None:
     """
     GIVEN cached product collections
     WHEN list_products is called
@@ -116,7 +115,7 @@ def test_list_products_returns_copy_not_original_reference(products_workbook: Wo
     _seed_product(products_workbook, "P001")
 
     # Act
-    result = products.list_products(context, include_inactive=True)
+    result = products.list_products(context)
 
     # Assert
     assert result is not context._cache["products"]["all"]
@@ -139,7 +138,9 @@ def test_get_product_returns_matching_row(products_workbook: Workbook) -> None:
     assert result == expected
 
 
-def test_get_product_raises_missing_reference_for_unknown_id(products_workbook: Workbook) -> None:
+def test_get_product_raises_missing_reference_for_unknown_id(
+    products_workbook: Workbook,
+) -> None:
     """
     GIVEN a cached by_id map without the requested product id
     WHEN get_product is called
@@ -154,7 +155,9 @@ def test_get_product_raises_missing_reference_for_unknown_id(products_workbook: 
         products.get_product(context, "UNKNOWN")
 
 
-def test_update_product_returns_updated_record_on_success(products_workbook: Workbook) -> None:
+def test_update_product_returns_updated_record_on_success(
+    products_workbook: Workbook,
+) -> None:
     """
     GIVEN a valid update command targeting an existing product
     WHEN update_product is called
@@ -162,9 +165,8 @@ def test_update_product_returns_updated_record_on_success(products_workbook: Wor
     """
     # Arrange
     context = _make_context(products_workbook)
-    _seed_product(products_workbook, "P001", product_name="Old",
-                  sell_price=200)
-    products.list_products(context, include_inactive=True)  # populate cache
+    _seed_product(products_workbook, "P001", product_name="Old", sell_price=200)
+    products.list_products(context)  # populate cache
     command = products.ProductCommand(
         product_id="P001",
         product_name="Updated",
@@ -194,7 +196,8 @@ def test_update_product_trims_product_id_and_name_before_persisting(
     context = _make_context(products_workbook)
     _seed_product(products_workbook, "P001", product_name="Old")
     command = products.ProductCommand(
-        product_id="  P001  ", product_name="  New Name  ")
+        product_id="  P001  ", product_name="  New Name  "
+    )
 
     # Act
     result = products.update_product(context, command)
@@ -255,7 +258,9 @@ def test_update_product_rejects_negative_sell_price(
         products.update_product(context, command)
 
 
-def test_update_product_requires_at_least_one_field(products_workbook: Workbook) -> None:
+def test_update_product_requires_at_least_one_field(
+    products_workbook: Workbook,
+) -> None:
     """
     GIVEN an update command with only product id and no mutable fields
     WHEN update_product is called
@@ -267,8 +272,7 @@ def test_update_product_requires_at_least_one_field(products_workbook: Workbook)
 
     # Act / Assert
     with pytest.raises(ValueError):
-        products.update_product(
-            context, products.ProductCommand(product_id="P001"))
+        products.update_product(context, products.ProductCommand(product_id="P001"))
 
 
 def test_update_product_maps_dal_key_error_to_missing_reference(
@@ -281,8 +285,7 @@ def test_update_product_maps_dal_key_error_to_missing_reference(
     """
     # Arrange
     context = _make_context(products_workbook)
-    command = products.ProductCommand(
-        product_id="P999", product_name="New Name")
+    command = products.ProductCommand(product_id="P999", product_name="New Name")
 
     # Act / Assert
     with pytest.raises(MissingReferenceError):

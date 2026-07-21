@@ -88,9 +88,9 @@ These commands mutate the workbook. Each subcommand provides `--help`
 documentation with full argument details.
 
 - `add-product`
-- `deactivate-product`
+- `edit-product`
 - `add-salesman`
-- `deactivate-salesman`
+- `edit-salesman`
 - `sale`
 - `restock`
 - `write-off`

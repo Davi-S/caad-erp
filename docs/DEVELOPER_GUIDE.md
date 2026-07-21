@@ -185,8 +185,7 @@ instance. To avoid repeatedly walking the Excel sheets (an `openpyxl` iterator
 can be expensive for large ledgers), the context maintains an in-memory cache
 with these buckets:
 
-- `products`: memoized list of every product (`all`), an `active` subset, and an
-  id-index map (`by_id`).
+- `products`: memoized list of every product (`all`), id-index map (`by_id`).
 - `salesmen`: the same structure for salesmen.
 - `transactions`: immutable transaction rows plus an id-index.
 
@@ -272,7 +271,7 @@ rename it, which would fatally break all logic for tracking and paying debts.
 workflow 100% robust and safe from user error, at the minor cost of requiring a
 developer to add new payment types.
 
-## "Deleting" something
+### "Deleting" something
 
 Soft-delete is our method for "removing" an item (like a product or a salesman)
 without corrupting our database.
@@ -284,7 +283,7 @@ Instead of actually deleting the row from the Excel sheet, just flip the
 instantly vanish from the `stock` report and from the list of items you can
 `sale`. To the user, it's "deleted."
 
-### Why This is Absolutely Needed
+#### Why This is Absolutely Needed
 
 The main reason is to **protect our `TransactionLog`'s history**.
 
@@ -317,7 +316,7 @@ When we set `P1001`'s `IsActive` to `FALSE`:
 3. When you run a profit report for last month, the BLL can still look up
    `P1001`, find "Snickers," and correctly calculate your historical profit.
 
-### The only case we "Hard-Delete" (Archive Script)
+#### The only case we "Hard-Delete" (Archive Script)
 
 This is the "pruning" or "garbage collection". It happens only when a manager
 runs the period-end archive script.
@@ -331,6 +330,16 @@ if the inventory is 0. If this is true, then it will actually remove
 
 It does a similar thing for sellers looking at the debt and any other necessary
 info
+
+### Why don't list-products/list-salesmen filter by active status server-side?
+
+`Products` and `Salesmen` are expected to stay small (dozens to low hundreds of
+rows), so pushing "include inactive" filtering to the server added complexity
+(extra cache buckets, query params, CLI flags) without a real performance
+benefit. `list_products`/`list_salesmen` (BLL), the CLI
+`list-products`/`list-salesmen` commands, and the `GET /products` /
+`GET /salesmen` endpoints always return the full dataset, so clients can filter
+or sort however they like.
 
 ## Future Work
 

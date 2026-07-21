@@ -29,9 +29,10 @@ def register_list_products_command() -> command_spec.CommandSpec:
         """
         parser = action.add_parser(name, help=help_text)
         parser.add_argument(
-            "--all",
-            action="store_true",
-            help="Include inactive products in the output.",
+            "-i",
+            "--product-id",
+            required=False,
+            help="Get information for this specific product only.",
         )
         parser.set_defaults(command=name)
         return parser
@@ -45,58 +46,48 @@ def register_list_products_command() -> command_spec.CommandSpec:
     )
 
 
-def _display_products_report(
-    products: t.Iterable[object], *, include_inactive: bool
-) -> None:
+def _display_products_report(products: t.Iterable[object]) -> None:
     """Print product records in a fixed-width table.
 
     Args:
         products (Iterable[object]): Product rows returned by
             :func:`bll.list_products`.
-        include_inactive (bool): Whether inactive products were requested,
-            which controls table columns and empty-state messaging.
     """
     rows = list(products)
     if not rows:
-        print("No products found." if include_inactive else "No active products found.")
+        print("No products found.")
         return
 
-    if include_inactive:
-        print(f"{'Product ID':<20} {'Name':<30} {'Sell Price':>12} {'Active':>7}")
-        print(f"{'-' * 20} {'-' * 30} {'-' * 12} {'-' * 7}")
-        for row in rows:
-            print(
-                f"{getattr(row, 'product_id', ''):<20} "
-                f"{getattr(row, 'product_name', ''):<30} "
-                f"{getattr(row, 'sell_price', 0) / 100:>12.2f} "
-                f"{('yes' if getattr(row, 'is_active', False) else 'no'):>7}"
-            )
-        return
-
-    print(f"{'Product ID':<20} {'Name':<30} {'Sell Price':>12}")
-    print(f"{'-' * 20} {'-' * 30} {'-' * 12}")
+    print(f"{'Product ID':<20} {'Name':<30} {'Sell Price':>12} {'Active':>7}")
+    print(f"{'-' * 20} {'-' * 30} {'-' * 12} {'-' * 7}")
     for row in rows:
         print(
             f"{getattr(row, 'product_id', ''):<20} "
             f"{getattr(row, 'product_name', ''):<30} "
-            f"{getattr(row, 'sell_price', 0) / 100:>12.2f}"
+            f"{getattr(row, 'sell_price', 0) / 100:>12.2f} "
+            f"{('yes' if getattr(row, 'is_active', False) else 'no'):>7}"
         )
 
 
 def _run_list_products_report(
     context: bll.RuntimeContext, args: argparse.Namespace
 ) -> int:
-    """Fetch products and display them on the console.
+    """Fetch all products and display them on the console.
 
     Args:
         context (bll.RuntimeContext): Runtime context used to access workbook
             data and caches.
-        args (argparse.Namespace): Parsed CLI arguments for this command.
+        args (argparse.Namespace): Parsed CLI arguments for this command
+            (currently unused; retained for signature consistency).
 
     Returns:
         int: ``0`` after listing products.
     """
-    include_inactive = bool(getattr(args, "all", False))
-    products = bll.list_products(context, include_inactive=include_inactive)
-    _display_products_report(products, include_inactive=include_inactive)
+    products = bll.list_products(context)
+    product = (
+        products
+        if not args.product_id
+        else [product for product in products if product.product_id == args.product_id]
+    )
+    _display_products_report(product)
     return 0
