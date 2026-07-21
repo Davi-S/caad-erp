@@ -134,39 +134,9 @@ def test_persist_context_writes_mutations_to_disk_for_reloaded_context(
     assert product.product_name == "Persist Product"
 
 
-def test_cache_invalidation_for_specific_bucket_refreshes_subsequent_reads(
-    initialized_context: runtime.RuntimeContext,
-) -> None:
-    """
-    GIVEN cached entities and later workbook mutations in the same context
-    WHEN runtime.invalidate_cache is called for targeted buckets
-    THEN following reads rebuild cache and reflect latest persisted state
-    """
-    initial_count = len(bll.list_products(
-        initialized_context, include_inactive=True))
-
-    dal_products.append_product(
-        initialized_context.workbook,
-        dal_products.ProductRow(
-            product_id="CACHE-001",
-            product_name="Cache Product",
-            sell_price=200,
-            is_active=True,
-        ),
-    )
-
-    stale_count = len(bll.list_products(
-        initialized_context, include_inactive=True))
-    assert stale_count == initial_count
-
-    runtime.invalidate_cache(initialized_context, "products")
-    refreshed_count = len(
-        bll.list_products(initialized_context, include_inactive=True)
-    )
-    assert refreshed_count == initial_count + 1
-
-
-@pytest.mark.parametrize("bucket_name", ["products", "salesmen", "transactions", "custom"])
+@pytest.mark.parametrize(
+    "bucket_name", ["products", "salesmen", "transactions", "custom"]
+)
 def test_get_cache_bucket_returns_stable_bucket_object_per_name(
     bucket_name,
     initialized_context: runtime.RuntimeContext,

@@ -3,13 +3,14 @@ from fastapi.testclient import TestClient
 
 # happy path
 
-def test_list_salesmen_returns_filtered_salesman_collection(
+
+def test_list_salesmen_returns_all_salesman_collection(
     api_client: TestClient,
 ) -> None:
     """
     GIVEN salesman records exist with active and inactive variants
-    WHEN GET /salesmen is called with include_inactive filter values
-    THEN response returns SalesmanListResponse honoring requested visibility rules
+    WHEN GET /salesmen is called
+    THEN response returns SalesmanListResponse with all salesmen
     """
     create_active = api_client.post(
         "/salesmen",
@@ -30,18 +31,13 @@ def test_list_salesmen_returns_filtered_salesman_collection(
     assert create_active.status_code == 201
     assert create_inactive.status_code == 201
 
-    active_only = api_client.get("/salesmen")
-    with_inactive = api_client.get(
-        "/salesmen", params={"include_inactive": "true"})
+    all_response = api_client.get("/salesmen")
 
-    active_ids = {item["salesman_id"] for item in active_only.json()["items"]}
-    all_ids = {item["salesman_id"] for item in with_inactive.json()["items"]}
+    all_ids = {item["salesman_id"] for item in all_response.json()["items"]}
 
-    assert active_only.status_code == 200
-    assert with_inactive.status_code == 200
-    assert "S001" in active_ids
-    assert "S002" not in active_ids
-    assert {"S001", "S002"}.issubset(all_ids)
+    assert all_response.status_code == 200
+    assert "S001" in all_ids
+    assert "S002" in all_ids
 
 
 def test_create_salesman_returns_201_and_standard_response_with_salesman_data(
@@ -74,7 +70,7 @@ def test_deactivate_salesman_returns_updated_salesman_with_is_active_false(
 ) -> None:
     """
     GIVEN an existing active salesman id
-    WHEN POST /salesmen/{salesman_id}/deactivate is called
+    WHEN PATCH /salesmen/{salesman_id} is called
     THEN response indicates success and returned salesman reflects inactive state
     """
     create_response = api_client.post(
@@ -87,20 +83,19 @@ def test_deactivate_salesman_returns_updated_salesman_with_is_active_false(
     )
     assert create_response.status_code == 201
 
-    deactivate_response = api_client.post("/salesmen/S100/deactivate")
-    active_only = api_client.get("/salesmen")
-    with_inactive = api_client.get(
-        "/salesmen", params={"include_inactive": "true"})
+    deactivate_response = api_client.patch("/salesmen/S100", json={"is_active": False})
+    all_products = api_client.get("/salesmen")
 
     assert deactivate_response.status_code == 200
     assert deactivate_response.json()["data"]["is_active"] is False
-    assert all(item["salesman_id"] !=
-               "S100" for item in active_only.json()["items"])
-    assert any(item["salesman_id"] ==
-               "S100" for item in with_inactive.json()["items"])
+    assert any(
+        (item["salesman_id"] == "S100" and not item["is_active"])
+        for item in all_products.json()["items"]
+    )
 
 
 # sad path
+
 
 def test_create_salesman_rejects_validation_errors_with_422(
     api_client: TestClient,
@@ -159,13 +154,14 @@ def test_deactivate_salesman_returns_404_when_salesman_is_missing(
     WHEN POST /salesmen/{salesman_id}/deactivate is called
     THEN endpoint returns 404 via MissingReferenceError mapping
     """
-    response = api_client.post("/salesmen/UNKNOWN/deactivate")
+    response = api_client.patch("/salesmen/UNKNOWN", json={"is_active": False})
 
     assert response.status_code == 404
     assert response.json()["error_type"] == "MissingReferenceError"
 
 
 # edge path
+
 
 def test_salesmen_endpoints_return_503_when_runtime_context_is_unavailable(
     api_client_without_runtime: TestClient,

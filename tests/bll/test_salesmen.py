@@ -34,11 +34,13 @@ def _seed_salesman(
     return row
 
 
-def test_ensure_salesmen_cache_populates_missing_cache(salesmen_workbook: Workbook) -> None:
+def test_ensure_salesmen_cache_populates_missing_cache(
+    salesmen_workbook: Workbook,
+) -> None:
     """
     GIVEN a runtime context with an empty salesmen cache bucket
     WHEN _ensure_salesmen_cache is called
-    THEN all active and by_id structures are populated from DAL iteration
+    THEN all and by_id structures are populated from DAL iteration
     """
     # Arrange
     context = _make_context(salesmen_workbook)
@@ -50,12 +52,12 @@ def test_ensure_salesmen_cache_populates_missing_cache(salesmen_workbook: Workbo
 
     # Assert
     assert len(bucket["all"]) == 2
-    assert len(bucket["active"]) == 1
-    assert bucket["active"][0].salesman_id == "S001"
     assert set(bucket["by_id"].keys()) == {"S001", "S002"}
 
 
-def test_ensure_salesmen_cache_reuses_existing_cache(salesmen_workbook: Workbook) -> None:
+def test_ensure_salesmen_cache_reuses_existing_cache(
+    salesmen_workbook: Workbook,
+) -> None:
     """
     GIVEN a runtime context with a pre-populated salesmen cache bucket
     WHEN _ensure_salesmen_cache is called
@@ -77,15 +79,13 @@ def test_ensure_salesmen_cache_reuses_existing_cache(salesmen_workbook: Workbook
     assert "S002" not in second_bucket["by_id"]
 
 
-@pytest.mark.parametrize("include_inactive", [False, True])
-def test_list_salesmen_returns_expected_subset(
+def test_list_salesmen_returns_all_results(
     salesmen_workbook: Workbook,
-    include_inactive,
 ) -> None:
     """
-    GIVEN a cached salesmen bucket with active and inactive records
+    GIVEN a cached salesmen bucket
     WHEN list_salesmen is called
-    THEN it returns records matching the include_inactive filter
+    THEN it returns all records
     """
     # Arrange
     context = _make_context(salesmen_workbook)
@@ -93,13 +93,10 @@ def test_list_salesmen_returns_expected_subset(
     _seed_salesman(salesmen_workbook, "S002", is_active=False)
 
     # Act
-    result = salesmen.list_salesmen(context, include_inactive=include_inactive)
+    result = salesmen.list_salesmen(context)
 
     # Assert
-    if include_inactive:
-        assert [row.salesman_id for row in result] == ["S001", "S002"]
-    else:
-        assert [row.salesman_id for row in result] == ["S001"]
+    assert [row.salesman_id for row in result] == ["S001", "S002"]
 
 
 def test_list_salesmen_returns_copy_not_original_reference(
@@ -115,7 +112,7 @@ def test_list_salesmen_returns_copy_not_original_reference(
     _seed_salesman(salesmen_workbook, "S001")
 
     # Act
-    result = salesmen.list_salesmen(context, include_inactive=True)
+    result = salesmen.list_salesmen(context)
 
     # Assert
     assert result is not context._cache["salesmen"]["all"]
@@ -272,7 +269,9 @@ def test_add_salesman_requires_is_active(salesmen_workbook: Workbook) -> None:
         )
 
 
-def test_add_salesman_rejects_duplicate_salesman_id(salesmen_workbook: Workbook) -> None:
+def test_add_salesman_rejects_duplicate_salesman_id(
+    salesmen_workbook: Workbook,
+) -> None:
     """
     GIVEN a creation command whose salesman id already exists in cache
     WHEN add_salesman is called
@@ -294,7 +293,9 @@ def test_add_salesman_rejects_duplicate_salesman_id(salesmen_workbook: Workbook)
         )
 
 
-def test_update_salesman_returns_updated_record_on_success(salesmen_workbook: Workbook) -> None:
+def test_update_salesman_returns_updated_record_on_success(
+    salesmen_workbook: Workbook,
+) -> None:
     """
     GIVEN a valid update command targeting an existing salesman
     WHEN update_salesman is called
@@ -303,7 +304,7 @@ def test_update_salesman_returns_updated_record_on_success(salesmen_workbook: Wo
     # Arrange
     context = _make_context(salesmen_workbook)
     _seed_salesman(salesmen_workbook, "S001", salesman_name="Old")
-    salesmen.list_salesmen(context, include_inactive=True)  # warm cache
+    salesmen.list_salesmen(context)  # warm cache
 
     # Act
     updated = salesmen.update_salesman(
@@ -332,8 +333,7 @@ def test_update_salesman_trims_salesman_id_and_name_before_persisting(
     # Act
     updated = salesmen.update_salesman(
         context,
-        salesmen.SalesmanCommand(
-            salesman_id="  S001  ", salesman_name="  New Name  "),
+        salesmen.SalesmanCommand(salesman_id="  S001  ", salesman_name="  New Name  "),
     )
 
     # Assert
@@ -354,12 +354,13 @@ def test_update_salesman_rejects_blank_salesman_id(salesmen_workbook: Workbook) 
     with pytest.raises(ValueError):
         salesmen.update_salesman(
             context,
-            salesmen.SalesmanCommand(
-                salesman_id="   ", salesman_name="Updated"),
+            salesmen.SalesmanCommand(salesman_id="   ", salesman_name="Updated"),
         )
 
 
-def test_update_salesman_rejects_blank_salesman_name(salesmen_workbook: Workbook) -> None:
+def test_update_salesman_rejects_blank_salesman_name(
+    salesmen_workbook: Workbook,
+) -> None:
     """
     GIVEN an update command with salesman_name provided as blank text
     WHEN update_salesman is called
@@ -377,7 +378,9 @@ def test_update_salesman_rejects_blank_salesman_name(salesmen_workbook: Workbook
         )
 
 
-def test_update_salesman_requires_at_least_one_field(salesmen_workbook: Workbook) -> None:
+def test_update_salesman_requires_at_least_one_field(
+    salesmen_workbook: Workbook,
+) -> None:
     """
     GIVEN an update command with only salesman id and no mutable fields
     WHEN update_salesman is called
@@ -389,8 +392,7 @@ def test_update_salesman_requires_at_least_one_field(salesmen_workbook: Workbook
 
     # Act / Assert
     with pytest.raises(ValueError):
-        salesmen.update_salesman(
-            context, salesmen.SalesmanCommand(salesman_id="S001"))
+        salesmen.update_salesman(context, salesmen.SalesmanCommand(salesman_id="S001"))
 
 
 def test_update_salesman_maps_dal_key_error_to_missing_reference(
@@ -408,6 +410,5 @@ def test_update_salesman_maps_dal_key_error_to_missing_reference(
     with pytest.raises(MissingReferenceError):
         salesmen.update_salesman(
             context,
-            salesmen.SalesmanCommand(
-                salesman_id="S999", salesman_name="Updated"),
+            salesmen.SalesmanCommand(salesman_id="S999", salesman_name="Updated"),
         )
