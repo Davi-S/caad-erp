@@ -9,6 +9,7 @@ import { stockQueryOptions } from "@/hooks/queries/useStock"
 import { GlobalError } from "./components/GlobalError.tsx"
 import '@mantine/core/styles.css'
 import { MantineProvider } from '@mantine/core'
+import { SalesmenManagementPage } from "./features/salesmen/"
 
 const queryClient = new QueryClient()
 
@@ -22,6 +23,15 @@ const router = createBrowserRouter([
                 queryClient.ensureQueryData(productsQueryOptions()),
                 queryClient.ensureQueryData(stockQueryOptions())
             ])
+            return null
+        },
+        errorElement: <GlobalError />
+    },
+    {
+        path: "/salesmen",
+        element: <SalesmenManagementPage />,
+        loader: async () => {
+            await queryClient.ensureQueryData(salesmenQueryOptions())
             return null
         },
         errorElement: <GlobalError />
