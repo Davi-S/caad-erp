@@ -81,11 +81,11 @@ export function CartScreen({
                                             <Text size="xs" fw={700} c={soldOut ? "dimmed" : "var(--mantine-primary-color-filled)"}>
                                                 {soldOut ? "Esgotado" : brl(product.sell_price)}
                                             </Text>
-                                            {!soldOut && (
-                                                <Text size="10px" c="dimmed">
-                                                    {stock[product.product_id]}u disponíveis
-                                                </Text>
-                                            )}
+                                            <Text size="10px" c="dimmed">
+                                                {/* Hack with invisible character to make sold out
+                                                product card have the same height as the other ones */}
+                                                {soldOut ? "‎ " : stock[product.product_id] + "u disponíveis"}
+                                            </Text>
                                         </Stack>
                                     </Checkbox.Card>
                                 </Indicator>
