@@ -31,7 +31,7 @@ export function POSFlow() {
             // It will always pick a new one. This is why it does not receive a
             // useState like CartScreen.
             <SalesmenScreen
-                salesmen={salesmen}
+                salesmen={salesmen.filter((s) => s.is_active)}
                 onNext={(id) => {
                     setSelectedSalesmanId(id)
                     setScreen("cart")
@@ -44,7 +44,7 @@ export function POSFlow() {
         return (
             <CartScreen
                 salesman={selectedSalesman}
-                products={products}
+                products={products.filter((p) => p.is_active)}
                 stock={stock}
                 cartState={cartState}
                 actions={{

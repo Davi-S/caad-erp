@@ -17,7 +17,6 @@ export function SalesmenScreen({
     onNext
 }: SalesmenScreenProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
-    const active = salesmen.filter((s) => s.is_active)
 
     return (
         <ScreenShell>
@@ -30,7 +29,7 @@ export function SalesmenScreen({
 
             {/* Middle Section */}
             <Stack style={{ flex: 1, minHeight: 0 }} py="lg">
-                {active.length === 0 ? (
+                {salesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
                             <ThemeIcon variant="light" color="gray" size={48} radius="xl">
@@ -45,7 +44,7 @@ export function SalesmenScreen({
                     <ScrollArea type="scroll" style={{ flex: 1 }}>
                         <Radio.Group value={selectedId ?? ""} onChange={(id) => setSelectedId(id)}>
                             <Stack gap="sm">
-                                {active.map((salesman) => (
+                                {salesmen.map((salesman) => (
                                     <Radio.Card
                                         key={salesman.salesman_id}
                                         value={salesman.salesman_id}

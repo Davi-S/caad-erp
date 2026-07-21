@@ -10,6 +10,7 @@ import { GlobalError } from "./components/GlobalError.tsx"
 import '@mantine/core/styles.css'
 import { MantineProvider } from '@mantine/core'
 import { SalesmenManagementPage } from "./features/salesmen/"
+import { ProductsManagementPage } from "./features/products/"
 
 const queryClient = new QueryClient()
 
@@ -32,6 +33,18 @@ const router = createBrowserRouter([
         element: <SalesmenManagementPage />,
         loader: async () => {
             await queryClient.ensureQueryData(salesmenQueryOptions())
+            return null
+        },
+        errorElement: <GlobalError />
+    },
+    {
+        path: "/products",
+        element: <ProductsManagementPage />,
+        loader: async () => {
+            await Promise.all([
+                queryClient.ensureQueryData(productsQueryOptions()),
+                queryClient.ensureQueryData(stockQueryOptions())
+            ])
             return null
         },
         errorElement: <GlobalError />
