@@ -28,6 +28,12 @@ def register_list_salesmen_command() -> command_spec.CommandSpec:
                 report command.
         """
         parser = action.add_parser(name, help=help_text)
+        parser.add_argument(
+            "-i",
+            "--salesman-id",
+            required=False,
+            help="Get information for this specific salesman only.",
+        )
         parser.set_defaults(command=name)
         return parser
 
@@ -77,5 +83,14 @@ def _run_list_salesmen_report(
         int: ``0`` after listing salesmen.
     """
     salesmen = bll.list_salesmen(context)
-    _display_salesmen_report(salesmen)
+    salesman = (
+        salesmen
+        if not args.salesman_id
+        else [
+            salesman
+            for salesman in salesmen
+            if salesman.salesman_id == args.salesman_id
+        ]
+    )
+    _display_salesmen_report(salesman)
     return 0

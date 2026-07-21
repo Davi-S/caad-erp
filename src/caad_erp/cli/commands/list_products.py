@@ -28,6 +28,12 @@ def register_list_products_command() -> command_spec.CommandSpec:
                 report command.
         """
         parser = action.add_parser(name, help=help_text)
+        parser.add_argument(
+            "-i",
+            "--product-id",
+            required=False,
+            help="Get information for this specific product only.",
+        )
         parser.set_defaults(command=name)
         return parser
 
@@ -78,5 +84,10 @@ def _run_list_products_report(
         int: ``0`` after listing products.
     """
     products = bll.list_products(context)
-    _display_products_report(products)
+    product = (
+        products
+        if not args.product_id
+        else [product for product in products if product.product_id == args.product_id]
+    )
+    _display_products_report(product)
     return 0
