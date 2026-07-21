@@ -1,7 +1,6 @@
 """Salesman management endpoints for the CAAD ERP API.
 
-This module provides REST endpoints for creating and deactivating salesmen,
-mirroring the CLI commands add-salesman and deactivate-salesman.
+This module provides REST endpoints for managing salesmen,
 """
 
 import fastapi
@@ -76,34 +75,35 @@ def create_salesman(
     )
 
 
-@router.post("/{salesman_id}/deactivate", response_model=schemas.StandardResponse)
-@persistence.mutating_endpoint
-def deactivate_salesman(
+@router.get("/{salesman_id}", response_model=schemas.SalesmanResponse)
+def get_salesman(
     salesman_id: str,
     context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Deactivate an existing salesman.
 
-    Args:
-        salesman_id: The ID of the salesman to deactivate.
-        context: Runtime context injected via dependency.
 
-    Returns:
-        StandardResponse containing the updated salesman data.
+@router.patch("/{salesman_id}", response_model=schemas.StandardResponse)
+@persistence.mutating_endpoint
+def update_salesman_details(
+    salesman_id: str,
+    request: schemas.SalesmanUpdateRequest,
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+) -> schemas.StandardResponse:
+    """Update an existing salesman.
 
-    Raises:
-        HTTPException: 404 if salesman not found.
+    Can be used to modify the salesman's name or toggle their active status.
     """
     salesman = bll.update_salesman(
         context,
         bll.SalesmanCommand(
             salesman_id=salesman_id,
-            salesman_name=None,
-            is_active=False,
+            salesman_name=request.salesman_name,
+            is_active=request.is_active,
         ),
     )
     return schemas.StandardResponse(
-        detail="Salesman deactivated successfully",
+        detail="Salesman updated successfully",
         data=schemas.SalesmanResponse(
             salesman_id=salesman.salesman_id,
             salesman_name=salesman.salesman_name,

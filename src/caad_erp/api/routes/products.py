@@ -1,7 +1,6 @@
 """Product management endpoints for the CAAD ERP API.
 
-This module provides REST endpoints for creating and deactivating products,
-mirroring the CLI commands add-product and deactivate-product.
+This module provides REST endpoints for managing products.
 """
 
 import fastapi
@@ -79,35 +78,36 @@ def create_product(
     )
 
 
-@router.post("/{product_id}/deactivate", response_model=schemas.StandardResponse)
-@persistence.mutating_endpoint
-def deactivate_product(
+@router.get("/{product_id}", response_model=schemas.ProductResponse)
+def get_product(
     product_id: str,
     context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
 ) -> schemas.StandardResponse:
     """Deactivate an existing product.
 
-    Args:
-        product_id: The ID of the product to deactivate.
-        context: Runtime context injected via dependency.
 
-    Returns:
-        StandardResponse containing the updated product data.
+@router.patch("/{product_id}", response_model=schemas.StandardResponse)
+@persistence.mutating_endpoint
+def update_product_details(
+    product_id: str,
+    request: schemas.ProductUpdateRequest,
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+) -> schemas.StandardResponse:
+    """Update an existing product.
 
-    Raises:
-        HTTPException: 404 if product not found.
+    Can be used to modify the product's name, price, or toggle its active status.
     """
     product = bll.update_product(
         context,
         bll.ProductCommand(
             product_id=product_id,
-            product_name=None,
-            sell_price=None,
-            is_active=False,
+            product_name=request.product_name,
+            sell_price=request.sell_price,
+            is_active=request.is_active,
         ),
     )
     return schemas.StandardResponse(
-        detail="Product deactivated successfully",
+        detail="Product updated successfully",
         data=schemas.ProductResponse(
             product_id=product.product_id,
             product_name=product.product_name,
