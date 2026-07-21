@@ -34,6 +34,14 @@ class ProductCreateRequest(pydantic.BaseModel):
     is_active: bool = True
 
 
+class ProductUpdateRequest(pydantic.BaseModel):
+    """Request payload for partially updating an existing product."""
+
+    product_name: t.Optional[str] = pydantic.Field(None, min_length=1)
+    sell_price: t.Optional[int] = pydantic.Field(None, ge=0)
+    is_active: t.Optional[bool] = None
+
+
 class ProductResponse(pydantic.BaseModel):
     """Response representation of a product record."""
 
@@ -49,6 +57,13 @@ class SalesmanCreateRequest(pydantic.BaseModel):
     salesman_id: str = pydantic.Field(..., min_length=1)
     salesman_name: str = pydantic.Field(..., min_length=1)
     is_active: bool = True
+
+
+class SalesmanUpdateRequest(pydantic.BaseModel):
+    """Request payload for partially updating an existing salesman."""
+
+    salesman_name: t.Optional[str] = pydantic.Field(None, min_length=1)
+    is_active: t.Optional[bool] = None
 
 
 class SalesmanResponse(pydantic.BaseModel):
@@ -116,7 +131,7 @@ class PayDebtRequest(pydantic.BaseModel):
                 "Payment type 'OnCredit' is not allowed when settling a debt"
             )
         return value
-    
+
 
 class ProductListResponse(pydantic.BaseModel):
     """Response for listing products."""
