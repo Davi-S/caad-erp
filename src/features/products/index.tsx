@@ -125,7 +125,7 @@ export function ProductsManagementPage() {
                                     <Stack gap={2} align="flex-end">
                                         <Text fw={600} ff="monospace" size="sm">{brl(product.sell_price)}</Text>
                                         <Text size="xs" c="dimmed">
-                                            {stock?.[product.product_id] ?? 0}u em estoque
+                                            {stock?.[product.product_id] ?? 0} em estoque
                                         </Text>
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">

@@ -140,7 +140,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                                                 color={soldOut ? "red" : "var(--mantine-primary-color-filled)"}
                                                 w="fit-content"
                                             >
-                                                {quantity}u em estoque
+                                                {quantity} em estoque
                                             </Badge>
                                         </Stack>
                                         <Group gap="xs" wrap="nowrap">
