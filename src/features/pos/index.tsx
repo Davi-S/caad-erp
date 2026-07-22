@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useCart } from "./hooks/useCart"
 import { useCheckout } from "./hooks/useCheckout"
-import { SalesmenScreen } from "./components/SalesmenScreen"
+import { SalesmanSelectScreen } from "@/components/SalesmanSelectScreen"
 import { CartScreen } from "./components/CartScreen"
 import { PaymentScreen } from "./components/PaymentScreen"
 import { useSalesmen } from "@/hooks/queries/useSalesmen"
@@ -30,8 +30,10 @@ export function POSFlow() {
             // This screen does not care about the currently selected salesman.
             // It will always pick a new one. This is why it does not receive a
             // useState like CartScreen.
-            <SalesmenScreen
+            <SalesmanSelectScreen
                 salesmen={salesmen.filter((s) => s.is_active)}
+                title="Quem tá vendendo hoje?"
+                confirmLabel="Começar venda"
                 onNext={(id) => {
                     setSelectedSalesmanId(id)
                     setScreen("cart")

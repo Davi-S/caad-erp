@@ -4,18 +4,26 @@ import {
 } from "@mantine/core"
 import { useState } from "react"
 import { Users } from "lucide-react"
-import { ScreenShell } from "@/components/ScreenShell"
+import { ScreenShell } from "./ScreenShell"
 import type { Salesmen } from "@/types"
 
-interface SalesmenScreenProps {
+interface SalesmanSelectScreenProps {
     salesmen: Salesmen
     onNext: (salesmanId: string) => void
+    title?: string
+    confirmLabel?: string
 }
 
-export function SalesmenScreen({
+// Generic "pick a salesman before continuing" gate screen.
+// Used both by the POS flow (to attribute a sale) and the Stock flow
+// (to attribute a restock/write-off), so it lives here instead of inside
+// a single feature folder.
+export function SalesmanSelectScreen({
     salesmen,
-    onNext
-}: SalesmenScreenProps) {
+    onNext,
+    title = "Quem está operando?",
+    confirmLabel = "Continuar"
+}: SalesmanSelectScreenProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
 
     return (
@@ -23,7 +31,7 @@ export function SalesmenScreen({
             {/* Header */}
             <Stack gap={4}>
                 <Title order={1} size="h2">
-                    Quem tá vendendo hoje?
+                    {title}
                 </Title>
             </Stack>
 
@@ -69,7 +77,7 @@ export function SalesmenScreen({
                 onClick={() => selectedId && onNext(selectedId)}
                 size="lg"
             >
-                Começar venda
+                {confirmLabel}
             </Button>
         </ScreenShell>
     )
