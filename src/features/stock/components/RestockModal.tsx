@@ -3,6 +3,7 @@ import { Modal, NumberInput, SegmentedControl, TextInput, Button, Stack, Group, 
 import { useForm } from "@mantine/form"
 import { brl } from "@/helpers"
 import type { Product } from "@/types"
+import { CurrencyInput } from "@/components/CurrencyInput"
 
 interface RestockModalProps {
     opened: boolean
@@ -22,8 +23,8 @@ export function RestockModal({
         initialValues: {
             cost_mode: "unit" as CostMode,
             quantity: 1,
-            unit_cost: 0,  // kept in reais (R$) in the form; converted to cents on submit
-            total_cost: 0, // kept in reais (R$) in the form; converted to cents on submit
+            unit_cost: 0,
+            total_cost: 0,
             notes: "",
         },
         validate: {
@@ -50,7 +51,6 @@ export function RestockModal({
     const estimatedTotalCents = Math.round(form.values.quantity * form.values.unit_cost * 100)
 
     const handleSubmit = form.onSubmit((values) => {
-        // The backend stores costs as integer cents
         const totalCostInReais = values.cost_mode === "unit"
             ? values.quantity * values.unit_cost
             : values.total_cost
@@ -95,15 +95,9 @@ export function RestockModal({
 
                     {form.values.cost_mode === "unit" ? (
                         <>
-                            <NumberInput
+                            <CurrencyInput
                                 label="Custo unitário"
-                                placeholder="0,00"
-                                prefix="R$ "
-                                decimalScale={2}
-                                fixedDecimalScale
-                                decimalSeparator=","
-                                thousandSeparator="."
-                                min={0}
+                                placeholder="R$ 0,00"
                                 {...form.getInputProps("unit_cost")}
                             />
                             <Text size="sm" c="dimmed">
@@ -111,15 +105,9 @@ export function RestockModal({
                             </Text>
                         </>
                     ) : (
-                        <NumberInput
+                        <CurrencyInput
                             label="Valor total da nota"
-                            placeholder="0,00"
-                            prefix="R$ "
-                            decimalScale={2}
-                            fixedDecimalScale
-                            decimalSeparator=","
-                            thousandSeparator="."
-                            min={0}
+                            placeholder="R$ 0,00"
                             {...form.getInputProps("total_cost")}
                         />
                     )}
