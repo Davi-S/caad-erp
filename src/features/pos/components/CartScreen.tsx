@@ -84,7 +84,7 @@ export function CartScreen({
                                             <Text size="10px" c="dimmed">
                                                 {/* Hack with invisible character to make sold out
                                                 product card have the same height as the other ones */}
-                                                {soldOut ? "‎ " : stock[product.product_id] + "u disponíveis"}
+                                                {soldOut ? "‎ " : stock[product.product_id] + " disp."}
                                             </Text>
                                         </Stack>
                                     </Checkbox.Card>
