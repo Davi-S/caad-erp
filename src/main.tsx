@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { HomePage } from "./features/home/"
 import { POSFlow } from "./features/pos/"
 import { salesmenQueryOptions } from "@/hooks/queries/useSalesmen"
 import { productsQueryOptions } from "@/hooks/queries/useProducts"
@@ -18,6 +19,11 @@ const queryClient = new QueryClient()
 const router = createBrowserRouter([
     {
         path: "/",
+        element: <HomePage />,
+        errorElement: <GlobalError />
+    },
+    {
+        path: "/pos",
         element: <POSFlow />,
         loader: async () => {
             await Promise.all([
