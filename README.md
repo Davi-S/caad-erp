@@ -40,12 +40,12 @@ The current implementation focuses on a three-step POS checkout flow:
   catalog.
 - **Salesmen Management:** An interface to register, update, and manage the
   active status of salespeople.
+- **Stock Management:** Direct oversight and control over inventory levels.
 
 ## Future Features
 
 The application will be expanded to include the following functionalities:
 
-- Stock Management: Direct oversight and control over inventory levels.
 - Log Audit and Management: Capabilities to review historical actions, including
   the ability to void entries
 - Reports Dashboard: A comprehensive view into the business metrics, allowing
