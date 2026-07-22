@@ -1,7 +1,8 @@
 import { useEffect } from "react"
-import { Modal, TextInput, NumberInput, Switch, Button, Stack, Group, Text } from "@mantine/core"
+import { Modal, TextInput, Switch, Button, Stack, Group, Text } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import type { Product } from "@/types"
+import { CurrencyInput } from "@/components/CurrencyInput" // Assuming path
 
 interface ProductFormModalProps {
     opened: boolean
@@ -22,7 +23,7 @@ export function ProductFormModal({
         initialValues: {
             product_id: "",
             product_name: "",
-            sell_price: 0, // Kept in reais (R$) in the form; converted to cents on submit
+            sell_price: 0,
             is_active: true,
         },
         validate: {
@@ -46,7 +47,6 @@ export function ProductFormModal({
     }, [opened, product])
 
     const handleSubmit = form.onSubmit((values) => {
-        // The backend stores prices as integer cents
         const sellPriceInCents = Math.round(values.sell_price * 100)
 
         if (isEditing && product) {
@@ -89,15 +89,9 @@ export function ProductFormModal({
                         placeholder="Nome do produto"
                         {...form.getInputProps("product_name")}
                     />
-                    <NumberInput
+                    <CurrencyInput
                         label="Preço de venda"
-                        placeholder="0,00"
-                        prefix="R$ "
-                        decimalScale={2}
-                        fixedDecimalScale
-                        decimalSeparator=","
-                        thousandSeparator="."
-                        min={0}
+                        placeholder="R$ 0,00"
                         {...form.getInputProps("sell_price")}
                     />
                     <Switch
