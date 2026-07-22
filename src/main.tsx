@@ -11,6 +11,7 @@ import '@mantine/core/styles.css'
 import { MantineProvider } from '@mantine/core'
 import { SalesmenManagementPage } from "./features/salesmen/"
 import { ProductsManagementPage } from "./features/products/"
+import { StockFlow } from "./features/stock/"
 
 const queryClient = new QueryClient()
 
@@ -42,6 +43,19 @@ const router = createBrowserRouter([
         element: <ProductsManagementPage />,
         loader: async () => {
             await Promise.all([
+                queryClient.ensureQueryData(productsQueryOptions()),
+                queryClient.ensureQueryData(stockQueryOptions())
+            ])
+            return null
+        },
+        errorElement: <GlobalError />
+    },
+    {
+        path: "/stock",
+        element: <StockFlow />,
+        loader: async () => {
+            await Promise.all([
+                queryClient.ensureQueryData(salesmenQueryOptions()),
                 queryClient.ensureQueryData(productsQueryOptions()),
                 queryClient.ensureQueryData(stockQueryOptions())
             ])
