@@ -1,4 +1,4 @@
-import { Container } from '@mantine/core'
+import { Container } from "@mantine/core"
 
 export function ScreenShell({ children }: { children: React.ReactNode }) {
     return (
@@ -9,10 +9,10 @@ export function ScreenShell({ children }: { children: React.ReactNode }) {
             bg="gray.0"
             display="flex"
             style={{
-                flexDirection: 'column',
-                overflow: 'hidden',
-                paddingTop: 'max(var(--mantine-spacing-xl), env(safe-area-inset-top))',
-                paddingBottom: 'max(var(--mantine-spacing-xl), env(safe-area-inset-bottom))',
+                flexDirection: "column",
+                overflow: "hidden",
+                paddingTop: "max(var(--mantine-spacing-xl), env(safe-area-inset-top))",
+                paddingBottom: "max(var(--mantine-spacing-xl), env(safe-area-inset-bottom))",
             }}
         >
             {children}

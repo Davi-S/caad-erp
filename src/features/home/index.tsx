@@ -69,7 +69,9 @@ export function HomePage() {
                                 <ShoppingCart size={24} />
                             </ThemeIcon>
                             <Stack gap={0}>
-                                <Text fw={700} size="lg" c="white">Ponto de Venda</Text>
+                                <Text fw={700} size="lg" c="white">
+                                    Ponto de Venda
+                                </Text>
                                 <Text size="sm" c="white" style={{ opacity: 0.85 }}>
                                     Iniciar uma nova venda
                                 </Text>
@@ -106,7 +108,9 @@ export function HomePage() {
                                     </ThemeIcon>
                                     <Stack gap={0}>
                                         <Text fw={600}>{item.title}</Text>
-                                        <Text size="xs" c="dimmed">{item.description}</Text>
+                                        <Text size="xs" c="dimmed">
+                                            {item.description}
+                                        </Text>
                                     </Stack>
                                 </Group>
                                 <ChevronRight size={18} color="var(--mantine-color-gray-5)" />

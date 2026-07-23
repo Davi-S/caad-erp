@@ -14,7 +14,13 @@ interface WriteOffModalProps {
 }
 
 export function WriteOffModal({
-    opened, onClose, product, availableQuantity, onConfirm, isSubmitting, error
+    opened,
+    onClose,
+    product,
+    availableQuantity,
+    onConfirm,
+    isSubmitting,
+    error,
 }: WriteOffModalProps) {
     const form = useForm({
         initialValues: {
@@ -75,7 +81,11 @@ export function WriteOffModal({
                         {...form.getInputProps("notes")}
                     />
 
-                    {error && <Text c="red" size="sm">{error}</Text>}
+                    {error && (
+                        <Text c="red" size="sm">
+                            {error}
+                        </Text>
+                    )}
 
                     <Group justify="flex-end" mt="sm">
                         <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>

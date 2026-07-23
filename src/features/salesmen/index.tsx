@@ -1,7 +1,16 @@
 import { useState } from "react"
 import {
-    ActionIcon, Alert, Badge, Center, Group,
-    ScrollArea, Stack, Switch, Text, ThemeIcon, Title
+    ActionIcon,
+    Alert,
+    Badge,
+    Center,
+    Group,
+    ScrollArea,
+    Stack,
+    Switch,
+    Text,
+    ThemeIcon,
+    Title,
 } from "@mantine/core"
 import { Plus, Pencil, Users, AlertTriangle } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
@@ -16,7 +25,7 @@ export function SalesmenManagementPage() {
     // Filter the salesmen on the client side
     const filteredSalesmen = showInactive
         ? salesmen
-        : salesmen?.filter(salesman => salesman.is_active)
+        : salesmen?.filter((salesman) => salesman.is_active)
 
     const [modalOpened, setModalOpened] = useState(false)
     const [editingSalesman, setEditingSalesman] = useState<Salesman | null>(null)
@@ -28,8 +37,8 @@ export function SalesmenManagementPage() {
     const submitError = createMutation.isError
         ? createMutation.error.message
         : updateMutation.isError
-            ? updateMutation.error.message
-            : null
+          ? updateMutation.error.message
+          : null
 
     const openCreateModal = () => {
         setEditingSalesman(null)
@@ -45,12 +54,22 @@ export function SalesmenManagementPage() {
         setModalOpened(true)
     }
 
-    const handleCreate = (values: { salesman_id: string; salesman_name: string; is_active: boolean }) => {
+    const handleCreate = (values: {
+        salesman_id: string
+        salesman_name: string
+        is_active: boolean
+    }) => {
         createMutation.mutate(values, { onSuccess: () => setModalOpened(false) })
     }
 
-    const handleUpdate = (salesmanId: string, values: { salesman_name: string; is_active: boolean }) => {
-        updateMutation.mutate({ salesmanId, input: values }, { onSuccess: () => setModalOpened(false) })
+    const handleUpdate = (
+        salesmanId: string,
+        values: { salesman_name: string; is_active: boolean },
+    ) => {
+        updateMutation.mutate(
+            { salesmanId, input: values },
+            { onSuccess: () => setModalOpened(false) },
+        )
     }
 
     return (
@@ -61,7 +80,9 @@ export function SalesmenManagementPage() {
                     <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
                         Gerenciamento
                     </Text>
-                    <Title order={1} size="h4">Vendedores</Title>
+                    <Title order={1} size="h4">
+                        Vendedores
+                    </Title>
                 </Stack>
                 <ActionIcon onClick={openCreateModal} size="lg" radius="xl">
                     <Plus size={20} />
@@ -84,7 +105,9 @@ export function SalesmenManagementPage() {
 
                 {isLoading ? (
                     <Center style={{ flex: 1 }}>
-                        <Text c="dimmed" size="sm">Carregando...</Text>
+                        <Text c="dimmed" size="sm">
+                            Carregando...
+                        </Text>
                     </Center>
                 ) : !filteredSalesmen || filteredSalesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
@@ -116,16 +139,25 @@ export function SalesmenManagementPage() {
                                 >
                                     <Stack gap={2}>
                                         <Text fw={600}>{salesman.salesman_name}</Text>
-                                        <Text size="xs" c="dimmed" ff="monospace">{salesman.salesman_id}</Text>
+                                        <Text size="xs" c="dimmed" ff="monospace">
+                                            {salesman.salesman_id}
+                                        </Text>
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">
                                         <Badge
-                                            color={salesman.is_active ? "var(--mantine-primary-color-filled)" : "gray"}
+                                            color={
+                                                salesman.is_active
+                                                    ? "var(--mantine-primary-color-filled)"
+                                                    : "gray"
+                                            }
                                             variant={salesman.is_active ? "light" : "outline"}
                                         >
                                             {salesman.is_active ? "Ativo" : "Inativo"}
                                         </Badge>
-                                        <ActionIcon variant="subtle" onClick={() => openEditModal(salesman)}>
+                                        <ActionIcon
+                                            variant="subtle"
+                                            onClick={() => openEditModal(salesman)}
+                                        >
                                             <Pencil size={16} />
                                         </ActionIcon>
                                     </Group>

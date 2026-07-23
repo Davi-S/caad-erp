@@ -1,11 +1,26 @@
 import { useState, useEffect } from "react"
 import {
-    ActionIcon, Alert, Badge, Button, Center,
-    Group, Paper, SegmentedControl,
-    Stack, Text, Title, Box
+    ActionIcon,
+    Alert,
+    Badge,
+    Button,
+    Center,
+    Group,
+    Paper,
+    SegmentedControl,
+    Stack,
+    Text,
+    Title,
+    Box,
 } from "@mantine/core"
 import { PixCanvas } from "react-qrcode-pix"
-import { Check, ArrowLeft, AlertTriangle, QrCode, Banknote, CreditCard, MoreHorizontal } from "lucide-react"
+import {
+    Check,
+    ArrowLeft,
+    AlertTriangle,
+    QrCode,
+    Banknote,
+} from "lucide-react"
 import { brl } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { PaymentType } from "@/types"
@@ -16,9 +31,9 @@ import { useCheckout } from "../hooks/useCheckout"
 // TODO: Move these to env variables or a config file
 // These describe the receiver of the payment, not the salesman or customer.
 const PIX_MERCHANT = {
-    pixkey: "+5538988170470",       // CPF, CNPJ, email, phone, or random key
+    pixkey: "+5538988170470", // CPF, CNPJ, email, phone, or random key
     merchant: "Davi Alves Sampaio", // max 25 chars, no accents (BACEN spec)
-    city: "CURITIBA",               // max 15 chars, no accents
+    city: "CURITIBA", // max 15 chars, no accents
 }
 
 interface PaymentScreenProps {
@@ -65,12 +80,25 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                     <ActionIcon onClick={onEdit} disabled={isLocked} variant="subtle" size="lg">
                         <ArrowLeft />
                     </ActionIcon>
-                    <Button onClick={onCancel} disabled={isLocked} variant="subtle" color="red" size="compact-sm">
+                    <Button
+                        onClick={onCancel}
+                        disabled={isLocked}
+                        variant="subtle"
+                        color="red"
+                        size="compact-sm"
+                    >
                         Cancelar venda
                     </Button>
                 </Group>
                 <Stack gap={0} align="center">
-                    <Text size="xs" fw={600} tt="uppercase" c="dimmed" py="md" style={{ letterSpacing: 1 }}>
+                    <Text
+                        size="xs"
+                        fw={600}
+                        tt="uppercase"
+                        c="dimmed"
+                        py="md"
+                        style={{ letterSpacing: 1 }}
+                    >
                         Recebendo pagamento
                     </Text>
                     <Title order={1} size="h5">
@@ -80,7 +108,16 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
             </Stack>
 
             {/* Middle Section */}
-            <Box style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }} py="sm">
+            <Box
+                style={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                }}
+                py="sm"
+            >
                 <Stack
                     align="stretch"
                     justify="center"
@@ -117,7 +154,10 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                 color="var(--mantine-primary-color-filled)"
                                 mt="sm"
                                 styles={{
-                                    root: { display: "grid", gridTemplateColumns: `repeat(${METHOD_OPTIONS.length}, 1fr)` },
+                                    root: {
+                                        display: "grid",
+                                        gridTemplateColumns: `repeat(${METHOD_OPTIONS.length}, 1fr)`,
+                                    },
                                 }}
                             />
 
@@ -127,9 +167,22 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                 radius="md"
                                 mt="sm"
                                 w="100%"
-                                style={{ borderStyle: "dashed", flex: 1, minHeight: 0, position: "relative" }}
+                                style={{
+                                    borderStyle: "dashed",
+                                    flex: 1,
+                                    minHeight: 0,
+                                    position: "relative",
+                                }}
                             >
-                                <Center style={{ position: "absolute", top: 16, bottom: 16, left: 16, right: 16 }}>
+                                <Center
+                                    style={{
+                                        position: "absolute",
+                                        top: 16,
+                                        bottom: 16,
+                                        left: 16,
+                                        right: 16,
+                                    }}
+                                >
                                     {method === "PIX" && (
                                         <PixCanvas
                                             pixkey={PIX_MERCHANT.pixkey}
@@ -140,8 +193,8 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                                 style: {
                                                     width: "100%",
                                                     height: "100%",
-                                                    objectFit: "contain"
-                                                }
+                                                    objectFit: "contain",
+                                                },
                                             }}
                                         />
                                     )}
@@ -179,11 +232,7 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
             {/* Footer */}
             <Stack mx="auto" w="100%">
                 {!confirmed ? (
-                    <Button
-                        size="lg"
-                        onClick={() => onConfirm(method)}
-                        loading={confirming}
-                    >
+                    <Button size="lg" onClick={() => onConfirm(method)} loading={confirming}>
                         Já recebi o pagamento
                     </Button>
                 ) : (

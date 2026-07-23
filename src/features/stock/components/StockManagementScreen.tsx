@@ -1,7 +1,16 @@
 import { useState } from "react"
 import {
-    ActionIcon, Alert, Badge, Center, Group,
-    ScrollArea, Stack, Switch, Text, ThemeIcon, Title
+    ActionIcon,
+    Alert,
+    Badge,
+    Center,
+    Group,
+    ScrollArea,
+    Stack,
+    Switch,
+    Text,
+    ThemeIcon,
+    Title,
 } from "@mantine/core"
 import { ArrowLeft, PackagePlus, PackageMinus, Package, AlertTriangle } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
@@ -25,7 +34,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
     // Filter the products on the client side, same pattern as the Products page
     const filteredProducts = showInactive
         ? products
-        : products?.filter(product => product.is_active)
+        : products?.filter((product) => product.is_active)
 
     const [restockingProduct, setRestockingProduct] = useState<Product | null>(null)
     const [writingOffProduct, setWritingOffProduct] = useState<Product | null>(null)
@@ -43,25 +52,35 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
         setWritingOffProduct(product)
     }
 
-    const handleConfirmRestock = (values: { quantity: number; total_cost: number; notes: string | null }) => {
+    const handleConfirmRestock = (values: {
+        quantity: number
+        total_cost: number
+        notes: string | null
+    }) => {
         if (!restockingProduct) return
-        restockMutation.mutate({
-            product_id: restockingProduct.product_id,
-            salesman_id: salesman.salesman_id,
-            quantity: values.quantity,
-            total_cost: values.total_cost,
-            notes: values.notes,
-        }, { onSuccess: () => setRestockingProduct(null) })
+        restockMutation.mutate(
+            {
+                product_id: restockingProduct.product_id,
+                salesman_id: salesman.salesman_id,
+                quantity: values.quantity,
+                total_cost: values.total_cost,
+                notes: values.notes,
+            },
+            { onSuccess: () => setRestockingProduct(null) },
+        )
     }
 
     const handleConfirmWriteOff = (values: { quantity: number; notes: string | null }) => {
         if (!writingOffProduct) return
-        writeOffMutation.mutate({
-            product_id: writingOffProduct.product_id,
-            salesman_id: salesman.salesman_id,
-            quantity: values.quantity,
-            notes: values.notes,
-        }, { onSuccess: () => setWritingOffProduct(null) })
+        writeOffMutation.mutate(
+            {
+                product_id: writingOffProduct.product_id,
+                salesman_id: salesman.salesman_id,
+                quantity: values.quantity,
+                notes: values.notes,
+            },
+            { onSuccess: () => setWritingOffProduct(null) },
+        )
     }
 
     return (
@@ -75,7 +94,9 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                     <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
                         Gerenciamento
                     </Text>
-                    <Title order={1} size="h4">Estoque</Title>
+                    <Title order={1} size="h4">
+                        Estoque
+                    </Title>
                 </Stack>
                 <Badge variant="light" color="var(--mantine-primary-color-filled)">
                     {salesman.salesman_name}
@@ -98,7 +119,9 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
 
                 {isLoading ? (
                     <Center style={{ flex: 1 }}>
-                        <Text c="dimmed" size="sm">Carregando...</Text>
+                        <Text c="dimmed" size="sm">
+                            Carregando...
+                        </Text>
                     </Center>
                 ) : !filteredProducts || filteredProducts.length === 0 ? (
                     <Center style={{ flex: 1 }}>
@@ -133,11 +156,17 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                                         }}
                                     >
                                         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                                            <Text fw={600} truncate>{product.product_name}</Text>
+                                            <Text fw={600} truncate>
+                                                {product.product_name}
+                                            </Text>
                                             <Badge
                                                 size="sm"
                                                 variant="light"
-                                                color={soldOut ? "red" : "var(--mantine-primary-color-filled)"}
+                                                color={
+                                                    soldOut
+                                                        ? "red"
+                                                        : "var(--mantine-primary-color-filled)"
+                                                }
                                                 w="fit-content"
                                             >
                                                 {quantity} em estoque
@@ -183,7 +212,9 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                 opened={writingOffProduct !== null}
                 onClose={() => setWritingOffProduct(null)}
                 product={writingOffProduct}
-                availableQuantity={writingOffProduct ? (stock?.[writingOffProduct.product_id] ?? 0) : 0}
+                availableQuantity={
+                    writingOffProduct ? (stock?.[writingOffProduct.product_id] ?? 0) : 0
+                }
                 onConfirm={handleConfirmWriteOff}
                 isSubmitting={writeOffMutation.isPending}
                 error={writeOffMutation.isError ? writeOffMutation.error.message : null}

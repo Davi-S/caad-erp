@@ -14,7 +14,13 @@ interface SalesmanFormModalProps {
 }
 
 export function SalesmanFormModal({
-    opened, onClose, salesman, onCreate, onUpdate, isSubmitting, error
+    opened,
+    onClose,
+    salesman,
+    onCreate,
+    onUpdate,
+    isSubmitting,
+    error,
 }: SalesmanFormModalProps) {
     const isEditing = salesman !== null
 
@@ -25,7 +31,8 @@ export function SalesmanFormModal({
             is_active: true,
         },
         validate: {
-            salesman_id: (value) => (isEditing || value.trim().length > 0 ? null : "Informe um identificador"),
+            salesman_id: (value) =>
+                isEditing || value.trim().length > 0 ? null : "Informe um identificador",
             salesman_name: (value) => (value.trim().length > 0 ? null : "Informe um nome"),
         },
     })
@@ -73,7 +80,11 @@ export function SalesmanFormModal({
                         label="Identificador"
                         placeholder="ex: joao-silva"
                         disabled={isEditing}
-                        description={isEditing ? "O identificador não pode ser alterado." : "Usado como chave única. Não poderá ser alterado depois."}
+                        description={
+                            isEditing
+                                ? "O identificador não pode ser alterado."
+                                : "Usado como chave única. Não poderá ser alterado depois."
+                        }
                         {...form.getInputProps("salesman_id")}
                     />
                     <TextInput
@@ -85,9 +96,15 @@ export function SalesmanFormModal({
                         label="Vendedor ativo"
                         description="Vendedores inativos não aparecem na tela de vendas."
                         checked={form.values.is_active}
-                        onChange={(event) => form.setFieldValue("is_active", event.currentTarget.checked)}
+                        onChange={(event) =>
+                            form.setFieldValue("is_active", event.currentTarget.checked)
+                        }
                     />
-                    {error && <Text c="red" size="sm">{error}</Text>}
+                    {error && (
+                        <Text c="red" size="sm">
+                            {error}
+                        </Text>
+                    )}
                     <Group justify="flex-end" mt="sm">
                         <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>
                             Cancelar
