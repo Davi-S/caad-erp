@@ -51,7 +51,7 @@ export function POSFlow() {
                 cartState={cartState}
                 actions={{
                     onBack: () => setScreen("salesmen"),
-                    onNext: () => setScreen("payment")
+                    onNext: () => setScreen("payment"),
                 }}
             />
         )
@@ -65,12 +65,9 @@ export function POSFlow() {
                 checkoutState={checkoutState}
                 actions={{
                     onConfirm: (method) => {
-                        checkoutState.confirmPayment(assemblySalesRequest(
-                            selectedSalesmanId,
-                            method,
-                            cartState,
-                            products
-                        ))
+                        checkoutState.confirmPayment(
+                            assemblySalesRequest(selectedSalesmanId, method, cartState, products),
+                        )
                     },
                     onNewSale: () => {
                         cartState.clearCart()
@@ -83,7 +80,7 @@ export function POSFlow() {
                     onCancel: () => {
                         cartState.clearCart()
                         setScreen("salesmen")
-                    }
+                    },
                 }}
             />
         )
@@ -92,16 +89,21 @@ export function POSFlow() {
     return null
 }
 
-function assemblySalesRequest(selectedSalesmanId: string, method: PaymentType, cartState: ReturnType<typeof useCart>, products: Products) {
+function assemblySalesRequest(
+    selectedSalesmanId: string,
+    method: PaymentType,
+    cartState: ReturnType<typeof useCart>,
+    products: Products,
+) {
     return cartState.cartIterable.map(([productId, quantity]) => {
-        const productPrice = products.find(p => p.product_id === productId).sell_price
+        const productPrice = products.find((p) => p.product_id === productId).sell_price
         return {
             product_id: productId,
             salesman_id: selectedSalesmanId,
             quantity: quantity,
             total_revenue: quantity * productPrice,
             payment_type: method,
-            notes: null
+            notes: null,
         }
     })
 }

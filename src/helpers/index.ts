@@ -9,7 +9,7 @@ export function slugify(str: string) {
 }
 
 export function brl(n: number) {
-    return "R$ " + (n/100).toFixed(2).replace(".", ",")
+    return "R$ " + (n / 100).toFixed(2).replace(".", ",")
 }
 
 // Deterministic mock QR pattern (visual only, not a real payload)
