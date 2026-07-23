@@ -31,6 +31,7 @@ def test_iter_salesmen_yields_salesman_row_instances(salesmen_workbook) -> None:
     assert len(records) == 1
     assert isinstance(records[0], salesmen.SalesmanRow)
 
+
 def test_iter_salesmen_yields_all_non_empty_rows(salesmen_workbook) -> None:
     """
     GIVEN a salesmen sheet with non-empty data rows
@@ -49,6 +50,7 @@ def test_iter_salesmen_yields_all_non_empty_rows(salesmen_workbook) -> None:
     # Assert
     assert [record.salesman_id for record in records] == ["S-001", "S-002"]
 
+
 def test_iter_salesmen_empty_sheet_yields_nothing(salesmen_workbook) -> None:
     """
     GIVEN a header-only salesmen sheet
@@ -62,6 +64,7 @@ def test_iter_salesmen_empty_sheet_yields_nothing(salesmen_workbook) -> None:
 
     # Assert
     assert not records
+
 
 def test_iter_salesmen_skips_fully_empty_rows(salesmen_workbook) -> None:
     """
@@ -82,6 +85,7 @@ def test_iter_salesmen_skips_fully_empty_rows(salesmen_workbook) -> None:
     assert len(records) == 1
     assert records[0].salesman_id == "S-001"
 
+
 def test_iter_salesmen_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
     GIVEN a workbook without a Salesmen sheet
@@ -89,11 +93,14 @@ def test_iter_salesmen_raises_key_error_for_missing_sheet(make_workbook) -> None
     THEN it raises KeyError
     """
     # Arrange
-    workbook = make_workbook("Products", ["ProductID", "ProductName", "SellPrice", "IsActive"])
+    workbook = make_workbook(
+        "Products", ["ProductID", "ProductName", "SellPrice", "IsActive"]
+    )
 
     # Act / Assert
     with pytest.raises(KeyError):
         list(salesmen.iter_salesmen(workbook))
+
 
 def test_append_salesman_increases_row_count_by_one(salesmen_workbook) -> None:
     """
@@ -112,6 +119,7 @@ def test_append_salesman_increases_row_count_by_one(salesmen_workbook) -> None:
     # Assert
     assert sheet.max_row == before_count + 1
 
+
 def test_append_salesman_stores_correct_values(salesmen_workbook) -> None:
     """
     GIVEN a salesman record
@@ -123,10 +131,13 @@ def test_append_salesman_stores_correct_values(salesmen_workbook) -> None:
 
     # Act
     salesmen.append_salesman(salesmen_workbook, record)
-    last_row = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[-1]
+    last_row = list(
+        salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True)
+    )[-1]
 
     # Assert
     assert last_row == ("S-001", "Alice", True)
+
 
 def test_append_salesman_column_ordering(salesmen_workbook) -> None:
     """
@@ -135,14 +146,19 @@ def test_append_salesman_column_ordering(salesmen_workbook) -> None:
     THEN values are written in SalesmanID SalesmanName IsActive order
     """
     # Arrange
-    record = salesmen.SalesmanRow(salesman_id="S-010", salesman_name="Carla", is_active=False)
+    record = salesmen.SalesmanRow(
+        salesman_id="S-010", salesman_name="Carla", is_active=False
+    )
 
     # Act
     salesmen.append_salesman(salesmen_workbook, record)
-    last_row = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[-1]
+    last_row = list(
+        salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True)
+    )[-1]
 
     # Assert
     assert last_row == ("S-010", "Carla", False)
+
 
 def test_append_salesman_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
@@ -151,11 +167,14 @@ def test_append_salesman_raises_key_error_for_missing_sheet(make_workbook) -> No
     THEN it raises KeyError
     """
     # Arrange
-    workbook = make_workbook("Products", ["ProductID", "ProductName", "SellPrice", "IsActive"])
+    workbook = make_workbook(
+        "Products", ["ProductID", "ProductName", "SellPrice", "IsActive"]
+    )
 
     # Act / Assert
     with pytest.raises(KeyError):
         salesmen.append_salesman(workbook, _sample_salesman())
+
 
 def test_update_salesman_updates_single_field(salesmen_workbook) -> None:
     """
@@ -177,7 +196,10 @@ def test_update_salesman_updates_single_field(salesmen_workbook) -> None:
     # Assert
     assert row == ("S-001", "Alicia", True)
 
-def test_update_salesman_updates_multiple_fields_simultaneously(salesmen_workbook) -> None:
+
+def test_update_salesman_updates_multiple_fields_simultaneously(
+    salesmen_workbook,
+) -> None:
     """
     GIVEN an existing salesman row
     WHEN update_salesman is called with multiple fields
@@ -196,6 +218,7 @@ def test_update_salesman_updates_multiple_fields_simultaneously(salesmen_workboo
 
     # Assert
     assert row == ("S-001", "Alicia", False)
+
 
 def test_update_salesman_leaves_other_fields_unchanged(salesmen_workbook) -> None:
     """
@@ -218,7 +241,10 @@ def test_update_salesman_leaves_other_fields_unchanged(salesmen_workbook) -> Non
     assert row[0] == "S-001"
     assert row[2] is True
 
-def test_update_salesman_raises_key_error_for_missing_salesman_id(salesmen_workbook) -> None:
+
+def test_update_salesman_raises_key_error_for_missing_salesman_id(
+    salesmen_workbook,
+) -> None:
     """
     GIVEN a missing salesman id
     WHEN update_salesman is called
@@ -235,7 +261,10 @@ def test_update_salesman_raises_key_error_for_missing_salesman_id(salesmen_workb
             field_values={"SalesmanName": "Ghost"},
         )
 
-def test_update_salesman_raises_key_error_for_unknown_column_name(salesmen_workbook) -> None:
+
+def test_update_salesman_raises_key_error_for_unknown_column_name(
+    salesmen_workbook,
+) -> None:
     """
     GIVEN an unknown field name
     WHEN update_salesman is called
@@ -252,6 +281,7 @@ def test_update_salesman_raises_key_error_for_unknown_column_name(salesmen_workb
             field_values={"BadColumn": "x"},
         )
 
+
 def test_update_salesman_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
     GIVEN a workbook without a Salesmen sheet
@@ -259,11 +289,16 @@ def test_update_salesman_raises_key_error_for_missing_sheet(make_workbook) -> No
     THEN it raises KeyError
     """
     # Arrange
-    workbook = make_workbook("Products", ["ProductID", "ProductName", "SellPrice", "IsActive"])
+    workbook = make_workbook(
+        "Products", ["ProductID", "ProductName", "SellPrice", "IsActive"]
+    )
 
     # Act / Assert
     with pytest.raises(KeyError):
-        salesmen.update_salesman(workbook, "S-001", field_values={"SalesmanName": "Alicia"})
+        salesmen.update_salesman(
+            workbook, "S-001", field_values={"SalesmanName": "Alicia"}
+        )
+
 
 def test_update_salesman_empty_field_values_is_no_op(salesmen_workbook) -> None:
     """
@@ -273,14 +308,19 @@ def test_update_salesman_empty_field_values_is_no_op(salesmen_workbook) -> None:
     """
     # Arrange
     salesmen_workbook["Salesmen"].append(["S-001", "Alice", True])
-    before = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[0]
+    before = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[
+        0
+    ]
 
     # Act
     salesmen.update_salesman(salesmen_workbook, "S-001", field_values={})
-    after = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[0]
+    after = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[
+        0
+    ]
 
     # Assert
     assert after == before
+
 
 def test_serialize_salesman_returns_correct_column_order() -> None:
     """
@@ -289,13 +329,16 @@ def test_serialize_salesman_returns_correct_column_order() -> None:
     THEN values are returned in canonical column order
     """
     # Arrange
-    record = salesmen.SalesmanRow(salesman_id="S-001", salesman_name="Alice", is_active=False)
+    record = salesmen.SalesmanRow(
+        salesman_id="S-001", salesman_name="Alice", is_active=False
+    )
 
     # Act
     serialized = salesmen._serialize_salesman(record)
 
     # Assert
     assert serialized == ["S-001", "Alice", False]
+
 
 def test_deserialize_salesman_returns_salesman_row_instance() -> None:
     """
@@ -311,6 +354,7 @@ def test_deserialize_salesman_returns_salesman_row_instance() -> None:
 
     # Assert
     assert isinstance(result, salesmen.SalesmanRow)
+
 
 @pytest.mark.parametrize(
     "raw_row, expected_salesman_id, expected_salesman_name",
@@ -340,6 +384,7 @@ def test_deserialize_salesman_coerces_text_fields_to_str(
     assert isinstance(result.salesman_id, str)
     assert isinstance(result.salesman_name, str)
 
+
 def test_deserialize_salesman_coerces_is_active_to_bool() -> None:
     """
     GIVEN a raw row with IsActive value
@@ -359,6 +404,7 @@ def test_deserialize_salesman_coerces_is_active_to_bool() -> None:
     assert result_false.is_active is False
     assert isinstance(result_true.is_active, bool)
     assert isinstance(result_false.is_active, bool)
+
 
 @pytest.mark.parametrize("raw_row", [["S-001"], ["S-001", "Alice"]])
 def test_deserialize_salesman_raises_index_error_for_short_row(raw_row) -> None:

@@ -64,8 +64,7 @@ def configure_subcommands(
         Mapping[str, CommandSpec]: Immutable view mapping command names to
             their registered specifications.
     """
-    subparsers = parser.add_subparsers(
-        dest="command", required=False, title="commands")
+    subparsers = parser.add_subparsers(dest="command", required=False, title="commands")
     discovered_specs = discover_command_specs()
 
     # Register the discovered specs
@@ -98,8 +97,7 @@ def discover_command_specs() -> t.Tuple[command_spec.CommandSpec, ...]:
     package_name = "caad_erp.cli.commands"
     package = importlib.import_module(package_name)
     if not hasattr(package, "__path__"):
-        raise ValueError(
-            f"Command package does not define __path__: {package_name}")
+        raise ValueError(f"Command package does not define __path__: {package_name}")
 
     specs: t.List[command_spec.CommandSpec] = []
     for module_info in pkgutil.iter_modules(package.__path__):

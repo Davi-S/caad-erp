@@ -17,8 +17,7 @@ def _make_workbook() -> Workbook:
     wb.remove(default)
 
     products_sheet = wb.create_sheet(constants.SheetName.PRODUCTS.value)
-    products_sheet.append(
-        ["ProductID", "ProductName", "SellPrice", "IsActive"])
+    products_sheet.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
 
     salesmen_sheet = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen_sheet.append(["SalesmanID", "SalesmanName", "IsActive"])
@@ -64,7 +63,9 @@ def _seed_product(workbook: Workbook, product_id: str, is_active: bool = True) -
     )
 
 
-def _seed_salesman(workbook: Workbook, salesman_id: str, is_active: bool = True) -> None:
+def _seed_salesman(
+    workbook: Workbook, salesman_id: str, is_active: bool = True
+) -> None:
     dal.append_salesman(
         workbook,
         dal.SalesmanRow(
@@ -130,7 +131,9 @@ def test_ensure_transactions_cache_populates_missing_cache() -> None:
 
     # Assert
     assert len(bucket["all"]) == 1
-    assert bucket["by_id"]["T1"].transaction_type == constants.TransactionType.SALE.value
+    assert (
+        bucket["by_id"]["T1"].transaction_type == constants.TransactionType.SALE.value
+    )
 
 
 def test_ensure_transactions_cache_reuses_existing_cache() -> None:
@@ -182,8 +185,7 @@ def test_generate_transaction_id_uses_expected_timestamp_format() -> None:
     THEN identifier format is YYYYMMDDHHMMSSffffff
     """
     # Arrange
-    when = datetime.datetime(2026, 3, 15, 12, 34, 56,
-                             123456, tzinfo=datetime.UTC)
+    when = datetime.datetime(2026, 3, 15, 12, 34, 56, 123456, tzinfo=datetime.UTC)
 
     # Act
     transaction_id = transactions._generate_transaction_id(when)
@@ -201,8 +203,7 @@ def test_generate_transaction_id_is_lexicographically_sortable() -> None:
     """
     # Arrange
     first_dt = datetime.datetime(2026, 3, 15, 10, 0, 0, 1, tzinfo=datetime.UTC)
-    second_dt = datetime.datetime(
-        2026, 3, 15, 10, 0, 0, 2, tzinfo=datetime.UTC)
+    second_dt = datetime.datetime(2026, 3, 15, 10, 0, 0, 2, tzinfo=datetime.UTC)
 
     # Act
     first_id = transactions._generate_transaction_id(first_dt)
@@ -492,7 +493,8 @@ def test_build_sale_transaction_applies_expected_field_mapping() -> None:
 
     # Act
     row = transactions._build_sale_transaction(
-        command, transaction_id="TX1", timestamp=ts)
+        command, transaction_id="TX1", timestamp=ts
+    )
 
     # Assert
     assert row.transaction_id == "TX1"
@@ -693,9 +695,11 @@ def test_build_restock_transaction_enforces_negative_cost_sign() -> None:
 
     # Act
     positive_row = transactions._build_restock_transaction(
-        positive, transaction_id="A", timestamp=ts)
+        positive, transaction_id="A", timestamp=ts
+    )
     negative_row = transactions._build_restock_transaction(
-        negative, transaction_id="B", timestamp=ts)
+        negative, transaction_id="B", timestamp=ts
+    )
 
     # Assert
     assert positive_row.total_cost == -400
@@ -1273,8 +1277,7 @@ def test_record_void_appends_reversal_and_invalidates_cache() -> None:
     # Act
     reversal = transactions.record_void(
         context,
-        transactions.VoidCommand(
-            linked_transaction_id="SALE1", notes="wrong sale"),
+        transactions.VoidCommand(linked_transaction_id="SALE1", notes="wrong sale"),
     )
 
     # Assert
@@ -1374,8 +1377,10 @@ def test_build_void_transaction_negates_numeric_fields_and_links_original_id() -
 
 @pytest.mark.parametrize(
     "ineligible_type",
-    [constants.TransactionType.VOID.value,
-        constants.TransactionType.CREDIT_PAYMENT.value],
+    [
+        constants.TransactionType.VOID.value,
+        constants.TransactionType.CREDIT_PAYMENT.value,
+    ],
 )
 def test_validate_void_target_rejects_ineligible_types(ineligible_type) -> None:
     """

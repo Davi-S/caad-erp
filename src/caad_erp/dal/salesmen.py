@@ -69,7 +69,9 @@ def append_salesman(workbook: Workbook, record: SalesmanRow) -> None:
     sheet.append(_serialize_salesman(record))
 
 
-def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[str, t.Any]) -> None:
+def update_salesman(
+    workbook: Workbook, salesman_id: str, *, field_values: dict[str, t.Any]
+) -> None:
     """Update selected columns for an existing salesman.
 
     The function resolves the row by ``SalesmanID``, checks that each requested
@@ -87,12 +89,7 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
     """
 
     sheet_name = SALESMEN_SHEET
-    row_index = dal_workbook.locate_row(
-        workbook,
-        sheet_name,
-        "SalesmanID",
-        salesman_id
-    )
+    row_index = dal_workbook.locate_row(workbook, sheet_name, "SalesmanID", salesman_id)
     if row_index is None:
         logger.warning("Salesman '%s' not found during update", salesman_id)
         raise KeyError(f"Salesman not found: {salesman_id}")
@@ -107,7 +104,9 @@ def update_salesman(workbook: Workbook, salesman_id: str, *, field_values: dict[
             raise KeyError(f"Unknown salesman field: {field}")
         col = header_map[field]
         sheet.cell(row=row_index, column=col, value=value)
-    logger.debug("Updated salesman '%s' fields: %s", salesman_id, list(field_values.keys()))
+    logger.debug(
+        "Updated salesman '%s' fields: %s", salesman_id, list(field_values.keys())
+    )
 
 
 def _serialize_salesman(record: SalesmanRow) -> list[object]:
@@ -140,4 +139,8 @@ def _deserialize_salesman(raw_row: t.Sequence[object]) -> SalesmanRow:
     salesman_id = raw_row[0]
     salesman_name = raw_row[1]
     is_active = raw_row[2]
-    return SalesmanRow(salesman_id=str(salesman_id), salesman_name=str(salesman_name), is_active=bool(is_active))
+    return SalesmanRow(
+        salesman_id=str(salesman_id),
+        salesman_name=str(salesman_name),
+        is_active=bool(is_active),
+    )

@@ -31,16 +31,22 @@ def register_pay_debt_command() -> command_spec.CommandSpec:
         parser.add_argument("-r", "--total-revenue", required=True)
         parser.add_argument("-i", "--salesman-id", required=True)
         parser.add_argument(
-            "-p", "--payment-type",
-            choices=[member.value for member in constants.PaymentType if member !=
-                     constants.PaymentType.ON_CREDIT],
+            "-p",
+            "--payment-type",
+            choices=[
+                member.value
+                for member in constants.PaymentType
+                if member != constants.PaymentType.ON_CREDIT
+            ],
             required=True,
         )
         parser.add_argument("-n", "--notes", dest="notes", default=None)
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_pay_debt)
+    return command_spec.CommandSpec(
+        name=name, help_text=help_text, register=_registrar, execute=_run_pay_debt
+    )
 
 
 def _translate_pay_debt(args: argparse.Namespace) -> bll.CreditPaymentCommand:

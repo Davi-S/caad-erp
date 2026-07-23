@@ -65,7 +65,9 @@ def save_workbook(workbook: Workbook, destination: Path) -> None:
     workbook.save(dest)
 
 
-def locate_row(workbook: Workbook, sheet_name: str, key_column: str, key_value: str) -> t.Optional[int]:
+def locate_row(
+    workbook: Workbook, sheet_name: str, key_column: str, key_value: str
+) -> t.Optional[int]:
     """Find a row by matching a key value within the specified worksheet.
 
     The function constructs a mapping from header titles to column indices,
@@ -93,13 +95,14 @@ def locate_row(workbook: Workbook, sheet_name: str, key_column: str, key_value: 
     header_cells = list(sheet[1])
     header_map = {cell.value: idx + 1 for idx, cell in enumerate(header_cells)}
     if key_column not in header_map:
-        logger.error("Column '%s' not found in worksheet '%s'",
-                     key_column, sheet_name)
+        logger.error("Column '%s' not found in worksheet '%s'", key_column, sheet_name)
         raise KeyError(f"Unknown column: {key_column}")
 
     key_col_index = header_map[key_column]
 
-    for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+    for row_idx, row in enumerate(
+        sheet.iter_rows(min_row=2, values_only=True), start=2
+    ):
         cell_value = row[key_col_index - 1]
         if cell_value == key_value:
             return row_idx

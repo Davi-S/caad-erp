@@ -82,12 +82,20 @@ def test_exception_handler_registry_registers_handlers_by_specificity_order() ->
             calls.append(exception_class.__name__)
 
     specs = [
-        errors.ExceptionHandlerSpec(Exception, 500, errors.ErrorResponseBuilder.catch_all),
-        errors.ExceptionHandlerSpec(exceptions.BusinessRuleViolation, 409, errors.ErrorResponseBuilder.default),
-        errors.ExceptionHandlerSpec(exceptions.MissingReferenceError, 404, errors.ErrorResponseBuilder.default),
+        errors.ExceptionHandlerSpec(
+            Exception, 500, errors.ErrorResponseBuilder.catch_all
+        ),
+        errors.ExceptionHandlerSpec(
+            exceptions.BusinessRuleViolation, 409, errors.ErrorResponseBuilder.default
+        ),
+        errors.ExceptionHandlerSpec(
+            exceptions.MissingReferenceError, 404, errors.ErrorResponseBuilder.default
+        ),
     ]
 
-    registry = errors.ExceptionHandlerRegistry(specs, logger_instance=logging.getLogger("t"))
+    registry = errors.ExceptionHandlerRegistry(
+        specs, logger_instance=logging.getLogger("t")
+    )
     registry.register(FakeApp())
 
     assert calls == ["MissingReferenceError", "BusinessRuleViolation", "Exception"]
@@ -118,7 +126,9 @@ def test_register_handlers_builds_registry_and_registers_all_defaults() -> None:
         "invalid_status_code_high",
     ],
 )
-def test_exception_handler_registry_rejects_invalid_spec_configurations(invalid_spec_case: str) -> None:
+def test_exception_handler_registry_rejects_invalid_spec_configurations(
+    invalid_spec_case: str,
+) -> None:
     """
     GIVEN malformed exception handler specifications
     WHEN ExceptionHandlerRegistry is initialized
@@ -174,7 +184,9 @@ def test_validation_error_builder_handles_empty_errors_list_gracefully() -> None
 
 
 @pytest.mark.parametrize("log_level", [10, 20, 30, 40, 50])
-def test_built_exception_handler_logs_using_specified_log_level(log_level: int, caplog: pytest.LogCaptureFixture) -> None:
+def test_built_exception_handler_logs_using_specified_log_level(
+    log_level: int, caplog: pytest.LogCaptureFixture
+) -> None:
     """
     GIVEN an ExceptionHandlerSpec with a specific log level
     WHEN generated handler processes an exception
@@ -190,7 +202,12 @@ def test_built_exception_handler_logs_using_specified_log_level(log_level: int, 
         log_level=log_level,
     )
     registry = errors.ExceptionHandlerRegistry(
-        [spec, errors.ExceptionHandlerSpec(Exception, 500, errors.ErrorResponseBuilder.catch_all)],
+        [
+            spec,
+            errors.ExceptionHandlerSpec(
+                Exception, 500, errors.ErrorResponseBuilder.catch_all
+            ),
+        ],
         logger_instance=logger,
     )
     handler = registry._build_handler(spec)

@@ -4,74 +4,96 @@ from caad_erp import constants
 
 
 def _seed_report_data(client: TestClient) -> None:
-    assert client.post(
-        "/products",
-        json={
-            "product_id": "RP100",
-            "product_name": "Report Product A",
-            "sell_price": 500,
-            "is_active": True,
-        },
-    ).status_code == 201
-    assert client.post(
-        "/products",
-        json={
-            "product_id": "RP200",
-            "product_name": "Report Product B",
-            "sell_price": 700,
-            "is_active": True,
-        },
-    ).status_code == 201
-    assert client.post(
-        "/salesmen",
-        json={
-            "salesman_id": "RS100",
-            "salesman_name": "Report Salesman",
-            "is_active": True,
-        },
-    ).status_code == 201
+    assert (
+        client.post(
+            "/products",
+            json={
+                "product_id": "RP100",
+                "product_name": "Report Product A",
+                "sell_price": 500,
+                "is_active": True,
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        client.post(
+            "/products",
+            json={
+                "product_id": "RP200",
+                "product_name": "Report Product B",
+                "sell_price": 700,
+                "is_active": True,
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        client.post(
+            "/salesmen",
+            json={
+                "salesman_id": "RS100",
+                "salesman_name": "Report Salesman",
+                "is_active": True,
+            },
+        ).status_code
+        == 201
+    )
 
-    assert client.post(
-        "/transactions/restock",
-        json={
-            "product_id": "RP100",
-            "salesman_id": "RS100",
-            "quantity": 5,
-            "total_cost": 1000,
-        },
-    ).status_code == 201
-    assert client.post(
-        "/transactions/restock",
-        json={
-            "product_id": "RP200",
-            "salesman_id": "RS100",
-            "quantity": 3,
-            "total_cost": 600,
-        },
-    ).status_code == 201
-    assert client.post(
-        "/transactions/sale",
-        json={
-            "product_id": "RP100",
-            "salesman_id": "RS100",
-            "quantity": 2,
-            "total_revenue": 1000,
-            "payment_type": constants.PaymentType.CASH.value,
-        },
-    ).status_code == 201
-    assert client.post(
-        "/transactions/sale",
-        json={
-            "product_id": "RP200",
-            "salesman_id": "RS100",
-            "quantity": 1,
-            "total_revenue": 700,
-            "payment_type": constants.PaymentType.ON_CREDIT.value,
-        },
-    ).status_code == 201
+    assert (
+        client.post(
+            "/transactions/restock",
+            json={
+                "product_id": "RP100",
+                "salesman_id": "RS100",
+                "quantity": 5,
+                "total_cost": 1000,
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        client.post(
+            "/transactions/restock",
+            json={
+                "product_id": "RP200",
+                "salesman_id": "RS100",
+                "quantity": 3,
+                "total_cost": 600,
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        client.post(
+            "/transactions/sale",
+            json={
+                "product_id": "RP100",
+                "salesman_id": "RS100",
+                "quantity": 2,
+                "total_revenue": 1000,
+                "payment_type": constants.PaymentType.CASH.value,
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        client.post(
+            "/transactions/sale",
+            json={
+                "product_id": "RP200",
+                "salesman_id": "RS100",
+                "quantity": 1,
+                "total_revenue": 700,
+                "payment_type": constants.PaymentType.ON_CREDIT.value,
+            },
+        ).status_code
+        == 201
+    )
 
 
 # happy path
+
 
 def test_report_endpoints_return_200_with_expected_response_shapes(
     api_client: TestClient,
@@ -154,6 +176,7 @@ def test_log_report_includes_transactions_with_full_fields(
 
 # sad path
 
+
 def test_reports_endpoints_remain_valid_with_empty_dataset(
     api_client: TestClient,
 ) -> None:
@@ -181,6 +204,7 @@ def test_reports_endpoints_remain_valid_with_empty_dataset(
 
 
 # edge path
+
 
 def test_report_endpoints_return_503_when_runtime_context_is_unavailable(
     api_client_without_runtime: TestClient,

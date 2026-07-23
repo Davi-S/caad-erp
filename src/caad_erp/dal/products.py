@@ -72,7 +72,9 @@ def append_product(workbook: Workbook, record: ProductRow) -> None:
     sheet.append(_serialize_product(record))
 
 
-def update_product(workbook: Workbook, product_id: str, *, field_values: dict[str, t.Any]) -> None:
+def update_product(
+    workbook: Workbook, product_id: str, *, field_values: dict[str, t.Any]
+) -> None:
     """Update selected columns for an existing product.
 
     The function locates the row whose ``ProductID`` matches ``product_id``,
@@ -91,10 +93,7 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
     """
 
     row_index = dal_workbook.locate_row(
-        workbook,
-        PRODUCTS_SHEET,
-        "ProductID",
-        product_id
+        workbook, PRODUCTS_SHEET, "ProductID", product_id
     )
     if row_index is None:
         logger.warning("Product '%s' not found during update", product_id)
@@ -110,7 +109,9 @@ def update_product(workbook: Workbook, product_id: str, *, field_values: dict[st
             raise KeyError(f"Unknown product field: {field}")
         col = header_map[field]
         sheet.cell(row=row_index, column=col, value=value)
-    logger.debug("Updated product '%s' fields: %s", product_id, list(field_values.keys()))
+    logger.debug(
+        "Updated product '%s' fields: %s", product_id, list(field_values.keys())
+    )
 
 
 def _serialize_product(record: ProductRow) -> list[object]:
@@ -151,5 +152,5 @@ def _deserialize_product(raw_row: t.Sequence[object]) -> ProductRow:
         product_id=str(product_id),
         product_name=str(product_name),
         sell_price=sell_price,
-        is_active=bool(is_active)
+        is_active=bool(is_active),
     )

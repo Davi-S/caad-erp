@@ -29,6 +29,7 @@ def mutating_endpoint(handler: t.Callable[P, R]) -> t.Callable[P, R]:
     """
 
     if inspect.iscoroutinefunction(handler):
+
         @functools.wraps(handler)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             result = await handler(*args, **kwargs)

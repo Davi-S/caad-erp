@@ -23,19 +23,21 @@ def _make_data_and_config(tmp_path: Path) -> tuple[Path, Path]:
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Default", True])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     wb.save(data_file)
 
     config_path = tmp_path / "config.ini"
@@ -268,7 +270,8 @@ def test_dispatch_command_executes_selected_spec() -> None:
 
     # Act
     exit_code = parser.dispatch_command(
-        context=object(), args=args, command_table=table)
+        context=object(), args=args, command_table=table
+    )
 
     # Assert
     assert exit_code == 7
@@ -432,7 +435,9 @@ def test_main_runs_repl_when_command_is_repl(tmp_path: Path) -> None:
     assert exit_code == 0
 
 
-def test_main_dispatches_command_and_persists_on_successful_mutation(tmp_path: Path) -> None:
+def test_main_dispatches_command_and_persists_on_successful_mutation(
+    tmp_path: Path,
+) -> None:
     """
     GIVEN parsed mutating command returning zero exit status
     WHEN main is called
@@ -458,8 +463,7 @@ def test_main_dispatches_command_and_persists_on_successful_mutation(tmp_path: P
     assert exit_code == 0
     reloaded = openpyxl.load_workbook(data_file)
     salesmen_sheet = reloaded[constants.SheetName.SALESMEN.value]
-    values = [row[0]
-              for row in salesmen_sheet.iter_rows(min_row=2, values_only=True)]
+    values = [row[0] for row in salesmen_sheet.iter_rows(min_row=2, values_only=True)]
     assert "S002" in values
 
 

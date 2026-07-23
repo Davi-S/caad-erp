@@ -20,19 +20,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     dal.append_transaction(
         wb,
         dal.TransactionRow(
@@ -72,7 +74,9 @@ def test_register_pay_debt_command_returns_command_spec() -> None:
     assert spec.is_mutating is True
 
 
-def test_register_pay_debt_registrar_configures_required_arguments_and_choices() -> None:
+def test_register_pay_debt_registrar_configures_required_arguments_and_choices() -> (
+    None
+):
     """
     GIVEN subparser factory instance
     WHEN pay-debt registrar is executed
@@ -85,17 +89,19 @@ def test_register_pay_debt_registrar_configures_required_arguments_and_choices()
     spec.register(subparsers)
 
     # Act
-    args = parser.parse_args([
-        "pay-debt",
-        "--linked-transaction-id",
-        "SALE1",
-        "--total-revenue",
-        "3.00",
-        "--salesman-id",
-        "S001",
-        "--payment-type",
-        constants.PaymentType.CASH.value,
-    ])
+    args = parser.parse_args(
+        [
+            "pay-debt",
+            "--linked-transaction-id",
+            "SALE1",
+            "--total-revenue",
+            "3.00",
+            "--salesman-id",
+            "S001",
+            "--payment-type",
+            constants.PaymentType.CASH.value,
+        ]
+    )
 
     # Assert
     assert args.command == "pay-debt"
@@ -127,7 +133,9 @@ def test_translate_pay_debt_maps_args_to_credit_payment_command() -> None:
 
 
 @pytest.mark.parametrize("invalid_payment_type", ["", "INVALID", "Card"])
-def test_translate_pay_debt_raises_for_invalid_payment_type(invalid_payment_type) -> None:
+def test_translate_pay_debt_raises_for_invalid_payment_type(
+    invalid_payment_type,
+) -> None:
     """
     GIVEN parsed pay-debt args with invalid payment-type value
     WHEN _translate_pay_debt is called

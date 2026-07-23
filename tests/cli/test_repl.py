@@ -100,14 +100,17 @@ def test_run_repl_ignores_blank_lines(tmp_path: Path) -> None:
     context = _make_context(tmp_path / "data.xlsx")
 
     # Act
-    _run_with_stdin("\n   \n x\nexit\n", lambda: repl.run_repl(
-        context, parser_obj, table))
+    _run_with_stdin(
+        "\n   \n x\nexit\n", lambda: repl.run_repl(context, parser_obj, table)
+    )
 
     # Assert
     assert calls == ["ran"]
 
 
-def test_run_repl_handles_shlex_split_errors_and_continues(tmp_path: Path, capsys) -> None:
+def test_run_repl_handles_shlex_split_errors_and_continues(
+    tmp_path: Path, capsys
+) -> None:
     """
     GIVEN malformed shell-like input causing shlex parsing failure
     WHEN run_repl processes the line
@@ -118,8 +121,9 @@ def test_run_repl_handles_shlex_split_errors_and_continues(tmp_path: Path, capsy
     parser_obj = argparse.ArgumentParser()
 
     # Act
-    _run_with_stdin("\"unterminated\nexit\n",
-                    lambda: repl.run_repl(context, parser_obj, {}))
+    _run_with_stdin(
+        '"unterminated\nexit\n', lambda: repl.run_repl(context, parser_obj, {})
+    )
 
     # Assert
     assert "error:" in capsys.readouterr().out
@@ -140,13 +144,16 @@ def test_run_repl_absorbs_argparse_system_exit_and_continues(tmp_path: Path) -> 
 
     # Act
     exit_code = _run_with_stdin(
-        "x\nexit\n", lambda: repl.run_repl(context, parser_obj, {}))
+        "x\nexit\n", lambda: repl.run_repl(context, parser_obj, {})
+    )
 
     # Assert
     assert exit_code == 0
 
 
-def test_run_repl_rejects_unknown_or_repl_command_inside_session(tmp_path: Path, capsys) -> None:
+def test_run_repl_rejects_unknown_or_repl_command_inside_session(
+    tmp_path: Path, capsys
+) -> None:
     """
     GIVEN parsed arguments whose command is missing or unavailable in command table
     WHEN run_repl processes the command
@@ -159,8 +166,7 @@ def test_run_repl_rejects_unknown_or_repl_command_inside_session(tmp_path: Path,
     context = _make_context(tmp_path / "data.xlsx")
 
     # Act
-    _run_with_stdin("repl\nexit\n", lambda: repl.run_repl(
-        context, parser_obj, {}))
+    _run_with_stdin("repl\nexit\n", lambda: repl.run_repl(context, parser_obj, {}))
 
     # Assert
     assert "not available inside the REPL" in capsys.readouterr().out
@@ -194,19 +200,21 @@ def test_run_repl_executes_known_command_spec(tmp_path: Path) -> None:
     context = _make_context(tmp_path / "data.xlsx")
 
     # Act
-    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(
-        context, parser_obj, table))
+    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(context, parser_obj, table))
 
     # Assert
     assert calls == ["x"]
 
 
-def test_run_repl_handles_command_execution_exceptions_and_continues(tmp_path: Path, capsys) -> None:
+def test_run_repl_handles_command_execution_exceptions_and_continues(
+    tmp_path: Path, capsys
+) -> None:
     """
     GIVEN command execution raising an exception
     WHEN run_repl processes the command
     THEN error is printed and REPL loop continues
     """
+
     # Arrange
     def _execute(context, args):
         raise RuntimeError("boom")
@@ -226,8 +234,7 @@ def test_run_repl_handles_command_execution_exceptions_and_continues(tmp_path: P
     context = _make_context(tmp_path / "data.xlsx")
 
     # Act
-    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(
-        context, parser_obj, table))
+    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(context, parser_obj, table))
 
     # Assert
     assert "error: boom" in capsys.readouterr().out
@@ -261,8 +268,7 @@ def test_run_repl_persists_after_successful_mutating_command(tmp_path: Path) -> 
     context = _make_context(data_file)
 
     # Act
-    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(
-        context, parser_obj, table))
+    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(context, parser_obj, table))
 
     # Assert
     assert data_file.exists()
@@ -296,8 +302,7 @@ def test_run_repl_does_not_persist_for_non_mutating_command(tmp_path: Path) -> N
     context = _make_context(data_file)
 
     # Act
-    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(
-        context, parser_obj, table))
+    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(context, parser_obj, table))
 
     # Assert
     assert not data_file.exists()
@@ -330,14 +335,15 @@ def test_run_repl_does_not_persist_for_nonzero_exit_code(tmp_path: Path) -> None
     context = _make_context(data_file)
 
     # Act
-    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(
-        context, parser_obj, table))
+    _run_with_stdin("x\nexit\n", lambda: repl.run_repl(context, parser_obj, table))
 
     # Assert
     assert not data_file.exists()
 
 
-def test_run_repl_reports_persist_failures_without_crashing(tmp_path: Path, capsys) -> None:
+def test_run_repl_reports_persist_failures_without_crashing(
+    tmp_path: Path, capsys
+) -> None:
     """
     GIVEN successful mutating command followed by persistence failure
     WHEN run_repl attempts to persist
@@ -367,7 +373,8 @@ def test_run_repl_reports_persist_failures_without_crashing(tmp_path: Path, caps
 
     # Act
     exit_code = _run_with_stdin(
-        "x\nexit\n", lambda: repl.run_repl(context, parser_obj, table))
+        "x\nexit\n", lambda: repl.run_repl(context, parser_obj, table)
+    )
 
     # Assert
     assert exit_code == 0
