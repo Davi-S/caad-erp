@@ -212,8 +212,7 @@ class ExceptionHandlerRegistry:
         """Validate specs and register handlers sorted by type specificity."""
         for spec in sorted(
             self._specs,
-            key=lambda value: self._exception_specificity(
-                value.exception_class),
+            key=lambda value: self._exception_specificity(value.exception_class),
             reverse=True,
         ):
             app.add_exception_handler(spec.exception_class, self._build_handler(spec))

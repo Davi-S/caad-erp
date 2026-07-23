@@ -20,19 +20,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -69,17 +71,19 @@ def test_register_restock_registrar_configures_required_arguments() -> None:
     spec.register(subparsers)
 
     # Act
-    args = parser.parse_args([
-        "restock",
-        "--product-id",
-        "P001",
-        "--quantity",
-        "3",
-        "--total-cost",
-        "4.50",
-        "--salesman-id",
-        "S001",
-    ])
+    args = parser.parse_args(
+        [
+            "restock",
+            "--product-id",
+            "P001",
+            "--quantity",
+            "3",
+            "--total-cost",
+            "4.50",
+            "--salesman-id",
+            "S001",
+        ]
+    )
 
     # Assert
     assert args.command == "restock"

@@ -29,12 +29,18 @@ def register_add_salesman_command() -> command_spec.CommandSpec:
         parser = action.add_parser(name, help=help_text)
         parser.add_argument("-i", "--salesman-id", required=True)
         parser.add_argument("-n", "--salesman-name", required=True)
-        parser.add_argument("-x", "--inactive", action="store_true",
-                            help="Mark the salesman as inactive on creation.")
+        parser.add_argument(
+            "-x",
+            "--inactive",
+            action="store_true",
+            help="Mark the salesman as inactive on creation.",
+        )
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_add_salesman)
+    return command_spec.CommandSpec(
+        name=name, help_text=help_text, register=_registrar, execute=_run_add_salesman
+    )
 
 
 def _translate_add_salesman(args: argparse.Namespace) -> bll.SalesmanCommand:

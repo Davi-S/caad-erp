@@ -30,12 +30,18 @@ def register_add_product_command() -> command_spec.CommandSpec:
         parser.add_argument("-i", "--product-id", required=True)
         parser.add_argument("-n", "--product-name", required=True)
         parser.add_argument("-p", "--sell-price", required=True)
-        parser.add_argument("-x", "--inactive", action="store_true",
-                            help="Mark the product as inactive on creation.")
+        parser.add_argument(
+            "-x",
+            "--inactive",
+            action="store_true",
+            help="Mark the product as inactive on creation.",
+        )
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_add_product)
+    return command_spec.CommandSpec(
+        name=name, help_text=help_text, register=_registrar, execute=_run_add_product
+    )
 
 
 def _translate_add_product(args: argparse.Namespace) -> bll.ProductCommand:

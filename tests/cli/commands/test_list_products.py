@@ -79,6 +79,7 @@ def test_run_list_products_report_calls_bll_and_returns_zero(
     assert "P001" in output
     assert "P002" in output
 
+
 def test_run_list_products_report_reports_only_specific_product(
     tmp_path: Path, capsys
 ) -> None:

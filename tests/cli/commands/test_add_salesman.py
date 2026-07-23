@@ -18,19 +18,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -67,13 +69,15 @@ def test_register_add_salesman_registrar_configures_parser_arguments() -> None:
     spec.register(subparsers)
 
     # Act
-    args = parser.parse_args([
-        "add-salesman",
-        "--salesman-id",
-        "S001",
-        "--salesman-name",
-        "Ana",
-    ])
+    args = parser.parse_args(
+        [
+            "add-salesman",
+            "--salesman-id",
+            "S001",
+            "--salesman-name",
+            "Ana",
+        ]
+    )
 
     # Assert
     assert args.command == "add-salesman"
@@ -82,7 +86,9 @@ def test_register_add_salesman_registrar_configures_parser_arguments() -> None:
     assert args.inactive is False
 
 
-@pytest.mark.parametrize("inactive_flag, expected_is_active", [(False, True), (True, False)])
+@pytest.mark.parametrize(
+    "inactive_flag, expected_is_active", [(False, True), (True, False)]
+)
 def test_translate_add_salesman_maps_args_to_salesman_command(
     inactive_flag,
     expected_is_active,

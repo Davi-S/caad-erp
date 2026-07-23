@@ -182,7 +182,8 @@ def test_locate_row_returns_correct_row_index(
 
     # Act
     row_index = dal_workbook.locate_row(
-        products_workbook, "Products", "ProductID", lookup_key)
+        products_workbook, "Products", "ProductID", lookup_key
+    )
 
     # Assert
     assert row_index == expected_row_index
@@ -203,7 +204,8 @@ def test_locate_row_returns_none_when_value_not_found(
 
     # Act
     result = dal_workbook.locate_row(
-        products_workbook, "Products", "ProductID", missing_key)
+        products_workbook, "Products", "ProductID", missing_key
+    )
 
     # Assert
     assert result is None
@@ -223,11 +225,12 @@ def test_locate_row_raises_key_error_for_unknown_column(
 
     # Act / Assert
     with pytest.raises(KeyError, match="Unknown column"):
-        dal_workbook.locate_row(
-            products_workbook, "Products", unknown_column, "P-001")
+        dal_workbook.locate_row(products_workbook, "Products", unknown_column, "P-001")
 
 
-def test_locate_row_returns_first_match_when_duplicates_exist(products_workbook) -> None:
+def test_locate_row_returns_first_match_when_duplicates_exist(
+    products_workbook,
+) -> None:
     """
     GIVEN duplicate matching keys
     WHEN locate_row is called
@@ -240,7 +243,8 @@ def test_locate_row_returns_first_match_when_duplicates_exist(products_workbook)
 
     # Act
     row_index = dal_workbook.locate_row(
-        products_workbook, "Products", "ProductID", "P-001")
+        products_workbook, "Products", "ProductID", "P-001"
+    )
 
     # Assert
     assert row_index == 2
@@ -256,7 +260,8 @@ def test_locate_row_excludes_header_row_from_search(products_workbook) -> None:
 
     # Act
     row_index = dal_workbook.locate_row(
-        products_workbook, "Products", "ProductID", "ProductID")
+        products_workbook, "Products", "ProductID", "ProductID"
+    )
 
     # Assert
     assert row_index is None
@@ -272,7 +277,8 @@ def test_locate_row_returns_none_for_header_only_sheet(products_workbook) -> Non
 
     # Act
     row_index = dal_workbook.locate_row(
-        products_workbook, "Products", "ProductID", "P-001")
+        products_workbook, "Products", "ProductID", "P-001"
+    )
 
     # Assert
     assert row_index is None
@@ -292,5 +298,4 @@ def test_locate_row_raises_key_error_for_unknown_sheet(
 
     # Act / Assert
     with pytest.raises(KeyError):
-        dal_workbook.locate_row(
-            products_workbook, unknown_sheet, "ProductID", "P-001")
+        dal_workbook.locate_row(products_workbook, unknown_sheet, "ProductID", "P-001")

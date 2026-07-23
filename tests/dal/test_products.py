@@ -1,4 +1,3 @@
-
 import pytest
 
 from caad_erp.dal import products
@@ -34,6 +33,7 @@ def test_iter_products_yields_product_row_instances(products_workbook) -> None:
     assert len(records) == 1
     assert isinstance(records[0], products.ProductRow)
 
+
 def test_iter_products_yields_all_non_empty_rows(products_workbook) -> None:
     """
     GIVEN a products sheet with non-empty data rows
@@ -53,6 +53,7 @@ def test_iter_products_yields_all_non_empty_rows(products_workbook) -> None:
     # Assert
     assert [record.product_id for record in records] == ["P-001", "P-002", "P-003"]
 
+
 def test_iter_products_empty_sheet_yields_nothing(products_workbook) -> None:
     """
     GIVEN a header-only products sheet
@@ -66,6 +67,7 @@ def test_iter_products_empty_sheet_yields_nothing(products_workbook) -> None:
 
     # Assert
     assert not records
+
 
 def test_iter_products_skips_fully_empty_rows(products_workbook) -> None:
     """
@@ -86,6 +88,7 @@ def test_iter_products_skips_fully_empty_rows(products_workbook) -> None:
     assert len(records) == 1
     assert records[0].product_id == "P-001"
 
+
 def test_iter_products_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
     GIVEN a workbook without a Products sheet
@@ -98,6 +101,7 @@ def test_iter_products_raises_key_error_for_missing_sheet(make_workbook) -> None
     # Act / Assert
     with pytest.raises(KeyError):
         list(products.iter_products(workbook))
+
 
 def test_append_product_increases_row_count_by_one(products_workbook) -> None:
     """
@@ -116,6 +120,7 @@ def test_append_product_increases_row_count_by_one(products_workbook) -> None:
     # Assert
     assert sheet.max_row == before_count + 1
 
+
 def test_append_product_stores_correct_values(products_workbook) -> None:
     """
     GIVEN a product record
@@ -127,10 +132,13 @@ def test_append_product_stores_correct_values(products_workbook) -> None:
 
     # Act
     products.append_product(products_workbook, record)
-    last_row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[-1]
+    last_row = list(
+        products_workbook["Products"].iter_rows(min_row=2, values_only=True)
+    )[-1]
 
     # Assert
     assert last_row == ("P-001", "Soda", 550, True)
+
 
 def test_append_product_column_ordering(products_workbook) -> None:
     """
@@ -148,10 +156,13 @@ def test_append_product_column_ordering(products_workbook) -> None:
 
     # Act
     products.append_product(products_workbook, record)
-    last_row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[-1]
+    last_row = list(
+        products_workbook["Products"].iter_rows(min_row=2, values_only=True)
+    )[-1]
 
     # Assert
     assert last_row == ("P-010", "Energy Drink", 990, False)
+
 
 def test_append_product_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
@@ -165,6 +176,7 @@ def test_append_product_raises_key_error_for_missing_sheet(make_workbook) -> Non
     # Act / Assert
     with pytest.raises(KeyError):
         products.append_product(workbook, _sample_product())
+
 
 def test_update_product_updates_single_field(products_workbook) -> None:
     """
@@ -186,7 +198,10 @@ def test_update_product_updates_single_field(products_workbook) -> None:
     # Assert
     assert row == ("P-001", "Soda Zero", 550, True)
 
-def test_update_product_updates_multiple_fields_simultaneously(products_workbook) -> None:
+
+def test_update_product_updates_multiple_fields_simultaneously(
+    products_workbook,
+) -> None:
     """
     GIVEN an existing product row
     WHEN update_product is called with multiple fields
@@ -205,6 +220,7 @@ def test_update_product_updates_multiple_fields_simultaneously(products_workbook
 
     # Assert
     assert row == ("P-001", "Soda Zero", 625, True)
+
 
 def test_update_product_leaves_other_fields_unchanged(products_workbook) -> None:
     """
@@ -228,7 +244,10 @@ def test_update_product_leaves_other_fields_unchanged(products_workbook) -> None
     assert row[2] == 550
     assert row[3] is True
 
-def test_update_product_raises_key_error_for_missing_product_id(products_workbook) -> None:
+
+def test_update_product_raises_key_error_for_missing_product_id(
+    products_workbook,
+) -> None:
     """
     GIVEN a missing product id
     WHEN update_product is called
@@ -245,7 +264,10 @@ def test_update_product_raises_key_error_for_missing_product_id(products_workboo
             field_values={"ProductName": "Unknown"},
         )
 
-def test_update_product_raises_key_error_for_unknown_column_name(products_workbook) -> None:
+
+def test_update_product_raises_key_error_for_unknown_column_name(
+    products_workbook,
+) -> None:
     """
     GIVEN an unknown field name
     WHEN update_product is called
@@ -262,6 +284,7 @@ def test_update_product_raises_key_error_for_unknown_column_name(products_workbo
             field_values={"NotAColumn": "Value"},
         )
 
+
 def test_update_product_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
     GIVEN a workbook without a Products sheet
@@ -275,6 +298,7 @@ def test_update_product_raises_key_error_for_missing_sheet(make_workbook) -> Non
     with pytest.raises(KeyError):
         products.update_product(workbook, "P-001", field_values={"ProductName": "Soda"})
 
+
 def test_update_product_empty_field_values_is_no_op(products_workbook) -> None:
     """
     GIVEN an existing product row and empty field_values
@@ -283,14 +307,19 @@ def test_update_product_empty_field_values_is_no_op(products_workbook) -> None:
     """
     # Arrange
     products_workbook["Products"].append(["P-001", "Soda", 550, True])
-    before = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+    before = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[
+        0
+    ]
 
     # Act
     products.update_product(products_workbook, "P-001", field_values={})
-    after = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+    after = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[
+        0
+    ]
 
     # Assert
     assert after == before
+
 
 def test_serialize_product_returns_correct_column_order() -> None:
     """
@@ -328,6 +357,7 @@ def test_deserialize_product_returns_product_row_instance() -> None:
     # Assert
     assert isinstance(result, products.ProductRow)
 
+
 @pytest.mark.parametrize(
     "raw_row, expected_product_id, expected_product_name",
     [
@@ -356,6 +386,7 @@ def test_deserialize_product_coerces_text_fields_to_str(
     assert isinstance(result.product_id, str)
     assert isinstance(result.product_name, str)
 
+
 @pytest.mark.parametrize(
     "raw_row, expected_sell_price",
     [
@@ -381,6 +412,7 @@ def test_deserialize_product_normalizes_sell_price(
     assert result.sell_price == expected_sell_price
     assert isinstance(result.sell_price, int)
 
+
 def test_deserialize_product_coerces_is_active_to_bool() -> None:
     """
     GIVEN a raw row with IsActive value
@@ -401,7 +433,10 @@ def test_deserialize_product_coerces_is_active_to_bool() -> None:
     assert isinstance(result_true.is_active, bool)
     assert isinstance(result_false.is_active, bool)
 
-@pytest.mark.parametrize("raw_row", [["P-001"], ["P-001", "Soda"], ["P-001", "Soda", 100]])
+
+@pytest.mark.parametrize(
+    "raw_row", [["P-001"], ["P-001", "Soda"], ["P-001", "Soda", 100]]
+)
 def test_deserialize_product_raises_index_error_for_short_row(raw_row) -> None:
     """
     GIVEN a short raw row missing required columns
@@ -413,6 +448,7 @@ def test_deserialize_product_raises_index_error_for_short_row(raw_row) -> None:
     # Act / Assert
     with pytest.raises(IndexError):
         products._deserialize_product(raw_row)
+
 
 @pytest.mark.parametrize(
     "raw_row",
