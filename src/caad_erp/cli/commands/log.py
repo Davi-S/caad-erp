@@ -62,8 +62,8 @@ def _display_transaction_log(transactions: t.Iterable[object]) -> None:
     print("-" * len(header))
 
     for transaction in transactions:
-        product = getattr(transaction, "product_id", None) or "-"
-        salesman = getattr(transaction, "salesman_id", None) or "-"
+        product = getattr(transaction, "product_id", "")
+        salesman = getattr(transaction, "salesman_id", "")
         timestamp_raw = getattr(transaction, "timestamp_iso", "") or ""
         timestamp = timestamp_raw[:19]
         notes = getattr(transaction, "notes", None) or ""

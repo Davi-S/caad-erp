@@ -18,19 +18,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -89,7 +91,7 @@ def test_display_transaction_log_prints_empty_message_for_no_entries(capsys) -> 
 @pytest.mark.parametrize("notes_value", [None, "", "short", "x" * 60])
 def test_display_transaction_log_formats_rows_and_notes(notes_value, capsys) -> None:
     """
-    GIVEN transaction rows with optional product salesman timestamp and notes values
+    GIVEN transaction rows with optional notes values
     WHEN _display_transaction_log is called
     THEN row formatting applies defaults timestamp truncation and notes truncation rules
     """
@@ -98,8 +100,8 @@ def test_display_transaction_log_formats_rows_and_notes(notes_value, capsys) -> 
         transaction_id="T1",
         timestamp_iso="2026-03-15T10:00:00+00:00",
         transaction_type=constants.TransactionType.SALE.value,
-        product_id=None,
-        salesman_id=None,
+        product_id="P001",
+        salesman_id="S001",
         payment_type=constants.PaymentType.CASH.value,
         quantity_change=-1,
         total_revenue=250,
