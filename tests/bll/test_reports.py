@@ -15,8 +15,7 @@ def _make_workbook() -> Workbook:
     wb.remove(default)
 
     products_sheet = wb.create_sheet(constants.SheetName.PRODUCTS.value)
-    products_sheet.append(
-        ["ProductID", "ProductName", "SellPrice", "IsActive"])
+    products_sheet.append(["ProductID", "ProductName", "SellPrice", "IsActive"])
 
     salesmen_sheet = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen_sheet.append(["SalesmanID", "SalesmanName", "IsActive"])
@@ -228,8 +227,7 @@ def test_calculate_profit_summary_uses_additive_profit_formula() -> None:
     summary = reports.calculate_profit_summary(context)
 
     # Assert
-    assert summary["profit"] == summary["total_revenue"] + \
-        summary["total_cost"]
+    assert summary["profit"] == summary["total_revenue"] + summary["total_cost"]
     assert summary["profit"] == 3000
 
 
@@ -411,7 +409,9 @@ def test_calculate_outstanding_debts_ignores_non_sale_transactions() -> None:
 
 
 @pytest.mark.parametrize("expected_source", ["transaction", "price"])
-def test_calculate_outstanding_debts_prefers_expected_amount_source(expected_source) -> None:
+def test_calculate_outstanding_debts_prefers_expected_amount_source(
+    expected_source,
+) -> None:
     """
     GIVEN credit sales with possible expected amount from transaction and product price
     WHEN calculate_outstanding_debts is called
@@ -457,7 +457,9 @@ def test_calculate_outstanding_debts_prefers_expected_amount_source(expected_sou
     assert result["balances"][0].expected_amount == expected_amount
 
 
-def test_calculate_outstanding_debts_skips_fully_settled_or_nonpositive_balances() -> None:
+def test_calculate_outstanding_debts_skips_fully_settled_or_nonpositive_balances() -> (
+    None
+):
     """
     GIVEN credit sales whose payments satisfy or exceed expected amount
     WHEN calculate_outstanding_debts is called
@@ -497,7 +499,9 @@ def test_calculate_outstanding_debts_skips_fully_settled_or_nonpositive_balances
     assert result["total_outstanding"] == 0
 
 
-def test_calculate_outstanding_debts_skips_entries_with_nonpositive_expected_amount() -> None:
+def test_calculate_outstanding_debts_skips_entries_with_nonpositive_expected_amount() -> (
+    None
+):
     """
     GIVEN credit sales whose expected amount resolves to zero or below
     WHEN calculate_outstanding_debts is called
@@ -525,7 +529,9 @@ def test_calculate_outstanding_debts_skips_entries_with_nonpositive_expected_amo
     assert result["balances"] == []
 
 
-def test_calculate_outstanding_debts_handles_missing_product_reference_gracefully() -> None:
+def test_calculate_outstanding_debts_handles_missing_product_reference_gracefully() -> (
+    None
+):
     """
     GIVEN a credit sale whose product lookup raises MissingReferenceError
     WHEN calculate_outstanding_debts is called

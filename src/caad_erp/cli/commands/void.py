@@ -31,7 +31,9 @@ def register_void_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_void)
+    return command_spec.CommandSpec(
+        name=name, help_text=help_text, register=_registrar, execute=_run_void
+    )
 
 
 def _translate_void(

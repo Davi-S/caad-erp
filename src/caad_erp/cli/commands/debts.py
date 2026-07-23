@@ -50,7 +50,8 @@ def _display_debts_report(summary: t.Mapping[str, t.Any]) -> None:
     """
 
     balances_data = t.cast(
-        t.Iterable[bll.OutstandingDebt], summary.get("balances") or [])
+        t.Iterable[bll.OutstandingDebt], summary.get("balances") or []
+    )
     balances = list(balances_data)  # ensure deterministic iteration
     total_outstanding = summary["total_outstanding"]
 

@@ -9,7 +9,9 @@ from caad_erp.bll import runtime
 from caad_erp.settings import AppSettings
 
 
-def _make_context(data_file: Path, schema_version: str = constants.EXPECTED_SCHEMA_VERSION) -> runtime.RuntimeContext:
+def _make_context(
+    data_file: Path, schema_version: str = constants.EXPECTED_SCHEMA_VERSION
+) -> runtime.RuntimeContext:
     settings = AppSettings(
         data_file=data_file,
         lounge_name="Test Lounge",
@@ -19,7 +21,11 @@ def _make_context(data_file: Path, schema_version: str = constants.EXPECTED_SCHE
     return runtime.RuntimeContext(settings=settings, workbook=Workbook())
 
 
-def _write_config(config_path: Path, data_file: Path, schema_version: str = constants.EXPECTED_SCHEMA_VERSION) -> None:
+def _write_config(
+    config_path: Path,
+    data_file: Path,
+    schema_version: str = constants.EXPECTED_SCHEMA_VERSION,
+) -> None:
     config_path.write_text(
         "\n".join(
             [
@@ -136,7 +142,9 @@ def test_invalidate_cache_no_names_is_no_op(tmp_path: Path) -> None:
         ["products", "transactions"],
     ],
 )
-def test_invalidate_cache_removes_requested_buckets(tmp_path: Path, bucket_names) -> None:
+def test_invalidate_cache_removes_requested_buckets(
+    tmp_path: Path, bucket_names
+) -> None:
     """
     GIVEN a context cache with multiple buckets
     WHEN invalidate_cache is called with specific bucket names
@@ -235,7 +243,9 @@ def test_load_context_uses_discovery_when_config_path_is_none(tmp_path: Path) ->
     assert result.settings.data_file == workbook_path.resolve()
 
 
-@pytest.mark.parametrize("loader_exception", ["missing_config", "missing_workbook", "bad_config"])
+@pytest.mark.parametrize(
+    "loader_exception", ["missing_config", "missing_workbook", "bad_config"]
+)
 def test_load_context_propagates_settings_and_workbook_errors(
     tmp_path: Path,
     loader_exception: str,
@@ -256,8 +266,7 @@ def test_load_context_propagates_settings_and_workbook_errors(
             runtime.load_context(config_path=config_path)
     else:
         config_path = tmp_path / "config.ini"
-        config_path.write_text(
-            "[System]\nDataFile = data.xlsx\n", encoding="utf-8")
+        config_path.write_text("[System]\nDataFile = data.xlsx\n", encoding="utf-8")
         with pytest.raises(KeyError):
             runtime.load_context(config_path=config_path)
 
@@ -269,8 +278,9 @@ def test_ensure_schema_version_accepts_expected_version(tmp_path: Path) -> None:
     THEN no exception is raised
     """
     # Arrange
-    context = _make_context(tmp_path / "dummy.xlsx",
-                            schema_version=constants.EXPECTED_SCHEMA_VERSION)
+    context = _make_context(
+        tmp_path / "dummy.xlsx", schema_version=constants.EXPECTED_SCHEMA_VERSION
+    )
 
     # Act / Assert
     runtime.ensure_schema_version(context)

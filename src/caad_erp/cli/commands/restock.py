@@ -35,7 +35,9 @@ def register_restock_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_restock)
+    return command_spec.CommandSpec(
+        name=name, help_text=help_text, register=_registrar, execute=_run_restock
+    )
 
 
 def _translate_restock(args: argparse.Namespace) -> bll.RestockCommand:

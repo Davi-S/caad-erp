@@ -34,7 +34,9 @@ def register_write_off_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_write_off)
+    return command_spec.CommandSpec(
+        name=name, help_text=help_text, register=_registrar, execute=_run_write_off
+    )
 
 
 def _translate_write_off(args: argparse.Namespace) -> bll.WriteOffCommand:

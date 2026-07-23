@@ -1,4 +1,3 @@
-
 import pytest
 
 from caad_erp.dal import transactions
@@ -32,7 +31,9 @@ def _sample_transaction(
     )
 
 
-def test_iter_transactions_yields_transaction_row_instances(transactions_workbook) -> None:
+def test_iter_transactions_yields_transaction_row_instances(
+    transactions_workbook,
+) -> None:
     """
     GIVEN a transaction log sheet with populated rows
     WHEN iter_transactions is called
@@ -62,6 +63,7 @@ def test_iter_transactions_yields_transaction_row_instances(transactions_workboo
     assert len(records) == 1
     assert isinstance(records[0], transactions.TransactionRow)
 
+
 def test_iter_transactions_yields_all_non_empty_rows(transactions_workbook) -> None:
     """
     GIVEN a transaction log sheet with non-empty data rows
@@ -70,15 +72,44 @@ def test_iter_transactions_yields_all_non_empty_rows(transactions_workbook) -> N
     """
     # Arrange
     sheet = transactions_workbook["TransactionLog"]
-    sheet.append(["T-001", "2026-03-15T12:00:00", "SALE", "P-001", "S-001", "Cash", -1, 55, -2, None, "a"])
+    sheet.append(
+        [
+            "T-001",
+            "2026-03-15T12:00:00",
+            "SALE",
+            "P-001",
+            "S-001",
+            "Cash",
+            -1,
+            55,
+            -2,
+            None,
+            "a",
+        ]
+    )
     sheet.append([None, None, None, None, None, None, None, None, None, None, None])
-    sheet.append(["T-002", "2026-03-15T12:01:00", "RESTOCK", "P-001", None, None, 10, 0, -20, None, "b"])
+    sheet.append(
+        [
+            "T-002",
+            "2026-03-15T12:01:00",
+            "RESTOCK",
+            "P-001",
+            None,
+            None,
+            10,
+            0,
+            -20,
+            None,
+            "b",
+        ]
+    )
 
     # Act
     records = list(transactions.iter_transactions(transactions_workbook))
 
     # Assert
     assert [record.transaction_id for record in records] == ["T-001", "T-002"]
+
 
 def test_iter_transactions_empty_sheet_yields_nothing(transactions_workbook) -> None:
     """
@@ -94,6 +125,7 @@ def test_iter_transactions_empty_sheet_yields_nothing(transactions_workbook) -> 
     # Assert
     assert not records
 
+
 def test_iter_transactions_skips_fully_empty_rows(transactions_workbook) -> None:
     """
     GIVEN a transaction log sheet containing fully empty rows
@@ -103,7 +135,21 @@ def test_iter_transactions_skips_fully_empty_rows(transactions_workbook) -> None
     # Arrange
     sheet = transactions_workbook["TransactionLog"]
     sheet.append([None, None, None, None, None, None, None, None, None, None, None])
-    sheet.append(["T-001", "2026-03-15T12:00:00", "SALE", "P-001", "S-001", "Cash", -1, 55, -2, None, "ok"])
+    sheet.append(
+        [
+            "T-001",
+            "2026-03-15T12:00:00",
+            "SALE",
+            "P-001",
+            "S-001",
+            "Cash",
+            -1,
+            55,
+            -2,
+            None,
+            "ok",
+        ]
+    )
     sheet.append([None, None, None, None, None, None, None, None, None, None, None])
 
     # Act
@@ -113,7 +159,10 @@ def test_iter_transactions_skips_fully_empty_rows(transactions_workbook) -> None
     assert len(records) == 1
     assert records[0].transaction_id == "T-001"
 
-def test_iter_transactions_optional_fields_are_none_when_blank(transactions_workbook) -> None:
+
+def test_iter_transactions_optional_fields_are_none_when_blank(
+    transactions_workbook,
+) -> None:
     """
     GIVEN rows with blank optional fields
     WHEN iter_transactions is called
@@ -144,6 +193,7 @@ def test_iter_transactions_optional_fields_are_none_when_blank(transactions_work
     assert record.linked_transaction_id is None
     assert record.notes is None
 
+
 def test_iter_transactions_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
     GIVEN a workbook without a TransactionLog sheet
@@ -151,11 +201,14 @@ def test_iter_transactions_raises_key_error_for_missing_sheet(make_workbook) -> 
     THEN it raises KeyError
     """
     # Arrange
-    workbook = make_workbook("Products", ["ProductID", "ProductName", "SellPrice", "IsActive"])
+    workbook = make_workbook(
+        "Products", ["ProductID", "ProductName", "SellPrice", "IsActive"]
+    )
 
     # Act / Assert
     with pytest.raises(KeyError):
         list(transactions.iter_transactions(workbook))
+
 
 def test_append_transaction_increases_row_count_by_one(transactions_workbook) -> None:
     """
@@ -173,6 +226,7 @@ def test_append_transaction_increases_row_count_by_one(transactions_workbook) ->
     # Assert
     assert sheet.max_row == before_count + 1
 
+
 def test_append_transaction_stores_correct_values(transactions_workbook) -> None:
     """
     GIVEN a transaction record
@@ -184,7 +238,9 @@ def test_append_transaction_stores_correct_values(transactions_workbook) -> None
 
     # Act
     transactions.append_transaction(transactions_workbook, record)
-    last_row = list(transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True))[-1]
+    last_row = list(
+        transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True)
+    )[-1]
 
     # Assert
     assert last_row == (
@@ -200,6 +256,7 @@ def test_append_transaction_stores_correct_values(transactions_workbook) -> None
         None,
         "ok",
     )
+
 
 def test_append_transaction_column_ordering(transactions_workbook) -> None:
     """
@@ -224,7 +281,9 @@ def test_append_transaction_column_ordering(transactions_workbook) -> None:
 
     # Act
     transactions.append_transaction(transactions_workbook, record)
-    row = list(transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True))[0]
+    row = list(
+        transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True)
+    )[0]
 
     # Assert
     assert row == (
@@ -241,7 +300,10 @@ def test_append_transaction_column_ordering(transactions_workbook) -> None:
         "batch",
     )
 
-def test_append_transaction_stores_none_for_optional_fields(transactions_workbook) -> None:
+
+def test_append_transaction_stores_none_for_optional_fields(
+    transactions_workbook,
+) -> None:
     """
     GIVEN a transaction record with optional None fields
     WHEN append_transaction is called
@@ -256,12 +318,15 @@ def test_append_transaction_stores_none_for_optional_fields(transactions_workboo
 
     # Act
     transactions.append_transaction(transactions_workbook, record)
-    row = list(transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True))[0]
+    row = list(
+        transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True)
+    )[0]
 
     # Assert
     assert row[5] is None
     assert row[9] is None
     assert row[10] is None
+
 
 def test_append_transaction_raises_key_error_for_missing_sheet(make_workbook) -> None:
     """
@@ -270,11 +335,14 @@ def test_append_transaction_raises_key_error_for_missing_sheet(make_workbook) ->
     THEN it raises KeyError
     """
     # Arrange
-    workbook = make_workbook("Products", ["ProductID", "ProductName", "SellPrice", "IsActive"])
+    workbook = make_workbook(
+        "Products", ["ProductID", "ProductName", "SellPrice", "IsActive"]
+    )
 
     # Act / Assert
     with pytest.raises(KeyError):
         transactions.append_transaction(workbook, _sample_transaction())
+
 
 def test_serialize_transaction_returns_list_of_eleven_elements() -> None:
     """
@@ -290,6 +358,7 @@ def test_serialize_transaction_returns_list_of_eleven_elements() -> None:
 
     # Assert
     assert len(serialized) == 11
+
 
 def test_serialize_transaction_returns_correct_column_order() -> None:
     """
@@ -318,6 +387,7 @@ def test_serialize_transaction_returns_correct_column_order() -> None:
         "note",
     ]
 
+
 def test_serialize_transaction_preserves_none_for_optional_fields() -> None:
     """
     GIVEN a TransactionRow with optional None values
@@ -339,6 +409,7 @@ def test_serialize_transaction_preserves_none_for_optional_fields() -> None:
     assert serialized[9] is None
     assert serialized[10] is None
 
+
 def test_deserialize_transaction_returns_transaction_row_instance() -> None:
     """
     GIVEN a valid raw transaction row
@@ -346,7 +417,19 @@ def test_deserialize_transaction_returns_transaction_row_instance() -> None:
     THEN it returns a TransactionRow instance
     """
     # Arrange
-    raw_row = ["T-001", "2026-03-15T12:00:00", "SALE", "P-001", "S-001", "Cash", -1, 55, -20, None, "ok"]
+    raw_row = [
+        "T-001",
+        "2026-03-15T12:00:00",
+        "SALE",
+        "P-001",
+        "S-001",
+        "Cash",
+        -1,
+        55,
+        -20,
+        None,
+        "ok",
+    ]
 
     # Act
     result = transactions._deserialize_transaction(raw_row)
@@ -354,13 +437,22 @@ def test_deserialize_transaction_returns_transaction_row_instance() -> None:
     # Assert
     assert isinstance(result, transactions.TransactionRow)
 
+
 @pytest.mark.parametrize(
     "raw_row, expected_quantity_change, expected_total_revenue, expected_total_cost",
     [
-        (["T-001", "ts", "SALE", None, None, None, None, None, None, None,
-          None], 0, 0, 0),
-        (["T-001", "ts", "SALE", None, None, None, 2, 1000, -300, None, None], 2,
-         1000, -300),
+        (
+            ["T-001", "ts", "SALE", None, None, None, None, None, None, None, None],
+            0,
+            0,
+            0,
+        ),
+        (
+            ["T-001", "ts", "SALE", None, None, None, 2, 1000, -300, None, None],
+            2,
+            1000,
+            -300,
+        ),
     ],
 )
 def test_deserialize_transaction_normalizes_numeric_fields(
@@ -387,6 +479,7 @@ def test_deserialize_transaction_normalizes_numeric_fields(
     assert isinstance(result.total_revenue, int)
     assert isinstance(result.total_cost, int)
 
+
 def test_deserialize_transaction_preserves_none_for_optional_text_fields() -> None:
     """
     GIVEN a raw row with blank optional text and link fields
@@ -394,7 +487,19 @@ def test_deserialize_transaction_preserves_none_for_optional_text_fields() -> No
     THEN optional fields remain None
     """
     # Arrange
-    raw_row = ["T-001", "2026-03-15T12:00:00", "SALE", "P-001", "S-001", None, -1, 0, 0, None, None]
+    raw_row = [
+        "T-001",
+        "2026-03-15T12:00:00",
+        "SALE",
+        "P-001",
+        "S-001",
+        None,
+        -1,
+        0,
+        0,
+        None,
+        None,
+    ]
 
     # Act
     result = transactions._deserialize_transaction(raw_row)
@@ -404,11 +509,28 @@ def test_deserialize_transaction_preserves_none_for_optional_text_fields() -> No
     assert result.linked_transaction_id is None
     assert result.notes is None
 
+
 @pytest.mark.parametrize(
     "raw_row, expected_timestamp_iso, expected_transaction_type",
     [
         (["T-001", None, None, None, None, None, 0, 0, 0, None, None], "", ""),
-        (["T-001", "2026-03-15T12:00:00", "SALE", None, None, None, 0, 0, 0, None, None], "2026-03-15T12:00:00", "SALE"),
+        (
+            [
+                "T-001",
+                "2026-03-15T12:00:00",
+                "SALE",
+                None,
+                None,
+                None,
+                0,
+                0,
+                0,
+                None,
+                None,
+            ],
+            "2026-03-15T12:00:00",
+            "SALE",
+        ),
     ],
 )
 def test_deserialize_transaction_defaults_required_text_fields_when_none(
@@ -430,6 +552,7 @@ def test_deserialize_transaction_defaults_required_text_fields_when_none(
     assert result.timestamp_iso == expected_timestamp_iso
     assert result.transaction_type == expected_transaction_type
 
+
 def test_deserialize_transaction_coerces_transaction_id_to_str() -> None:
     """
     GIVEN a raw row with non-string TransactionID
@@ -437,7 +560,19 @@ def test_deserialize_transaction_coerces_transaction_id_to_str() -> None:
     THEN TransactionID is coerced to string
     """
     # Arrange
-    raw_row = [12345, "2026-03-15T12:00:00", "SALE", None, None, None, 0, 0, 0, None, None]
+    raw_row = [
+        12345,
+        "2026-03-15T12:00:00",
+        "SALE",
+        None,
+        None,
+        None,
+        0,
+        0,
+        0,
+        None,
+        None,
+    ]
 
     # Act
     result = transactions._deserialize_transaction(raw_row)
@@ -445,6 +580,7 @@ def test_deserialize_transaction_coerces_transaction_id_to_str() -> None:
     # Assert
     assert result.transaction_id == "12345"
     assert isinstance(result.transaction_id, str)
+
 
 @pytest.mark.parametrize("raw_row", [["T-001"], ["T-001", "ts", "SALE"]])
 def test_deserialize_transaction_raises_value_error_for_short_row(raw_row) -> None:
@@ -459,6 +595,7 @@ def test_deserialize_transaction_raises_value_error_for_short_row(raw_row) -> No
     with pytest.raises(ValueError):
         transactions._deserialize_transaction(raw_row)
 
+
 @pytest.mark.parametrize(
     "raw_row",
     [
@@ -466,9 +603,11 @@ def test_deserialize_transaction_raises_value_error_for_short_row(raw_row) -> No
         ["T-001", "ts", "SALE", None, None, None, 0, 12.34, 0, None, None],
     ],
 )
-def test_deserialize_transaction_raises_value_error_for_invalid_numeric_values(raw_row) -> None:
+def test_deserialize_transaction_raises_value_error_for_invalid_numeric_values(
+    raw_row,
+) -> None:
     """
-    GIVEN a raw row with invalid numeric values 
+    GIVEN a raw row with invalid numeric values
     WHEN _deserialize_transaction is called
     THEN it raises a value error
     """

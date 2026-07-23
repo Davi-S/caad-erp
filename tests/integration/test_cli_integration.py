@@ -47,15 +47,25 @@ def test_cli_main_executes_reporting_command_without_persist_side_effect(
     WHEN cli.parser.main is invoked
     THEN command returns zero and no unnecessary persistence writes are triggered
     """
-    before = Path(integration_config_path).parent.joinpath(
-        "master_workbook.xlsx").stat().st_mtime_ns
-    result = cli_parser.main([
-        "--config",
-        str(integration_config_path),
-        "stock",
-    ])
-    after = Path(integration_config_path).parent.joinpath(
-        "master_workbook.xlsx").stat().st_mtime_ns
+    before = (
+        Path(integration_config_path)
+        .parent.joinpath("master_workbook.xlsx")
+        .stat()
+        .st_mtime_ns
+    )
+    result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "stock",
+        ]
+    )
+    after = (
+        Path(integration_config_path)
+        .parent.joinpath("master_workbook.xlsx")
+        .stat()
+        .st_mtime_ns
+    )
 
     assert result == 0
     assert after == before
@@ -143,11 +153,13 @@ def test_cli_main_returns_missing_file_exit_code_for_missing_workbook(
         encoding="utf-8",
     )
 
-    result = cli_parser.main([
-        "--config",
-        str(missing_config),
-        "stock",
-    ])
+    result = cli_parser.main(
+        [
+            "--config",
+            str(missing_config),
+            "stock",
+        ]
+    )
 
     assert result == 3
 
@@ -181,8 +193,7 @@ def test_cli_main_supports_multiple_registered_commands_end_to_end(
     WHEN cli.parser.main is invoked for each vector
     THEN command routing registration and execution wiring succeed end-to-end
     """
-    result = cli_parser.main(
-        ["--config", str(integration_config_path), *command_args])
+    result = cli_parser.main(["--config", str(integration_config_path), *command_args])
     assert result == 0
 
 
@@ -196,8 +207,7 @@ def test_cli_repl_session_persists_successful_mutating_commands(
     THEN command effects are persisted and visible after context reload
     """
     original_stdin = sys.stdin
-    sys.stdin = io.StringIO(
-        "add-product -i REPL-P001 -n ReplProduct -p 700\nexit\n")
+    sys.stdin = io.StringIO("add-product -i REPL-P001 -n ReplProduct -p 700\nexit\n")
 
     parser = cli_parser.build_parser()
     table = cli_parser.configure_subcommands(parser)
@@ -235,8 +245,9 @@ def test_cli_repl_session_recovers_from_command_errors_and_continues(
         sys.stdin = original_stdin
 
     assert result == 0
-    assert bll.get_product(initialized_context,
-                           "REPL-P002").product_name == "AfterError"
+    assert (
+        bll.get_product(initialized_context, "REPL-P002").product_name == "AfterError"
+    )
 
 
 def test_cli_help_and_parse_errors_do_not_crash_repl_loop(

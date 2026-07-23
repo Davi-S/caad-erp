@@ -4,7 +4,6 @@ import pytest
 
 from caad_erp import bll, constants, settings
 from caad_erp.bll import runtime
-from caad_erp.dal import products as dal_products
 
 
 def test_load_context_reads_config_and_opens_configured_workbook(

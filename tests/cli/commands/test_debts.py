@@ -20,19 +20,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -82,8 +84,7 @@ def test_display_debts_report_prints_empty_state_when_no_balances(capsys) -> Non
     THEN empty-state message and total outstanding are printed
     """
     # Arrange / Act
-    debts._display_debts_report(
-        {"balances": [], "total_outstanding": 0})
+    debts._display_debts_report({"balances": [], "total_outstanding": 0})
 
     # Assert
     output = capsys.readouterr().out
@@ -108,7 +109,9 @@ def test_display_debts_report_prints_empty_state_when_no_balances(capsys) -> Non
         ]
     ],
 )
-def test_display_debts_report_prints_table_for_outstanding_balances(debt_rows, capsys) -> None:
+def test_display_debts_report_prints_table_for_outstanding_balances(
+    debt_rows, capsys
+) -> None:
     """
     GIVEN summary mapping containing outstanding debt rows
     WHEN _display_debts_report is called
