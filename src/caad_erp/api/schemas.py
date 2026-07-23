@@ -151,8 +151,8 @@ class TransactionResponse(pydantic.BaseModel):
     transaction_id: str
     timestamp_iso: str
     transaction_type: str
-    product_id: t.Optional[str]
-    salesman_id: t.Optional[str]
+    product_id: str
+    salesman_id: str
     payment_type: t.Optional[str]
     quantity_change: int
     total_revenue: int
@@ -187,8 +187,8 @@ class DebtItem(pydantic.BaseModel):
 
     transaction_id: str
     timestamp_iso: str
-    product_id: t.Optional[str]
-    salesman_id: t.Optional[str]
+    product_id: str
+    salesman_id: str
     quantity: int
     expected_amount: int
     amount_paid: int

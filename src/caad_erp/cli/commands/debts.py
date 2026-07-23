@@ -68,10 +68,8 @@ def _display_debts_report(summary: t.Mapping[str, t.Any]) -> None:
     print("-" * len(header))
 
     for entry in balances:
-        product = entry.product_id or "-"
-        salesman = entry.salesman_id or "-"
         print(
-            f"{entry.transaction_id:<18} {product:<12} {salesman:<12} "
+            f"{entry.transaction_id:<18} {entry.product_id:<12} {entry.salesman_id:<12} "
             f"{entry.quantity:>9} {entry.expected_amount / 100:>10.2f} "
             f"{entry.amount_paid / 100:>10.2f} {entry.balance / 100:>10.2f}"
         )

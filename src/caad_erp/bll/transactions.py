@@ -519,7 +519,13 @@ def record_credit_payment(context: runtime.RuntimeContext, command: CreditPaymen
     return transaction
 
 
-def _build_credit_payment_transaction(command: CreditPaymentCommand, *, transaction_id: str, timestamp: datetime.datetime, product_id: t.Optional[str] = None) -> dal.TransactionRow:
+def _build_credit_payment_transaction(
+    command: CreditPaymentCommand,
+    *,
+    transaction_id: str,
+    timestamp: datetime.datetime,
+    product_id: str,
+) -> dal.TransactionRow:
     """Materialize a :class:`CreditPaymentCommand` into a DAL transaction row.
 
     Args:
@@ -527,8 +533,7 @@ def _build_credit_payment_transaction(command: CreditPaymentCommand, *, transact
             payment.
         transaction_id (str): Unique identifier allocated for the transaction.
         timestamp (datetime): Timestamp assigned to the transaction.
-        product_id (str | None): t.Optional product identifier inferred from the
-            linked sale.
+        product_id (str): Product identifier inferred from the linked sale.
 
     Returns:
         dal.TransactionRow: Row ready for persistence via the data
