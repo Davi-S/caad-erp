@@ -1,6 +1,13 @@
 import {
-    Button, Center, Group,
-    Radio, ScrollArea, Stack, Text, ThemeIcon, Title
+    Button,
+    Center,
+    Group,
+    Radio,
+    ScrollArea,
+    Stack,
+    Text,
+    ThemeIcon,
+    Title,
 } from "@mantine/core"
 import { useState } from "react"
 import { Users } from "lucide-react"
@@ -22,7 +29,7 @@ export function SalesmanSelectScreen({
     salesmen,
     onNext,
     title = "Quem está operando?",
-    confirmLabel = "Continuar"
+    confirmLabel = "Continuar",
 }: SalesmanSelectScreenProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
 

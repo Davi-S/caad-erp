@@ -6,11 +6,11 @@
 export interface paths {
     "/health": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Health Check
          * @description Check if the API server is healthy and responding.
@@ -18,22 +18,22 @@ export interface paths {
          *     Returns:
          *         HealthResponse: A status indicating the server is operational.
          */
-        get: operations["health_check_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        get: operations["health_check_health_get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/products": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * List Products
          * @description List all products.
@@ -46,8 +46,8 @@ export interface paths {
          *     Returns:
          *         ProductListResponse containing every product record.
          */
-        get: operations["list_products_products_get"];
-        put?: never;
+        get: operations["list_products_products_get"]
+        put?: never
         /**
          * Create Product
          * @description Create a new product.
@@ -62,46 +62,46 @@ export interface paths {
          *     Raises:
          *         HTTPException: 409 if product already exists, 400 for validation errors.
          */
-        post: operations["create_product_products_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        post: operations["create_product_products_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/products/{product_id}": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Product
          * @description Get a specific product by ID.
          */
-        get: operations["get_product_products__product_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
+        get: operations["get_product_products__product_id__get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
         /**
          * Update Product Details
          * @description Update an existing product.
          *
          *     Can be used to modify the product's name, price, or toggle its active status.
          */
-        patch: operations["update_product_details_products__product_id__patch"];
-        trace?: never;
-    };
+        patch: operations["update_product_details_products__product_id__patch"]
+        trace?: never
+    }
     "/salesmen": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * List Salesmen
          * @description List all salesmen.
@@ -114,8 +114,8 @@ export interface paths {
          *     Returns:
          *         SalesmanListResponse containing every salesman record.
          */
-        get: operations["list_salesmen_salesmen_get"];
-        put?: never;
+        get: operations["list_salesmen_salesmen_get"]
+        put?: never
         /**
          * Create Salesman
          * @description Create a new salesman.
@@ -130,48 +130,48 @@ export interface paths {
          *     Raises:
          *         HTTPException: 409 if salesman already exists, 400 for validation errors.
          */
-        post: operations["create_salesman_salesmen_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        post: operations["create_salesman_salesmen_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/salesmen/{salesman_id}": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Salesman
          * @description Get a specific salesman by ID.
          */
-        get: operations["get_salesman_salesmen__salesman_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
+        get: operations["get_salesman_salesmen__salesman_id__get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
         /**
          * Update Salesman Details
          * @description Update an existing salesman.
          *
          *     Can be used to modify the salesman's name or toggle their active status.
          */
-        patch: operations["update_salesman_details_salesmen__salesman_id__patch"];
-        trace?: never;
-    };
+        patch: operations["update_salesman_details_salesmen__salesman_id__patch"]
+        trace?: never
+    }
     "/transactions/sale": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Record Sale
          * @description Record a sale transaction.
@@ -186,22 +186,22 @@ export interface paths {
          *     Raises:
          *         HTTPException: 409 for business rule violations, 404 for missing references.
          */
-        post: operations["record_sale_transactions_sale_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        post: operations["record_sale_transactions_sale_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/transactions/restock": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Record Restock
          * @description Record a restock transaction.
@@ -216,22 +216,22 @@ export interface paths {
          *     Raises:
          *         HTTPException: 409 for business rule violations, 404 for missing references.
          */
-        post: operations["record_restock_transactions_restock_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        post: operations["record_restock_transactions_restock_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/transactions/write-off": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Record Write Off
          * @description Record a write-off transaction.
@@ -246,22 +246,22 @@ export interface paths {
          *     Raises:
          *         HTTPException: 409 for business rule violations, 404 for missing references.
          */
-        post: operations["record_write_off_transactions_write_off_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        post: operations["record_write_off_transactions_write_off_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/transactions/void": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Record Void
          * @description Void an existing transaction.
@@ -276,22 +276,22 @@ export interface paths {
          *     Raises:
          *         HTTPException: 409 for business rule violations, 404 for missing references.
          */
-        post: operations["record_void_transactions_void_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        post: operations["record_void_transactions_void_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/transactions/pay-debt": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Record Pay Debt
          * @description Record a credit payment for an outstanding sale.
@@ -306,20 +306,20 @@ export interface paths {
          *     Raises:
          *         HTTPException: 409 for business rule violations, 404 for missing references.
          */
-        post: operations["record_pay_debt_transactions_pay_debt_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        post: operations["record_pay_debt_transactions_pay_debt_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/reports/stock": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Stock Report
          * @description Get current stock levels for all products.
@@ -330,22 +330,22 @@ export interface paths {
          *     Returns:
          *         StockReportResponse containing inventory levels per product.
          */
-        get: operations["get_stock_report_reports_stock_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        get: operations["get_stock_report_reports_stock_get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/reports/profit": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Profit Report
          * @description Get profit summary with revenue and cost totals.
@@ -356,22 +356,22 @@ export interface paths {
          *     Returns:
          *         ProfitReportResponse containing revenue, cost, and profit totals.
          */
-        get: operations["get_profit_report_reports_profit_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        get: operations["get_profit_report_reports_profit_get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/reports/debts": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Debts Report
          * @description Get outstanding credit balances.
@@ -382,22 +382,22 @@ export interface paths {
          *     Returns:
          *         DebtsReportResponse containing outstanding balances and total.
          */
-        get: operations["get_debts_report_reports_debts_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        get: operations["get_debts_report_reports_debts_get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/reports/log": {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Log Report
          * @description Get the full transaction log.
@@ -408,17 +408,17 @@ export interface paths {
          *     Returns:
          *         LogReportResponse containing all transactions.
          */
-        get: operations["get_log_report_reports_log_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        get: operations["get_log_report_reports_log_get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
 }
-export type webhooks = Record<string, never>;
+export type webhooks = Record<string, never>
 export interface components {
     schemas: {
         /**
@@ -427,217 +427,217 @@ export interface components {
          */
         DebtItem: {
             /** Transaction Id */
-            transaction_id: string;
+            transaction_id: string
             /** Timestamp Iso */
-            timestamp_iso: string;
+            timestamp_iso: string
             /** Product Id */
-            product_id: string | null;
+            product_id: string | null
             /** Salesman Id */
-            salesman_id: string | null;
+            salesman_id: string | null
             /** Quantity */
-            quantity: number;
+            quantity: number
             /** Expected Amount */
-            expected_amount: number;
+            expected_amount: number
             /** Amount Paid */
-            amount_paid: number;
+            amount_paid: number
             /** Balance */
-            balance: number;
-        };
+            balance: number
+        }
         /**
          * DebtsReportResponse
          * @description Response for the debts report endpoint.
          */
         DebtsReportResponse: {
             /** Balances */
-            balances: components["schemas"]["DebtItem"][];
+            balances: components["schemas"]["DebtItem"][]
             /** Total Outstanding */
-            total_outstanding: number;
-        };
+            total_outstanding: number
+        }
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
+            detail?: components["schemas"]["ValidationError"][]
+        }
         /**
          * HealthResponse
          * @description Response model for the health check endpoint.
          */
         HealthResponse: {
             /** Status */
-            status: string;
+            status: string
             /** Message */
-            message: string;
-        };
+            message: string
+        }
         /**
          * LogReportResponse
          * @description Response for the transaction log report endpoint.
          */
         LogReportResponse: {
             /** Transactions */
-            transactions: components["schemas"]["TransactionResponse"][];
-        };
+            transactions: components["schemas"]["TransactionResponse"][]
+        }
         /**
          * PayDebtRequest
          * @description Request payload for recording a credit payment.
          */
         PayDebtRequest: {
             /** Linked Transaction Id */
-            linked_transaction_id: string;
+            linked_transaction_id: string
             /** Salesman Id */
-            salesman_id: string;
+            salesman_id: string
             /** Total Revenue */
-            total_revenue: number;
-            payment_type: components["schemas"]["PaymentType"];
+            total_revenue: number
+            payment_type: components["schemas"]["PaymentType"]
             /** Notes */
-            notes?: string | null;
-        };
+            notes?: string | null
+        }
         /**
          * PaymentType
          * @description Enumerate supported payment mechanisms for sales.
          * @enum {string}
          */
-        PaymentType: "Cash" | "OnCredit" | "PIX" | "Other";
+        PaymentType: "Cash" | "OnCredit" | "PIX" | "Other"
         /**
          * ProductCreateRequest
          * @description Request payload for creating a new product.
          */
         ProductCreateRequest: {
             /** Product Id */
-            product_id: string;
+            product_id: string
             /** Product Name */
-            product_name: string;
+            product_name: string
             /** Sell Price */
-            sell_price: number;
+            sell_price: number
             /**
              * Is Active
              * @default true
              */
-            is_active: boolean;
-        };
+            is_active: boolean
+        }
         /**
          * ProductListResponse
          * @description Response for listing products.
          */
         ProductListResponse: {
             /** Items */
-            items: components["schemas"]["ProductResponse"][];
-        };
+            items: components["schemas"]["ProductResponse"][]
+        }
         /**
          * ProductResponse
          * @description Response representation of a product record.
          */
         ProductResponse: {
             /** Product Id */
-            product_id: string;
+            product_id: string
             /** Product Name */
-            product_name: string;
+            product_name: string
             /** Sell Price */
-            sell_price: number;
+            sell_price: number
             /** Is Active */
-            is_active: boolean;
-        };
+            is_active: boolean
+        }
         /**
          * ProductUpdateRequest
          * @description Request payload for partially updating an existing product.
          */
         ProductUpdateRequest: {
             /** Product Name */
-            product_name?: string | null;
+            product_name?: string | null
             /** Sell Price */
-            sell_price?: number | null;
+            sell_price?: number | null
             /** Is Active */
-            is_active?: boolean | null;
-        };
+            is_active?: boolean | null
+        }
         /**
          * ProfitReportResponse
          * @description Response for the profit report endpoint.
          */
         ProfitReportResponse: {
             /** Total Revenue */
-            total_revenue: number;
+            total_revenue: number
             /** Total Cost */
-            total_cost: number;
+            total_cost: number
             /** Profit */
-            profit: number;
-        };
+            profit: number
+        }
         /**
          * RestockRequest
          * @description Request payload for recording a restock transaction.
          */
         RestockRequest: {
             /** Product Id */
-            product_id: string;
+            product_id: string
             /** Salesman Id */
-            salesman_id: string;
+            salesman_id: string
             /** Quantity */
-            quantity: number;
+            quantity: number
             /** Total Cost */
-            total_cost: number;
+            total_cost: number
             /** Notes */
-            notes?: string | null;
-        };
+            notes?: string | null
+        }
         /**
          * SaleRequest
          * @description Request payload for recording a sale transaction.
          */
         SaleRequest: {
             /** Product Id */
-            product_id: string;
+            product_id: string
             /** Salesman Id */
-            salesman_id: string;
+            salesman_id: string
             /** Quantity */
-            quantity: number;
+            quantity: number
             /** Total Revenue */
-            total_revenue: number;
-            payment_type: components["schemas"]["PaymentType"];
+            total_revenue: number
+            payment_type: components["schemas"]["PaymentType"]
             /** Notes */
-            notes?: string | null;
-        };
+            notes?: string | null
+        }
         /**
          * SalesmanCreateRequest
          * @description Request payload for creating a new salesman.
          */
         SalesmanCreateRequest: {
             /** Salesman Id */
-            salesman_id: string;
+            salesman_id: string
             /** Salesman Name */
-            salesman_name: string;
+            salesman_name: string
             /**
              * Is Active
              * @default true
              */
-            is_active: boolean;
-        };
+            is_active: boolean
+        }
         /**
          * SalesmanListResponse
          * @description Response for listing salesmen.
          */
         SalesmanListResponse: {
             /** Items */
-            items: components["schemas"]["SalesmanResponse"][];
-        };
+            items: components["schemas"]["SalesmanResponse"][]
+        }
         /**
          * SalesmanResponse
          * @description Response representation of a salesman record.
          */
         SalesmanResponse: {
             /** Salesman Id */
-            salesman_id: string;
+            salesman_id: string
             /** Salesman Name */
-            salesman_name: string;
+            salesman_name: string
             /** Is Active */
-            is_active: boolean;
-        };
+            is_active: boolean
+        }
         /**
          * SalesmanUpdateRequest
          * @description Request payload for partially updating an existing salesman.
          */
         SalesmanUpdateRequest: {
             /** Salesman Name */
-            salesman_name?: string | null;
+            salesman_name?: string | null
             /** Is Active */
-            is_active?: boolean | null;
-        };
+            is_active?: boolean | null
+        }
         /**
          * StandardResponse
          * @description Standard wrapper for mutation endpoint responses.
@@ -648,599 +648,599 @@ export interface components {
          */
         StandardResponse: {
             /** Detail */
-            detail: string;
+            detail: string
             /** Data */
-            data?: unknown | null;
-        };
+            data?: unknown | null
+        }
         /**
          * StockItem
          * @description Single item in the stock report.
          */
         StockItem: {
             /** Product Id */
-            product_id: string;
+            product_id: string
             /** Quantity */
-            quantity: number;
-        };
+            quantity: number
+        }
         /**
          * StockReportResponse
          * @description Response for the stock report endpoint.
          */
         StockReportResponse: {
             /** Items */
-            items: components["schemas"]["StockItem"][];
-        };
+            items: components["schemas"]["StockItem"][]
+        }
         /**
          * TransactionResponse
          * @description Response representation of a transaction record.
          */
         TransactionResponse: {
             /** Transaction Id */
-            transaction_id: string;
+            transaction_id: string
             /** Timestamp Iso */
-            timestamp_iso: string;
+            timestamp_iso: string
             /** Transaction Type */
-            transaction_type: string;
+            transaction_type: string
             /** Product Id */
-            product_id: string | null;
+            product_id: string | null
             /** Salesman Id */
-            salesman_id: string | null;
+            salesman_id: string | null
             /** Payment Type */
-            payment_type: string | null;
+            payment_type: string | null
             /** Quantity Change */
-            quantity_change: number;
+            quantity_change: number
             /** Total Revenue */
-            total_revenue: number;
+            total_revenue: number
             /** Total Cost */
-            total_cost: number;
+            total_cost: number
             /** Linked Transaction Id */
-            linked_transaction_id: string | null;
+            linked_transaction_id: string | null
             /** Notes */
-            notes: string | null;
-        };
+            notes: string | null
+        }
         /** ValidationError */
         ValidationError: {
             /** Location */
-            loc: (string | number)[];
+            loc: (string | number)[]
             /** Message */
-            msg: string;
+            msg: string
             /** Error Type */
-            type: string;
-        };
+            type: string
+        }
         /**
          * VoidRequest
          * @description Request payload for voiding an existing transaction.
          */
         VoidRequest: {
             /** Linked Transaction Id */
-            linked_transaction_id: string;
+            linked_transaction_id: string
             /** Notes */
-            notes?: string | null;
-        };
+            notes?: string | null
+        }
         /**
          * WriteOffRequest
          * @description Request payload for recording a write-off transaction.
          */
         WriteOffRequest: {
             /** Product Id */
-            product_id: string;
+            product_id: string
             /** Salesman Id */
-            salesman_id: string;
+            salesman_id: string
             /** Quantity */
-            quantity: number;
+            quantity: number
             /** Notes */
-            notes?: string | null;
-        };
-    };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+            notes?: string | null
+        }
+    }
+    responses: never
+    parameters: never
+    requestBodies: never
+    headers: never
+    pathItems: never
 }
-export type $defs = Record<string, never>;
+export type $defs = Record<string, never>
 export interface operations {
     health_check_health_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HealthResponse"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HealthResponse"]
+                }
+            }
+        }
+    }
     list_products_products_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["ProductListResponse"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["ProductListResponse"]
+                }
+            }
+        }
+    }
     create_product_products_post: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProductCreateRequest"];
-            };
-        };
+                "application/json": components["schemas"]["ProductCreateRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             201: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     get_product_products__product_id__get: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: never
+            header?: never
             path: {
-                product_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
+                product_id: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["ProductResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["ProductResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     update_product_details_products__product_id__patch: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: never
+            header?: never
             path: {
-                product_id: string;
-            };
-            cookie?: never;
-        };
+                product_id: string
+            }
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProductUpdateRequest"];
-            };
-        };
+                "application/json": components["schemas"]["ProductUpdateRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     list_salesmen_salesmen_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["SalesmanListResponse"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["SalesmanListResponse"]
+                }
+            }
+        }
+    }
     create_salesman_salesmen_post: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SalesmanCreateRequest"];
-            };
-        };
+                "application/json": components["schemas"]["SalesmanCreateRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             201: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     get_salesman_salesmen__salesman_id__get: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: never
+            header?: never
             path: {
-                salesman_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
+                salesman_id: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["SalesmanResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["SalesmanResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     update_salesman_details_salesmen__salesman_id__patch: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: never
+            header?: never
             path: {
-                salesman_id: string;
-            };
-            cookie?: never;
-        };
+                salesman_id: string
+            }
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SalesmanUpdateRequest"];
-            };
-        };
+                "application/json": components["schemas"]["SalesmanUpdateRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     record_sale_transactions_sale_post: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SaleRequest"];
-            };
-        };
+                "application/json": components["schemas"]["SaleRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             201: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     record_restock_transactions_restock_post: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RestockRequest"];
-            };
-        };
+                "application/json": components["schemas"]["RestockRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             201: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     record_write_off_transactions_write_off_post: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["WriteOffRequest"];
-            };
-        };
+                "application/json": components["schemas"]["WriteOffRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             201: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     record_void_transactions_void_post: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VoidRequest"];
-            };
-        };
+                "application/json": components["schemas"]["VoidRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             201: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     record_pay_debt_transactions_pay_debt_post: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PayDebtRequest"];
-            };
-        };
+                "application/json": components["schemas"]["PayDebtRequest"]
+            }
+        }
         responses: {
             /** @description Successful Response */
             201: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StandardResponse"];
-                };
-            };
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
     get_stock_report_reports_stock_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["StockReportResponse"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["StockReportResponse"]
+                }
+            }
+        }
+    }
     get_profit_report_reports_profit_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["ProfitReportResponse"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["ProfitReportResponse"]
+                }
+            }
+        }
+    }
     get_debts_report_reports_debts_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["DebtsReportResponse"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["DebtsReportResponse"]
+                }
+            }
+        }
+    }
     get_log_report_reports_log_get: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["LogReportResponse"];
-                };
-            };
-        };
-    };
+                    "application/json": components["schemas"]["LogReportResponse"]
+                }
+            }
+        }
+    }
 }

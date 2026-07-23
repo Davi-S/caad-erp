@@ -1,7 +1,16 @@
 import { useState } from "react"
 import {
-    ActionIcon, Alert, Badge, Center, Group,
-    ScrollArea, Stack, Switch, Text, ThemeIcon, Title
+    ActionIcon,
+    Alert,
+    Badge,
+    Center,
+    Group,
+    ScrollArea,
+    Stack,
+    Switch,
+    Text,
+    ThemeIcon,
+    Title,
 } from "@mantine/core"
 import { Plus, Pencil, Package, AlertTriangle } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
@@ -20,7 +29,7 @@ export function ProductsManagementPage() {
     // Filter the products on the client side
     const filteredProducts = showInactive
         ? products
-        : products?.filter(product => product.is_active)
+        : products?.filter((product) => product.is_active)
 
     const [modalOpened, setModalOpened] = useState(false)
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -32,8 +41,8 @@ export function ProductsManagementPage() {
     const submitError = createMutation.isError
         ? createMutation.error.message
         : updateMutation.isError
-            ? updateMutation.error.message
-            : null
+          ? updateMutation.error.message
+          : null
 
     const openCreateModal = () => {
         setEditingProduct(null)
@@ -49,12 +58,23 @@ export function ProductsManagementPage() {
         setModalOpened(true)
     }
 
-    const handleCreate = (values: { product_id: string; product_name: string; sell_price: number; is_active: boolean }) => {
+    const handleCreate = (values: {
+        product_id: string
+        product_name: string
+        sell_price: number
+        is_active: boolean
+    }) => {
         createMutation.mutate(values, { onSuccess: () => setModalOpened(false) })
     }
 
-    const handleUpdate = (productId: string, values: { product_name: string; sell_price: number; is_active: boolean }) => {
-        updateMutation.mutate({ productId, input: values }, { onSuccess: () => setModalOpened(false) })
+    const handleUpdate = (
+        productId: string,
+        values: { product_name: string; sell_price: number; is_active: boolean },
+    ) => {
+        updateMutation.mutate(
+            { productId, input: values },
+            { onSuccess: () => setModalOpened(false) },
+        )
     }
 
     return (
@@ -65,7 +85,9 @@ export function ProductsManagementPage() {
                     <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
                         Gerenciamento
                     </Text>
-                    <Title order={1} size="h4">Produtos</Title>
+                    <Title order={1} size="h4">
+                        Produtos
+                    </Title>
                 </Stack>
                 <ActionIcon onClick={openCreateModal} size="lg" radius="xl">
                     <Plus size={20} />
@@ -88,7 +110,9 @@ export function ProductsManagementPage() {
 
                 {isLoading ? (
                     <Center style={{ flex: 1 }}>
-                        <Text c="dimmed" size="sm">Carregando...</Text>
+                        <Text c="dimmed" size="sm">
+                            Carregando...
+                        </Text>
                     </Center>
                 ) : !filteredProducts || filteredProducts.length === 0 ? (
                     <Center style={{ flex: 1 }}>
@@ -119,23 +143,36 @@ export function ProductsManagementPage() {
                                     }}
                                 >
                                     <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                                        <Text fw={600} truncate>{product.product_name}</Text>
-                                        <Text size="xs" c="dimmed" ff="monospace">{product.product_id}</Text>
+                                        <Text fw={600} truncate>
+                                            {product.product_name}
+                                        </Text>
+                                        <Text size="xs" c="dimmed" ff="monospace">
+                                            {product.product_id}
+                                        </Text>
                                     </Stack>
                                     <Stack gap={2} align="flex-end">
-                                        <Text fw={600} ff="monospace" size="sm">{brl(product.sell_price)}</Text>
+                                        <Text fw={600} ff="monospace" size="sm">
+                                            {brl(product.sell_price)}
+                                        </Text>
                                         <Text size="xs" c="dimmed">
                                             {stock?.[product.product_id] ?? 0} em estoque
                                         </Text>
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">
                                         <Badge
-                                            color={product.is_active ? "var(--mantine-primary-color-filled)" : "gray"}
+                                            color={
+                                                product.is_active
+                                                    ? "var(--mantine-primary-color-filled)"
+                                                    : "gray"
+                                            }
                                             variant={product.is_active ? "light" : "outline"}
                                         >
                                             {product.is_active ? "Ativo" : "Inativo"}
                                         </Badge>
-                                        <ActionIcon variant="subtle" onClick={() => openEditModal(product)}>
+                                        <ActionIcon
+                                            variant="subtle"
+                                            onClick={() => openEditModal(product)}
+                                        >
                                             <Pencil size={16} />
                                         </ActionIcon>
                                     </Group>

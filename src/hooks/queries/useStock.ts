@@ -3,7 +3,7 @@ import { api } from "@/api/apiClient"
 import type { Stock } from "@/types"
 
 export const stockQueryOptions = () => ({
-    queryKey: ['stock'],
+    queryKey: ["stock"],
     queryFn: async (): Promise<Stock> => {
         const res = await api.GET("/reports/stock")
         if (res.error) throw new Error("Failed to fetch stock")
@@ -14,7 +14,7 @@ export const stockQueryOptions = () => ({
             stockMap[item.product_id] = item.quantity
         }
         return stockMap
-    }
+    },
 })
 
 export function useStock() {
