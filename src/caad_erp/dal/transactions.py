@@ -27,8 +27,8 @@ class TransactionRow:
     transaction_id: str
     timestamp_iso: str
     transaction_type: str
-    product_id: t.Optional[str]
-    salesman_id: t.Optional[str]
+    product_id: str
+    salesman_id: str
     payment_type: t.Optional[str]
     quantity_change: int
     total_revenue: int
@@ -104,9 +104,11 @@ def _serialize_transaction(record: TransactionRow) -> list[object]:
 def _deserialize_transaction(raw_row: t.Sequence[object]) -> TransactionRow:
     """Convert a raw worksheet row into a strongly typed transaction record.
 
-    Optional columns remain ``None`` when the sheet leaves them blank, and
-    textual columns default to empty strings to avoid ``None`` values where
-    downstream code expects text.
+    ``ProductID`` and ``SalesmanID`` are required for every transaction and are
+    always coerced to strings. The remaining optional columns (``PaymentType``,
+    ``LinkedTransactionID``, ``Notes``) remain ``None`` when the sheet leaves
+    them blank, and required textual columns default to empty strings to avoid
+    ``None`` values where downstream code expects text.
 
     Args:
         raw_row (Sequence[object]): Raw cell values from the transaction log row
@@ -141,8 +143,8 @@ def _deserialize_transaction(raw_row: t.Sequence[object]) -> TransactionRow:
         transaction_id=str(transaction_id),
         timestamp_iso=str(timestamp_iso) if timestamp_iso is not None else "",
         transaction_type=str(transaction_type) if transaction_type is not None else "",
-        product_id=str(product_id) if product_id is not None else None,
-        salesman_id=str(salesman_id) if salesman_id is not None else None,
+        product_id=str(product_id),
+        salesman_id=str(salesman_id),
         payment_type=str(payment_type) if payment_type is not None else None,
         quantity_change=quantity_change,
         total_revenue=total_revenue,

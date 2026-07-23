@@ -8,8 +8,8 @@ def _sample_transaction(
     transaction_id: str = "T-001",
     timestamp_iso: str = "2026-03-15T12:00:00",
     transaction_type: str = "SALE",
-    product_id: str | None = "P-001",
-    salesman_id: str | None = "S-001",
+    product_id: str = "P-001",
+    salesman_id: str = "S-001",
     payment_type: str | None = "Cash",
     quantity_change: int = -1,
     total_revenue: int = 550,
@@ -125,8 +125,8 @@ def test_iter_transactions_optional_fields_are_none_when_blank(transactions_work
             "T-001",
             "2026-03-15T12:00:00",
             "SALE",
-            None,
-            None,
+            "P-001",
+            "S-001",
             None,
             -1,
             0,
@@ -140,8 +140,6 @@ def test_iter_transactions_optional_fields_are_none_when_blank(transactions_work
     record = list(transactions.iter_transactions(transactions_workbook))[0]
 
     # Assert
-    assert record.product_id is None
-    assert record.salesman_id is None
     assert record.payment_type is None
     assert record.linked_transaction_id is None
     assert record.notes is None
@@ -251,8 +249,6 @@ def test_append_transaction_stores_none_for_optional_fields(transactions_workboo
     """
     # Arrange
     record = _sample_transaction(
-        product_id=None,
-        salesman_id=None,
         payment_type=None,
         linked_transaction_id=None,
         notes=None,
@@ -263,8 +259,6 @@ def test_append_transaction_stores_none_for_optional_fields(transactions_workboo
     row = list(transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True))[0]
 
     # Assert
-    assert row[3] is None
-    assert row[4] is None
     assert row[5] is None
     assert row[9] is None
     assert row[10] is None
@@ -332,8 +326,6 @@ def test_serialize_transaction_preserves_none_for_optional_fields() -> None:
     """
     # Arrange
     record = _sample_transaction(
-        product_id=None,
-        salesman_id=None,
         payment_type=None,
         linked_transaction_id=None,
         notes=None,
@@ -343,8 +335,6 @@ def test_serialize_transaction_preserves_none_for_optional_fields() -> None:
     serialized = transactions._serialize_transaction(record)
 
     # Assert
-    assert serialized[3] is None
-    assert serialized[4] is None
     assert serialized[5] is None
     assert serialized[9] is None
     assert serialized[10] is None
@@ -404,14 +394,12 @@ def test_deserialize_transaction_preserves_none_for_optional_text_fields() -> No
     THEN optional fields remain None
     """
     # Arrange
-    raw_row = ["T-001", "2026-03-15T12:00:00", "SALE", None, None, None, -1, 0, 0, None, None]
+    raw_row = ["T-001", "2026-03-15T12:00:00", "SALE", "P-001", "S-001", None, -1, 0, 0, None, None]
 
     # Act
     result = transactions._deserialize_transaction(raw_row)
 
     # Assert
-    assert result.product_id is None
-    assert result.salesman_id is None
     assert result.payment_type is None
     assert result.linked_transaction_id is None
     assert result.notes is None
