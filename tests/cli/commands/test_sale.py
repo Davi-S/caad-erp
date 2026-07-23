@@ -4,7 +4,7 @@ import argparse
 import openpyxl
 import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants
 from caad_erp.cli.commands import sale
 from caad_erp.settings import AppSettings
 
