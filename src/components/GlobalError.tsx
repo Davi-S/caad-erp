@@ -7,11 +7,12 @@ export function GlobalError() {
     const error = useRouteError()
     const navigate = useNavigate()
 
-    const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === "string"
-            ? error
-            : "Ocorreu um erro inesperado."
+    const errorMessage =
+        error instanceof Error
+            ? error.message
+            : typeof error === "string"
+              ? error
+              : "Ocorreu um erro inesperado."
 
     return (
         <ScreenShell>
@@ -22,7 +23,9 @@ export function GlobalError() {
                     </ThemeIcon>
 
                     <Stack align="center" gap={4}>
-                        <Title order={2} size="h4">Algo deu errado</Title>
+                        <Title order={2} size="h4">
+                            Algo deu errado
+                        </Title>
                         <Text c="dimmed" ta="center" size="sm">
                             {errorMessage}
                         </Text>

@@ -41,4 +41,3 @@ your local network.
 2. Install the frontend dependencies using your preferred package manager (e.g.,
    `npm install`).
 3. Start the local development server (e.g., `npm run dev`).
-

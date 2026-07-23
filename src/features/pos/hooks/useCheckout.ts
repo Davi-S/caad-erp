@@ -20,14 +20,14 @@ export function useCheckout() {
         onSuccess: () => {
             // This tells TanStack Query that the 'stock' cache is now invalid.
             // It will automatically refetch the stock from the API in the background.
-            queryClient.invalidateQueries({ queryKey: ['stock'] })
-        }
+            queryClient.invalidateQueries({ queryKey: ["stock"] })
+        },
     })
 
     return {
         status: mutation.status,
         error: mutation.isError ? mutation.error.message : null,
         confirmPayment: mutation.mutate,
-        resetCheckout: mutation.reset
+        resetCheckout: mutation.reset,
     }
 }

@@ -1,5 +1,15 @@
 import { useEffect } from "react"
-import { Modal, NumberInput, SegmentedControl, TextInput, Button, Stack, Group, Text, Divider } from "@mantine/core"
+import {
+    Modal,
+    NumberInput,
+    SegmentedControl,
+    TextInput,
+    Button,
+    Stack,
+    Group,
+    Text,
+    Divider,
+} from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { brl } from "@/helpers"
 import type { Product } from "@/types"
@@ -17,7 +27,12 @@ interface RestockModalProps {
 type CostMode = "unit" | "total"
 
 export function RestockModal({
-    opened, onClose, product, onConfirm, isSubmitting, error
+    opened,
+    onClose,
+    product,
+    onConfirm,
+    isSubmitting,
+    error,
 }: RestockModalProps) {
     const form = useForm({
         initialValues: {
@@ -29,8 +44,10 @@ export function RestockModal({
         },
         validate: {
             quantity: (value) => (value > 0 ? null : "Informe uma quantidade válida"),
-            unit_cost: (value, values) => (values.cost_mode === "unit" && value <= 0 ? "Informe um custo válido" : null),
-            total_cost: (value, values) => (values.cost_mode === "total" && value <= 0 ? "Informe um custo válido" : null),
+            unit_cost: (value, values) =>
+                values.cost_mode === "unit" && value <= 0 ? "Informe um custo válido" : null,
+            total_cost: (value, values) =>
+                values.cost_mode === "total" && value <= 0 ? "Informe um custo válido" : null,
         },
     })
 
@@ -51,9 +68,8 @@ export function RestockModal({
     const estimatedTotalCents = Math.round(form.values.quantity * form.values.unit_cost * 100)
 
     const handleSubmit = form.onSubmit((values) => {
-        const totalCostInReais = values.cost_mode === "unit"
-            ? values.quantity * values.unit_cost
-            : values.total_cost
+        const totalCostInReais =
+            values.cost_mode === "unit" ? values.quantity * values.unit_cost : values.total_cost
 
         onConfirm({
             quantity: values.quantity,
@@ -101,7 +117,10 @@ export function RestockModal({
                                 {...form.getInputProps("unit_cost")}
                             />
                             <Text size="sm" c="dimmed">
-                                Total estimado da compra: <Text span fw={600} inherit>{brl(estimatedTotalCents)}</Text>
+                                Total estimado da compra:{" "}
+                                <Text span fw={600} inherit>
+                                    {brl(estimatedTotalCents)}
+                                </Text>
                             </Text>
                         </>
                     ) : (
@@ -118,7 +137,11 @@ export function RestockModal({
                         {...form.getInputProps("notes")}
                     />
 
-                    {error && <Text c="red" size="sm">{error}</Text>}
+                    {error && (
+                        <Text c="red" size="sm">
+                            {error}
+                        </Text>
+                    )}
 
                     <Group justify="flex-end" mt="sm">
                         <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>

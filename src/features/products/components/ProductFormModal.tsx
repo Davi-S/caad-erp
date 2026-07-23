@@ -8,14 +8,28 @@ interface ProductFormModalProps {
     opened: boolean
     onClose: () => void
     product: Product | null // null = creating
-    onCreate: (values: { product_id: string; product_name: string; sell_price: number; is_active: boolean }) => void
-    onUpdate: (productId: string, values: { product_name: string; sell_price: number; is_active: boolean }) => void
+    onCreate: (values: {
+        product_id: string
+        product_name: string
+        sell_price: number
+        is_active: boolean
+    }) => void
+    onUpdate: (
+        productId: string,
+        values: { product_name: string; sell_price: number; is_active: boolean },
+    ) => void
     isSubmitting: boolean
     error: string | null
 }
 
 export function ProductFormModal({
-    opened, onClose, product, onCreate, onUpdate, isSubmitting, error
+    opened,
+    onClose,
+    product,
+    onCreate,
+    onUpdate,
+    isSubmitting,
+    error,
 }: ProductFormModalProps) {
     const isEditing = product !== null
 
@@ -27,7 +41,8 @@ export function ProductFormModal({
             is_active: true,
         },
         validate: {
-            product_id: (value) => (isEditing || value.trim().length > 0 ? null : "Informe um identificador"),
+            product_id: (value) =>
+                isEditing || value.trim().length > 0 ? null : "Informe um identificador",
             product_name: (value) => (value.trim().length > 0 ? null : "Informe um nome"),
             sell_price: (value) => (value > 0 ? null : "Informe um preço válido"),
         },
@@ -81,7 +96,11 @@ export function ProductFormModal({
                         label="Identificador"
                         placeholder="ex: cerveja-lata"
                         disabled={isEditing}
-                        description={isEditing ? "O identificador não pode ser alterado." : "Usado como chave única. Não poderá ser alterado depois."}
+                        description={
+                            isEditing
+                                ? "O identificador não pode ser alterado."
+                                : "Usado como chave única. Não poderá ser alterado depois."
+                        }
                         {...form.getInputProps("product_id")}
                     />
                     <TextInput
@@ -98,9 +117,15 @@ export function ProductFormModal({
                         label="Produto ativo"
                         description="Produtos inativos não aparecem na tela de vendas."
                         checked={form.values.is_active}
-                        onChange={(event) => form.setFieldValue("is_active", event.currentTarget.checked)}
+                        onChange={(event) =>
+                            form.setFieldValue("is_active", event.currentTarget.checked)
+                        }
                     />
-                    {error && <Text c="red" size="sm">{error}</Text>}
+                    {error && (
+                        <Text c="red" size="sm">
+                            {error}
+                        </Text>
+                    )}
                     <Group justify="flex-end" mt="sm">
                         <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>
                             Cancelar

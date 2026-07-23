@@ -10,8 +10,11 @@ export function useCart() {
     // Core state. Single source of truth. Simplest representation of the cart
     const [cart, setCart] = useState<Record<string, number>>({})
 
-    // Derived states used for clear intent and easy of use of other values 
-    const total = products.reduce((sum, item) => sum + (cart[item.product_id] || 0) * item.sell_price, 0)
+    // Derived states used for clear intent and easy of use of other values
+    const total = products.reduce(
+        (sum, item) => sum + (cart[item.product_id] || 0) * item.sell_price,
+        0,
+    )
     const isEmpty = Object.keys(cart).length === 0
     const cartIterable = Object.entries(cart)
 
@@ -31,7 +34,7 @@ export function useCart() {
         setCart((prevCart) => {
             const current = prevCart[id]
             if (current <= 1) {
-                const { [id]: removedItem, ...restOfCart } = prevCart
+                const { [id]: _, ...restOfCart } = prevCart
                 return restOfCart
             }
             return { ...prevCart, [id]: current - 1 }
@@ -42,11 +45,10 @@ export function useCart() {
     }
     const removeItem = (id: string) => {
         setCart((prevCart) => {
-            const { [id]: removedItem, ...restOfCart } = prevCart
+            const { [id]: _, ...restOfCart } = prevCart
             return restOfCart
         })
     }
-
 
     return {
         cart,
