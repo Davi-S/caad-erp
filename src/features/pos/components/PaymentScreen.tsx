@@ -20,8 +20,6 @@ import {
     AlertTriangle,
     QrCode,
     Banknote,
-    CreditCard,
-    MoreHorizontal,
 } from "lucide-react"
 import { brl } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"

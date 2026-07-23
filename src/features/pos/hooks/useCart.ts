@@ -34,7 +34,7 @@ export function useCart() {
         setCart((prevCart) => {
             const current = prevCart[id]
             if (current <= 1) {
-                const { [id]: removedItem, ...restOfCart } = prevCart
+                const { [id]: _, ...restOfCart } = prevCart
                 return restOfCart
             }
             return { ...prevCart, [id]: current - 1 }
@@ -45,7 +45,7 @@ export function useCart() {
     }
     const removeItem = (id: string) => {
         setCart((prevCart) => {
-            const { [id]: removedItem, ...restOfCart } = prevCart
+            const { [id]: _, ...restOfCart } = prevCart
             return restOfCart
         })
     }
