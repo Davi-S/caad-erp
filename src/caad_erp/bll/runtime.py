@@ -25,9 +25,7 @@ class RuntimeContext:
     settings: settings.AppSettings
     workbook: Workbook
     _cache: t.Dict[str, t.Dict[str, t.Any]] = dataclasses.field(
-        default_factory=dict,
-        repr=False,
-        compare=False
+        default_factory=dict, repr=False, compare=False
     )
 
 
@@ -88,7 +86,7 @@ def invalidate_cache(context: RuntimeContext, *names: str) -> None:
             pruned.
         *names (str): Variable-length list of bucket identifiers to remove.
             Missing buckets are ignored gracefully so callers can request
-            targeted invalidation without defensive checks.    
+            targeted invalidation without defensive checks.
     """
 
     if not names:
@@ -130,8 +128,7 @@ def load_context(config_path: t.Optional[Path] = None) -> RuntimeContext:
 
     app_settings = settings.get_settings(config_path)
     workbook = dal.open_workbook(app_settings.data_file)
-    logger.info("Loaded runtime context for workbook '%s'",
-                app_settings.data_file)
+    logger.info("Loaded runtime context for workbook '%s'", app_settings.data_file)
     return RuntimeContext(settings=app_settings, workbook=workbook)
 
 
@@ -160,5 +157,4 @@ def ensure_schema_version(context: RuntimeContext) -> None:
             f"Workbook schema mismatch: expected {constants.EXPECTED_SCHEMA_VERSION}, found {context.settings.schema_version}"
         )
 
-    logger.debug("Schema version '%s' validated",
-                 context.settings.schema_version)
+    logger.debug("Schema version '%s' validated", context.settings.schema_version)

@@ -33,8 +33,7 @@ def _discover_config_file(explicit_path: Optional[Path] = None) -> Path:
         if candidate.exists():
             return candidate.resolve()
 
-    raise FileNotFoundError(
-        f"Configuration file not found: {CONFIG_FILE_NAME}")
+    raise FileNotFoundError(f"Configuration file not found: {CONFIG_FILE_NAME}")
 
 
 def _parse_settings(parser: configparser.ConfigParser, base_path: Path) -> AppSettings:

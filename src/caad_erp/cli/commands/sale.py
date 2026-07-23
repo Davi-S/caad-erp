@@ -31,7 +31,8 @@ def register_sale_command() -> command_spec.CommandSpec:
         parser.add_argument("-s", "--salesman-id", required=True)
         parser.add_argument("-r", "--total-revenue", required=True)
         parser.add_argument(
-            "-p", "--payment-type",
+            "-p",
+            "--payment-type",
             choices=[member.value for member in constants.PaymentType],
             required=True,
         )
@@ -39,7 +40,9 @@ def register_sale_command() -> command_spec.CommandSpec:
         parser.set_defaults(command=name)
         return parser
 
-    return command_spec.CommandSpec(name=name, help_text=help_text, register=_registrar, execute=_run_sale)
+    return command_spec.CommandSpec(
+        name=name, help_text=help_text, register=_registrar, execute=_run_sale
+    )
 
 
 def _translate_sale(args: argparse.Namespace) -> bll.SaleCommand:

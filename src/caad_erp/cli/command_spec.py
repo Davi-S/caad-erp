@@ -8,9 +8,7 @@ from caad_erp import bll
 
 
 class SubparserFactory(t.Protocol):
-    def add_parser(
-        self, name: str, **kwargs: t.Any
-    ) -> argparse.ArgumentParser: ...
+    def add_parser(self, name: str, **kwargs: t.Any) -> argparse.ArgumentParser: ...
 
 
 @dataclasses.dataclass(frozen=True)

@@ -11,6 +11,7 @@ from caad_erp.api import runtime as api_runtime
 
 # happy path
 
+
 def test_mutating_endpoint_wraps_sync_handler_and_persists_after_success(
     api_context,
 ) -> None:
@@ -49,16 +50,20 @@ def test_mutating_endpoint_wraps_sync_handler_and_persists_after_success(
 
 
 @pytest.mark.parametrize("handler_kind", ["async", "sync"])
-def test_mutating_endpoint_preserves_original_signature_and_metadata(handler_kind: str) -> None:
+def test_mutating_endpoint_preserves_original_signature_and_metadata(
+    handler_kind: str,
+) -> None:
     """
     GIVEN a route handler with explicit signature and metadata
     WHEN wrapped by mutating_endpoint
     THEN wrapper preserves callable signature and function metadata for FastAPI
     """
     if handler_kind == "async":
+
         async def target(product_id: str, quantity: int = 1) -> str:
             return f"{product_id}:{quantity}"
     else:
+
         def target(product_id: str, quantity: int = 1) -> str:
             return f"{product_id}:{quantity}"
 
@@ -107,6 +112,7 @@ def test_mutating_endpoint_wraps_async_handler_and_persists_after_success(
 
 # sad path
 
+
 @pytest.mark.parametrize("handler_kind", ["async", "sync"])
 def test_mutating_endpoint_does_not_persist_when_handler_raises(
     handler_kind: str,
@@ -121,6 +127,7 @@ def test_mutating_endpoint_does_not_persist_when_handler_raises(
     before = data_file.stat().st_mtime_ns
 
     if handler_kind == "async":
+
         async def target() -> None:
             raise ValueError("boom")
 
@@ -132,6 +139,7 @@ def test_mutating_endpoint_does_not_persist_when_handler_raises(
         finally:
             api_runtime.clear_runtime_context()
     else:
+
         def target() -> None:
             raise ValueError("boom")
 
@@ -149,12 +157,14 @@ def test_mutating_endpoint_does_not_persist_when_handler_raises(
 
 # edge path
 
+
 def test_mutating_endpoint_propagates_missing_runtime_context_errors() -> None:
     """
     GIVEN a successful mutating handler but no runtime context configured
     WHEN wrapper attempts persistence after handler execution
     THEN runtime dependency error is raised to be mapped by API error handlers
     """
+
     def target() -> str:
         return "ok"
 

@@ -84,7 +84,9 @@ def test_request_models_accept_valid_payloads(request_type: str) -> None:
         "LogReportResponse",
     ],
 )
-def test_response_models_serialize_domain_values_to_expected_shape(response_type: str) -> None:
+def test_response_models_serialize_domain_values_to_expected_shape(
+    response_type: str,
+) -> None:
     """
     GIVEN domain-compatible values from BLL operations
     WHEN API response DTO models are instantiated
@@ -184,76 +186,114 @@ def test_response_models_serialize_domain_values_to_expected_shape(response_type
         "blank_linked_transaction_id_void",
     ],
 )
-def test_request_models_reject_invalid_payloads_by_constraint(invalid_case: str) -> None:
+def test_request_models_reject_invalid_payloads_by_constraint(
+    invalid_case: str,
+) -> None:
     """
     GIVEN payloads violating pydantic field constraints
     WHEN request DTO construction is attempted
     THEN validation errors are raised with field-level diagnostics
     """
     cases = {
-        "blank_product_id": (schemas.ProductCreateRequest, {
-            "product_id": "",
-            "product_name": "Soda",
-            "sell_price": 100,
-        }),
-        "blank_product_name": (schemas.ProductCreateRequest, {
-            "product_id": "P001",
-            "product_name": "",
-            "sell_price": 100,
-        }),
-        "negative_sell_price": (schemas.ProductCreateRequest, {
-            "product_id": "P001",
-            "product_name": "Soda",
-            "sell_price": -100,
-        }),
-        "blank_salesman_id": (schemas.SalesmanCreateRequest, {
-            "salesman_id": "",
-            "salesman_name": "Alice",
-        }),
-        "blank_salesman_name": (schemas.SalesmanCreateRequest, {
-            "salesman_id": "S001",
-            "salesman_name": "",
-        }),
-        "non_positive_quantity_sale": (schemas.SaleRequest, {
-            "product_id": "P001",
-            "salesman_id": "S001",
-            "quantity": 0,
-            "total_revenue": "1.00",
-            "payment_type": constants.PaymentType.CASH,
-        }),
-        "non_positive_quantity_restock": (schemas.RestockRequest, {
-            "product_id": "P001",
-            "salesman_id": "S001",
-            "quantity": 0,
-            "total_cost": "1.00",
-        }),
-        "non_positive_quantity_write_off": (schemas.WriteOffRequest, {
-            "product_id": "P001",
-            "salesman_id": "S001",
-            "quantity": 0,
-        }),
-        "negative_total_revenue_sale": (schemas.SaleRequest, {
-            "product_id": "P001",
-            "salesman_id": "S001",
-            "quantity": 1,
-            "total_revenue": -100,
-            "payment_type": constants.PaymentType.CASH,
-        }),
-        "negative_total_revenue_pay_debt": (schemas.PayDebtRequest, {
-            "linked_transaction_id": "TX001",
-            "salesman_id": "S001",
-            "total_revenue": -100,
-            "payment_type": constants.PaymentType.CASH,
-        }),
-        "negative_total_cost_restock": (schemas.RestockRequest, {
-            "product_id": "P001",
-            "salesman_id": "S001",
-            "quantity": 1,
-            "total_cost": -100,
-        }),
-        "blank_linked_transaction_id_void": (schemas.VoidRequest, {
-            "linked_transaction_id": "",
-        }),
+        "blank_product_id": (
+            schemas.ProductCreateRequest,
+            {
+                "product_id": "",
+                "product_name": "Soda",
+                "sell_price": 100,
+            },
+        ),
+        "blank_product_name": (
+            schemas.ProductCreateRequest,
+            {
+                "product_id": "P001",
+                "product_name": "",
+                "sell_price": 100,
+            },
+        ),
+        "negative_sell_price": (
+            schemas.ProductCreateRequest,
+            {
+                "product_id": "P001",
+                "product_name": "Soda",
+                "sell_price": -100,
+            },
+        ),
+        "blank_salesman_id": (
+            schemas.SalesmanCreateRequest,
+            {
+                "salesman_id": "",
+                "salesman_name": "Alice",
+            },
+        ),
+        "blank_salesman_name": (
+            schemas.SalesmanCreateRequest,
+            {
+                "salesman_id": "S001",
+                "salesman_name": "",
+            },
+        ),
+        "non_positive_quantity_sale": (
+            schemas.SaleRequest,
+            {
+                "product_id": "P001",
+                "salesman_id": "S001",
+                "quantity": 0,
+                "total_revenue": "1.00",
+                "payment_type": constants.PaymentType.CASH,
+            },
+        ),
+        "non_positive_quantity_restock": (
+            schemas.RestockRequest,
+            {
+                "product_id": "P001",
+                "salesman_id": "S001",
+                "quantity": 0,
+                "total_cost": "1.00",
+            },
+        ),
+        "non_positive_quantity_write_off": (
+            schemas.WriteOffRequest,
+            {
+                "product_id": "P001",
+                "salesman_id": "S001",
+                "quantity": 0,
+            },
+        ),
+        "negative_total_revenue_sale": (
+            schemas.SaleRequest,
+            {
+                "product_id": "P001",
+                "salesman_id": "S001",
+                "quantity": 1,
+                "total_revenue": -100,
+                "payment_type": constants.PaymentType.CASH,
+            },
+        ),
+        "negative_total_revenue_pay_debt": (
+            schemas.PayDebtRequest,
+            {
+                "linked_transaction_id": "TX001",
+                "salesman_id": "S001",
+                "total_revenue": -100,
+                "payment_type": constants.PaymentType.CASH,
+            },
+        ),
+        "negative_total_cost_restock": (
+            schemas.RestockRequest,
+            {
+                "product_id": "P001",
+                "salesman_id": "S001",
+                "quantity": 1,
+                "total_cost": -100,
+            },
+        ),
+        "blank_linked_transaction_id_void": (
+            schemas.VoidRequest,
+            {
+                "linked_transaction_id": "",
+            },
+        ),
     }
 
     model, payload = cases[invalid_case]

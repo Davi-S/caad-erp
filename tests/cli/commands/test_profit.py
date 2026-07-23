@@ -18,19 +18,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen = wb.create_sheet(constants.SheetName.SALESMEN.value)
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -85,7 +87,9 @@ def test_register_profit_registrar_configures_command_default() -> None:
         },
     ],
 )
-def test_display_profit_summary_handles_defaults_and_prints_values(summary_payload, capsys) -> None:
+def test_display_profit_summary_handles_defaults_and_prints_values(
+    summary_payload, capsys
+) -> None:
     """
     GIVEN summary mapping with optional missing keys
     WHEN _display_profit_summary is called

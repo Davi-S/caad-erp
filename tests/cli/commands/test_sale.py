@@ -4,7 +4,7 @@ import argparse
 import openpyxl
 import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants
 from caad_erp.cli.commands import sale
 from caad_erp.settings import AppSettings
 
@@ -20,19 +20,21 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
     salesmen.append(["SalesmanID", "SalesmanName", "IsActive"])
     salesmen.append(["S001", "Ana", True])
     tx = wb.create_sheet(constants.SheetName.TRANSACTION_LOG.value)
-    tx.append([
-        "TransactionID",
-        "Timestamp",
-        "TransactionType",
-        "ProductID",
-        "SalesmanID",
-        "PaymentType",
-        "QuantityChange",
-        "TotalRevenue",
-        "TotalCost",
-        "LinkedTransactionID",
-        "Notes",
-    ])
+    tx.append(
+        [
+            "TransactionID",
+            "Timestamp",
+            "TransactionType",
+            "ProductID",
+            "SalesmanID",
+            "PaymentType",
+            "QuantityChange",
+            "TotalRevenue",
+            "TotalCost",
+            "LinkedTransactionID",
+            "Notes",
+        ]
+    )
     settings = AppSettings(
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
@@ -69,19 +71,21 @@ def test_register_sale_registrar_configures_required_arguments_and_choices() -> 
     spec.register(subparsers)
 
     # Act
-    args = parser.parse_args([
-        "sale",
-        "--product-id",
-        "P001",
-        "--quantity",
-        "2",
-        "--salesman-id",
-        "S001",
-        "--total-revenue",
-        "5.00",
-        "--payment-type",
-        constants.PaymentType.CASH.value,
-    ])
+    args = parser.parse_args(
+        [
+            "sale",
+            "--product-id",
+            "P001",
+            "--quantity",
+            "2",
+            "--salesman-id",
+            "S001",
+            "--total-revenue",
+            "5.00",
+            "--payment-type",
+            constants.PaymentType.CASH.value,
+        ]
+    )
 
     # Assert
     assert args.command == "sale"
