@@ -431,9 +431,9 @@ export interface components {
             /** Timestamp Iso */
             timestamp_iso: string
             /** Product Id */
-            product_id: string | null
+            product_id: string
             /** Salesman Id */
-            salesman_id: string | null
+            salesman_id: string
             /** Quantity */
             quantity: number
             /** Expected Amount */
@@ -682,9 +682,9 @@ export interface components {
             /** Transaction Type */
             transaction_type: string
             /** Product Id */
-            product_id: string | null
+            product_id: string
             /** Salesman Id */
-            salesman_id: string | null
+            salesman_id: string
             /** Payment Type */
             payment_type: string | null
             /** Quantity Change */
