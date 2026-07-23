@@ -24,8 +24,8 @@ class OutstandingDebt:
 
     transaction_id: str
     timestamp_iso: str
-    product_id: t.Optional[str]
-    salesman_id: t.Optional[str]
+    product_id: str
+    salesman_id: str
     quantity: int
     expected_amount: int
     amount_paid: int
@@ -150,17 +150,16 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
         )
 
         expected_from_price = 0
-        if entry.product_id is not None:
-            try:
-                product = products.get_product(context, entry.product_id)
-            except exceptions.MissingReferenceError:
-                logger.warning(
-                    "Skipping price lookup for missing product '%s' referenced by credit sale '%s'",
-                    entry.product_id,
-                    entry.transaction_id,
-                )
-            else:
-                expected_from_price = product.sell_price * quantity
+        try:
+            product = products.get_product(context, entry.product_id)
+        except exceptions.MissingReferenceError:
+            logger.warning(
+                "Skipping price lookup for missing product '%s' referenced by credit sale '%s'",
+                entry.product_id,
+                entry.transaction_id,
+            )
+        else:
+            expected_from_price = product.sell_price * quantity
 
         expected_amount = (
             expected_from_transaction
