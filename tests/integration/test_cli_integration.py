@@ -38,6 +38,82 @@ def test_cli_main_executes_mutating_command_and_persists_changes(
     assert saved.product_name == "CLI Product"
 
 
+def test_cli_main_executes_bulk_sale_and_persists_changes(
+    integration_config_path: Path,
+    initialized_context: bll.RuntimeContext,
+) -> None:
+    """
+    GIVEN setup products and salesman
+    WHEN cli.parser.main is invoked with bulk-sale arguments
+    THEN returns exit code zero and all sale transactions are persisted to workbook
+    """
+    cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "add-salesman",
+            "-i",
+            "S001",
+            "-n",
+            "Test Salesman",
+        ]
+    )
+    cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "add-product",
+            "-i",
+            "BULK-P1",
+            "-n",
+            "Bulk Product 1",
+            "-p",
+            "1000",
+        ]
+    )
+    cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "add-product",
+            "-i",
+            "BULK-P2",
+            "-n",
+            "Bulk Product 2",
+            "-p",
+            "1500",
+        ]
+    )
+
+    result = cli_parser.main(
+        [
+            "--config",
+            str(integration_config_path),
+            "bulk-sale",
+            "-s",
+            "S001",
+            "-p",
+            "Cash",
+            "-n",
+            "Integration bulk sale",
+            "-i",
+            "BULK-P1",
+            "2",
+            "2000",
+            "-i",
+            "BULK-P2",
+            "1",
+            "1500",
+        ]
+    )
+
+    assert result == 0
+    reloaded = bll.load_context(integration_config_path)
+    txs = bll.list_transactions(reloaded)
+    bulk_txs = [tx for tx in txs if tx.notes == "Integration bulk sale"]
+    assert len(bulk_txs) == 2
+
+
 def test_cli_main_executes_reporting_command_without_persist_side_effect(
     integration_config_path: Path,
     initialized_context: bll.RuntimeContext,
