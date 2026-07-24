@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
     ActionIcon,
     Alert,
@@ -12,7 +13,7 @@ import {
     ThemeIcon,
     Title,
 } from "@mantine/core"
-import { Plus, Pencil, Users, AlertTriangle } from "lucide-react"
+import { Plus, Pencil, Users, AlertTriangle, ArrowLeft } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { useSalesmen } from "@/hooks/queries/useSalesmen"
 import { useCreateSalesman, useUpdateSalesman } from "./hooks/useSalesmenMutations"
@@ -20,6 +21,7 @@ import { SalesmanFormModal } from "./components/SalesmanFormModal"
 import type { Salesman } from "@/types"
 
 export function SalesmenManagementPage() {
+    const navigate = useNavigate()
     const [showInactive, setShowInactive] = useState(false)
     const { data: salesmen, isLoading, isError } = useSalesmen()
     // Filter the salesmen on the client side
@@ -37,8 +39,8 @@ export function SalesmenManagementPage() {
     const submitError = createMutation.isError
         ? createMutation.error.message
         : updateMutation.isError
-          ? updateMutation.error.message
-          : null
+            ? updateMutation.error.message
+            : null
 
     const openCreateModal = () => {
         setEditingSalesman(null)
@@ -76,14 +78,25 @@ export function SalesmenManagementPage() {
         <ScreenShell>
             {/* Header */}
             <Group justify="space-between" wrap="nowrap">
-                <Stack gap={0}>
-                    <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
-                        Gerenciamento
-                    </Text>
-                    <Title order={1} size="h4">
-                        Vendedores
-                    </Title>
-                </Stack>
+                <Group wrap="nowrap">
+                    <ActionIcon onClick={() => navigate("/")} variant="subtle" size="lg">
+                        <ArrowLeft />
+                    </ActionIcon>
+                    <Stack gap={0}>
+                        <Text
+                            size="xs"
+                            fw={600}
+                            tt="uppercase"
+                            c="dimmed"
+                            style={{ letterSpacing: 1 }}
+                        >
+                            Gerenciamento
+                        </Text>
+                        <Title order={1} size="h4">
+                            Vendedores
+                        </Title>
+                    </Stack>
+                </Group>
                 <ActionIcon onClick={openCreateModal} size="lg" radius="xl">
                     <Plus size={20} />
                 </ActionIcon>
