@@ -178,6 +178,27 @@ Uses the "Reversal and Re-entry" method. A `VOID` transaction reverses the
 mistake, followed by a new entry with the correct data. The correct data is
 optional if only want to delete the mistake.
 
+### Bulk Sales (Atomic Multi-Item Checkouts)
+
+Captures real-world shopping cart checkouts where a customer purchases multiple
+items in a single transaction.
+
+The workflow is orchestrated in `bll.record_bulk_sale` using a **2-phase,
+all-or-nothing wrapper** pattern:
+
+1. **Validation Phase**: Validates every `SaleCommand` in the input list (verifying
+   active status and existence for products and salesmen, positive quantities, and
+   valid revenue). If *any* item fails validation, an exception is raised
+   immediately and **zero** transactions are recorded.
+2. **Execution Phase**: Appends all sale transactions to the `TransactionLog` sheet
+   in sequence, invalidates the transaction cache once at the end, and returns the
+   created rows.
+
+*Developer Rationale*:
+- **BLL Centered**: All-or-nothing atomicity rules and validation loops live strictly in the BLL (`bll.record_bulk_sale`), never in CLI or API handlers.
+- **DTO Transformation**: API endpoint `POST /transactions/bulk-sale` accepts `BulkSaleRequest` DTOs and maps them to `list[SaleCommand]`. CLI command `bulk-sale` parses `-s`, `-p`, `-n` header options and repeated `-i PRODUCT_ID QTY TOTAL_REVENUE` flags into `list[SaleCommand]`.
+- **Single Persistence Pass**: In mutating API requests or REPL sessions, workbook changes are written to disk once at the end of the batch operation, eliminating redundant disk I/O.
+
 ## Runtime Caching in the BLL
 
 The business logic layer keeps a single workbook open inside a `RuntimeContext`
