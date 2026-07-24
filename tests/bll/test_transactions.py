@@ -1431,3 +1431,153 @@ def test_validate_void_target_accepts_other_transaction_types() -> None:
 
     # Act / Assert
     transactions._validate_void_target(row)
+
+
+def test_record_bulk_sale_success() -> None:
+    """
+    GIVEN a valid list of SaleCommand objects
+    WHEN record_bulk_sale is called
+    THEN all transactions are recorded, inventory is updated, and transactions are returned
+    """
+    # Arrange
+    wb = _make_workbook()
+    _seed_product(wb, "P001")
+    _seed_product(wb, "P002")
+    _seed_salesman(wb, "S001")
+    context = _make_context(wb)
+
+    cmd1 = transactions.SaleCommand(
+        product_id="P001",
+        salesman_id="S001",
+        quantity=2,
+        total_revenue=500,
+        payment_type=constants.PaymentType.CASH,
+        notes="Bulk item 1",
+    )
+    cmd2 = transactions.SaleCommand(
+        product_id="P002",
+        salesman_id="S001",
+        quantity=1,
+        total_revenue=300,
+        payment_type=constants.PaymentType.CASH,
+        notes="Bulk item 2",
+    )
+
+    # Act
+    results = transactions.record_bulk_sale(context, [cmd1, cmd2])
+
+    # Assert
+    assert len(results) == 2
+    assert results[0].product_id == "P001"
+    assert results[0].quantity_change == -2
+    assert results[1].product_id == "P002"
+    assert results[1].quantity_change == -1
+
+    all_txs = list(dal.iter_transactions(context.workbook))
+    assert len(all_txs) == 2
+
+
+def test_record_bulk_sale_atomic_rollback_on_inactive_product() -> None:
+    """
+    GIVEN a list of SaleCommand objects where one product is inactive
+    WHEN record_bulk_sale is called
+    THEN BusinessRuleViolation is raised and zero transactions are recorded
+    """
+    # Arrange
+    wb = _make_workbook()
+    _seed_product(wb, "P001", is_active=True)
+    _seed_product(wb, "P002", is_active=False)
+    _seed_salesman(wb, "S001")
+    context = _make_context(wb)
+
+    cmd1 = transactions.SaleCommand(
+        product_id="P001",
+        salesman_id="S001",
+        quantity=2,
+        total_revenue=500,
+        payment_type=constants.PaymentType.CASH,
+    )
+    cmd2 = transactions.SaleCommand(
+        product_id="P002",
+        salesman_id="S001",
+        quantity=1,
+        total_revenue=300,
+        payment_type=constants.PaymentType.CASH,
+    )
+
+    # Act / Assert
+    with pytest.raises(BusinessRuleViolation):
+        transactions.record_bulk_sale(context, [cmd1, cmd2])
+
+    assert len(list(dal.iter_transactions(context.workbook))) == 0
+
+
+def test_record_bulk_sale_atomic_rollback_on_missing_salesman() -> None:
+    """
+    GIVEN a list of SaleCommand objects referencing a missing salesman
+    WHEN record_bulk_sale is called
+    THEN MissingReferenceError is raised and zero transactions are recorded
+    """
+    # Arrange
+    wb = _make_workbook()
+    _seed_product(wb, "P001")
+    context = _make_context(wb)
+
+    cmd1 = transactions.SaleCommand(
+        product_id="P001",
+        salesman_id="S999",
+        quantity=1,
+        total_revenue=300,
+        payment_type=constants.PaymentType.CASH,
+    )
+
+    # Act / Assert
+    with pytest.raises(MissingReferenceError):
+        transactions.record_bulk_sale(context, [cmd1])
+
+    assert len(list(dal.iter_transactions(context.workbook))) == 0
+
+
+def test_record_bulk_sale_empty_list_raises_error() -> None:
+    """
+    GIVEN an empty list of commands
+    WHEN record_bulk_sale is called
+    THEN BusinessRuleViolation is raised
+    """
+    # Arrange
+    wb = _make_workbook()
+    context = _make_context(wb)
+
+    # Act / Assert
+    with pytest.raises(BusinessRuleViolation):
+        transactions.record_bulk_sale(context, [])
+
+
+def test_record_bulk_sale_invalidates_cache() -> None:
+    """
+    GIVEN cached transactions in context
+    WHEN record_bulk_sale is called
+    THEN the transactions cache is invalidated
+    """
+    # Arrange
+    wb = _make_workbook()
+    _seed_product(wb, "P001")
+    _seed_salesman(wb, "S001")
+    context = _make_context(wb)
+    transactions.list_transactions(context)  # warm cache
+    assert "transactions" in context._cache
+
+    cmd = transactions.SaleCommand(
+        product_id="P001",
+        salesman_id="S001",
+        quantity=1,
+        total_revenue=100,
+        payment_type=constants.PaymentType.CASH,
+    )
+
+    # Act
+    transactions.record_bulk_sale(context, [cmd])
+
+    # Assert
+    assert "transactions" not in context._cache
+
