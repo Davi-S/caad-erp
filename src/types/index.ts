@@ -9,6 +9,7 @@ export type Stock = Record<string, number>
 export type PaymentType = Schemas["PaymentType"]
 export type SaleRequest = Schemas["SaleRequest"]
 export type SalesRequests = SaleRequest[]
+export type BulkSaleRequest = Schemas["BulkSaleRequest"]
 export type RestockRequest = Schemas["RestockRequest"]
 export type WriteOffRequest = Schemas["WriteOffRequest"]
 
