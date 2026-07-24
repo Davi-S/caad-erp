@@ -3,6 +3,7 @@ import argparse
 from caad_erp import bll, constants
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_pay_debt_command() -> command_spec.CommandSpec:
@@ -87,8 +88,11 @@ def _run_pay_debt(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
             payment.
 
     Returns:
-        int: Exit code ``0`` when the payment is recorded successfully.
+        int: Exit code ``0`` on success, or a non-zero exit code on failure.
     """
-    command = _translate_pay_debt(args)
-    bll.record_credit_payment(context, command)
-    return 0
+    try:
+        command = _translate_pay_debt(args)
+        bll.record_credit_payment(context, command)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

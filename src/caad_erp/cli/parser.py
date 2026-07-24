@@ -9,6 +9,7 @@ import argparse
 import importlib
 import logging
 import pkgutil
+import sys
 import typing as t
 from pathlib import Path
 
@@ -200,11 +201,14 @@ def handle_cli_error(error: Exception) -> int:
     """
     if isinstance(error, exceptions.BusinessRuleViolation):
         logger.error("%s", error)
+        print(f"Error: {error}")
         return 2
     if isinstance(error, FileNotFoundError):
         logger.error("%s", error)
+        print(f"Error: {error}")
         return 3
     logger.error("%s", error)
+    print(f"Error: {error}")
     return 1
 
 

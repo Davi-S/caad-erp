@@ -208,11 +208,13 @@ the "N+1" read pattern during operations.
 
 ## Error handling in the CLI
 
-(#TODO)
+CLI command handlers wrap execution routines in exception handling logic that maps domain and system exceptions to standardized exit codes via `handle_cli_error`. When an exception occurs, the error message is output to standard error (`sys.stderr`) to provide user feedback, and the corresponding non-zero exit code is returned to the caller or shell environment.
 
-Each command exits with `0` on success, `2` for business rule violations, `3`
-when the configuration or data file cannot be found, and `1` for unexpected
-errors.
+Exit code mapping:
+- `0`: Operation succeeded cleanly.
+- `1`: Generic unexpected runtime error (e.g. `RuntimeError`, `ValueError`).
+- `2`: Business rule violation or domain constraint failure (`BusinessRuleViolation` or `MissingReferenceError`).
+- `3`: Missing configuration or data file (`FileNotFoundError`).
 
 ## Tests
 

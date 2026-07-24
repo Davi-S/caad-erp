@@ -2,8 +2,9 @@ from pathlib import Path
 
 import argparse
 import openpyxl
+import pytest
 
-from caad_erp import bll, constants
+from caad_erp import bll, constants, exceptions
 from caad_erp.cli.commands import list_salesmen
 from caad_erp.settings import AppSettings
 
@@ -99,3 +100,27 @@ def test_run_list_salesmen_report_reports_only_specific_salesman(
     output = capsys.readouterr().out
     assert "S001" in output
     assert "S002" not in output
+
+
+def test_run_list_salesmen_report_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context when bll raises BusinessRuleViolation
+    WHEN _run_list_salesmen_report is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(salesman_id=None)
+
+    def _mock_list_salesmen(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Salesman list error")
+
+    monkeypatch.setattr(bll, "list_salesmen", _mock_list_salesmen)
+
+    # Act
+    exit_code = list_salesmen._run_list_salesmen_report(context, args)
+
+    # Assert
+    assert exit_code == 2

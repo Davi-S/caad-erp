@@ -3,6 +3,7 @@ import argparse
 from caad_erp import bll, constants
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_sale_command() -> command_spec.CommandSpec:
@@ -84,8 +85,11 @@ def _run_sale(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
             operation.
 
     Returns:
-        int: Exit code ``0`` when the sale is recorded successfully.
+        int: Exit code ``0`` on success, or a non-zero exit code on failure.
     """
-    command = _translate_sale(args)
-    bll.record_sale(context, command)
-    return 0
+    try:
+        command = _translate_sale(args)
+        bll.record_sale(context, command)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

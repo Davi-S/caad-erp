@@ -2,8 +2,9 @@ from pathlib import Path
 
 import argparse
 import openpyxl
+import pytest
 
-from caad_erp import bll, constants
+from caad_erp import bll, constants, exceptions
 from caad_erp.cli.commands import restock
 from caad_erp.settings import AppSettings
 
@@ -113,3 +114,33 @@ def test_run_restock_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     rows = bll.list_transactions(context)
     assert len(rows) == 1
     assert rows[0].transaction_type == constants.TransactionType.RESTOCK.value
+
+
+def test_run_restock_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context and restock args when bll raises BusinessRuleViolation
+    WHEN _run_restock is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(
+        product_id="P001",
+        quantity="5",
+        total_cost="1000",
+        salesman_id="INACTIVE_S",
+        notes=None,
+    )
+
+    def _mock_record_restock(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Inactive salesman")
+
+    monkeypatch.setattr(bll, "record_restock", _mock_record_restock)
+
+    # Act
+    exit_code = restock._run_restock(context, args)
+
+    # Assert
+    assert exit_code == 2
