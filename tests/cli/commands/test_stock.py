@@ -2,8 +2,9 @@ from pathlib import Path
 
 import argparse
 import openpyxl
+import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants, dal, exceptions
 from caad_erp.cli.commands import stock
 from caad_erp.settings import AppSettings
 
@@ -136,3 +137,26 @@ def test_run_stock_report_calls_bll_and_returns_zero(tmp_path: Path, capsys) -> 
     # Assert
     assert exit_code == 0
     assert "P001" in capsys.readouterr().out
+
+
+def test_run_stock_report_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context when bll raises BusinessRuleViolation
+    WHEN _run_stock_report is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+
+    def _mock_calculate_inventory(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Stock calculation error")
+
+    monkeypatch.setattr(bll, "calculate_inventory", _mock_calculate_inventory)
+
+    # Act
+    exit_code = stock._run_stock_report(context, argparse.Namespace())
+
+    # Assert
+    assert exit_code == 2

@@ -4,7 +4,7 @@ import argparse
 import openpyxl
 import pytest
 
-from caad_erp import bll, constants
+from caad_erp import bll, constants, exceptions
 from caad_erp.cli.commands import add_salesman
 from caad_erp.settings import AppSettings
 
@@ -135,3 +135,31 @@ def test_run_add_salesman_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     assert exit_code == 0
     created = bll.get_salesman(context, "S001")
     assert created.salesman_name == "Ana"
+
+
+def test_run_add_salesman_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context and add-salesman args when bll raises BusinessRuleViolation
+    WHEN _run_add_salesman is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(
+        salesman_id="S001",
+        salesman_name="Ana",
+        inactive=False,
+    )
+
+    def _mock_add_salesman(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Duplicate salesman")
+
+    monkeypatch.setattr(bll, "add_salesman", _mock_add_salesman)
+
+    # Act
+    exit_code = add_salesman._run_add_salesman(context, args)
+
+    # Assert
+    assert exit_code == 2

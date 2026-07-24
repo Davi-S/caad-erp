@@ -1,8 +1,9 @@
 from pathlib import Path
 import argparse
 import openpyxl
+import pytest
 
-from caad_erp import bll, constants
+from caad_erp import bll, constants, exceptions
 from caad_erp.cli.commands import edit_salesman
 from caad_erp.settings import AppSettings
 
@@ -126,3 +127,31 @@ def test_run_edit_salesman_calls_bll_update_and_returns_zero(tmp_path: Path) -> 
     updated = bll.get_salesman(context, "S001")
     assert updated.salesman_name == "John"
     assert updated.is_active is False
+
+
+def test_run_edit_salesman_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context and edit-salesman args when bll raises BusinessRuleViolation
+    WHEN _run_edit_salesman is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(
+        salesman_id="S999",
+        salesman_name="New Name",
+        salesman_is_active=None,
+    )
+
+    def _mock_update_salesman(*args, **kwargs):
+        raise exceptions.MissingReferenceError("Salesman not found")
+
+    monkeypatch.setattr(bll, "update_salesman", _mock_update_salesman)
+
+    # Act
+    exit_code = edit_salesman._run_edit_salesman(context, args)
+
+    # Assert
+    assert exit_code == 2

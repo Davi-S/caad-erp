@@ -4,7 +4,7 @@ import argparse
 import openpyxl
 import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants, dal, exceptions
 from caad_erp.cli.commands import debts
 from caad_erp.settings import AppSettings
 
@@ -161,3 +161,26 @@ def test_run_debts_report_calls_bll_and_returns_zero(tmp_path: Path, capsys) -> 
     # Assert
     assert exit_code == 0
     assert "Outstanding credit balances:" in capsys.readouterr().out
+
+
+def test_run_debts_report_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context when bll raises BusinessRuleViolation
+    WHEN _run_debts_report is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+
+    def _mock_calculate_debts(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Calculation failed")
+
+    monkeypatch.setattr(bll, "calculate_outstanding_debts", _mock_calculate_debts)
+
+    # Act
+    exit_code = debts._run_debts_report(context, argparse.Namespace())
+
+    # Assert
+    assert exit_code == 2
