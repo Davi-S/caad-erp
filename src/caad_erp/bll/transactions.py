@@ -216,6 +216,28 @@ def get_transaction(
         ) from exc
 
 
+def _validate_sale_command(
+    context: runtime.RuntimeContext, command: SaleCommand
+) -> None:
+    """Validate that a SaleCommand meets all domain rules before execution."""
+    product = products.get_product(context, command.product_id)
+    if not product.is_active:
+        logger.warning("Attempted sale on inactive product '%s'", command.product_id)
+        raise exceptions.BusinessRuleViolation(
+            f"Product '{command.product_id}' is inactive"
+        )
+    salesman = salesmen.get_salesman(context, command.salesman_id)
+    if not salesman.is_active:
+        logger.warning(
+            "Attempted sale with inactive salesman '%s'", command.salesman_id
+        )
+        raise exceptions.BusinessRuleViolation(
+            f"Salesman '{command.salesman_id}' is inactive"
+        )
+    _require_positive_quantity(command.quantity)
+    _require_nonnegative_money(command.total_revenue)
+
+
 def record_sale(
     context: runtime.RuntimeContext, command: SaleCommand
 ) -> dal.TransactionRow:
@@ -244,22 +266,7 @@ def record_sale(
         ValueError: When quantity or revenue validations fail.
     """
     now = datetime.datetime.now(datetime.UTC)
-    product = products.get_product(context, command.product_id)
-    if not product.is_active:
-        logger.warning("Attempted sale on inactive product '%s'", command.product_id)
-        raise exceptions.BusinessRuleViolation(
-            f"Product '{command.product_id}' is inactive"
-        )
-    salesman = salesmen.get_salesman(context, command.salesman_id)
-    if not salesman.is_active:
-        logger.warning(
-            "Attempted sale with inactive salesman '%s'", command.salesman_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Salesman '{command.salesman_id}' is inactive"
-        )
-    _require_positive_quantity(command.quantity)
-    _require_nonnegative_money(command.total_revenue)
+    _validate_sale_command(context, command)
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_sale_transaction(
@@ -275,6 +282,39 @@ def record_sale(
         command.total_revenue,
     )
     return transaction
+
+
+def record_bulk_sale(
+    context: runtime.RuntimeContext, commands: list[SaleCommand]
+) -> list[dal.TransactionRow]:
+    """Validate and append a list of ``SALE`` transactions atomically.
+
+    All commands in the list are validated upfront. If any command fails
+    validation (e.g. referencing an inactive product or salesman), a domain
+    exception is raised immediately and zero transactions are recorded.
+
+    Args:
+        context (RuntimeContext): Runtime context providing workbook access.
+        commands (list[SaleCommand]): List of sale intents to record.
+
+    Returns:
+        list[dal.TransactionRow]: Appended sale transaction rows.
+
+    Raises:
+        BusinessRuleViolation: If the command list is empty or any item is invalid.
+        MissingReferenceError: If any product or salesman is unknown.
+    """
+    if not commands:
+        raise exceptions.BusinessRuleViolation("Bulk sale requires at least one item")
+
+    for command in commands:
+        _validate_sale_command(context, command)
+
+    recorded: list[dal.TransactionRow] = []
+    for command in commands:
+        recorded.append(record_sale(context, command))
+
+    return recorded
 
 
 def _build_sale_transaction(
