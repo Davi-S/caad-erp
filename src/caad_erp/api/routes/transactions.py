@@ -32,11 +32,6 @@ def _transaction_to_response(
     )
 
 
-# TODO: need to handle multiple requests at once here, since the sale only
-# accepts one product at a time.
-# Maybe make the endpoint accept multiple products per sale, then call the BLL
-# for one product at a time.
-# Remember to update the CLI first.
 @router.post("/sale", response_model=schemas.StandardResponse, status_code=201)
 @persistence.mutating_endpoint
 def record_sale(
@@ -67,6 +62,43 @@ def record_sale(
     return schemas.StandardResponse(
         detail="Sale recorded successfully",
         data=_transaction_to_response(transaction),
+    )
+
+
+@router.post("/bulk-sale", response_model=schemas.StandardResponse, status_code=201)
+@persistence.mutating_endpoint
+def record_bulk_sale(
+    request: schemas.BulkSaleRequest,
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+) -> schemas.StandardResponse:
+    """Record multiple sale transactions in a single atomic operation.
+
+    Args:
+        request: Bulk sale transaction payload containing a list of SaleRequests.
+        context: Runtime context injected via dependency.
+
+    Returns:
+        StandardResponse containing the created bulk sale transaction items.
+
+    Raises:
+        HTTPException: 409 for business rule violations, 404 for missing references.
+    """
+    commands = [
+        bll.SaleCommand(
+            product_id=item.product_id,
+            salesman_id=item.salesman_id,
+            quantity=item.quantity,
+            total_revenue=item.total_revenue,
+            payment_type=item.payment_type,
+            notes=item.notes,
+        )
+        for item in request.items
+    ]
+    transactions = bll.record_bulk_sale(context, commands)
+    response_items = [_transaction_to_response(tx) for tx in transactions]
+    return schemas.StandardResponse(
+        detail="Bulk sale recorded successfully",
+        data=schemas.BulkSaleResponse(items=response_items),
     )
 
 

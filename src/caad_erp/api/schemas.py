@@ -85,6 +85,12 @@ class SaleRequest(pydantic.BaseModel):
     notes: t.Optional[str] = None
 
 
+class BulkSaleRequest(pydantic.BaseModel):
+    """Request payload for recording multiple sale transactions in a single operation."""
+
+    items: t.List[SaleRequest] = pydantic.Field(..., min_length=1)
+
+
 class RestockRequest(pydantic.BaseModel):
     """Request payload for recording a restock transaction."""
 
@@ -159,6 +165,12 @@ class TransactionResponse(pydantic.BaseModel):
     total_cost: int
     linked_transaction_id: t.Optional[str]
     notes: t.Optional[str]
+
+
+class BulkSaleResponse(pydantic.BaseModel):
+    """Response representation of recorded bulk sale transactions."""
+
+    items: t.List[TransactionResponse]
 
 
 class StockItem(pydantic.BaseModel):
