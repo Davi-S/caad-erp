@@ -193,6 +193,36 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/transactions/bulk-sale": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
+        /**
+         * Record Bulk Sale
+         * @description Record multiple sale transactions in a single atomic operation.
+         *
+         *     Args:
+         *         request: Bulk sale transaction payload containing a list of SaleRequests.
+         *         context: Runtime context injected via dependency.
+         *
+         *     Returns:
+         *         StandardResponse containing the created bulk sale transaction items.
+         *
+         *     Raises:
+         *         HTTPException: 409 for business rule violations, 404 for missing references.
+         */
+        post: operations["record_bulk_sale_transactions_bulk_sale_post"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/transactions/restock": {
         parameters: {
             query?: never
@@ -421,6 +451,14 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
     schemas: {
+        /**
+         * BulkSaleRequest
+         * @description Request payload for recording multiple sale transactions in a single operation.
+         */
+        BulkSaleRequest: {
+            /** Items */
+            items: components["schemas"]["SaleRequest"][]
+        }
         /**
          * DebtItem
          * @description Single outstanding debt entry.
@@ -1008,6 +1046,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SaleRequest"]
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["StandardResponse"]
+                }
+            }
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
+    record_bulk_sale_transactions_bulk_sale_post: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkSaleRequest"]
             }
         }
         responses: {
