@@ -102,7 +102,7 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                         Recebendo pagamento
                     </Text>
                     <Title order={1} size="h5">
-                        Venda de {salesman?.salesman_name}
+                        Venda de {salesman.salesman_name}
                     </Title>
                 </Stack>
             </Stack>
