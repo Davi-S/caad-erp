@@ -242,3 +242,83 @@ def test_transaction_endpoints_return_503_when_runtime_context_is_unavailable(
 
     assert response.status_code == 503
     assert response.json()["error_type"] == "RuntimeError"
+
+
+def test_bulk_sale_endpoint_success(api_client: TestClient) -> None:
+    """
+    GIVEN valid BulkSaleRequest payload with multiple items
+    WHEN POST /transactions/bulk-sale is called
+    THEN returns 201 Created with BulkSaleResponse inside StandardResponse
+    """
+    _setup_product_and_salesman(api_client)
+
+    response = api_client.post(
+        "/transactions/bulk-sale",
+        json={
+            "items": [
+                {
+                    "product_id": "TP001",
+                    "salesman_id": "TS001",
+                    "quantity": 2,
+                    "total_revenue": 2000,
+                    "payment_type": constants.PaymentType.CASH.value,
+                    "notes": "Item 1",
+                },
+                {
+                    "product_id": "TP001",
+                    "salesman_id": "TS001",
+                    "quantity": 1,
+                    "total_revenue": 1000,
+                    "payment_type": constants.PaymentType.CASH.value,
+                    "notes": "Item 2",
+                },
+            ]
+        },
+    )
+
+    assert response.status_code == 201
+    json_data = response.json()
+    assert json_data["detail"] == "Bulk sale recorded successfully"
+    items = json_data["data"]["items"]
+    assert len(items) == 2
+    assert items[0]["product_id"] == "TP001"
+    assert items[0]["quantity_change"] == -2
+    assert items[1]["quantity_change"] == -1
+
+
+def test_bulk_sale_endpoint_rejects_empty_items_with_422(
+    api_client: TestClient,
+) -> None:
+    """
+    GIVEN a BulkSaleRequest with an empty items list
+    WHEN POST /transactions/bulk-sale is called
+    THEN API returns 422 validation error
+    """
+    response = api_client.post("/transactions/bulk-sale", json={"items": []})
+    assert response.status_code == 422
+
+
+def test_bulk_sale_endpoint_maps_domain_errors(api_client: TestClient) -> None:
+    """
+    GIVEN a BulkSaleRequest referencing a missing or inactive product
+    WHEN POST /transactions/bulk-sale is called
+    THEN returns appropriate HTTP contract error (404 or 409)
+    """
+    _setup_product_and_salesman(api_client)
+
+    response = api_client.post(
+        "/transactions/bulk-sale",
+        json={
+            "items": [
+                {
+                    "product_id": "UNKNOWN",
+                    "salesman_id": "TS001",
+                    "quantity": 1,
+                    "total_revenue": 1000,
+                    "payment_type": constants.PaymentType.CASH.value,
+                }
+            ]
+        },
+    )
+    assert response.status_code == 404
+
