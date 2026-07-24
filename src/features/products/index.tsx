@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
     ActionIcon,
     Alert,
@@ -12,7 +13,7 @@ import {
     ThemeIcon,
     Title,
 } from "@mantine/core"
-import { Plus, Pencil, Package, AlertTriangle } from "lucide-react"
+import { Plus, Pencil, Package, AlertTriangle, ArrowLeft } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
 import { useProducts } from "@/hooks/queries/useProducts"
@@ -22,6 +23,7 @@ import { ProductFormModal } from "./components/ProductFormModal"
 import type { Product } from "@/types"
 
 export function ProductsManagementPage() {
+    const navigate = useNavigate()
     const [showInactive, setShowInactive] = useState(false)
     const { data: products, isLoading, isError } = useProducts()
     const { data: stock } = useStock()
@@ -41,8 +43,8 @@ export function ProductsManagementPage() {
     const submitError = createMutation.isError
         ? createMutation.error.message
         : updateMutation.isError
-          ? updateMutation.error.message
-          : null
+            ? updateMutation.error.message
+            : null
 
     const openCreateModal = () => {
         setEditingProduct(null)
@@ -80,8 +82,11 @@ export function ProductsManagementPage() {
     return (
         <ScreenShell>
             {/* Header */}
-            <Group justify="space-between" wrap="nowrap">
-                <Stack gap={0}>
+            <Group wrap="nowrap">
+                <ActionIcon onClick={() => navigate("/")} variant="subtle" size="lg">
+                    <ArrowLeft />
+                </ActionIcon>
+                <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                     <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
                         Gerenciamento
                     </Text>
