@@ -79,7 +79,7 @@ def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, int
     """
     total_revenue = 0
     total_cost = 0
-    for transaction in transactions._ensure_transactions_cache(context)["all"]:
+    for transaction in transactions.list_transactions(context):
         total_revenue += transaction.total_revenue
         total_cost += transaction.total_cost
     profit = total_revenue + total_cost
@@ -115,8 +115,7 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
             remaining credit across all sales.
     """
 
-    cache = transactions._ensure_transactions_cache(context)
-    all_transactions = cache["all"]
+    all_transactions = transactions.list_transactions(context)
 
     payments_by_sale: dict[str, int] = collections.defaultdict(int)
     voided_sales: set[str] = set()
