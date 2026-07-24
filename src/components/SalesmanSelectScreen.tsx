@@ -1,4 +1,5 @@
 import {
+    ActionIcon,
     Button,
     Center,
     Group,
@@ -10,7 +11,8 @@ import {
     Title,
 } from "@mantine/core"
 import { useState } from "react"
-import { Users } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { ArrowLeft, Users } from "lucide-react"
 import { ScreenShell } from "./ScreenShell"
 import type { Salesmen } from "@/types"
 
@@ -32,15 +34,26 @@ export function SalesmanSelectScreen({
     confirmLabel = "Continuar",
 }: SalesmanSelectScreenProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
+    const navigate = useNavigate()
 
     return (
         <ScreenShell>
             {/* Header */}
-            <Stack gap={4}>
-                <Title order={1} size="h2">
-                    {title}
-                </Title>
-            </Stack>
+            <Group wrap="nowrap">
+                <ActionIcon
+                    onClick={() => navigate("/")}
+                    variant="subtle"
+                    size="lg"
+                    aria-label="Voltar para o início"
+                >
+                    <ArrowLeft />
+                </ActionIcon>
+                <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                    <Title order={1} size="h2">
+                        {title}
+                    </Title>
+                </Stack>
+            </Group>
 
             {/* Middle Section */}
             <Stack style={{ flex: 1, minHeight: 0 }} py="lg">
