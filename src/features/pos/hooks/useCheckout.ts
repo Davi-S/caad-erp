@@ -2,24 +2,32 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { SalesRequests } from "@/types"
 import { api } from "@/api/apiClient"
 
+function extractErrorMessage(error: unknown, fallback: string): string {
+    if (
+        error &&
+        typeof error === "object" &&
+        "detail" in error &&
+        typeof (error as { detail: unknown }).detail === "string"
+    ) {
+        return (error as { detail: string }).detail
+    }
+    return fallback
+}
+
 export function useCheckout() {
     const queryClient = useQueryClient()
 
     const mutation = useMutation({
-        // The function that actually performs the action
         mutationFn: async (salesRequests: SalesRequests) => {
-            // TODO: Update this when the api updates to accept multiple products
-            // per sale.
-            for (const saleRequest of salesRequests) {
-                const res = await api.POST("/transactions/sale", { body: saleRequest })
-                // Throwing an error here to trigger the mutation's error state
-                if (res.error) throw new Error("Falha ao registrar a venda.")
+            const res = await api.POST("/transactions/bulk-sale", {
+                body: { items: salesRequests },
+            })
+            if (res.error) {
+                throw new Error(extractErrorMessage(res.error, "Falha ao registrar a venda."))
             }
+            return res.data
         },
-        // What happens when the mutation succeeds
         onSuccess: () => {
-            // This tells TanStack Query that the 'stock' cache is now invalid.
-            // It will automatically refetch the stock from the API in the background.
             queryClient.invalidateQueries({ queryKey: ["stock"] })
         },
     })
