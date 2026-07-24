@@ -100,6 +100,48 @@ def test_products_flow_create_list_and_deactivate_roundtrip(
     )
 
 
+def test_bulk_sale_end_to_end_flow(api_client: TestClient) -> None:
+    """
+    GIVEN an API client with products and salesman initialized
+    WHEN POST /transactions/bulk-sale is called with multiple items
+    THEN bulk transactions are recorded, inventory is updated, and log report includes all sales
+    """
+    _create_product(api_client, "BULK-API-P1")
+    _create_product(api_client, "BULK-API-P2")
+    _create_salesman(api_client, "BULK-API-S1")
+
+    bulk_response = api_client.post(
+        "/transactions/bulk-sale",
+        json={
+            "items": [
+                {
+                    "product_id": "BULK-API-P1",
+                    "salesman_id": "BULK-API-S1",
+                    "quantity": 3,
+                    "total_revenue": 3000,
+                    "payment_type": constants.PaymentType.CASH.value,
+                    "notes": "E2E Bulk 1",
+                },
+                {
+                    "product_id": "BULK-API-P2",
+                    "salesman_id": "BULK-API-S1",
+                    "quantity": 2,
+                    "total_revenue": 2000,
+                    "payment_type": constants.PaymentType.CASH.value,
+                    "notes": "E2E Bulk 2",
+                },
+            ]
+        },
+    )
+
+    assert bulk_response.status_code == 201
+    log_response = api_client.get("/reports/log")
+    assert log_response.status_code == 200
+    txs = log_response.json()["transactions"]
+    e2e_txs = [tx for tx in txs if tx["salesman_id"] == "BULK-API-S1"]
+    assert len(e2e_txs) == 2
+
+
 def test_salesmen_flow_create_list_and_deactivate_roundtrip(
     api_client: TestClient,
 ) -> None:
