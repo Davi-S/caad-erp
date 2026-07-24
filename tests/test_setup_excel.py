@@ -22,7 +22,7 @@ def test_create_master_workbook_creates_dashboard_sheet(tmp_path: Path):
     dashboard = wb["Dashboard"]
 
     # 2. Verify charts presence
-    assert len(dashboard._charts) == 2
+    assert len(dashboard._charts) == 1
 
     # 3. Verify KPI card cell contents starting at A1 (cents divided by 100)
     assert dashboard["A1"].value == "CAAD ERP Executive Summary"

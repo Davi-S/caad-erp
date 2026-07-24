@@ -208,20 +208,6 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
         )
         share_cell.number_format = "0.0%"
 
-    chart_sales = BarChart()
-    chart_sales.type = "bar"
-    chart_sales.title = "Sales Rep Revenue Ranking"
-    chart_sales.y_axis.title = "Salesman"
-    chart_sales.x_axis.title = "Revenue"
-    data_sales = Reference(ws, min_col=4, min_row=16, max_row=26)
-    labels_sales = Reference(ws, min_col=1, min_row=17, max_row=26)
-    chart_sales.add_data(data_sales, titles_from_data=True)
-    chart_sales.set_categories(labels_sales)
-    chart_sales.legend = None
-    chart_sales.width = 14
-    chart_sales.height = 7
-    ws.add_chart(chart_sales, "H16")
-
     # ---------------------------------------------------------
     # 4. Dynamic Product Performance & Inventory Table (A28:E78)
     # ---------------------------------------------------------
