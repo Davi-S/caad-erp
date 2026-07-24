@@ -3,6 +3,7 @@ import argparse
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_add_product_command() -> command_spec.CommandSpec:
@@ -79,9 +80,11 @@ def _run_add_product(context: bll.RuntimeContext, args: argparse.Namespace) -> i
             input for the ``add-product`` command.
 
     Returns:
-        int: Exit code ``0`` on success. Errors are propagated for higher level
-            handling.
+        int: Exit code ``0`` on success, or a non-zero exit code on failure.
     """
-    command = _translate_add_product(args)
-    bll.add_product(context, command)
-    return 0
+    try:
+        command = _translate_add_product(args)
+        bll.add_product(context, command)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

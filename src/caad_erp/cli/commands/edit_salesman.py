@@ -3,6 +3,7 @@ import argparse
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def _str_to_bool(value: str) -> bool:
@@ -83,9 +84,12 @@ def _run_edit_salesman(context: bll.RuntimeContext, args: argparse.Namespace) ->
         args (argparse.Namespace): Parsed CLI arguments for the command.
 
     Returns:
-        int: Exit code ``0`` after the salesman has been altered.
+        int: Exit code ``0`` on success, or a non-zero exit code on failure.
     """
 
-    command = _translate_edit_salesman(args)
-    bll.update_salesman(context, command)
-    return 0
+    try:
+        command = _translate_edit_salesman(args)
+        bll.update_salesman(context, command)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

@@ -3,6 +3,7 @@ import argparse
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_restock_command() -> command_spec.CommandSpec:
@@ -74,10 +75,11 @@ def _run_restock(context: bll.RuntimeContext, args: argparse.Namespace) -> int:
             restock operation.
 
     Returns:
-        int: Exit code ``0`` when the restock is recorded successfully.
+        int: Exit code ``0`` on success, or a non-zero exit code on failure.
     """
-    command = _translate_restock(args)
-    # TODO: Need to return error when the restock fails
-    # For example, on inactive salesman
-    bll.record_restock(context, command)
-    return 0
+    try:
+        command = _translate_restock(args)
+        bll.record_restock(context, command)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)
