@@ -47,7 +47,7 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
                         Venda em andamento
                     </Text>
                     <Title order={1} size="h5">
-                        Venda de {salesman?.salesman_name}
+                        Venda de {salesman.salesman_name}
                     </Title>
                 </Stack>
             </Group>
