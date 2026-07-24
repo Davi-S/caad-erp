@@ -92,6 +92,7 @@ documentation with full argument details.
 - `add-salesman`
 - `edit-salesman`
 - `sale`
+- `bulk-sale`
 - `restock`
 - `write-off`
 - `pay-debt`
