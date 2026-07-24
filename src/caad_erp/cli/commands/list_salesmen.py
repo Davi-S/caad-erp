@@ -4,6 +4,7 @@ import typing as t
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_list_salesmen_command() -> command_spec.CommandSpec:
@@ -80,17 +81,20 @@ def _run_list_salesmen_report(
             (currently unused; retained for signature consistency).
 
     Returns:
-        int: ``0`` after listing salesmen.
+        int: ``0`` on success, or a non-zero exit code on failure.
     """
-    salesmen = bll.list_salesmen(context)
-    salesman = (
-        salesmen
-        if not args.salesman_id
-        else [
-            salesman
-            for salesman in salesmen
-            if salesman.salesman_id == args.salesman_id
-        ]
-    )
-    _display_salesmen_report(salesman)
-    return 0
+    try:
+        salesmen = bll.list_salesmen(context)
+        salesman = (
+            salesmen
+            if not args.salesman_id
+            else [
+                salesman
+                for salesman in salesmen
+                if salesman.salesman_id == args.salesman_id
+            ]
+        )
+        _display_salesmen_report(salesman)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

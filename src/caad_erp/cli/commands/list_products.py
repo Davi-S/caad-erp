@@ -4,6 +4,7 @@ import typing as t
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_list_products_command() -> command_spec.CommandSpec:
@@ -81,13 +82,16 @@ def _run_list_products_report(
             (currently unused; retained for signature consistency).
 
     Returns:
-        int: ``0`` after listing products.
+        int: ``0`` on success, or a non-zero exit code on failure.
     """
-    products = bll.list_products(context)
-    product = (
-        products
-        if not args.product_id
-        else [product for product in products if product.product_id == args.product_id]
-    )
-    _display_products_report(product)
-    return 0
+    try:
+        products = bll.list_products(context)
+        product = (
+            products
+            if not args.product_id
+            else [product for product in products if product.product_id == args.product_id]
+        )
+        _display_products_report(product)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

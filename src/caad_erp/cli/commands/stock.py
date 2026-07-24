@@ -4,6 +4,7 @@ import typing as t
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_stock_command() -> command_spec.CommandSpec:
@@ -68,10 +69,12 @@ def _run_stock_report(context: bll.RuntimeContext, args: argparse.Namespace) -> 
             symmetry with other commands, currently unused.
 
     Returns:
-        int: ``0`` after delegating to the business layer and printing the
-        inventory snapshot.
+        int: ``0`` on success, or a non-zero exit code on failure.
     """
 
-    inventory = bll.calculate_inventory(context)
-    _display_inventory_report(inventory)
-    return 0
+    try:
+        inventory = bll.calculate_inventory(context)
+        _display_inventory_report(inventory)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

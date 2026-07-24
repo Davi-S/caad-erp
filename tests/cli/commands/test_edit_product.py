@@ -1,8 +1,9 @@
 from pathlib import Path
 import argparse
 import openpyxl
+import pytest
 
-from caad_erp import bll, constants
+from caad_erp import bll, constants, exceptions
 from caad_erp.cli.commands import edit_product
 from caad_erp.settings import AppSettings
 
@@ -137,3 +138,32 @@ def test_run_edit_product_calls_bll_update_and_returns_zero(tmp_path: Path) -> N
     assert updated.product_name == "New Cookie"
     assert updated.sell_price == 300
     assert updated.is_active is False
+
+
+def test_run_edit_product_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context and edit-product args when bll raises BusinessRuleViolation
+    WHEN _run_edit_product is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(
+        product_id="P999",
+        product_name="New Name",
+        product_sell_price=None,
+        product_is_active=None,
+    )
+
+    def _mock_update_product(*args, **kwargs):
+        raise exceptions.MissingReferenceError("Product not found")
+
+    monkeypatch.setattr(bll, "update_product", _mock_update_product)
+
+    # Act
+    exit_code = edit_product._run_edit_product(context, args)
+
+    # Assert
+    assert exit_code == 2

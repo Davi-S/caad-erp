@@ -2,8 +2,9 @@ from pathlib import Path
 
 import argparse
 import openpyxl
+import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants, dal, exceptions
 from caad_erp.cli.commands import void
 from caad_erp.settings import AppSettings
 
@@ -128,3 +129,27 @@ def test_run_void_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     rows = bll.list_transactions(context)
     assert len(rows) == 2
     assert rows[-1].transaction_type == constants.TransactionType.VOID.value
+
+
+def test_run_void_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context and void args when bll raises BusinessRuleViolation
+    WHEN _run_void is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(linked_transaction_id="TX999", notes=None)
+
+    def _mock_record_void(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Cannot void transaction")
+
+    monkeypatch.setattr(bll, "record_void", _mock_record_void)
+
+    # Act
+    exit_code = void._run_void(context, args)
+
+    # Assert
+    assert exit_code == 2
