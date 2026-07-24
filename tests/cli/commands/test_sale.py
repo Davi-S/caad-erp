@@ -4,7 +4,7 @@ import argparse
 import openpyxl
 import pytest
 
-from caad_erp import bll, constants
+from caad_erp import bll, constants, exceptions
 from caad_erp.cli.commands import sale
 from caad_erp.settings import AppSettings
 
@@ -165,3 +165,34 @@ def test_run_sale_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     rows = bll.list_transactions(context)
     assert len(rows) == 1
     assert rows[0].transaction_type == constants.TransactionType.SALE.value
+
+
+def test_run_sale_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context and sale args when bll raises BusinessRuleViolation
+    WHEN _run_sale is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(
+        product_id="UNKNOWN",
+        quantity="2",
+        salesman_id="S001",
+        total_revenue=500,
+        payment_type=constants.PaymentType.CASH.value,
+        notes=None,
+    )
+
+    def _mock_record_sale(*args, **kwargs):
+        raise exceptions.MissingReferenceError("Unknown product")
+
+    monkeypatch.setattr(bll, "record_sale", _mock_record_sale)
+
+    # Act
+    exit_code = sale._run_sale(context, args)
+
+    # Assert
+    assert exit_code == 2

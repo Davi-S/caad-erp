@@ -3,6 +3,7 @@ import argparse
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_write_off_command() -> command_spec.CommandSpec:
@@ -72,8 +73,11 @@ def _run_write_off(context: bll.RuntimeContext, args: argparse.Namespace) -> int
             write-off operation.
 
     Returns:
-        int: Exit code ``0`` when the write-off is recorded successfully.
+        int: Exit code ``0`` on success, or a non-zero exit code on failure.
     """
-    command = _translate_write_off(args)
-    bll.record_write_off(context, command)
-    return 0
+    try:
+        command = _translate_write_off(args)
+        bll.record_write_off(context, command)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

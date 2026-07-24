@@ -4,6 +4,7 @@ import typing as t
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_log_command() -> command_spec.CommandSpec:
@@ -88,9 +89,12 @@ def _run_log_report(context: bll.RuntimeContext, args: argparse.Namespace) -> in
             symmetry with other commands and currently unused.
 
     Returns:
-        int: ``0`` after listing the transactions.
+        int: ``0`` on success, or a non-zero exit code on failure.
     """
 
-    transactions = bll.list_transactions(context)
-    _display_transaction_log(transactions)
-    return 0
+    try:
+        transactions = bll.list_transactions(context)
+        _display_transaction_log(transactions)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

@@ -3,6 +3,7 @@ import argparse
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_add_salesman_command() -> command_spec.CommandSpec:
@@ -71,8 +72,11 @@ def _run_add_salesman(context: bll.RuntimeContext, args: argparse.Namespace) -> 
         args (argparse.Namespace): Parsed CLI arguments for the command.
 
     Returns:
-        int: Exit code ``0`` when the salesman is successfully recorded.
+        int: Exit code ``0`` on success, or a non-zero exit code on failure.
     """
-    command = _translate_add_salesman(args)
-    bll.add_salesman(context, command)
-    return 0
+    try:
+        command = _translate_add_salesman(args)
+        bll.add_salesman(context, command)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

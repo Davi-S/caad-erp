@@ -4,6 +4,7 @@ import typing as t
 from caad_erp import bll
 
 from .. import command_spec
+from ..parser import handle_cli_error
 
 
 def register_debts_command() -> command_spec.CommandSpec:
@@ -88,9 +89,12 @@ def _run_debts_report(context: bll.RuntimeContext, args: argparse.Namespace) -> 
             retained for API consistency.
 
     Returns:
-        int: ``0`` once the debts summary has been calculated and displayed.
+        int: ``0`` on success, or a non-zero exit code on failure.
     """
 
-    summary = bll.calculate_outstanding_debts(context)
-    _display_debts_report(summary)
-    return 0
+    try:
+        summary = bll.calculate_outstanding_debts(context)
+        _display_debts_report(summary)
+        return 0
+    except Exception as error:
+        return handle_cli_error(error)

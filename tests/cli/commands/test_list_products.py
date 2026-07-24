@@ -2,8 +2,9 @@ from pathlib import Path
 
 import argparse
 import openpyxl
+import pytest
 
-from caad_erp import bll, constants
+from caad_erp import bll, constants, exceptions
 from caad_erp.cli.commands import list_products
 from caad_erp.settings import AppSettings
 
@@ -99,3 +100,27 @@ def test_run_list_products_report_reports_only_specific_product(
     output = capsys.readouterr().out
     assert "P001" in output
     assert "P002" not in output
+
+
+def test_run_list_products_report_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context when bll raises BusinessRuleViolation
+    WHEN _run_list_products_report is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(product_id=None)
+
+    def _mock_list_products(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Product list error")
+
+    monkeypatch.setattr(bll, "list_products", _mock_list_products)
+
+    # Act
+    exit_code = list_products._run_list_products_report(context, args)
+
+    # Assert
+    assert exit_code == 2

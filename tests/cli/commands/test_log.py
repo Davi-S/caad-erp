@@ -4,7 +4,7 @@ import argparse
 import openpyxl
 import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants, dal, exceptions
 from caad_erp.cli.commands import log
 from caad_erp.settings import AppSettings
 
@@ -152,3 +152,26 @@ def test_run_log_report_calls_bll_and_returns_zero(tmp_path: Path, capsys) -> No
     # Assert
     assert exit_code == 0
     assert "Transaction log:" in capsys.readouterr().out
+
+
+def test_run_log_report_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context when bll raises BusinessRuleViolation
+    WHEN _run_log_report is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+
+    def _mock_list_transactions(*args, **kwargs):
+        raise exceptions.BusinessRuleViolation("Log error")
+
+    monkeypatch.setattr(bll, "list_transactions", _mock_list_transactions)
+
+    # Act
+    exit_code = log._run_log_report(context, argparse.Namespace())
+
+    # Assert
+    assert exit_code == 2

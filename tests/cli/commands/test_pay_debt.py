@@ -4,7 +4,7 @@ import argparse
 import openpyxl
 import pytest
 
-from caad_erp import bll, constants, dal
+from caad_erp import bll, constants, exceptions, dal
 from caad_erp.cli.commands import pay_debt
 from caad_erp.settings import AppSettings
 
@@ -179,3 +179,33 @@ def test_run_pay_debt_calls_bll_and_returns_zero(tmp_path: Path) -> None:
     rows = bll.list_transactions(context)
     assert len(rows) == 2
     assert rows[-1].transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
+
+
+def test_run_pay_debt_returns_nonzero_exit_code_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    GIVEN runtime context and pay-debt args when bll raises BusinessRuleViolation
+    WHEN _run_pay_debt is called
+    THEN non-zero exit code 2 is returned
+    """
+    # Arrange
+    context = _make_context(tmp_path)
+    args = argparse.Namespace(
+        linked_transaction_id="TX999",
+        salesman_id="S001",
+        total_revenue=500,
+        payment_type=constants.PaymentType.CASH.value,
+        notes=None,
+    )
+
+    def _mock_pay_debt(*args, **kwargs):
+        raise exceptions.MissingReferenceError("Unknown transaction")
+
+    monkeypatch.setattr(bll, "record_credit_payment", _mock_pay_debt)
+
+    # Act
+    exit_code = pay_debt._run_pay_debt(context, args)
+
+    # Assert
+    assert exit_code == 2
