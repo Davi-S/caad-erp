@@ -15,6 +15,7 @@ from typing import Mapping, MutableMapping, Sequence
 import sys
 
 import openpyxl
+from openpyxl.chart import BarChart, DoughnutChart, PieChart, Reference
 from openpyxl.styles import Font
 
 # Define the schema exactly as specified in the architecture
@@ -92,12 +93,177 @@ def load_settings(config_path: Path) -> SetupSettings:
     )
 
 
+def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
+    """Create and format the executive Dashboard sheet as the first tab in the workbook."""
+
+    ws = workbook.create_sheet(title="Dashboard", index=0)
+
+    bold_title_font = Font(bold=True, size=14)
+    bold_header_font = Font(bold=True, size=11)
+    bold_font = Font(bold=True)
+
+    # ---------------------------------------------------------
+    # 1. Executive KPI Summary Cards (A1:B6)
+    # ---------------------------------------------------------
+    ws["A1"] = "CAAD ERP Executive Summary"
+    ws["A1"].font = bold_title_font
+
+    kpis = [
+        ("Total Revenue", "=SUM(TransactionLog!H:H)/100", "$#,##0.00"),
+        ("Total Costs / Expenses", "=SUM(TransactionLog!I:I)/100", "$#,##0.00"),
+        ("Net Profit", "=B2+B3", "$#,##0.00"),
+        ("Profit Margin", "=IFERROR((B2+B3)/B2, 0)", "0.0%"),
+        (
+            "Outstanding Debts",
+            '=(SUMIF(TransactionLog!F:F, "OnCredit", TransactionLog!H:H) - SUMIF(TransactionLog!C:C, "CREDIT_PAYMENT", TransactionLog!H:H))/100',
+            "$#,##0.00",
+        ),
+    ]
+
+    for idx, (label, formula, num_format) in enumerate(kpis, start=2):
+        label_cell = ws.cell(row=idx, column=1, value=label)
+        label_cell.font = bold_font
+        val_cell = ws.cell(row=idx, column=2, value=formula)
+        val_cell.number_format = num_format
+
+    # ---------------------------------------------------------
+    # 2. Payment Method Breakdown & Pie Chart (D1:F5)
+    # ---------------------------------------------------------
+    ws["D1"] = "Payment Type"
+    ws["D1"].font = bold_header_font
+    ws["E1"] = "Revenue"
+    ws["E1"].font = bold_header_font
+    ws["F1"] = "Share %"
+    ws["F1"].font = bold_header_font
+
+    payment_types = ["Cash", "PIX", "OnCredit", "Other"]
+    for idx, ptype in enumerate(payment_types, start=2):
+        ws.cell(row=idx, column=4, value=ptype)
+        rev_cell = ws.cell(
+            row=idx,
+            column=5,
+            value=f'=SUMIFS(TransactionLog!H:H, TransactionLog!F:F, "{ptype}", TransactionLog!C:C, "SALE")/100',
+        )
+        rev_cell.number_format = "$#,##0.00"
+        share_cell = ws.cell(
+            row=idx,
+            column=6,
+            value=f"=IFERROR(E{idx}/$B$2, 0)",
+        )
+        share_cell.number_format = "0.0%"
+
+    chart_payment = PieChart()
+    chart_payment.title = "Revenue Distribution by Payment Method"
+    labels_payment = Reference(ws, min_col=4, min_row=2, max_row=5)
+    data_payment = Reference(ws, min_col=5, min_row=1, max_row=5)
+    chart_payment.add_data(data_payment, titles_from_data=True)
+    chart_payment.set_categories(labels_payment)
+    chart_payment.width = 14
+    chart_payment.height = 7
+    ws.add_chart(chart_payment, "H1")
+
+    # ---------------------------------------------------------
+    # 3. Sales Leaderboard & Bar Chart (A16:F26)
+    # ---------------------------------------------------------
+    ws["A16"] = "Salesman Name"
+    ws["A16"].font = bold_header_font
+    ws["B16"] = "Deals Closed"
+    ws["B16"].font = bold_header_font
+    ws["C16"] = "Deals Rank"
+    ws["C16"].font = bold_header_font
+    ws["D16"] = "Total Revenue"
+    ws["D16"].font = bold_header_font
+    ws["E16"] = "Revenue Rank"
+    ws["E16"].font = bold_header_font
+    ws["F16"] = "% of Total"
+    ws["F16"].font = bold_header_font
+
+    # Populate dynamic slots linking up to 10 salesmen rows
+    for r in range(2, 12):
+        k = 15 + r  # Rows 17 to 26
+        ws.cell(row=k, column=1, value=f'=IF(Salesmen!B{r}="","",Salesmen!B{r})')
+        ws.cell(
+            row=k,
+            column=2,
+            value=f'=IF(A{k}="","",COUNTIFS(TransactionLog!E:E, Salesmen!A{r}, TransactionLog!C:C, "SALE"))',
+        )
+        ws.cell(
+            row=k,
+            column=3,
+            value=f'=IF(A{k}="","",RANK(B{k}, $B$17:$B$26))',
+        )
+        rev_cell = ws.cell(
+            row=k,
+            column=4,
+            value=f'=IF(A{k}="","",SUMIFS(TransactionLog!H:H, TransactionLog!E:E, Salesmen!A{r}, TransactionLog!C:C, "SALE")/100)',
+        )
+        rev_cell.number_format = "$#,##0.00"
+        ws.cell(
+            row=k,
+            column=5,
+            value=f'=IF(A{k}="","",RANK(D{k}, $D$17:$D$26))',
+        )
+        share_cell = ws.cell(
+            row=k, column=6, value=f'=IF(A{k}="","",IFERROR(D{k}/$B$2, 0))'
+        )
+        share_cell.number_format = "0.0%"
+
+    # ---------------------------------------------------------
+    # 4. Dynamic Product Performance & Inventory Table (A28:E78)
+    # ---------------------------------------------------------
+    ws["A28"] = "ProductID"
+    ws["A28"].font = bold_header_font
+    ws["B28"] = "ProductName"
+    ws["B28"].font = bold_header_font
+    ws["C28"] = "Stock On Hand"
+    ws["C28"].font = bold_header_font
+    ws["D28"] = "Total Sales Revenue"
+    ws["D28"].font = bold_header_font
+    ws["E28"] = "Stock Status Alert"
+    ws["E28"].font = bold_header_font
+
+    # Populate dynamic formula templates up to 50 products
+    for r in range(2, 52):
+        i = 27 + r  # Dashboard row 29 to 78
+        ws.cell(row=i, column=1, value=f'=IF(Products!A{r}="","",Products!A{r})')
+        ws.cell(row=i, column=2, value=f'=IF(A{i}="","",Products!B{r})')
+        ws.cell(
+            row=i,
+            column=3,
+            value=f'=IF(A{i}="","",SUMIF(TransactionLog!D:D, A{i}, TransactionLog!G:G))',
+        )
+        rev_cell = ws.cell(
+            row=i,
+            column=4,
+            value=f'=IF(A{i}="","",SUMIFS(TransactionLog!H:H, TransactionLog!D:D, A{i}, TransactionLog!C:C, "SALE")/100)',
+        )
+        rev_cell.number_format = "$#,##0.00"
+        ws.cell(
+            row=i,
+            column=5,
+            value=f'=IF(A{i}="","",IF(C{i}<=0, "OUT OF STOCK", IF(C{i}<=5, "LOW STOCK", "OK")))',
+        )
+
+    column_widths = {
+        "A": 22,
+        "B": 24,
+        "C": 14,
+        "D": 22,
+        "E": 18,
+        "F": 14,
+    }
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+
+    workbook.active = ws
+
+
 def create_master_workbook(
     destination: Path,
     *,
-    default_salesman_id: str,
+    default_salesman_id: str | None = None,
     sheet_columns: Mapping[str, Sequence[str]] = SHEET_COLUMNS,
-    default_salesman_template: Mapping[str, object] = DEFAULT_SALESMAN,
+    default_salesman_template: Mapping[str, object] | None = None,
     overwrite: bool = False,
 ) -> Path:
     """Create the CAAD ERP master workbook at ``destination``.
@@ -130,16 +296,7 @@ def create_master_workbook(
             cell.value = column_name
             cell.font = bold_font
 
-    salesmen_sheet = workbook["Salesmen"]
-    default_salesman = dict(default_salesman_template)
-    default_salesman["SalesmanID"] = default_salesman_id
-    salesmen_sheet.append(
-        [
-            default_salesman["SalesmanID"],
-            default_salesman["SalesmanName"],
-            default_salesman["IsActive"],
-        ]
-    )
+    _create_dashboard_sheet(workbook)
 
     workbook.save(destination)
     return destination
