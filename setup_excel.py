@@ -11,12 +11,13 @@ import argparse
 import configparser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, MutableMapping, Sequence
+from typing import Mapping, Sequence
 import sys
 
 import openpyxl
-from openpyxl.chart import BarChart, DoughnutChart, PieChart, Reference
+from openpyxl.chart import PieChart, Reference
 from openpyxl.styles import Font
+from openpyxl.worksheet.worksheet import Worksheet
 
 # Define the schema exactly as specified in the architecture
 SHEET_COLUMNS: Mapping[str, Sequence[str]] = {
@@ -46,13 +47,6 @@ SHEET_COLUMNS: Mapping[str, Sequence[str]] = {
     ],
 }
 
-# Define the default salesman
-DEFAULT_SALESMAN: MutableMapping[str, object] = {
-    "SalesmanID": "GRR00000000",
-    "SalesmanName": "Lounge Sale",
-    "IsActive": True,
-}
-
 CONFIG_FILE = "config.ini"
 
 
@@ -62,6 +56,17 @@ class SetupSettings:
 
     data_file: Path
     default_salesman_id: str
+
+
+@dataclass(frozen=True)
+class DashboardStyles:
+    """Centralized formatting tokens used across Dashboard builders."""
+
+    title_font: Font = Font(bold=True, size=14)
+    header_font: Font = Font(bold=True, size=11)
+    bold_font: Font = Font(bold=True)
+    currency_format: str = "$#,##0.00"
+    percentage_format: str = "0.0%"
 
 
 def load_settings(config_path: Path) -> SetupSettings:
@@ -93,48 +98,37 @@ def load_settings(config_path: Path) -> SetupSettings:
     )
 
 
-def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
-    """Create and format the executive Dashboard sheet as the first tab in the workbook."""
-
-    ws = workbook.create_sheet(title="Dashboard", index=0)
-
-    bold_title_font = Font(bold=True, size=14)
-    bold_header_font = Font(bold=True, size=11)
-    bold_font = Font(bold=True)
-
-    # ---------------------------------------------------------
-    # 1. Executive KPI Summary Cards (A1:B6)
-    # ---------------------------------------------------------
+def _build_kpi_cards(ws: Worksheet, styles: DashboardStyles) -> None:
+    """Build Section 1: Executive KPI Summary Cards (A1:B6)."""
     ws["A1"] = "CAAD ERP Executive Summary"
-    ws["A1"].font = bold_title_font
+    ws["A1"].font = styles.title_font
 
     kpis = [
-        ("Total Revenue", "=SUM(TransactionLog!H:H)/100", "$#,##0.00"),
-        ("Total Costs / Expenses", "=SUM(TransactionLog!I:I)/100", "$#,##0.00"),
-        ("Net Profit", "=B2+B3", "$#,##0.00"),
-        ("Profit Margin", "=IFERROR((B2+B3)/B2, 0)", "0.0%"),
+        ("Total Revenue", "=SUM(TransactionLog!H:H)/100", styles.currency_format),
+        ("Total Costs / Expenses", "=SUM(TransactionLog!I:I)/100", styles.currency_format),
+        ("Net Profit", "=B2+B3", styles.currency_format),
+        ("Profit Margin", "=IFERROR((B2+B3)/B2, 0)", styles.percentage_format),
         (
             "Outstanding Debts",
             '=(SUMIF(TransactionLog!F:F, "OnCredit", TransactionLog!H:H) - SUMIF(TransactionLog!C:C, "CREDIT_PAYMENT", TransactionLog!H:H))/100',
-            "$#,##0.00",
+            styles.currency_format,
         ),
     ]
 
     for idx, (label, formula, num_format) in enumerate(kpis, start=2):
         label_cell = ws.cell(row=idx, column=1, value=label)
-        label_cell.font = bold_font
+        label_cell.font = styles.bold_font
         val_cell = ws.cell(row=idx, column=2, value=formula)
         val_cell.number_format = num_format
 
-    # ---------------------------------------------------------
-    # 2. Payment Method Breakdown & Pie Chart (D1:F5)
-    # ---------------------------------------------------------
-    ws["D1"] = "Payment Type"
-    ws["D1"].font = bold_header_font
-    ws["E1"] = "Revenue"
-    ws["E1"].font = bold_header_font
-    ws["F1"] = "Share %"
-    ws["F1"].font = bold_header_font
+
+def _build_payment_breakdown(ws: Worksheet, styles: DashboardStyles) -> None:
+    """Build Section 2: Payment Method Breakdown Table & Pie Chart (D1:H14)."""
+    headers = [("D1", "Payment Type"), ("E1", "Revenue"), ("F1", "Share %")]
+    for cell_ref, text in headers:
+        cell = ws[cell_ref]
+        cell.value = text
+        cell.font = styles.header_font
 
     payment_types = ["Cash", "PIX", "OnCredit", "Other"]
     for idx, ptype in enumerate(payment_types, start=2):
@@ -144,13 +138,13 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
             column=5,
             value=f'=SUMIFS(TransactionLog!H:H, TransactionLog!F:F, "{ptype}", TransactionLog!C:C, "SALE")/100',
         )
-        rev_cell.number_format = "$#,##0.00"
+        rev_cell.number_format = styles.currency_format
         share_cell = ws.cell(
             row=idx,
             column=6,
             value=f"=IFERROR(E{idx}/$B$2, 0)",
         )
-        share_cell.number_format = "0.0%"
+        share_cell.number_format = styles.percentage_format
 
     chart_payment = PieChart()
     chart_payment.title = "Revenue Distribution by Payment Method"
@@ -162,25 +156,24 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
     chart_payment.height = 7
     ws.add_chart(chart_payment, "H1")
 
-    # ---------------------------------------------------------
-    # 3. Sales Leaderboard & Bar Chart (A16:F26)
-    # ---------------------------------------------------------
-    ws["A16"] = "Salesman Name"
-    ws["A16"].font = bold_header_font
-    ws["B16"] = "Deals Closed"
-    ws["B16"].font = bold_header_font
-    ws["C16"] = "Deals Rank"
-    ws["C16"].font = bold_header_font
-    ws["D16"] = "Total Revenue"
-    ws["D16"].font = bold_header_font
-    ws["E16"] = "Revenue Rank"
-    ws["E16"].font = bold_header_font
-    ws["F16"] = "% of Total"
-    ws["F16"].font = bold_header_font
 
-    # Populate dynamic slots linking up to 10 salesmen rows
+def _build_sales_leaderboard(ws: Worksheet, styles: DashboardStyles) -> None:
+    """Build Section 3: Sales Leaderboard Table with Dual Rankings (A16:F26)."""
+    headers = [
+        ("A16", "Salesman Name"),
+        ("B16", "Deals Closed"),
+        ("C16", "Deals Rank"),
+        ("D16", "Total Revenue"),
+        ("E16", "Revenue Rank"),
+        ("F16", "% of Total"),
+    ]
+    for cell_ref, text in headers:
+        cell = ws[cell_ref]
+        cell.value = text
+        cell.font = styles.header_font
+
     for r in range(2, 12):
-        k = 15 + r  # Rows 17 to 26
+        k = 15 + r
         ws.cell(row=k, column=1, value=f'=IF(Salesmen!B{r}="","",Salesmen!B{r})')
         ws.cell(
             row=k,
@@ -197,7 +190,7 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
             column=4,
             value=f'=IF(A{k}="","",SUMIFS(TransactionLog!H:H, TransactionLog!E:E, Salesmen!A{r}, TransactionLog!C:C, "SALE")/100)',
         )
-        rev_cell.number_format = "$#,##0.00"
+        rev_cell.number_format = styles.currency_format
         ws.cell(
             row=k,
             column=5,
@@ -206,25 +199,25 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
         share_cell = ws.cell(
             row=k, column=6, value=f'=IF(A{k}="","",IFERROR(D{k}/$B$2, 0))'
         )
-        share_cell.number_format = "0.0%"
+        share_cell.number_format = styles.percentage_format
 
-    # ---------------------------------------------------------
-    # 4. Dynamic Product Performance & Inventory Table (A28:E78)
-    # ---------------------------------------------------------
-    ws["A28"] = "ProductID"
-    ws["A28"].font = bold_header_font
-    ws["B28"] = "ProductName"
-    ws["B28"].font = bold_header_font
-    ws["C28"] = "Stock On Hand"
-    ws["C28"].font = bold_header_font
-    ws["D28"] = "Total Sales Revenue"
-    ws["D28"].font = bold_header_font
-    ws["E28"] = "Stock Status Alert"
-    ws["E28"].font = bold_header_font
 
-    # Populate dynamic formula templates up to 50 products
+def _build_product_table(ws: Worksheet, styles: DashboardStyles) -> None:
+    """Build Section 4: Dynamic Product Inventory & Performance Table (A28:E78)."""
+    headers = [
+        ("A28", "ProductID"),
+        ("B28", "ProductName"),
+        ("C28", "Stock On Hand"),
+        ("D28", "Total Sales Revenue"),
+        ("E28", "Stock Status Alert"),
+    ]
+    for cell_ref, text in headers:
+        cell = ws[cell_ref]
+        cell.value = text
+        cell.font = styles.header_font
+
     for r in range(2, 52):
-        i = 27 + r  # Dashboard row 29 to 78
+        i = 27 + r
         ws.cell(row=i, column=1, value=f'=IF(Products!A{r}="","",Products!A{r})')
         ws.cell(row=i, column=2, value=f'=IF(A{i}="","",Products!B{r})')
         ws.cell(
@@ -237,13 +230,16 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
             column=4,
             value=f'=IF(A{i}="","",SUMIFS(TransactionLog!H:H, TransactionLog!D:D, A{i}, TransactionLog!C:C, "SALE")/100)',
         )
-        rev_cell.number_format = "$#,##0.00"
+        rev_cell.number_format = styles.currency_format
         ws.cell(
             row=i,
             column=5,
             value=f'=IF(A{i}="","",IF(C{i}<=0, "OUT OF STOCK", IF(C{i}<=5, "LOW STOCK", "OK")))',
         )
 
+
+def _apply_column_widths(ws: Worksheet) -> None:
+    """Set optimal column widths for clean visual rendering."""
     column_widths = {
         "A": 22,
         "B": 24,
@@ -254,6 +250,18 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
     }
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
+
+
+def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
+    """Create and format the executive Dashboard sheet as the first tab in the workbook."""
+    ws = workbook.create_sheet(title="Dashboard", index=0)
+    styles = DashboardStyles()
+
+    _build_kpi_cards(ws, styles)
+    _build_payment_breakdown(ws, styles)
+    _build_sales_leaderboard(ws, styles)
+    _build_product_table(ws, styles)
+    _apply_column_widths(ws)
 
     workbook.active = ws
 
