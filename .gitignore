@@ -25,3 +25,6 @@ create_demo_workbook.py
 # tests
 .coverage
 htmlcov/
+
+populate_data.sh
+
