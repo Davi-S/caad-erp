@@ -4,15 +4,18 @@
 
 ## Motivation
 
-CAAD ERP is a lightweight inventory and sales system designed for the daily
-operations of a student lounge. The project pairs Python business logic with an
-Excel-based "source of truth" so non-technical managers can trust the data and
-analyze it with the tools they already know.
+When managing inventory, sales, and tab debts, student lounges had to rely on
+over-engineered POS systems or overly simple Excel sheets.
 
-The high turnover of student staff demands a workflow that is transparent,
-auditable, and simple to hand off. CAAD ERP embraces those constraints by
-favoring readability, explicit processes, and a single-user deployment model
-over complex infrastructure.
+To solve this, I built CAAD ERP, a simple inventory and sales management system
+specifically tailored for (my) student lounge operations.
+
+The project pairs Python business logic with an Excel-based "source of truth" so
+non-technical managers can trust the data and analyze it with the tools they
+already know.
+
+CAAD ERP favors readability, explicit processes, and a single-user deployment
+model over complex infrastructure.
 
 ## Core Features
 
