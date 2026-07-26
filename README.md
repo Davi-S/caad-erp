@@ -1,7 +1,6 @@
 # CAAD ERP
 
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
-[![Tests Passing](https://img.shields.io/badge/tests-pytest-success)](./tests)
+![Excel dashboard.](/images/2026-07-26-044619_hyprshot.png)
 
 ## Motivation
 
@@ -33,7 +32,8 @@ over complex infrastructure.
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-4. Create a dedicated environment and activate it so the dependencies stay isolated:
+4. Create a dedicated environment and activate it so the dependencies stay
+   isolated:
 
    ```bash
    uv venv
@@ -61,8 +61,8 @@ uv run setup_excel.py
 
 ### CLI
 
-The project ships with a thin command-line interface. Invoke it with the
-console script or directly through Python:
+The project ships with a thin command-line interface. Invoke it with the console
+script or directly through Python:
 
 ```bash
 # Console script entry point installed via pip/uv
@@ -76,11 +76,12 @@ By default the CLI looks for a `config.ini` in the current working directory.
 Pass `--config /path/to/config.ini` if your configuration lives elsewhere.
 
 Running `caad-erp-cli` without a sub-command starts an **interactive REPL
-session**. The workbook is opened once and shared across every command you
-enter at the prompt, which is faster than invoking the script from scratch
-for each operation. Type `exit` or press `Ctrl+D` to end the session.
+session**. The workbook is opened once and shared across every command you enter
+at the prompt, which is faster than invoking the script from scratch for each
+operation. Type `exit` or press `Ctrl+D` to end the session.
 
-**For copy-paste walkthroughs, head over to the [examples/](./examples/) directory.**
+**For copy-paste walkthroughs, head over to the [examples/](./examples/)
+directory.**
 
 #### Write Commands
 
@@ -145,5 +146,6 @@ Interactive API documentation is available at `http://localhost:8000/docs`.
 ## Contributing
 
 Community contributions are welcome. Please read `CONTRIBUTING.md` for the
-preferred workflow and coding standards, and visit
-`docs/DEVELOPER_GUIDE.md` for a deeper look at the system architecture.
+preferred workflow and coding standards, and visit `docs/DEVELOPER_GUIDE.md` for
+a deeper look at the system architecture.
+
