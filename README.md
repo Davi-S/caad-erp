@@ -1,5 +1,7 @@
 # CAAD ERP - Frontend Consumer
 
+![Home page.](/images/caad-erp-frontend-home-page.png)
+
 This repository contains the React frontend application for the CAAD ERP system.
 It is currently in active development and primarily features a Point of Sale
 (POS) wizard as a proof of concept.
