@@ -3,12 +3,12 @@
 ![Home page.](/images/caad-erp-frontend-home-page.png)
 
 This repository contains the React frontend application for the CAAD ERP system.
-It is currently in active development and primarily features a Point of Sale
-(POS) wizard as a proof of concept.
 
 The frontend is designed to consume the CAAD ERP FastAPI backend, providing a
 streamlined, user-friendly interface for processing sales and managing
 inventory.
+
+It is currently in active development.
 
 ## Current Features
 
@@ -32,6 +32,8 @@ The application will be expanded to include the following functionalities:
 - Reports Dashboard: A comprehensive view into the business metrics, allowing
   users to see profit margins, summaries, outstanding debts, and other key
   analytics.
+- More transaction options: Include on credit, credit payments and debt
+  management pages and methods.
 
 ## Development Setup
 
@@ -43,3 +45,4 @@ your local network.
 2. Install the frontend dependencies using your preferred package manager (e.g.,
    `npm install`).
 3. Start the local development server (e.g., `npm run dev`).
+
