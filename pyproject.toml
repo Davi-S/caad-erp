@@ -7,6 +7,9 @@ requires-python = ">=3.12"
 # Core dependencies needed for the library to run
 dependencies = [
     "openpyxl>=3.1.5",
+    "fastapi[standard]>=0.122.0",
+    "uvicorn[standard]>=0.32.0",
+
 ]
 
 [project.optional-dependencies]
@@ -24,9 +27,6 @@ cli = [
 
 # Dependencies for the API server
 api = [
-    "fastapi>=0.115.0",
-    "fastapi[standard]>=0.122.0",
-    "uvicorn[standard]>=0.32.0",
 ]
 
 [project.scripts]
