@@ -1,6 +1,8 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Group, Stack, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core"
-import { ShoppingCart, Package, Tag, Users, ChevronRight } from "lucide-react"
+import { Button, Group, Stack, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core"
+import { ShoppingCart, Package, Tag, Users, ChevronRight, FileSpreadsheet } from "lucide-react"
+import { api } from "@/api/apiClient"
 import { ScreenShell } from "@/components/ScreenShell"
 
 interface NavItem {
@@ -34,18 +36,54 @@ const MANAGEMENT_ITEMS: NavItem[] = [
 
 export function HomePage() {
     const navigate = useNavigate()
+    const [isDownloading, setIsDownloading] = useState(false)
+
+    const handleDownloadWorkbook = async () => {
+        setIsDownloading(true)
+        try {
+            const res = await api.GET("/reports/workbook", { parseAs: "blob" })
+            if (res.error || !res.data) {
+                console.error("Failed to download workbook:", res.error)
+                return
+            }
+            const blob = res.data as unknown as Blob
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = "workbook.xlsx"
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            window.URL.revokeObjectURL(url)
+        } catch (error) {
+            console.error("Failed to download workbook:", error)
+        } finally {
+            setIsDownloading(false)
+        }
+    }
 
     return (
         <ScreenShell>
             {/* Header */}
-            <Stack gap={4}>
-                <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
-                    CAAD ERP
-                </Text>
-                <Title order={1} size="h2">
-                    O que vamos fazer?
-                </Title>
-            </Stack>
+            <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                    <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                        CAAD ERP
+                    </Text>
+                    <Title order={1} size="h2">
+                        O que vamos fazer?
+                    </Title>
+                </Stack>
+                <Button
+                    variant="light"
+                    size="xs"
+                    leftSection={<FileSpreadsheet size={16} />}
+                    loading={isDownloading}
+                    onClick={handleDownloadWorkbook}
+                >
+                    Baixar Planilha
+                </Button>
+            </Group>
 
             {/* Middle Section */}
             <Stack style={{ flex: 1, minHeight: 0 }} justify="center" gap="xl" py="lg">
