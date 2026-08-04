@@ -10,6 +10,7 @@ import dataclasses
 import logging
 import typing as t
 import collections
+from pathlib import Path
 
 from caad_erp import constants, exceptions
 
@@ -196,3 +197,17 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, 
         "balances": balances,
         "total_outstanding": total_balance,
     }
+
+
+def get_master_workbook_path(context: runtime.RuntimeContext) -> Path:
+    """Return the filesystem path to the current master workbook.
+
+    Args:
+        context (RuntimeContext): Active runtime context.
+
+    Returns:
+        Path: Resolved filesystem path to the master Excel workbook file.
+    """
+    return context.settings.data_file.resolve()
+
+
