@@ -34,3 +34,6 @@ caad-erp-api = "caad_erp.api:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.uv]
+package = true
