@@ -10,7 +10,7 @@ wheels/
 .venv
 
 # Workbook
-master_workbook.xlsx
+# master_workbook.xlsx
 
 # Pytest cache
 .pytest_cache
