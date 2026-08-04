@@ -25,6 +25,7 @@ cli = [
 # Dependencies for the API server
 api = [
     "fastapi>=0.115.0",
+    "fastapi[standard]>=0.122.0",
     "uvicorn[standard]>=0.32.0",
 ]
 
@@ -32,8 +33,13 @@ api = [
 caad-erp-cli = "caad_erp.cli:main"
 caad-erp-api = "caad_erp.api:main"
 
+[tool.fastapi]
+entrypoint = "caad_erp.api:app"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [tool.uv]
 package = true
+
+
