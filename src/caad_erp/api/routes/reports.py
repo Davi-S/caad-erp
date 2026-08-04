@@ -116,3 +116,26 @@ def get_log_report(
             for t in transactions
         ]
     )
+
+
+@router.get("/workbook", response_class=fastapi.responses.FileResponse)
+def get_workbook_report(
+    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+) -> fastapi.responses.FileResponse:
+    """Download the current master Excel workbook file.
+
+    Args:
+        context: Runtime context injected via dependency.
+
+    Returns:
+        FileResponse containing the master workbook .xlsx file.
+    """
+    bll.persist_context(context)
+    workbook_path = bll.get_master_workbook_path(context)
+    return fastapi.responses.FileResponse(
+        path=workbook_path,
+        filename=workbook_path.name,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+

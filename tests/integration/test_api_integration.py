@@ -737,3 +737,54 @@ def test_reports_remain_consistent_after_interleaved_mutations_and_reads(
     assert constants.TransactionType.RESTOCK.value in transaction_types
     assert constants.TransactionType.SALE.value in transaction_types
     assert constants.TransactionType.WRITE_OFF.value in transaction_types
+
+
+def test_master_workbook_download_integration_flow(api_client: TestClient) -> None:
+    """
+    GIVEN an API client with active product, salesman, and transaction entries
+    WHEN GET /reports/workbook is requested
+    THEN downloadable binary matches current master workbook state across all sheets
+    """
+    import io
+    import openpyxl
+
+    _create_product(api_client, "INT-WB-P1", sell_price=1500)
+    _create_salesman(api_client, "INT-WB-S1")
+
+    sale_res = api_client.post(
+        "/transactions/sale",
+        json={
+            "product_id": "INT-WB-P1",
+            "salesman_id": "INT-WB-S1",
+            "quantity": 1,
+            "total_revenue": 1500,
+            "payment_type": constants.PaymentType.CASH.value,
+        },
+    )
+    assert sale_res.status_code == 201
+
+    download_res = api_client.get("/reports/workbook")
+    assert download_res.status_code == 200
+    assert (
+        download_res.headers["content-type"]
+        == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    wb = openpyxl.load_workbook(io.BytesIO(download_res.content))
+
+    # Verify product sheet contains new product
+    products_ws = wb["Products"]
+    prod_ids = [cell.value for cell in products_ws["A"][1:]]
+    assert "INT-WB-P1" in prod_ids
+
+    # Verify salesman sheet contains new salesman
+    salesmen_ws = wb["Salesmen"]
+    salesman_ids = [cell.value for cell in salesmen_ws["A"][1:]]
+    assert "INT-WB-S1" in salesman_ids
+
+    # Verify transaction log contains sale
+    tx_ws = wb["TransactionLog"]
+    tx_product_ids = [cell.value for cell in tx_ws["D"][1:]]
+    assert "INT-WB-P1" in tx_product_ids
+
+
