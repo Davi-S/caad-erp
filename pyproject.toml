@@ -34,7 +34,7 @@ caad-erp-cli = "caad_erp.cli:main"
 caad-erp-api = "caad_erp.api:main"
 
 [tool.fastapi]
-entrypoint = "caad_erp.api:app"
+entrypoint = "caad_erp.api.app:create_app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
