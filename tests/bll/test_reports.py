@@ -557,3 +557,28 @@ def test_calculate_outstanding_debts_handles_missing_product_reference_gracefull
     # Assert
     assert result["balances"] == []
     assert result["total_outstanding"] == 0
+
+
+def test_get_master_workbook_path_returns_resolved_path(
+    tmp_path: Path,
+) -> None:
+    """
+    GIVEN a RuntimeContext with configured data file path
+    WHEN get_master_workbook_path is called
+    THEN the resolved path to the master Excel workbook is returned
+    """
+    data_file = tmp_path / "test_master.xlsx"
+    workbook = _make_workbook()
+    settings = AppSettings(
+        data_file=data_file,
+        lounge_name="Test Lounge",
+        schema_version=constants.EXPECTED_SCHEMA_VERSION,
+        default_salesman_id="S001",
+    )
+    context = runtime.RuntimeContext(settings=settings, workbook=workbook)
+
+    resolved_path = reports.get_master_workbook_path(context)
+
+    assert resolved_path == data_file.resolve()
+
+
