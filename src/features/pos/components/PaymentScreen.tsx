@@ -31,8 +31,8 @@ import { useCheckout } from "../hooks/useCheckout"
 // TODO: Move these to env variables or a config file
 // These describe the receiver of the payment, not the salesman or customer.
 const PIX_MERCHANT = {
-    pixkey: "+5538988170470", // CPF, CNPJ, email, phone, or random key
-    merchant: "Davi Alves Sampaio", // max 25 chars, no accents (BACEN spec)
+    pixkey: "3dc762df-fe35-4c15-b042-0044a783919d", // CPF, CNPJ, email, phone, or random key
+    merchant: "Capelato (CAAD)", // max 25 chars, no accents (BACEN spec)
     city: "CURITIBA", // max 15 chars, no accents
 }
 
