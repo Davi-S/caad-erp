@@ -13,7 +13,6 @@ export default defineConfig({
         },
     },
     server: {
-        host: true,
         proxy: {
             "/api-mp": {
                 target: "https://api.mercadopago.com",
@@ -24,7 +23,6 @@ export default defineConfig({
         },
     },
     preview: {
-        host: true,
         proxy: {
             "/api-mp": {
                 target: "https://api.mercadopago.com",
