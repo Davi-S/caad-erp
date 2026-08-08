@@ -7,9 +7,6 @@ requires-python = ">=3.12"
 # Core dependencies needed for the library to run
 dependencies = [
     "openpyxl>=3.1.5",
-    "fastapi[standard]>=0.122.0",
-    "uvicorn[standard]>=0.32.0",
-
 ]
 
 [project.optional-dependencies]
@@ -27,14 +24,13 @@ cli = [
 
 # Dependencies for the API server
 api = [
+    "fastapi[standard]>=0.122.0",
+    "uvicorn[standard]>=0.32.0",
 ]
 
 [project.scripts]
 caad-erp-cli = "caad_erp.cli:main"
 caad-erp-api = "caad_erp.api:main"
-
-[tool.fastapi]
-entrypoint = "caad_erp.api.app:create_app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
