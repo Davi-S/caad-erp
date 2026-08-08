@@ -20,7 +20,6 @@ import {
     AlertTriangle,
     QrCode,
     Banknote,
-    Copy,
     RotateCw,
 } from "lucide-react"
 import { brl } from "@/helpers"
@@ -51,11 +50,9 @@ const METHOD_OPTIONS = [
 export function PaymentScreen({ salesman, cartState, checkoutState, actions }: PaymentScreenProps) {
     const [method, setMethod] = useState<PaymentType>("PIX")
     const [pixPaymentId, setPixPaymentId] = useState<number | string | null>(null)
-    const [pixQrCode, setPixQrCode] = useState<string | null>(null)
     const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null)
     const [pixLoading, setPixLoading] = useState(false)
     const [pixError, setPixError] = useState<string | null>(null)
-    const [copied, setCopied] = useState(false)
 
     const { status, error, resetCheckout } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
@@ -81,7 +78,6 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                 `Venda - ${salesman.salesman_name}`
             )
             setPixPaymentId(data.id)
-            setPixQrCode(data.qr_code || null)
             setPixQrCodeBase64(data.qr_code_base64)
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Erro ao gerar PIX com Mercado Pago."
@@ -121,14 +117,6 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
 
         return () => clearInterval(intervalId)
     }, [pixPaymentId, confirmed, onConfirm])
-
-    const handleCopyPix = () => {
-        if (pixQrCode) {
-            navigator.clipboard.writeText(pixQrCode)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-        }
-    }
 
     return (
         <ScreenShell>
@@ -291,24 +279,6 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                                             }}
                                                         />
                                                     </Box>
-                                                    {confirmed && (
-                                                        <Group gap="xs">
-                                                            <Check size={16} color="var(--mantine-color-green-6)" />
-                                                            <Text size="xs" c="green" fw={600}>
-                                                                Pagamento confirmado pelo banco!
-                                                            </Text>
-                                                        </Group>
-                                                    )}
-                                                    {!confirmed && pixQrCode && (
-                                                        <Button
-                                                            variant="subtle"
-                                                            size="xs"
-                                                            leftSection={copied ? <Check size={14} /> : <Copy size={14} />}
-                                                            onClick={handleCopyPix}
-                                                        >
-                                                            {copied ? "Copiado!" : "Copiar PIX Copia e Cola"}
-                                                        </Button>
-                                                    )}
                                                 </Stack>
                                             )}
                                         </Stack>
