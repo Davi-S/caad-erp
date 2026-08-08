@@ -272,8 +272,10 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                                 <Stack align="center" gap="xs" style={{ height: "100%", justifyContent: "center" }}>
                                                     <Box
                                                         style={{
-                                                            maxWidth: 180,
-                                                            maxHeight: 180,
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            maxWidth: 240,
+                                                            maxHeight: 240,
                                                             display: "flex",
                                                             justifyContent: "center",
                                                             alignItems: "center",
@@ -289,18 +291,11 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                                             }}
                                                         />
                                                     </Box>
-                                                    {confirmed ? (
+                                                    {confirmed && (
                                                         <Group gap="xs">
                                                             <Check size={16} color="var(--mantine-color-green-6)" />
                                                             <Text size="xs" c="green" fw={600}>
                                                                 Pagamento confirmado pelo banco!
-                                                            </Text>
-                                                        </Group>
-                                                    ) : (
-                                                        <Group gap="xs">
-                                                            <Loader size="xs" color="blue" />
-                                                            <Text size="xs" c="dimmed" fw={500}>
-                                                                Aguardando confirmação do banco...
                                                             </Text>
                                                         </Group>
                                                     )}
