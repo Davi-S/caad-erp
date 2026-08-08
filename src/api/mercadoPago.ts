@@ -13,10 +13,7 @@ export interface PaymentStatusResponse {
     status_detail?: string
 }
 
-// In dev server, use Vite proxy /mp-api to bypass browser CORS restrictions
-const MP_BASE_URL = typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? "/mp-api"
-    : "https://api.mercadopago.com"
+const MP_BASE_URL = import.meta.env.VITE_MERCADO_PAGO_BASE_URL || "/api-mp"
 
 export async function createPixPayment(
     amountInBrl: number,
@@ -26,7 +23,7 @@ export async function createPixPayment(
 
     if (!token || !token.trim()) {
         throw new Error(
-            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN no ambiente."
+            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN no arquivo .env."
         )
     }
 
@@ -51,8 +48,8 @@ export async function createPixPayment(
                 },
             }),
         })
-    } catch (err: unknown) {
-        const detail = err instanceof Error ? err.message : String(err)
+    } catch (networkErr: unknown) {
+        const detail = networkErr instanceof Error ? networkErr.message : String(networkErr)
         throw new Error(
             `Erro de conexão/CORS ao acessar Mercado Pago (${detail}). Verifique a conexão de rede e permissões.`
         )
@@ -100,7 +97,7 @@ export async function checkPaymentStatus(
 
     if (!token || !token.trim()) {
         throw new Error(
-            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN."
+            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN no ambiente."
         )
     }
 
@@ -112,11 +109,9 @@ export async function checkPaymentStatus(
                 "Authorization": `Bearer ${token.trim()}`,
             },
         })
-    } catch (err: unknown) {
-        const detail = err instanceof Error ? err.message : String(err)
-        throw new Error(
-            `Erro de conexão/CORS ao verificar status no Mercado Pago (${detail}).`
-        )
+    } catch (networkErr: unknown) {
+        const detail = networkErr instanceof Error ? networkErr.message : String(networkErr)
+        throw new Error(`Erro de conexão ao verificar status do PIX (${detail}).`)
     }
 
     let data: any
