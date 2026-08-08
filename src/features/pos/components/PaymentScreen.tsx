@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import {
     ActionIcon,
     Alert,
@@ -12,14 +12,16 @@ import {
     Text,
     Title,
     Box,
+    Loader,
 } from "@mantine/core"
-import { PixCanvas } from "react-qrcode-pix"
 import {
     Check,
     ArrowLeft,
     AlertTriangle,
     QrCode,
     Banknote,
+    Copy,
+    RotateCw,
 } from "lucide-react"
 import { brl } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
@@ -27,14 +29,7 @@ import type { PaymentType } from "@/types"
 import type { Salesman } from "@/types"
 import { useCart } from "../hooks/useCart"
 import { useCheckout } from "../hooks/useCheckout"
-
-// TODO: Move these to env variables or a config file
-// These describe the receiver of the payment, not the salesman or customer.
-const PIX_MERCHANT = {
-    pixkey: "3dc762df-fe35-4c15-b042-0044a783919d", // CPF, CNPJ, email, phone, or random key
-    merchant: "Capelato (CAAD)", // max 25 chars, no accents (BACEN spec)
-    city: "CURITIBA", // max 15 chars, no accents
-}
+import { createPixPayment, checkPaymentStatus } from "@/api/mercadoPago"
 
 interface PaymentScreenProps {
     salesman: Salesman
@@ -51,26 +46,89 @@ interface PaymentScreenProps {
 const METHOD_OPTIONS = [
     { value: "PIX", label: <MethodLabel icon={<QrCode size={16} />} text="Pix" /> },
     { value: "Cash", label: <MethodLabel icon={<Banknote size={16} />} text="Dinheiro" /> },
-    // do not sell on credit yet, for it may require move complexity on the
-    // debt payment and salesman debt maters. Same for "other" payments. Keep it
-    // simple for now
-    // { value: "OnCredit", label: <MethodLabel icon={<CreditCard size={16} />} text="Fiado" /> },
-    // { value: "Other", label: <MethodLabel icon={<MoreHorizontal size={16} />} text="Outro" /> },
 ]
 
 export function PaymentScreen({ salesman, cartState, checkoutState, actions }: PaymentScreenProps) {
     const [method, setMethod] = useState<PaymentType>("PIX")
+    const [pixPaymentId, setPixPaymentId] = useState<number | string | null>(null)
+    const [pixQrCode, setPixQrCode] = useState<string | null>(null)
+    const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null)
+    const [pixLoading, setPixLoading] = useState(false)
+    const [pixError, setPixError] = useState<string | null>(null)
+    const [copied, setCopied] = useState(false)
 
     const { status, error, resetCheckout } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
 
-    useEffect(() => {
-        resetCheckout()
-    }, [])
-
     const confirmed = status === "success"
     const confirming = status === "pending"
     const isLocked = status === "pending" || status === "success"
+
+    const hasAutoConfirmed = useRef(false)
+
+    useEffect(() => {
+        resetCheckout()
+        hasAutoConfirmed.current = false
+    }, [resetCheckout])
+
+    const handleCreatePix = useCallback(async () => {
+        if (cartState.total <= 0) return
+        setPixLoading(true)
+        setPixError(null)
+        try {
+            const data = await createPixPayment(
+                cartState.total / 100,
+                `Venda - ${salesman.salesman_name}`
+            )
+            setPixPaymentId(data.id)
+            setPixQrCode(data.qr_code || null)
+            setPixQrCodeBase64(data.qr_code_base64)
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Erro ao gerar PIX com Mercado Pago."
+            setPixError(msg)
+        } finally {
+            setPixLoading(false)
+        }
+    }, [cartState.total, salesman.salesman_name])
+
+    useEffect(() => {
+        if (!confirmed) {
+            handleCreatePix()
+        }
+    }, [handleCreatePix, confirmed])
+
+    // Poll payment status via Mercado Pago API with fail-fast error propagation
+    useEffect(() => {
+        if (!pixPaymentId || confirmed || hasAutoConfirmed.current) return
+
+        const intervalId = setInterval(async () => {
+            try {
+                const statusRes = await checkPaymentStatus(pixPaymentId)
+                if (statusRes.status === "approved" && !hasAutoConfirmed.current) {
+                    hasAutoConfirmed.current = true
+                    clearInterval(intervalId)
+                    onConfirm("PIX")
+                }
+            } catch (err: unknown) {
+                const msg =
+                    err instanceof Error
+                        ? err.message
+                        : "Erro ao verificar status do pagamento PIX no Mercado Pago."
+                setPixError(msg)
+                clearInterval(intervalId)
+            }
+        }, 3000)
+
+        return () => clearInterval(intervalId)
+    }, [pixPaymentId, confirmed, onConfirm])
+
+    const handleCopyPix = () => {
+        if (pixQrCode) {
+            navigator.clipboard.writeText(pixQrCode)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        }
+    }
 
     return (
         <ScreenShell>
@@ -161,7 +219,6 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                 }}
                             />
 
-                            {/* Detached absolute container to perfectly scale the canvas top-down */}
                             <Paper
                                 withBorder
                                 radius="md"
@@ -184,36 +241,78 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                     }}
                                 >
                                     {method === "PIX" && (
-                                        <PixCanvas
-                                            pixkey={PIX_MERCHANT.pixkey}
-                                            merchant={PIX_MERCHANT.merchant}
-                                            city={PIX_MERCHANT.city}
-                                            amount={cartState.total / 100}
-                                            internalProps={{
-                                                style: {
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    objectFit: "contain",
-                                                },
-                                            }}
-                                        />
+                                        <Stack align="center" justify="center" gap="xs" style={{ width: "100%", height: "100%" }}>
+                                            {pixLoading && (
+                                                <Stack align="center" gap="xs">
+                                                    <Loader size="md" />
+                                                    <Text size="sm" c="dimmed">
+                                                        Gerando QR Code PIX no Mercado Pago...
+                                                    </Text>
+                                                </Stack>
+                                            )}
+
+                                            {!pixLoading && pixError && (
+                                                <Alert color="red" icon={<AlertTriangle size={16} />} title="Erro no Mercado Pago">
+                                                    <Text size="xs" mb="xs">
+                                                        {pixError}
+                                                    </Text>
+                                                    <Button
+                                                        size="xs"
+                                                        variant="light"
+                                                        color="red"
+                                                        leftSection={<RotateCw size={12} />}
+                                                        onClick={handleCreatePix}
+                                                    >
+                                                        Tentar novamente
+                                                    </Button>
+                                                </Alert>
+                                            )}
+
+                                            {!pixLoading && !pixError && pixQrCodeBase64 && (
+                                                <Stack align="center" gap="xs" style={{ height: "100%", justifyContent: "center" }}>
+                                                    <Box
+                                                        style={{
+                                                            maxWidth: 180,
+                                                            maxHeight: 180,
+                                                            display: "flex",
+                                                            justifyContent: "center",
+                                                            alignItems: "center",
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={`data:image/png;base64,${pixQrCodeBase64}`}
+                                                            alt="QR Code PIX Mercado Pago"
+                                                            style={{
+                                                                maxWidth: "100%",
+                                                                maxHeight: "100%",
+                                                                objectFit: "contain",
+                                                            }}
+                                                        />
+                                                    </Box>
+                                                    <Group gap="xs">
+                                                        <Loader size="xs" color="blue" />
+                                                        <Text size="xs" c="dimmed" fw={500}>
+                                                            Aguardando confirmação do banco...
+                                                        </Text>
+                                                    </Group>
+                                                    {pixQrCode && (
+                                                        <Button
+                                                            variant="subtle"
+                                                            size="xs"
+                                                            leftSection={copied ? <Check size={14} /> : <Copy size={14} />}
+                                                            onClick={handleCopyPix}
+                                                        >
+                                                            {copied ? "Copiado!" : "Copiar PIX Copia e Cola"}
+                                                        </Button>
+                                                    )}
+                                                </Stack>
+                                            )}
+                                        </Stack>
                                     )}
 
                                     {method === "Cash" && (
                                         <Text size="sm" c="dimmed" ta="center">
                                             Receba o valor em espécie e confirme abaixo.
-                                        </Text>
-                                    )}
-
-                                    {method === "OnCredit" && (
-                                        <Text size="sm" c="dimmed" ta="center">
-                                            O valor será adicionado à conta do cliente.
-                                        </Text>
-                                    )}
-
-                                    {method === "Other" && (
-                                        <Text size="sm" c="dimmed" ta="center">
-                                            Utilize a maquininha de cartão ou outro método externo.
                                         </Text>
                                     )}
                                 </Center>
@@ -232,9 +331,18 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
             {/* Footer */}
             <Stack mx="auto" w="100%">
                 {!confirmed ? (
-                    <Button size="lg" onClick={() => onConfirm(method)} loading={confirming}>
-                        Já recebi o pagamento
-                    </Button>
+                    method === "Cash" ? (
+                        <Button size="lg" onClick={() => onConfirm(method)} loading={confirming}>
+                            Já recebi o pagamento
+                        </Button>
+                    ) : (
+                        <Group justify="center" p="xs">
+                            <Loader size="sm" color="blue" />
+                            <Text size="sm" c="dimmed" fw={500}>
+                                Aguardando confirmação do banco...
+                            </Text>
+                        </Group>
+                    )
                 ) : (
                     <Button size="lg" onClick={onNewSale}>
                         Nova venda
