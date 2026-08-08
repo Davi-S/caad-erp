@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useCart } from "./hooks/useCart"
 import { useCheckout } from "./hooks/useCheckout"
 import { SalesmanSelectScreen } from "@/components/SalesmanSelectScreen"
@@ -7,6 +7,8 @@ import { PaymentScreen } from "./components/PaymentScreen"
 import { useSalesmen } from "@/hooks/queries/useSalesmen"
 import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
+import { usePOSBroadcast } from "./hooks/usePOSBroadcast"
+import type { POSBroadcastState, PaymentDetails } from "./types/broadcast"
 import type { PaymentType, Products } from "@/types"
 
 export function POSFlow() {
@@ -24,6 +26,35 @@ export function POSFlow() {
     // Hooks
     const cartState = useCart()
     const checkoutState = useCheckout()
+    const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null)
+
+    // Instead of passing seven different variables into useEffect, bundle
+    // them into a single, cohesive data state object
+    const getLatestPOSState = useCallback((): POSBroadcastState => {
+        return {
+            screen: screen === "payment" ? "payment" : "cart",
+            cart: cartState.cart,
+            selectedSalesman,
+            paymentDetails,
+            checkoutStatus: checkoutState.status,
+            checkoutError: checkoutState.error,
+            total: cartState.total,
+        }
+    }, [
+        screen,
+        cartState.cart,
+        cartState.total,
+        selectedSalesman,
+        paymentDetails,
+        checkoutState.status,
+        checkoutState.error,
+    ])
+
+    const { broadcastState } = usePOSBroadcast("seller", getLatestPOSState)
+
+    useEffect(() => {
+        broadcastState(getLatestPOSState())
+    }, [getLatestPOSState, broadcastState])
 
     if (screen === "salesmen") {
         return (
@@ -63,6 +94,7 @@ export function POSFlow() {
                 salesman={selectedSalesman}
                 cartState={cartState}
                 checkoutState={checkoutState}
+                onPaymentStateChange={setPaymentDetails}
                 actions={{
                     onConfirm: (method) => {
                         checkoutState.confirmPayment(
@@ -71,6 +103,7 @@ export function POSFlow() {
                     },
                     onNewSale: () => {
                         cartState.clearCart()
+                        setPaymentDetails(null)
                         setScreen("cart")
                     },
                     onEdit: () => {
@@ -79,6 +112,7 @@ export function POSFlow() {
                     },
                     onCancel: () => {
                         cartState.clearCart()
+                        setPaymentDetails(null)
                         setScreen("salesmen")
                     },
                 }}
