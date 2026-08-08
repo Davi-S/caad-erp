@@ -71,7 +71,7 @@ export function POSFlow() {
                     },
                     onNewSale: () => {
                         cartState.clearCart()
-                        setScreen("salesmen")
+                        setScreen("cart")
                     },
                     onEdit: () => {
                         // Do not clear the cart
