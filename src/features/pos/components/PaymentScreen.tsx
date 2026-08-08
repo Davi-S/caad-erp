@@ -30,6 +30,8 @@ import { useCart } from "../hooks/useCart"
 import { useCheckout } from "../hooks/useCheckout"
 import { usePixPayment } from "../hooks/usePixPayment"
 
+import type { PaymentDetails } from "../types/broadcast"
+
 interface PaymentScreenProps {
     salesman: Salesman
     cartState: ReturnType<typeof useCart>
@@ -40,6 +42,7 @@ interface PaymentScreenProps {
         onEdit: () => void
         onCancel: () => void
     }
+    onPaymentStateChange: (details: PaymentDetails) => void
 }
 
 const METHOD_OPTIONS = [
@@ -47,7 +50,13 @@ const METHOD_OPTIONS = [
     { value: "Cash", label: <MethodLabel icon={<Banknote size={16} />} text="Dinheiro" /> },
 ]
 
-export function PaymentScreen({ salesman, cartState, checkoutState, actions }: PaymentScreenProps) {
+export function PaymentScreen({
+    salesman,
+    cartState,
+    checkoutState,
+    actions,
+    onPaymentStateChange,
+}: PaymentScreenProps) {
     const [method, setMethod] = useState<PaymentType>("PIX")
 
     const { status, error, resetCheckout } = checkoutState
@@ -71,6 +80,21 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
         confirmed,
         onPaymentApproved: handleApproved,
     })
+
+    useEffect(() => {
+        if (method === "PIX") {
+            onPaymentStateChange({
+                method: "PIX",
+                qrCodeBase64: pixState.qrCodeBase64,
+                loading: pixState.loading,
+                error: pixState.error,
+            })
+        } else {
+            onPaymentStateChange({
+                method,
+            })
+        }
+    }, [onPaymentStateChange, method, pixState.qrCodeBase64, pixState.loading, pixState.error])
 
     return (
         <ScreenShell>
