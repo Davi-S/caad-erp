@@ -289,13 +289,22 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                                             }}
                                                         />
                                                     </Box>
-                                                    <Group gap="xs">
-                                                        <Loader size="xs" color="blue" />
-                                                        <Text size="xs" c="dimmed" fw={500}>
-                                                            Aguardando confirmação do banco...
-                                                        </Text>
-                                                    </Group>
-                                                    {pixQrCode && (
+                                                    {confirmed ? (
+                                                        <Group gap="xs">
+                                                            <Check size={16} color="var(--mantine-color-green-6)" />
+                                                            <Text size="xs" c="green" fw={600}>
+                                                                Pagamento confirmado pelo banco!
+                                                            </Text>
+                                                        </Group>
+                                                    ) : (
+                                                        <Group gap="xs">
+                                                            <Loader size="xs" color="blue" />
+                                                            <Text size="xs" c="dimmed" fw={500}>
+                                                                Aguardando confirmação do banco...
+                                                            </Text>
+                                                        </Group>
+                                                    )}
+                                                    {!confirmed && pixQrCode && (
                                                         <Button
                                                             variant="subtle"
                                                             size="xs"
