@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
     ActionIcon,
     Alert,
@@ -28,7 +28,7 @@ import type { PaymentType } from "@/types"
 import type { Salesman } from "@/types"
 import { useCart } from "../hooks/useCart"
 import { useCheckout } from "../hooks/useCheckout"
-import { createPixPayment, checkPaymentStatus } from "@/api/mercadoPago"
+import { usePixPayment } from "../hooks/usePixPayment"
 
 interface PaymentScreenProps {
     salesman: Salesman
@@ -49,10 +49,6 @@ const METHOD_OPTIONS = [
 
 export function PaymentScreen({ salesman, cartState, checkoutState, actions }: PaymentScreenProps) {
     const [method, setMethod] = useState<PaymentType>("PIX")
-    const [pixPaymentId, setPixPaymentId] = useState<number | string | null>(null)
-    const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null)
-    const [pixLoading, setPixLoading] = useState(false)
-    const [pixError, setPixError] = useState<string | null>(null)
 
     const { status, error, resetCheckout } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
@@ -61,62 +57,20 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
     const confirming = status === "pending"
     const isLocked = status === "pending" || status === "success"
 
-    const hasAutoConfirmed = useRef(false)
-
     useEffect(() => {
         resetCheckout()
-        hasAutoConfirmed.current = false
     }, [resetCheckout])
 
-    const handleCreatePix = useCallback(async () => {
-        if (cartState.total <= 0) return
-        setPixLoading(true)
-        setPixError(null)
-        try {
-            const data = await createPixPayment(
-                cartState.total / 100,
-                `Venda - ${salesman.salesman_name}`
-            )
-            setPixPaymentId(data.id)
-            setPixQrCodeBase64(data.qr_code_base64)
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Erro ao gerar PIX com Mercado Pago."
-            setPixError(msg)
-        } finally {
-            setPixLoading(false)
-        }
-    }, [cartState.total, salesman.salesman_name])
+    const handleApproved = useCallback(() => {
+        onConfirm("PIX")
+    }, [onConfirm])
 
-    useEffect(() => {
-        if (!confirmed) {
-            handleCreatePix()
-        }
-    }, [handleCreatePix, confirmed])
-
-    // Poll payment status via Mercado Pago API with fail-fast error propagation
-    useEffect(() => {
-        if (!pixPaymentId || confirmed || hasAutoConfirmed.current) return
-
-        const intervalId = setInterval(async () => {
-            try {
-                const statusRes = await checkPaymentStatus(pixPaymentId)
-                if (statusRes.status === "approved" && !hasAutoConfirmed.current) {
-                    hasAutoConfirmed.current = true
-                    clearInterval(intervalId)
-                    onConfirm("PIX")
-                }
-            } catch (err: unknown) {
-                const msg =
-                    err instanceof Error
-                        ? err.message
-                        : "Erro ao verificar status do pagamento PIX no Mercado Pago."
-                setPixError(msg)
-                clearInterval(intervalId)
-            }
-        }, 3000)
-
-        return () => clearInterval(intervalId)
-    }, [pixPaymentId, confirmed, onConfirm])
+    const pixState = usePixPayment({
+        amountInBrl: cartState.total / 100,
+        salesmanName: salesman.salesman_name,
+        confirmed,
+        onPaymentApproved: handleApproved,
+    })
 
     return (
         <ScreenShell>
@@ -230,7 +184,7 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                 >
                                     {method === "PIX" && (
                                         <Stack align="center" justify="center" gap="xs" style={{ width: "100%", height: "100%" }}>
-                                            {pixLoading && (
+                                            {pixState.loading && (
                                                 <Stack align="center" gap="xs">
                                                     <Loader size="md" />
                                                     <Text size="sm" c="dimmed">
@@ -239,24 +193,24 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                                 </Stack>
                                             )}
 
-                                            {!pixLoading && pixError && (
+                                            {!pixState.loading && pixState.error && (
                                                 <Alert color="red" icon={<AlertTriangle size={16} />} title="Erro no Mercado Pago">
                                                     <Text size="xs" mb="xs">
-                                                        {pixError}
+                                                        {pixState.error}
                                                     </Text>
                                                     <Button
                                                         size="xs"
                                                         variant="light"
                                                         color="red"
                                                         leftSection={<RotateCw size={12} />}
-                                                        onClick={handleCreatePix}
+                                                        onClick={pixState.retry}
                                                     >
                                                         Tentar novamente
                                                     </Button>
                                                 </Alert>
                                             )}
 
-                                            {!pixLoading && !pixError && pixQrCodeBase64 && (
+                                            {!pixState.loading && !pixState.error && pixState.qrCodeBase64 && (
                                                 <Stack align="center" gap="xs" style={{ height: "100%", justifyContent: "center" }}>
                                                     <Box
                                                         style={{
@@ -270,7 +224,7 @@ export function PaymentScreen({ salesman, cartState, checkoutState, actions }: P
                                                         }}
                                                     >
                                                         <img
-                                                            src={`data:image/png;base64,${pixQrCodeBase64}`}
+                                                            src={`data:image/png;base64,${pixState.qrCodeBase64}`}
                                                             alt="QR Code PIX Mercado Pago"
                                                             style={{
                                                                 maxWidth: "100%",
