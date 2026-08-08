@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import { HomePage } from "./features/home/"
 import { POSFlow } from "./features/pos/"
+import { CustomerDisplayPage } from "./features/pos/pages/CustomerDisplayPage"
 import { salesmenQueryOptions } from "@/hooks/queries/useSalesmen"
 import { productsQueryOptions } from "@/hooks/queries/useProducts"
 import { stockQueryOptions } from "@/hooks/queries/useStock"
@@ -25,6 +26,19 @@ const router = createBrowserRouter([
     {
         path: "/pos",
         element: <POSFlow />,
+        loader: async () => {
+            await Promise.all([
+                queryClient.ensureQueryData(salesmenQueryOptions()),
+                queryClient.ensureQueryData(productsQueryOptions()),
+                queryClient.ensureQueryData(stockQueryOptions()),
+            ])
+            return null
+        },
+        errorElement: <GlobalError />,
+    },
+    {
+        path: "/customer",
+        element: <CustomerDisplayPage />,
         loader: async () => {
             await Promise.all([
                 queryClient.ensureQueryData(salesmenQueryOptions()),
