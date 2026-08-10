@@ -89,9 +89,7 @@ export function SalesmanSelectScreen({
 
             {/* Middle Section */}
             <Stack style={{ flex: 1, minHeight: 0 }} py="lg">
-                {salesmen.length > 0 && (
-                    <ListControls {...controlsProps} searchPlaceholder="Buscar vendedor..." />
-                )}
+                <ListControls {...controlsProps} searchPlaceholder="Buscar vendedor..." />
 
                 {salesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
