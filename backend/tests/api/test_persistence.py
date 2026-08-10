@@ -8,7 +8,6 @@ from caad_erp import bll
 from caad_erp.api import persistence
 from caad_erp.api import runtime as api_runtime
 
-
 # happy path
 
 

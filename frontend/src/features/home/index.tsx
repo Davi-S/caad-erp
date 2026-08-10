@@ -1,6 +1,15 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Button, Group, ScrollArea, Stack, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core"
+import {
+    Button,
+    Group,
+    ScrollArea,
+    Stack,
+    Text,
+    ThemeIcon,
+    Title,
+    UnstyledButton,
+} from "@mantine/core"
 import {
     ShoppingCart,
     Package,
@@ -82,7 +91,13 @@ export function HomePage() {
                     {/* Header */}
                     <Group justify="space-between" align="center">
                         <Stack gap={4}>
-                            <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                            <Text
+                                size="xs"
+                                fw={600}
+                                tt="uppercase"
+                                c="dimmed"
+                                style={{ letterSpacing: 1 }}
+                            >
                                 CAAD ERP
                             </Text>
                             <Title order={1} size="h2">
@@ -134,7 +149,13 @@ export function HomePage() {
 
                     {/* Secondary management destinations */}
                     <Stack gap="xs">
-                        <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                        <Text
+                            size="xs"
+                            fw={600}
+                            tt="uppercase"
+                            c="dimmed"
+                            style={{ letterSpacing: 1 }}
+                        >
                             Gerenciamento
                         </Text>
                         {MANAGEMENT_ITEMS.map((item) => (
@@ -172,7 +193,13 @@ export function HomePage() {
 
                     {/* Customer display launcher section */}
                     <Stack gap="xs">
-                        <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                        <Text
+                            size="xs"
+                            fw={600}
+                            tt="uppercase"
+                            c="dimmed"
+                            style={{ letterSpacing: 1 }}
+                        >
                             Exibição Externa
                         </Text>
                         <UnstyledButton

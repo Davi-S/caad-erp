@@ -6,9 +6,9 @@ command handlers focused on parsing user intent while this module enforces
 invariants and active status checks.
 """
 
+import dataclasses
 import logging
 import typing as t
-import dataclasses
 
 from caad_erp import dal, exceptions
 
@@ -22,11 +22,11 @@ class SalesmanCommand:
     """Command payload used by salesman create and update workflows."""
 
     salesman_id: str
-    salesman_name: t.Optional[str] = None
-    is_active: t.Optional[bool] = None
+    salesman_name: str | None = None
+    is_active: bool | None = None
 
 
-def _ensure_salesmen_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
+def _ensure_salesmen_cache(context: runtime.RuntimeContext) -> dict[str, t.Any]:
     """Populate the salesman cache bucket on demand.
 
     The bucket only stores the full dataset and an id-index for lookups.
@@ -52,7 +52,7 @@ def _ensure_salesmen_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any
     return bucket
 
 
-def list_salesmen(context: runtime.RuntimeContext) -> t.List[dal.SalesmanRow]:
+def list_salesmen(context: runtime.RuntimeContext) -> list[dal.SalesmanRow]:
     """Return every cached salesman row.
 
     Args:

@@ -137,5 +137,3 @@ def get_workbook_report(
         filename=workbook_path.name,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
-
