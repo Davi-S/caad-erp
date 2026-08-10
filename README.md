@@ -79,15 +79,14 @@ cd ..
 
 ### 2. Excel Workbook
 
-The repository already ships with a pre-initialized master workbook at `backend/master_workbook.xlsx`.
+The repository comes pre-packaged with a clean, initialized Excel workbook at `backend/master_workbook.xlsx`. No additional initialization step is required to run the application.
 
-*(Optional)* If you ever need to reset or re-create a clean Excel workbook:
-
-```bash
-cd backend
-uv run setup_excel.py --force
-cd ..
-```
+> **Optional (Reset Workbook):** If you ever need to reset or re-create a blank master workbook, run:
+> ```bash
+> cd backend
+> uv run setup_excel.py --force
+> cd ..
+> ```
 
 ---
 
