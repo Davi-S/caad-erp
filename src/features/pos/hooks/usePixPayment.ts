@@ -20,22 +20,42 @@ export function usePixPayment({
     const [error, setError] = useState<string | null>(null)
 
     const hasAutoConfirmed = useRef(false)
+    const isFetchingRef = useRef(false)
+    const createdForParamsRef = useRef<string | null>(null)
 
-    const handleCreatePix = useCallback(async () => {
-        if (amountInBrl <= 0) return
-        setLoading(true)
-        setError(null)
-        try {
-            const data = await createPixPayment(amountInBrl, `Venda - ${salesmanName}`)
-            setPaymentId(data.id)
-            setQrCodeBase64(data.qr_code_base64)
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Erro ao gerar PIX com Mercado Pago."
-            setError(msg)
-        } finally {
-            setLoading(false)
-        }
-    }, [amountInBrl, salesmanName])
+    const handleCreatePix = useCallback(
+        async (isRetry = false) => {
+            if (amountInBrl <= 0) return
+
+            const currentParamsKey = `${amountInBrl}_${salesmanName}`
+
+            if (
+                !isRetry &&
+                (isFetchingRef.current || createdForParamsRef.current === currentParamsKey)
+            ) {
+                return
+            }
+
+            isFetchingRef.current = true
+            createdForParamsRef.current = currentParamsKey
+            setLoading(true)
+            setError(null)
+            try {
+                const data = await createPixPayment(amountInBrl, `Venda - ${salesmanName}`)
+                setPaymentId(data.id)
+                setQrCodeBase64(data.qr_code_base64)
+            } catch (err: unknown) {
+                createdForParamsRef.current = null
+                const msg =
+                    err instanceof Error ? err.message : "Erro ao gerar PIX com Mercado Pago."
+                setError(msg)
+            } finally {
+                setLoading(false)
+                isFetchingRef.current = false
+            }
+        },
+        [amountInBrl, salesmanName],
+    )
 
     // Auto-generate PIX payment on mount or amount change
     useEffect(() => {
@@ -69,11 +89,15 @@ export function usePixPayment({
         return () => clearInterval(intervalId)
     }, [paymentId, confirmed, onPaymentApproved])
 
+    const retry = useCallback(() => {
+        handleCreatePix(true)
+    }, [handleCreatePix])
+
     return {
         paymentId,
         qrCodeBase64,
         loading,
         error,
-        retry: handleCreatePix,
+        retry,
     }
 }
