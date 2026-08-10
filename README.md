@@ -91,9 +91,22 @@ cd ..
 
 ## Development & Running the Application
 
-### Run Both Services (Recommended)
+### Production / Unified Single-Process Mode
 
-From the project root:
+To run the complete application in production or local network mode using a single process:
+
+```bash
+# Build production frontend assets
+npm run build:frontend
+
+# Start full unified app (http://0.0.0.0:8000)
+npm start
+# or: cd backend && uv run caad-erp
+```
+
+### Development Mode
+
+To run both services concurrently with hot-reloading:
 
 ```bash
 # Launch FastAPI backend (http://0.0.0.0:8000) and Vite frontend (http://0.0.0.0:5173)
@@ -103,7 +116,7 @@ npm run dev
 ### Run Services Individually
 
 ```bash
-# Start backend API server only
+# Start backend API server only (no static frontend)
 npm run dev:backend
 
 # Start frontend Vite server only
@@ -118,8 +131,8 @@ npm run dev:frontend
   void entries directly.
 - **Analytics & Reports Dashboard:** Visual analytics for profit margins, sales
   summaries, and debt tracking.
-- **FastAPI Static File Serving:** Option to bundle and serve static frontend
-  assets directly from FastAPI for single-process local deployment.
+- **FastAPI Static File Serving:** [COMPLETED] Option to bundle and serve static frontend
+  assets directly from FastAPI (`caad-erp`) for single-process local deployment.
 
 ---
 

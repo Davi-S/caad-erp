@@ -30,7 +30,8 @@ api = [
 
 [project.scripts]
 caad-erp-cli = "caad_erp.cli:main"
-caad-erp-api = "caad_erp.api:main"
+caad-erp-api = "caad_erp.api:main_api"
+caad-erp = "caad_erp.api:main_full"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
