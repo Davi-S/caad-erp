@@ -18,10 +18,6 @@ test = [
     "pytest-cov",
 ]
 
-# Dependencies for the CLI
-cli = [
-]
-
 # Dependencies for the API server
 api = [
     "fastapi[standard]>=0.122.0",
@@ -29,7 +25,6 @@ api = [
 ]
 
 [project.scripts]
-caad-erp-cli = "caad_erp.cli:main"
 caad-erp-api = "caad_erp.api:main_api"
 caad-erp = "caad_erp.api:main_full"
 
