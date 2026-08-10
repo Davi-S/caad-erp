@@ -43,8 +43,6 @@ analyze it with the tools they already know.
   for transparent record-keeping.
 - **FastAPI REST Server:** Headless HTTP API with OpenAPI schema support for
   local network operation.
-- **Interactive CLI & REPL:** Console tool with a built-in REPL mode for fast
-  interactive terminal management.
 
 ---
 
@@ -77,17 +75,6 @@ npm install
 cd ..
 ```
 
-### 2. Excel Workbook
-
-The repository comes pre-packaged with a clean, initialized Excel workbook at `backend/master_workbook.xlsx`. No additional initialization step is required to run the application.
-
-> **Optional (Reset Workbook):** If you ever need to reset or re-create a blank master workbook, run:
-> ```bash
-> cd backend
-> uv run setup_excel.py --force
-> cd ..
-> ```
-
 ---
 
 ## Development & Running the Application
@@ -97,7 +84,7 @@ The repository comes pre-packaged with a clean, initialized Excel workbook at `b
 To run the complete application in production or local network mode using a single process:
 
 ```bash
-# Build production frontend assets
+# Build production frontend assets (only on the first run)
 npm run build:frontend
 
 # Start full unified app (http://0.0.0.0:8000)
@@ -132,8 +119,6 @@ npm run dev:frontend
   void entries directly.
 - **Analytics & Reports Dashboard:** Visual analytics for profit margins, sales
   summaries, and debt tracking.
-- **FastAPI Static File Serving:** [COMPLETED] Option to bundle and serve static frontend
-  assets directly from FastAPI (`caad-erp`) for single-process local deployment.
 
 ---
 
@@ -141,7 +126,6 @@ npm run dev:frontend
 
 Contributions are welcome! Please check the following resources:
 
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Workflow and code style conventions.
 - [Developer Guide](./docs/DEVELOPER_GUIDE.md) - Monorepo architecture, testing
   workflows, offline API codegen, and system design.
 

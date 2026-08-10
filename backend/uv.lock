@@ -69,7 +69,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.32.0" },
 ]
-provides-extras = ["test", "cli", "api"]
+provides-extras = ["test", "api"]
 
 [[package]]
 name = "certifi"
