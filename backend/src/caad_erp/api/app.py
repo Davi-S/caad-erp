@@ -128,4 +128,3 @@ def create_app(
             return fastapi.responses.FileResponse(dist_dir / "index.html")
 
     return app
-

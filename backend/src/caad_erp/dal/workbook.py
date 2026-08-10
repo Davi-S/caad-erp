@@ -7,7 +7,6 @@ spreadsheet plumbing concerns.
 """
 
 import logging
-import typing as t
 from pathlib import Path
 
 import openpyxl
@@ -67,7 +66,7 @@ def save_workbook(workbook: Workbook, destination: Path) -> None:
 
 def locate_row(
     workbook: Workbook, sheet_name: str, key_column: str, key_value: str
-) -> t.Optional[int]:
+) -> int | None:
     """Find a row by matching a key value within the specified worksheet.
 
     The function constructs a mapping from header titles to column indices,

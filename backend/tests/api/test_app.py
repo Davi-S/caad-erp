@@ -1,13 +1,12 @@
+import unittest.mock
 from pathlib import Path
 
 import fastapi
+import pytest
 from fastapi.testclient import TestClient
 
 from caad_erp.api import app as app_module
 from caad_erp.api import runtime as api_runtime
-
-import unittest.mock
-import pytest
 
 # happy path
 
@@ -114,13 +113,15 @@ def test_lifespan_startup_logs_and_raises_on_initialization_failure() -> None:
     app = app_module.create_app(skip_lifespan=False)
 
     # Act / Assert
-    with unittest.mock.patch(
-        "caad_erp.api.app.bll.load_context",
-        side_effect=RuntimeError("simulated config error"),
+    with (
+        unittest.mock.patch(
+            "caad_erp.api.app.bll.load_context",
+            side_effect=RuntimeError("simulated config error"),
+        ),
+        pytest.raises(RuntimeError, match="simulated config error"),
+        TestClient(app),
     ):
-        with pytest.raises(RuntimeError, match="simulated config error"):
-            with TestClient(app):
-                pass
+        pass
 
 
 # edge path
@@ -167,7 +168,9 @@ def test_create_app_raises_file_not_found_when_serve_static_true_and_dist_missin
     """
     missing_dir = tmp_path / "non_existent_dist"
     with pytest.raises(FileNotFoundError, match="npm run build:frontend"):
-        app_module.create_app(skip_lifespan=True, serve_static=True, static_dir=missing_dir)
+        app_module.create_app(
+            skip_lifespan=True, serve_static=True, static_dir=missing_dir
+        )
 
 
 def test_create_app_serves_static_assets_and_spa_fallback(tmp_path: Path) -> None:
@@ -179,7 +182,9 @@ def test_create_app_serves_static_assets_and_spa_fallback(tmp_path: Path) -> Non
     (tmp_path / "index.html").write_text("<html><body>CAAD ERP App</body></html>")
     (tmp_path / "style.css").write_text("body { color: red; }")
 
-    app = app_module.create_app(skip_lifespan=True, serve_static=True, static_dir=tmp_path)
+    app = app_module.create_app(
+        skip_lifespan=True, serve_static=True, static_dir=tmp_path
+    )
     with TestClient(app) as client:
         # SPA root fallback
         root_resp = client.get("/")
@@ -200,4 +205,3 @@ def test_create_app_serves_static_assets_and_spa_fallback(tmp_path: Path) -> Non
         health_resp = client.get("/health")
         assert health_resp.status_code == 200
         assert health_resp.json()["status"] == "healthy"
-

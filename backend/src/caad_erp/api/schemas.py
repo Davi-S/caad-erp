@@ -22,7 +22,7 @@ class StandardResponse(pydantic.BaseModel):
     """
 
     detail: str
-    data: t.Optional[t.Any] = None
+    data: t.Any | None = None
 
 
 class ProductCreateRequest(pydantic.BaseModel):
@@ -37,9 +37,9 @@ class ProductCreateRequest(pydantic.BaseModel):
 class ProductUpdateRequest(pydantic.BaseModel):
     """Request payload for partially updating an existing product."""
 
-    product_name: t.Optional[str] = pydantic.Field(None, min_length=1)
-    sell_price: t.Optional[int] = pydantic.Field(None, ge=0)
-    is_active: t.Optional[bool] = None
+    product_name: str | None = pydantic.Field(None, min_length=1)
+    sell_price: int | None = pydantic.Field(None, ge=0)
+    is_active: bool | None = None
 
 
 class ProductResponse(pydantic.BaseModel):
@@ -62,8 +62,8 @@ class SalesmanCreateRequest(pydantic.BaseModel):
 class SalesmanUpdateRequest(pydantic.BaseModel):
     """Request payload for partially updating an existing salesman."""
 
-    salesman_name: t.Optional[str] = pydantic.Field(None, min_length=1)
-    is_active: t.Optional[bool] = None
+    salesman_name: str | None = pydantic.Field(None, min_length=1)
+    is_active: bool | None = None
 
 
 class SalesmanResponse(pydantic.BaseModel):
@@ -82,13 +82,13 @@ class SaleRequest(pydantic.BaseModel):
     quantity: int = pydantic.Field(..., gt=0)
     total_revenue: int = pydantic.Field(..., ge=0)
     payment_type: constants.PaymentType
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 class BulkSaleRequest(pydantic.BaseModel):
     """Request payload for recording multiple sale transactions in a single operation."""
 
-    items: t.List[SaleRequest] = pydantic.Field(..., min_length=1)
+    items: list[SaleRequest] = pydantic.Field(..., min_length=1)
 
 
 class RestockRequest(pydantic.BaseModel):
@@ -98,7 +98,7 @@ class RestockRequest(pydantic.BaseModel):
     salesman_id: str = pydantic.Field(..., min_length=1)
     quantity: int = pydantic.Field(..., gt=0)
     total_cost: int = pydantic.Field(..., ge=0)
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 class WriteOffRequest(pydantic.BaseModel):
@@ -107,14 +107,14 @@ class WriteOffRequest(pydantic.BaseModel):
     product_id: str = pydantic.Field(..., min_length=1)
     salesman_id: str = pydantic.Field(..., min_length=1)
     quantity: int = pydantic.Field(..., gt=0)
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 class VoidRequest(pydantic.BaseModel):
     """Request payload for voiding an existing transaction."""
 
     linked_transaction_id: str = pydantic.Field(..., min_length=1)
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 class PayDebtRequest(pydantic.BaseModel):
@@ -124,7 +124,7 @@ class PayDebtRequest(pydantic.BaseModel):
     salesman_id: str = pydantic.Field(..., min_length=1)
     total_revenue: int = pydantic.Field(..., ge=0)
     payment_type: constants.PaymentType
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
     @pydantic.field_validator("payment_type")
     @classmethod
@@ -142,13 +142,13 @@ class PayDebtRequest(pydantic.BaseModel):
 class ProductListResponse(pydantic.BaseModel):
     """Response for listing products."""
 
-    items: t.List[ProductResponse]
+    items: list[ProductResponse]
 
 
 class SalesmanListResponse(pydantic.BaseModel):
     """Response for listing salesmen."""
 
-    items: t.List[SalesmanResponse]
+    items: list[SalesmanResponse]
 
 
 class TransactionResponse(pydantic.BaseModel):
@@ -159,18 +159,18 @@ class TransactionResponse(pydantic.BaseModel):
     transaction_type: str
     product_id: str
     salesman_id: str
-    payment_type: t.Optional[str]
+    payment_type: str | None
     quantity_change: int
     total_revenue: int
     total_cost: int
-    linked_transaction_id: t.Optional[str]
-    notes: t.Optional[str]
+    linked_transaction_id: str | None
+    notes: str | None
 
 
 class BulkSaleResponse(pydantic.BaseModel):
     """Response representation of recorded bulk sale transactions."""
 
-    items: t.List[TransactionResponse]
+    items: list[TransactionResponse]
 
 
 class StockItem(pydantic.BaseModel):
@@ -183,7 +183,7 @@ class StockItem(pydantic.BaseModel):
 class StockReportResponse(pydantic.BaseModel):
     """Response for the stock report endpoint."""
 
-    items: t.List[StockItem]
+    items: list[StockItem]
 
 
 class ProfitReportResponse(pydantic.BaseModel):
@@ -210,11 +210,11 @@ class DebtItem(pydantic.BaseModel):
 class DebtsReportResponse(pydantic.BaseModel):
     """Response for the debts report endpoint."""
 
-    balances: t.List[DebtItem]
+    balances: list[DebtItem]
     total_outstanding: int
 
 
 class LogReportResponse(pydantic.BaseModel):
     """Response for the transaction log report endpoint."""
 
-    transactions: t.List[TransactionResponse]
+    transactions: list[TransactionResponse]

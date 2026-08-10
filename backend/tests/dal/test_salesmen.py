@@ -191,7 +191,9 @@ def test_update_salesman_updates_single_field(salesmen_workbook) -> None:
         "S-001",
         field_values={"SalesmanName": "Alicia"},
     )
-    row = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[0]
+    row = next(
+        iter(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert row == ("S-001", "Alicia", True)
@@ -214,7 +216,9 @@ def test_update_salesman_updates_multiple_fields_simultaneously(
         "S-001",
         field_values={"SalesmanName": "Alicia", "IsActive": False},
     )
-    row = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[0]
+    row = next(
+        iter(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert row == ("S-001", "Alicia", False)
@@ -235,7 +239,9 @@ def test_update_salesman_leaves_other_fields_unchanged(salesmen_workbook) -> Non
         "S-001",
         field_values={"SalesmanName": "Alicia"},
     )
-    row = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[0]
+    row = next(
+        iter(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert row[0] == "S-001"
@@ -308,15 +314,15 @@ def test_update_salesman_empty_field_values_is_no_op(salesmen_workbook) -> None:
     """
     # Arrange
     salesmen_workbook["Salesmen"].append(["S-001", "Alice", True])
-    before = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[
-        0
-    ]
+    before = next(
+        iter(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Act
     salesmen.update_salesman(salesmen_workbook, "S-001", field_values={})
-    after = list(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))[
-        0
-    ]
+    after = next(
+        iter(salesmen_workbook["Salesmen"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert after == before

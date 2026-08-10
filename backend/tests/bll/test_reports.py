@@ -578,5 +578,3 @@ def test_get_master_workbook_path_returns_resolved_path(
     resolved_path = reports.get_master_workbook_path(context)
 
     assert resolved_path == data_file.resolve()
-
-
