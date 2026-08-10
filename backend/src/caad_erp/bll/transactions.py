@@ -7,10 +7,10 @@ business rules through centralized validators, and maintain cache coherence so
 reporting modules observe consistent state.
 """
 
+import dataclasses
 import datetime
 import logging
 import typing as t
-import dataclasses
 
 from caad_erp import constants, dal, exceptions
 
@@ -28,7 +28,7 @@ class SaleCommand:
     quantity: int
     total_revenue: int
     payment_type: constants.PaymentType
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -39,7 +39,7 @@ class RestockCommand:
     salesman_id: str
     quantity: int
     total_cost: int
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -49,7 +49,7 @@ class WriteOffCommand:
     product_id: str
     salesman_id: str
     quantity: int
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -60,7 +60,7 @@ class CreditPaymentCommand:
     salesman_id: str
     total_revenue: int
     payment_type: constants.PaymentType
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -78,11 +78,11 @@ class VoidCommand:
     """User intent for voiding a prior transaction."""
 
     linked_transaction_id: str
-    notes: t.Optional[str] = None
+    notes: str | None = None
 
 
 # Type this correctly so it returns t.Dict[str, dal.TransactionRow]
-def _ensure_transactions_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
+def _ensure_transactions_cache(context: runtime.RuntimeContext) -> dict[str, t.Any]:
     """Populate the transaction log cache bucket on demand.
 
     Because transactions are immutable after creation, caching the full list
@@ -167,7 +167,7 @@ def _require_nonnegative_money(amount: int) -> None:
         raise ValueError("Amount must be zero or positive")
 
 
-def list_transactions(context: runtime.RuntimeContext) -> t.List[dal.TransactionRow]:
+def list_transactions(context: runtime.RuntimeContext) -> list[dal.TransactionRow]:
     """Fetch the immutable transaction log from cache.
 
     The returned list is a shallow copy of the cached sequence so callers can
@@ -814,7 +814,7 @@ def _build_void_transaction(
     transaction: dal.TransactionRow,
     *,
     timestamp: datetime.datetime,
-    notes: t.Optional[str],
+    notes: str | None,
 ) -> dal.TransactionRow:
     """Create a reversal transaction that negates a prior entry.
 

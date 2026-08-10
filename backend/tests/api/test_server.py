@@ -1,9 +1,9 @@
 import inspect
 import unittest.mock
+
 import pytest
 
 from caad_erp.api import server
-
 
 # happy path
 
@@ -40,7 +40,9 @@ def test_run_server_exits_when_serve_static_fails_with_file_not_found() -> None:
     WHEN run_server is called
     THEN it logs an error and exits with status code 1
     """
-    with unittest.mock.patch("caad_erp.api.app.create_app", side_effect=FileNotFoundError("missing dist")):
+    with unittest.mock.patch(
+        "caad_erp.api.app.create_app", side_effect=FileNotFoundError("missing dist")
+    ):
         with pytest.raises(SystemExit) as exc_info:
             server.run_server(serve_static=True)
         assert exc_info.value.code == 1
@@ -77,4 +79,3 @@ def test_main_entry_points_delegate_to_run_server() -> None:
     with unittest.mock.patch("caad_erp.api.server.run_server") as mock_run:
         server.main()
         mock_run.assert_called_once_with(serve_static=False)
-
