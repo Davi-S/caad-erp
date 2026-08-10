@@ -56,7 +56,11 @@ export function SalesmenManagementPage() {
         [],
     )
 
-    const { searchQuery, processedItems: processedSalesmen, controlsProps } = useTanStackListControls({
+    const {
+        searchQuery,
+        processedItems: processedSalesmen,
+        controlsProps,
+    } = useTanStackListControls({
         data: activeFilteredSalesmen,
         columns,
         sortOptions: SALESMAN_SORT_OPTIONS,
@@ -72,8 +76,8 @@ export function SalesmenManagementPage() {
     const submitError = createMutation.isError
         ? createMutation.error.message
         : updateMutation.isError
-            ? updateMutation.error.message
-            : null
+          ? updateMutation.error.message
+          : null
 
     const openCreateModal = () => {
         setEditingSalesman(null)

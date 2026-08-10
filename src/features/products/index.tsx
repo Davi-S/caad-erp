@@ -71,7 +71,11 @@ export function ProductsManagementPage() {
         [stock],
     )
 
-    const { searchQuery, processedItems: processedProducts, controlsProps } = useTanStackListControls({
+    const {
+        searchQuery,
+        processedItems: processedProducts,
+        controlsProps,
+    } = useTanStackListControls({
         data: activeFilteredProducts,
         columns,
         sortOptions: PRODUCT_SORT_OPTIONS,
@@ -87,8 +91,8 @@ export function ProductsManagementPage() {
     const submitError = createMutation.isError
         ? createMutation.error.message
         : updateMutation.isError
-            ? updateMutation.error.message
-            : null
+          ? updateMutation.error.message
+          : null
 
     const openCreateModal = () => {
         setEditingProduct(null)

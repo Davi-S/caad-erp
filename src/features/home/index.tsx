@@ -1,7 +1,16 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button, Group, Stack, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core"
-import { ShoppingCart, Package, Tag, Users, ChevronRight, FileSpreadsheet, Monitor, ExternalLink } from "lucide-react"
+import {
+    ShoppingCart,
+    Package,
+    Tag,
+    Users,
+    ChevronRight,
+    FileSpreadsheet,
+    Monitor,
+    ExternalLink,
+} from "lucide-react"
 import { api } from "@/api/apiClient"
 import { ScreenShell } from "@/components/ScreenShell"
 
@@ -176,12 +185,7 @@ export function HomePage() {
                     >
                         <Group justify="space-between" wrap="nowrap">
                             <Group wrap="nowrap">
-                                <ThemeIcon
-                                    variant="light"
-                                    color="blue"
-                                    size={40}
-                                    radius="xl"
-                                >
+                                <ThemeIcon variant="light" color="blue" size={40} radius="xl">
                                     <Monitor size={20} />
                                 </ThemeIcon>
                                 <Stack gap={0}>

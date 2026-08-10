@@ -16,9 +16,7 @@ export function matchesSearch(
 ): boolean {
     if (!searchQuery || !searchQuery.trim()) return true
 
-    const joinedText = Array.isArray(text)
-        ? text.filter(Boolean).join(" ")
-        : text
+    const joinedText = Array.isArray(text) ? text.filter(Boolean).join(" ") : text
 
     const normalizedText = normalizeText(joinedText)
     const tokens = normalizeText(searchQuery.trim()).split(/\s+/).filter(Boolean)
