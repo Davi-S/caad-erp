@@ -155,3 +155,49 @@ def test_lifespan_startup_and_shutdown_manage_runtime_context(
         assert False, "runtime context should be cleared after lifespan shutdown"
     except RuntimeError as exc:
         assert "RuntimeContext not initialized" in str(exc)
+
+
+def test_create_app_raises_file_not_found_when_serve_static_true_and_dist_missing(
+    tmp_path: Path,
+) -> None:
+    """
+    GIVEN serve_static=True and a static_dir missing index.html
+    WHEN create_app is called
+    THEN FileNotFoundError is raised instructing the user to build frontend assets
+    """
+    missing_dir = tmp_path / "non_existent_dist"
+    with pytest.raises(FileNotFoundError, match="npm run build:frontend"):
+        app_module.create_app(skip_lifespan=True, serve_static=True, static_dir=missing_dir)
+
+
+def test_create_app_serves_static_assets_and_spa_fallback(tmp_path: Path) -> None:
+    """
+    GIVEN serve_static=True and a valid static_dir with index.html and static assets
+    WHEN create_app is called and requests are made to static and client routes
+    THEN physical static files and SPA fallback index.html are served correctly
+    """
+    (tmp_path / "index.html").write_text("<html><body>CAAD ERP App</body></html>")
+    (tmp_path / "style.css").write_text("body { color: red; }")
+
+    app = app_module.create_app(skip_lifespan=True, serve_static=True, static_dir=tmp_path)
+    with TestClient(app) as client:
+        # SPA root fallback
+        root_resp = client.get("/")
+        assert root_resp.status_code == 200
+        assert "CAAD ERP App" in root_resp.text
+
+        # SPA client route fallback
+        pos_resp = client.get("/pos")
+        assert pos_resp.status_code == 200
+        assert "CAAD ERP App" in pos_resp.text
+
+        # Real static file serving
+        css_resp = client.get("/style.css")
+        assert css_resp.status_code == 200
+        assert "color: red" in css_resp.text
+
+        # API routes are preserved and take precedence
+        health_resp = client.get("/health")
+        assert health_resp.status_code == 200
+        assert health_resp.json()["status"] == "healthy"
+
