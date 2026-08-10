@@ -77,13 +77,15 @@ npm install
 cd ..
 ```
 
-### 2. Bootstrap Excel Workbook
+### 2. Excel Workbook
 
-Initialize the Excel workbook with required sheets, formulas, and dashboards:
+The repository already ships with a pre-initialized master workbook at `backend/master_workbook.xlsx`.
+
+*(Optional)* If you ever need to reset or re-create a clean Excel workbook:
 
 ```bash
 cd backend
-uv run setup_excel.py
+uv run setup_excel.py --force
 cd ..
 ```
 
