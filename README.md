@@ -1,6 +1,6 @@
 # CAAD ERP
 
-![Excel dashboard.](/images/2026-07-26-044619_hyprshot.png)
+![Excel dashboard.](/backend/images/2026-07-26-044619_hyprshot.png)
 
 ## Motivation
 
@@ -17,138 +17,106 @@ already know.
 CAAD ERP favors readability, explicit processes, and a single-user deployment
 model over complex infrastructure.
 
+## Repository Structure
+
+This is a monorepo containing both the backend and the frontend:
+
+```text
+caad-erp/
+├── backend/         # Python (FastAPI + openpyxl) — API server & CLI
+│   ├── src/caad_erp/
+│   ├── tests/
+│   ├── pyproject.toml
+│   └── uv.lock
+├── frontend/        # TypeScript (React + Vite + Mantine) — Web UI
+│   ├── src/
+│   ├── package.json
+│   └── vite.config.ts
+├── docs/            # Project documentation
+├── package.json     # Root scripts for development orchestration
+└── README.md
+```
+
 ## Core Features
 
 - Append-only `TransactionLog` ledger that guarantees an auditable history.
 - Excel workbook as the authoritative data storage.
 - Inventory, sales, discounts, and credit payments handled in one workflow.
+- React-based web UI for point-of-sale, product/salesman management, and stock
+  control.
 
-## Installation
+## Quick Start
 
-1. Install Python 3.12 or newer from [python.org](https://www.python.org/) if it
-   is not already available on your computer.
-2. Download the latest CAAD ERP source code (clone the repository or grab a
-   release archive) and open a terminal inside the project folder.
-3. Install [`uv`](https://docs.astral.sh/uv/) if it is not already available:
+### Prerequisites
 
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
+- Python 3.12+ and [`uv`](https://docs.astral.sh/uv/)
+- Node.js 18+ and `npm`
 
-4. Create a dedicated environment and activate it so the dependencies stay
-   isolated:
-
-   ```bash
-   uv venv
-   source .venv/bin/activate
-   ```
-
-5. Install the application and its dependencies with `uv`:
-
-   ```bash
-   uv pip install -e .
-   ```
-
-6. Update `config.ini` so the `DataFile` entry points at your locked Excel
-   workbook, the file that will hold products, salespeople, and the immutable
-   transaction log.
-
-## Usage
-
-Run the bootstrap script once to create the initial Excel workbook with the
-required sheets, headers, and default salesperson defined in `config.ini`:
+### Installation
 
 ```bash
-uv run setup_excel.py
+# Clone the repository
+git clone https://github.com/Davi-S/caad-erp.git
+cd caad-erp
+
+# Install root dev dependencies (concurrently)
+npm install
+
+# Install backend dependencies
+cd backend
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[api,test]"
+cd ..
+
+# Install frontend dependencies
+cd frontend
+npm install
+cd ..
 ```
 
-### CLI
-
-The project ships with a thin command-line interface. Invoke it with the console
-script or directly through Python:
+### Development
 
 ```bash
-# Console script entry point installed via pip/uv
-caad-erp-cli --help
+# Run both backend and frontend dev servers simultaneously
+npm run dev
 
-# Module execution for development checkouts
-uv run --with-editable . caad-erp-cli
+# Or run them individually
+npm run dev:backend    # Starts FastAPI on http://0.0.0.0:8000
+npm run dev:frontend   # Starts Vite on http://localhost:5173
 ```
 
-By default the CLI looks for a `config.ini` in the current working directory.
-Pass `--config /path/to/config.ini` if your configuration lives elsewhere.
-
-Running `caad-erp-cli` without a sub-command starts an **interactive REPL
-session**. The workbook is opened once and shared across every command you enter
-at the prompt, which is faster than invoking the script from scratch for each
-operation. Type `exit` or press `Ctrl+D` to end the session.
-
-**For copy-paste walkthroughs, head over to the [examples/](./examples/)
-directory.**
-
-#### Write Commands
-
-These commands mutate the workbook. Each subcommand provides `--help`
-documentation with full argument details.
-
-- `add-product`
-- `edit-product`
-- `add-salesman`
-- `edit-salesman`
-- `sale`
-- `bulk-sale`
-- `restock`
-- `write-off`
-- `pay-debt`
-- `void`
-
-#### Read Commands
-
-Reporting commands return calculated information without mutating the workbook:
-
-- `stock`
-- `profit`
-- `debts`
-- `log`
-- `list-products`
-- `list-salesmen`
-
-### API Server
-
-CAAD ERP also provides a FastAPI-based headless API server for integration with
-web-based user interfaces or other applications. The API is intended for local
-network operation only.
-
-#### Installing API Dependencies
+### Other Commands
 
 ```bash
-uv pip install -e ".[api]"
+# Generate TypeScript types from the backend OpenAPI schema (offline)
+npm run generate-api
+
+# Run backend tests
+npm run test:backend
+
+# Run frontend lint
+npm run test:frontend
+
+# Run all tests
+npm run test
+
+# Build frontend for production
+npm run build:frontend
 ```
 
-#### Running the API Server
+## Backend
 
-```bash
-# Console script entry point
-caad-erp-api
+For detailed backend documentation, including CLI usage, API server setup, and
+Excel workbook configuration, see the [Backend README](./backend/README.md).
 
-# Or run directly through Python
-uv run -m caad_erp.api
-```
+## Frontend
 
-By default, the server starts on `http://0.0.0.0:8000`, making it accessible
-from other devices on the local network. The `/health` endpoint can be used to
-verify the server is running:
-
-```bash
-curl http://localhost:8000/health
-# Returns: {"status":"healthy","message":"CAAD ERP API is running"}
-```
-
-Interactive API documentation is available at `http://localhost:8000/docs`.
+For frontend-specific documentation, see the
+[Frontend README](./frontend/README.md).
 
 ## Contributing
 
 Community contributions are welcome. Please read `CONTRIBUTING.md` for the
 preferred workflow and coding standards, and visit `docs/DEVELOPER_GUIDE.md` for
 a deeper look at the system architecture.
-
