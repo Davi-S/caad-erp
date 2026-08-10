@@ -46,7 +46,19 @@ def test_create_app_registers_routers_and_global_exception_handlers() -> None:
     THEN aggregated routers and error handlers are attached to the app
     """
     app = app_module.create_app(skip_lifespan=True)
-    route_paths = {route.path for route in app.routes}
+
+    def collect_paths(routes):
+        paths = set()
+        for route in routes:
+            if hasattr(route, "path"):
+                paths.add(route.path)
+            if hasattr(route, "original_router") and hasattr(
+                route.original_router, "routes"
+            ):
+                paths.update(collect_paths(route.original_router.routes))
+        return paths
+
+    route_paths = collect_paths(app.routes)
 
     assert "/health" in route_paths
     assert "/products" in route_paths
