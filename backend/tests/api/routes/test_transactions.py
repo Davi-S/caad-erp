@@ -321,4 +321,3 @@ def test_bulk_sale_endpoint_maps_domain_errors(api_client: TestClient) -> None:
         },
     )
     assert response.status_code == 404
-

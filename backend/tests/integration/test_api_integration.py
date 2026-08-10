@@ -746,6 +746,7 @@ def test_master_workbook_download_integration_flow(api_client: TestClient) -> No
     THEN downloadable binary matches current master workbook state across all sheets
     """
     import io
+
     import openpyxl
 
     _create_product(api_client, "INT-WB-P1", sell_price=1500)
@@ -786,5 +787,3 @@ def test_master_workbook_download_integration_flow(api_client: TestClient) -> No
     tx_ws = wb["TransactionLog"]
     tx_product_ids = [cell.value for cell in tx_ws["D"][1:]]
     assert "INT-WB-P1" in tx_product_ids
-
-

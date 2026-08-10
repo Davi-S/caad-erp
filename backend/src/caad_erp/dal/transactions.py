@@ -29,12 +29,12 @@ class TransactionRow:
     transaction_type: str
     product_id: str
     salesman_id: str
-    payment_type: t.Optional[str]
+    payment_type: str | None
     quantity_change: int
     total_revenue: int
     total_cost: int
-    linked_transaction_id: t.Optional[str]
-    notes: t.Optional[str]
+    linked_transaction_id: str | None
+    notes: str | None
 
 
 def iter_transactions(workbook: Workbook) -> t.Iterable[TransactionRow]:

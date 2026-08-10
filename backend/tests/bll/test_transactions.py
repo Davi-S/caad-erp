@@ -1579,4 +1579,3 @@ def test_record_bulk_sale_invalidates_cache() -> None:
 
     # Assert
     assert "transactions" not in context._cache
-
