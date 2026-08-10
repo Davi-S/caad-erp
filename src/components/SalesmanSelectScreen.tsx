@@ -58,7 +58,11 @@ export function SalesmanSelectScreen({
         [],
     )
 
-    const { searchQuery, processedItems: processedSalesmen, controlsProps } = useTanStackListControls({
+    const {
+        searchQuery,
+        processedItems: processedSalesmen,
+        controlsProps,
+    } = useTanStackListControls({
         data: salesmen,
         columns,
         sortOptions: SALESMAN_SORT_OPTIONS,

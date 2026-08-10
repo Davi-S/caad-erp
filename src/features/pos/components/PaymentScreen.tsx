@@ -14,14 +14,7 @@ import {
     Box,
     Loader,
 } from "@mantine/core"
-import {
-    Check,
-    ArrowLeft,
-    AlertTriangle,
-    QrCode,
-    Banknote,
-    RotateCw,
-} from "lucide-react"
+import { Check, ArrowLeft, AlertTriangle, QrCode, Banknote, RotateCw } from "lucide-react"
 import { brl } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { PaymentType } from "@/types"
@@ -207,7 +200,12 @@ export function PaymentScreen({
                                     }}
                                 >
                                     {method === "PIX" && (
-                                        <Stack align="center" justify="center" gap="xs" style={{ width: "100%", height: "100%" }}>
+                                        <Stack
+                                            align="center"
+                                            justify="center"
+                                            gap="xs"
+                                            style={{ width: "100%", height: "100%" }}
+                                        >
                                             {pixState.loading && (
                                                 <Stack align="center" gap="xs">
                                                     <Loader size="md" />
@@ -218,7 +216,11 @@ export function PaymentScreen({
                                             )}
 
                                             {!pixState.loading && pixState.error && (
-                                                <Alert color="red" icon={<AlertTriangle size={16} />} title="Erro no Mercado Pago">
+                                                <Alert
+                                                    color="red"
+                                                    icon={<AlertTriangle size={16} />}
+                                                    title="Erro no Mercado Pago"
+                                                >
                                                     <Text size="xs" mb="xs">
                                                         {pixState.error}
                                                     </Text>
@@ -234,31 +236,40 @@ export function PaymentScreen({
                                                 </Alert>
                                             )}
 
-                                            {!pixState.loading && !pixState.error && pixState.qrCodeBase64 && (
-                                                <Stack align="center" gap="xs" style={{ height: "100%", justifyContent: "center" }}>
-                                                    <Box
+                                            {!pixState.loading &&
+                                                !pixState.error &&
+                                                pixState.qrCodeBase64 && (
+                                                    <Stack
+                                                        align="center"
+                                                        gap="xs"
                                                         style={{
-                                                            width: "100%",
                                                             height: "100%",
-                                                            maxWidth: 240,
-                                                            maxHeight: 240,
-                                                            display: "flex",
                                                             justifyContent: "center",
-                                                            alignItems: "center",
                                                         }}
                                                     >
-                                                        <img
-                                                            src={`data:image/png;base64,${pixState.qrCodeBase64}`}
-                                                            alt="QR Code PIX Mercado Pago"
+                                                        <Box
                                                             style={{
-                                                                maxWidth: "100%",
-                                                                maxHeight: "100%",
-                                                                objectFit: "contain",
+                                                                width: "100%",
+                                                                height: "100%",
+                                                                maxWidth: 240,
+                                                                maxHeight: 240,
+                                                                display: "flex",
+                                                                justifyContent: "center",
+                                                                alignItems: "center",
                                                             }}
-                                                        />
-                                                    </Box>
-                                                </Stack>
-                                            )}
+                                                        >
+                                                            <img
+                                                                src={`data:image/png;base64,${pixState.qrCodeBase64}`}
+                                                                alt="QR Code PIX Mercado Pago"
+                                                                style={{
+                                                                    maxWidth: "100%",
+                                                                    maxHeight: "100%",
+                                                                    objectFit: "contain",
+                                                                }}
+                                                            />
+                                                        </Box>
+                                                    </Stack>
+                                                )}
                                         </Stack>
                                     )}
 

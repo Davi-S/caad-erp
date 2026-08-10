@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react"
-import { type POSBroadcastMessage, type POSBroadcastState, EMPTY_POS_STATE } from "../types/broadcast"
+import {
+    type POSBroadcastMessage,
+    type POSBroadcastState,
+    EMPTY_POS_STATE,
+} from "../types/broadcast"
 
 const CHANNEL_NAME = "caad_pos_display_channel"
 

@@ -1,14 +1,4 @@
-import {
-    Alert,
-    Badge,
-    Box,
-    Center,
-    Loader,
-    Paper,
-    Stack,
-    Text,
-    Title,
-} from "@mantine/core"
+import { Alert, Badge, Box, Center, Loader, Paper, Stack, Text, Title } from "@mantine/core"
 import { AlertTriangle, Banknote, Check, QrCode } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
@@ -94,7 +84,9 @@ export function CustomerPaymentScreen({
                                 variant="light"
                                 color="gray"
                                 size="sm"
-                                leftSection={method === "PIX" ? <QrCode size={12} /> : <Banknote size={12} />}
+                                leftSection={
+                                    method === "PIX" ? <QrCode size={12} /> : <Banknote size={12} />
+                                }
                             >
                                 Forma de pagamento: {method === "PIX" ? "Pix" : "Dinheiro"}
                             </Badge>
@@ -121,7 +113,12 @@ export function CustomerPaymentScreen({
                                     }}
                                 >
                                     {method === "PIX" && (
-                                        <Stack align="center" justify="center" gap="xs" style={{ width: "100%", height: "100%" }}>
+                                        <Stack
+                                            align="center"
+                                            justify="center"
+                                            gap="xs"
+                                            style={{ width: "100%", height: "100%" }}
+                                        >
                                             {pixLoading && (
                                                 <Stack align="center" gap="xs">
                                                     <Loader size="md" />
@@ -132,13 +129,22 @@ export function CustomerPaymentScreen({
                                             )}
 
                                             {!pixLoading && pixError && (
-                                                <Alert color="red" icon={<AlertTriangle size={16} />} title="Erro no Mercado Pago">
+                                                <Alert
+                                                    color="red"
+                                                    icon={<AlertTriangle size={16} />}
+                                                    title="Erro no Mercado Pago"
+                                                >
                                                     <Text size="xs">{pixError}</Text>
                                                 </Alert>
                                             )}
 
                                             {!pixLoading && !pixError && pixQrBase64 && (
-                                                <Stack align="center" justify="center" gap="xs" style={{ width: "100%", height: "100%" }}>
+                                                <Stack
+                                                    align="center"
+                                                    justify="center"
+                                                    gap="xs"
+                                                    style={{ width: "100%", height: "100%" }}
+                                                >
                                                     <Text size="xs" c="dimmed" fw={600} ta="center">
                                                         Escaneie o QR Code abaixo com seu banco:
                                                     </Text>
@@ -172,7 +178,8 @@ export function CustomerPaymentScreen({
                                         <Stack align="center" justify="center" gap="xs">
                                             <Banknote size={32} color="gray" />
                                             <Text size="sm" c="dimmed" ta="center">
-                                                Receba o valor em espécie e confirme com o atendente.
+                                                Receba o valor em espécie e confirme com o
+                                                atendente.
                                             </Text>
                                         </Stack>
                                     )}

@@ -23,12 +23,7 @@ interface CustomerCartScreenProps {
     total: number
 }
 
-export function CustomerCartScreen({
-    products,
-    stock,
-    cart,
-    total,
-}: CustomerCartScreenProps) {
+export function CustomerCartScreen({ products, stock, cart, total }: CustomerCartScreenProps) {
     const cartEntries = Object.entries(cart)
     const isEmpty = cartEntries.length === 0
 
@@ -121,7 +116,13 @@ export function CustomerCartScreen({
                 ) : (
                     <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
                         <Stack gap={4}>
-                            <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
+                            <Text
+                                size="xs"
+                                fw={600}
+                                tt="uppercase"
+                                c="dimmed"
+                                style={{ letterSpacing: 1 }}
+                            >
                                 No carrinho
                             </Text>
                             {cartEntries.map(([productId, quantity], index) => {

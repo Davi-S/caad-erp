@@ -17,13 +17,13 @@ const MP_BASE_URL = import.meta.env.VITE_MERCADO_PAGO_BASE_URL || "/api-mp"
 
 export async function createPixPayment(
     amountInBrl: number,
-    description = "Venda CAAD ERP"
+    description = "Venda CAAD ERP",
 ): Promise<PixPaymentResponse> {
     const token = import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN
 
     if (!token || !token.trim()) {
         throw new Error(
-            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN no arquivo .env."
+            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN no arquivo .env.",
         )
     }
 
@@ -33,7 +33,7 @@ export async function createPixPayment(
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token.trim()}`,
+                Authorization: `Bearer ${token.trim()}`,
                 "X-Idempotency-Key":
                     typeof crypto !== "undefined" && crypto.randomUUID
                         ? crypto.randomUUID()
@@ -51,7 +51,7 @@ export async function createPixPayment(
     } catch (networkErr: unknown) {
         const detail = networkErr instanceof Error ? networkErr.message : String(networkErr)
         throw new Error(
-            `Erro de conexão/CORS ao acessar Mercado Pago (${detail}). Verifique a conexão de rede e permissões.`
+            `Erro de conexão/CORS ao acessar Mercado Pago (${detail}). Verifique a conexão de rede e permissões.`,
         )
     }
 
@@ -76,7 +76,7 @@ export async function createPixPayment(
 
     if (!data.id || !qrCodeBase64) {
         throw new Error(
-            "Falha na API do Mercado Pago: A resposta não retornou os dados completos do QR Code PIX."
+            "Falha na API do Mercado Pago: A resposta não retornou os dados completos do QR Code PIX.",
         )
     }
 
@@ -91,13 +91,13 @@ export async function createPixPayment(
 }
 
 export async function checkPaymentStatus(
-    paymentId: number | string
+    paymentId: number | string,
 ): Promise<PaymentStatusResponse> {
     const token = import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN
 
     if (!token || !token.trim()) {
         throw new Error(
-            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN no ambiente."
+            "Token do Mercado Pago não configurado. Defina a variável VITE_MERCADO_PAGO_ACCESS_TOKEN no ambiente.",
         )
     }
 
@@ -106,7 +106,7 @@ export async function checkPaymentStatus(
         res = await fetch(`${MP_BASE_URL}/v1/payments/${paymentId}`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token.trim()}`,
+                Authorization: `Bearer ${token.trim()}`,
             },
         })
     } catch (networkErr: unknown) {
@@ -119,7 +119,7 @@ export async function checkPaymentStatus(
         data = await res.json()
     } catch {
         throw new Error(
-            `Resposta inválida ao verificar status no Mercado Pago (HTTP ${res.status}).`
+            `Resposta inválida ao verificar status no Mercado Pago (HTTP ${res.status}).`,
         )
     }
 
