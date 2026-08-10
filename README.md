@@ -1,122 +1,142 @@
 # CAAD ERP
 
-![Excel dashboard.](/backend/images/2026-07-26-044619_hyprshot.png)
+> Excel-backed inventory, sales tracker, and web point-of-sale system for student lounges.
+
+![Web UI Home Page](./frontend/images/caad-erp-frontend-home-page.png)
+![Excel Dashboard Sheet](./backend/images/2026-07-26-044619_hyprshot.png)
 
 ## Motivation
 
-When managing inventory, sales, and tab debts, student lounges had to rely on
-over-engineered POS systems or overly simple Excel sheets.
+When managing inventory, sales, and tab debts, student lounges had to rely on over-engineered POS systems or overly simple Excel sheets.
 
-To solve this, I built CAAD ERP, a simple inventory and sales management system
-specifically tailored for (my) student lounge operations.
+To solve this, I built **CAAD ERP**, a simple inventory and sales management system specifically tailored for student lounge operations.
 
-The project pairs Python business logic with an Excel-based "source of truth" so
-non-technical managers can trust the data and analyze it with the tools they
-already know.
+The project pairs Python business logic and a modern React web interface with an Excel-based "source of truth" so non-technical managers can trust the data and analyze it with the tools they already know.
 
-CAAD ERP favors readability, explicit processes, and a single-user deployment
-model over complex infrastructure.
+---
 
-## Repository Structure
+## Key Features
 
-This is a monorepo containing both the backend and the frontend:
+### 🎨 Web Application (Frontend)
+- **Point of Sale (POS):** Interactive cart and checkout flow, salesman selection screen, and payment confirmation (including Mercado Pago PIX QR codes).
+- **Customer Display Mode:** Separate customer-facing display view for checkout transparency.
+- **Product Management:** Tools to add, edit, or remove items from the catalog.
+- **Salesmen Management:** Register, update, and toggle active status of salespeople.
+- **Stock Management:** Direct control over inventory levels with restock and write-off modal workflows.
 
-```text
-caad-erp/
-├── backend/         # Python (FastAPI + openpyxl) — API server & CLI
-│   ├── src/caad_erp/
-│   ├── tests/
-│   ├── pyproject.toml
-│   └── uv.lock
-├── frontend/        # TypeScript (React + Vite + Mantine) — Web UI
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.ts
-├── docs/            # Project documentation
-├── package.json     # Root scripts for development orchestration
-└── README.md
-```
+### 🐍 Backend & Core Ledger
+- **Append-only Transaction Ledger:** `TransactionLog` guarantees an auditable, immutable history.
+- **Excel Source of Truth:** OpenPyXL integration using locked Excel workbooks for transparent record-keeping.
+- **FastAPI REST Server:** Headless HTTP API with OpenAPI schema support for local network operation.
+- **Interactive CLI & REPL:** Console tool with a built-in REPL mode for fast interactive terminal management.
 
-## Core Features
+---
 
-- Append-only `TransactionLog` ledger that guarantees an auditable history.
-- Excel workbook as the authoritative data storage.
-- Inventory, sales, discounts, and credit payments handled in one workflow.
-- React-based web UI for point-of-sale, product/salesman management, and stock
-  control.
-
-## Quick Start
+## Quick Start & Installation
 
 ### Prerequisites
 
-- Python 3.12+ and [`uv`](https://docs.astral.sh/uv/)
-- Node.js 18+ and `npm`
+- **Python 3.12+** and [`uv`](https://docs.astral.sh/uv/)
+- **Node.js 18+** and `npm`
 
-### Installation
+### 1. Clone & Install Dependencies
 
 ```bash
-# Clone the repository
 git clone https://github.com/Davi-S/caad-erp.git
 cd caad-erp
 
-# Install root dev dependencies (concurrently)
+# Install root orchestration tools (concurrently)
 npm install
 
-# Install backend dependencies
+# Setup backend Python environment
 cd backend
 uv venv
 source .venv/bin/activate
 uv pip install -e ".[api,test]"
 cd ..
 
-# Install frontend dependencies
+# Setup frontend Node environment
 cd frontend
 npm install
 cd ..
 ```
 
-### Development
+### 2. Bootstrap Excel Workbook
+
+Initialize the Excel workbook with required sheets, formulas, and dashboards:
 
 ```bash
-# Run both backend and frontend dev servers simultaneously
+cd backend
+uv run setup_excel.py
+cd ..
+```
+
+---
+
+## Development & Running the Application
+
+### Run Both Services (Recommended)
+
+From the project root:
+
+```bash
+# Launch FastAPI backend (http://0.0.0.0:8000) and Vite frontend (http://0.0.0.0:5173)
 npm run dev
-
-# Or run them individually
-npm run dev:backend    # Starts FastAPI on http://0.0.0.0:8000
-npm run dev:frontend   # Starts Vite on http://localhost:5173
 ```
 
-### Other Commands
+### Run Services Individually
 
 ```bash
-# Generate TypeScript types from the backend OpenAPI schema (offline)
-npm run generate-api
+# Start backend API server only
+npm run dev:backend
 
-# Run backend tests
-npm run test:backend
-
-# Run frontend lint
-npm run test:frontend
-
-# Run all tests
-npm run test
-
-# Build frontend for production
-npm run build:frontend
+# Start frontend Vite server only
+npm run dev:frontend
 ```
 
-## Backend
+---
 
-For detailed backend documentation, including CLI usage, API server setup, and
-Excel workbook configuration, see the [Backend README](./backend/README.md).
+## Backend Usage (CLI & API Server)
 
-## Frontend
+### Interactive CLI & REPL
 
-For frontend-specific documentation, see the
-[Frontend README](./frontend/README.md).
+The backend includes a command-line interface. Run it in interactive REPL mode:
 
-## Contributing
+```bash
+cd backend
+uv run caad-erp-cli
+```
 
-Community contributions are welcome. Please read `CONTRIBUTING.md` for the
-preferred workflow and coding standards, and visit `docs/DEVELOPER_GUIDE.md` for
-a deeper look at the system architecture.
+#### Available CLI Commands:
+- **Write Operations:** `add-product`, `edit-product`, `add-salesman`, `edit-salesman`, `sale`, `bulk-sale`, `restock`, `write-off`, `pay-debt`, `void`
+- **Read Operations:** `stock`, `profit`, `debts`, `log`, `list-products`, `list-salesmen`
+
+Check [backend/examples/](./backend/examples/) for step-by-step CLI walkthroughs.
+
+### FastAPI Server & Interactive Docs
+
+Start the headless API server:
+
+```bash
+cd backend
+uv run caad-erp-api
+```
+
+- **Health Check:** `http://localhost:8000/health`
+- **Interactive Swagger Docs:** `http://localhost:8000/docs`
+
+---
+
+## Roadmap & Future Enhancements
+
+- **Log Audit & Void UI:** Web UI capabilities to review transaction logs and void entries directly.
+- **Analytics & Reports Dashboard:** Visual analytics for profit margins, sales summaries, and debt tracking.
+- **FastAPI Static File Serving:** Option to bundle and serve static frontend assets directly from FastAPI for single-process local deployment.
+
+---
+
+## Contributing & Documentation
+
+Contributions are welcome! Please check the following resources:
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Workflow and code style conventions.
+- [Developer Guide](./docs/DEVELOPER_GUIDE.md) - Monorepo architecture, testing workflows, offline API codegen, and system design.
