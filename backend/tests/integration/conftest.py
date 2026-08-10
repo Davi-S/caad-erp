@@ -33,9 +33,6 @@ def integration_config_path(integration_workspace: Path) -> Path:
                 "LoungeName = Integration Lounge",
                 f"SchemaVersion = {constants.EXPECTED_SCHEMA_VERSION}",
                 "",
-                "[Defaults]",
-                "DefaultSalesman = GRR00000000",
-                "",
             ]
         ),
         encoding="utf-8",
@@ -62,7 +59,6 @@ def initialized_context(integration_config_path: Path):
     """
     create_master_workbook(
         integration_config_path.parent / "master_workbook.xlsx",
-        default_salesman_id="GRR00000000",
         overwrite=True,
     )
     return runtime.load_context(integration_config_path)

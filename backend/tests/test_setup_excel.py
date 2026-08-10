@@ -53,7 +53,7 @@ def test_run_from_config_generates_dashboard(tmp_path: Path):
     config_path = tmp_path / "config.ini"
     data_file = tmp_path / "data" / "master_workbook.xlsx"
     config_path.write_text(
-        f"[System]\nDataFile = {data_file}\n\n[Defaults]\nDefaultSalesman = GRR00000000\n"
+        f"[System]\nDataFile = {data_file}\n"
     )
 
     output = run_from_config(config_path, overwrite=True)

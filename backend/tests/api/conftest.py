@@ -26,9 +26,6 @@ def api_config_path(api_workspace: Path) -> Path:
                 "LoungeName = API Unit Test Lounge",
                 f"SchemaVersion = {constants.EXPECTED_SCHEMA_VERSION}",
                 "",
-                "[Defaults]",
-                "DefaultSalesman = GRR00000000",
-                "",
             ]
         ),
         encoding="utf-8",
@@ -40,7 +37,6 @@ def api_config_path(api_workspace: Path) -> Path:
 def api_context(api_config_path: Path):
     create_master_workbook(
         api_config_path.parent / "master_workbook.xlsx",
-        default_salesman_id="GRR00000000",
         overwrite=True,
     )
     return bll_runtime.load_context(api_config_path)
