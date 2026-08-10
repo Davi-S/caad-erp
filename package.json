@@ -7,7 +7,9 @@
         "dev": "vite",
         "build": "tsc -b && vite build",
         "lint": "oxlint",
+        "lint:fix": "oxlint --fix",
         "format": "oxfmt",
+        "format:check": "oxfmt --check",
         "preview": "vite preview",
         "generate-api": "npx openapi-typescript http://192.168.0.164:8000/openapi.json -o ./src/api/schema.ts"
     },

@@ -37,4 +37,3 @@ export function buildQrGrid() {
 }
 
 export * from "./search"
-

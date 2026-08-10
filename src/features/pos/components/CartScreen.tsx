@@ -43,7 +43,14 @@ const PRODUCT_SORT_OPTIONS: SortOption[] = [
     { value: "price-asc", label: "Preço (Menor)", sorting: [{ id: "price", desc: false }] },
     { value: "price-desc", label: "Preço (Maior)", sorting: [{ id: "price", desc: true }] },
     { value: "stock-desc", label: "Estoque (Maior)", sorting: [{ id: "stock", desc: true }] },
-    { value: "cart-first", label: "No Carrinho", sorting: [{ id: "cart", desc: true }, { id: "name", desc: false }] },
+    {
+        value: "cart-first",
+        label: "No Carrinho",
+        sorting: [
+            { id: "cart", desc: true },
+            { id: "name", desc: false },
+        ],
+    },
 ]
 
 export function CartScreen({ salesman, products, stock, cartState, actions }: CartScreenProps) {
@@ -74,7 +81,11 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
         [stock, cart],
     )
 
-    const { searchQuery, processedItems: processedProducts, controlsProps } = useTanStackListControls({
+    const {
+        searchQuery,
+        processedItems: processedProducts,
+        controlsProps,
+    } = useTanStackListControls({
         data: products,
         columns,
         sortOptions: PRODUCT_SORT_OPTIONS,

@@ -68,7 +68,11 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
         [stock],
     )
 
-    const { searchQuery, processedItems: processedProducts, controlsProps } = useTanStackListControls({
+    const {
+        searchQuery,
+        processedItems: processedProducts,
+        controlsProps,
+    } = useTanStackListControls({
         data: activeFilteredProducts,
         columns,
         sortOptions: STOCK_SORT_OPTIONS,
