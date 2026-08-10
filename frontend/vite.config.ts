@@ -12,4 +12,12 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
+    server: {
+        proxy: {
+            "/api-mp": {
+                target: "http://localhost:8000",
+                changeOrigin: true,
+            },
+        },
+    },
 })
