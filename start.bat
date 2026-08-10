@@ -21,12 +21,16 @@ if not exist "frontend\node_modules" (
     echo [INFO] Frontend dependencies missing. Starting setup...
     goto SETUP
 )
+if not exist "frontend\dist\index.html" (
+    echo [INFO] Built frontend assets missing. Starting setup...
+    goto SETUP
+)
 
 goto LAUNCH
 
 :SETUP
 echo.
-echo [1/4] Checking prerequisites (Node.js, Python, uv)...
+echo [1/5] Checking prerequisites (Node.js, Python, uv)...
 
 :: Check Node.js / npm
 where node >nul 2>nul
@@ -52,7 +56,7 @@ if %errorlevel% neq 0 (
     call :REFRESH_PATH
 )
 
-echo [2/4] Installing root orchestration dependencies...
+echo [2/5] Installing root orchestration dependencies...
 call npm install
 if %errorlevel% neq 0 (
     echo [ERROR] npm install failed!
@@ -60,7 +64,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [3/4] Setting up Python backend environment...
+echo [3/5] Setting up Python backend environment...
 cd backend
 call uv venv
 call uv pip install -e ".[api,test]"
@@ -72,7 +76,7 @@ if %errorlevel% neq 0 (
 )
 cd ..
 
-echo [4/4] Setting up frontend environment...
+echo [4/5] Setting up frontend environment...
 cd frontend
 call npm install
 if %errorlevel% neq 0 (
@@ -83,17 +87,27 @@ if %errorlevel% neq 0 (
 )
 cd ..
 
-echo.
-echo [SUCCESS] Setup complete!
-echo.
-
-:LAUNCH
-echo Building production frontend assets...
+echo [5/5] Building production frontend assets...
 call npm run build:frontend
 if %errorlevel% neq 0 (
     echo [ERROR] Frontend build failed!
     pause
     exit /b 1
+)
+
+echo.
+echo [SUCCESS] Setup complete!
+echo.
+
+:LAUNCH
+if not exist "frontend\dist\index.html" (
+    echo [INFO] Built frontend assets missing. Building frontend assets...
+    call npm run build:frontend
+    if %errorlevel% neq 0 (
+        echo [ERROR] Frontend build failed!
+        pause
+        exit /b 1
+    )
 )
 
 echo.
