@@ -12,24 +12,4 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
-    server: {
-        proxy: {
-            "/api-mp": {
-                target: "https://api.mercadopago.com",
-                changeOrigin: true,
-                secure: true,
-                rewrite: (path) => path.replace(/^\/api-mp/, ""),
-            },
-        },
-    },
-    preview: {
-        proxy: {
-            "/api-mp": {
-                target: "https://api.mercadopago.com",
-                changeOrigin: true,
-                secure: true,
-                rewrite: (path) => path.replace(/^\/api-mp/, ""),
-            },
-        },
-    },
 })
