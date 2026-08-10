@@ -55,7 +55,6 @@ class SetupSettings:
     """Type-safe representation of configuration values used during setup."""
 
     data_file: Path
-    default_salesman_id: str
 
 
 @dataclass(frozen=True)
@@ -84,7 +83,6 @@ def load_settings(config_path: Path) -> SetupSettings:
 
     try:
         data_file_raw = parser.get("System", "DataFile")
-        default_salesman_id = parser.get("Defaults", "DefaultSalesman")
     except (configparser.NoSectionError, configparser.NoOptionError) as exc:
         raise KeyError(f"Missing required configuration entry: {exc}") from exc
 
@@ -94,7 +92,6 @@ def load_settings(config_path: Path) -> SetupSettings:
 
     return SetupSettings(
         data_file=data_file_path,
-        default_salesman_id=default_salesman_id,
     )
 
 
@@ -269,9 +266,7 @@ def _create_dashboard_sheet(workbook: openpyxl.Workbook) -> None:
 def create_master_workbook(
     destination: Path,
     *,
-    default_salesman_id: str | None = None,
     sheet_columns: Mapping[str, Sequence[str]] = SHEET_COLUMNS,
-    default_salesman_template: Mapping[str, object] | None = None,
     overwrite: bool = False,
 ) -> Path:
     """Create the CAAD ERP master workbook at ``destination``.
@@ -316,7 +311,6 @@ def run_from_config(config_path: Path, *, overwrite: bool = False) -> Path:
     settings = load_settings(config_path)
     return create_master_workbook(
         settings.data_file,
-        default_salesman_id=settings.default_salesman_id,
         overwrite=overwrite,
     )
 

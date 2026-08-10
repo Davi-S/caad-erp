@@ -18,7 +18,6 @@ class AppSettings:
     data_file: Path
     lounge_name: str
     schema_version: str
-    default_salesman_id: str
 
 
 def _discover_config_file(explicit_path: Optional[Path] = None) -> Path:
@@ -43,7 +42,6 @@ def _parse_settings(parser: configparser.ConfigParser, base_path: Path) -> AppSe
         data_file_raw = parser.get("System", "DataFile")
         lounge_name = parser.get("System", "LoungeName")
         schema_version = parser.get("System", "SchemaVersion")
-        default_salesman = parser.get("Defaults", "DefaultSalesman")
     except (configparser.NoSectionError, configparser.NoOptionError) as exc:
         raise KeyError(f"Missing required configuration entry: {exc}") from exc
 
@@ -55,7 +53,6 @@ def _parse_settings(parser: configparser.ConfigParser, base_path: Path) -> AppSe
         data_file=data_file,
         lounge_name=lounge_name,
         schema_version=schema_version,
-        default_salesman_id=default_salesman,
     )
 
 
