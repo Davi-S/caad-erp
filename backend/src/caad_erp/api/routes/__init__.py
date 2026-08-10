@@ -17,5 +17,3 @@ router.include_router(salesmen_router)
 router.include_router(transactions_router)
 router.include_router(reports_router)
 router.include_router(mp_proxy_router)
-
-

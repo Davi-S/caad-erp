@@ -24,7 +24,7 @@ class RuntimeContext:
 
     settings: settings.AppSettings
     workbook: Workbook
-    _cache: t.Dict[str, t.Dict[str, t.Any]] = dataclasses.field(
+    _cache: dict[str, dict[str, t.Any]] = dataclasses.field(
         default_factory=dict, repr=False, compare=False
     )
 
@@ -48,7 +48,7 @@ def persist_context(context: RuntimeContext) -> None:
     logger.info("Persisted workbook '%s'", context.settings.data_file)
 
 
-def get_cache_bucket(context: RuntimeContext, name: str) -> t.Dict[str, t.Any]:
+def get_cache_bucket(context: RuntimeContext, name: str) -> dict[str, t.Any]:
     """Return a mutable cache bucket dedicated to the supplied name.
 
     The business logic layer maintains in-memory caches keyed by domain area
@@ -98,7 +98,7 @@ def invalidate_cache(context: RuntimeContext, *names: str) -> None:
         context._cache.pop(name, None)
 
 
-def load_context(config_path: t.Optional[Path] = None) -> RuntimeContext:
+def load_context(config_path: Path | None = None) -> RuntimeContext:
     """Build a runtime context from configuration and workbook resources.
 
     This helper obtains immutable configuration data via

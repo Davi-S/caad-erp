@@ -1,11 +1,10 @@
 import logging
+import socket
 import sys
 
 import uvicorn
 
 from . import app
-
-import socket
 
 logger = logging.getLogger(__name__)
 
@@ -67,4 +66,3 @@ def main_full() -> None:
 def main() -> None:
     """Entry point for legacy API console script invocations."""
     main_api()
-

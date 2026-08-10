@@ -18,7 +18,7 @@ P = t.ParamSpec("P")
 R = t.TypeVar("R")
 
 
-def mutating_endpoint(handler: t.Callable[P, R]) -> t.Callable[P, R]:
+def mutating_endpoint[**P, R](handler: t.Callable[P, R]) -> t.Callable[P, R]:
     """Persist the runtime context after a successful mutating handler.
 
     Args:

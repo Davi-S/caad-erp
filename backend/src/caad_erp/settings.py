@@ -4,7 +4,6 @@ import configparser
 import dataclasses
 import logging
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,7 @@ class AppSettings:
     schema_version: str
 
 
-def _discover_config_file(explicit_path: Optional[Path] = None) -> Path:
+def _discover_config_file(explicit_path: Path | None = None) -> Path:
     """Find the configuration file, honoring overrides when provided."""
 
     if explicit_path is not None:
@@ -56,7 +55,7 @@ def _parse_settings(parser: configparser.ConfigParser, base_path: Path) -> AppSe
     )
 
 
-def get_settings(config_path: Optional[Path] = None) -> AppSettings:
+def get_settings(config_path: Path | None = None) -> AppSettings:
     """Discover, parse, and return application settings."""
 
     resolved = _discover_config_file(config_path).expanduser().resolve()

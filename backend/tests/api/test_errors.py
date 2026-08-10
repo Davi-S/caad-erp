@@ -1,9 +1,9 @@
-import pytest
 import asyncio
 import logging
 
 import fastapi
 import fastapi.exceptions
+import pytest
 
 from caad_erp import exceptions
 from caad_erp.api import errors
@@ -215,7 +215,7 @@ def test_built_exception_handler_logs_using_specified_log_level(
     caplog.set_level(logging.DEBUG, logger=logger.name)
 
     response = asyncio.run(handler(None, ValueError("boom")))
-    expected_level = logging.ERROR if log_level >= logging.ERROR else log_level
+    expected_level = min(logging.ERROR, log_level)
 
     assert response.status_code == 400
     assert any(

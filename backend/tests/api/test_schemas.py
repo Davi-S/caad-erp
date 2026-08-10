@@ -1,6 +1,5 @@
-import pytest
-
 import pydantic
+import pytest
 
 from caad_erp import constants
 from caad_erp.api import schemas
