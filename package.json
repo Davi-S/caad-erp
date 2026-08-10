@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "start": "cd backend && uv run caad-erp",
     "dev:backend": "cd backend && uv run caad-erp-api",
     "dev:frontend": "npm --prefix frontend run dev -- --host",
     "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
