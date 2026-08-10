@@ -13,7 +13,7 @@ export interface PaymentStatusResponse {
     status_detail?: string
 }
 
-const MP_BASE_URL = import.meta.env.VITE_MERCADO_PAGO_BASE_URL || "/api-mp"
+const MP_BASE_URL = import.meta.env.VITE_MERCADO_PAGO_BASE_URL || "https://api.mercadopago.com"
 
 export async function createPixPayment(
     amountInBrl: number,
