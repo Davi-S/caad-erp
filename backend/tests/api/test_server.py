@@ -1,4 +1,6 @@
 import inspect
+import unittest.mock
+import pytest
 
 from caad_erp.api import server
 
@@ -26,9 +28,22 @@ def test_run_server_signature_uses_default_host_and_port() -> None:
 
     assert signature.parameters["host"].default == server.DEFAULT_HOST
     assert signature.parameters["port"].default == server.DEFAULT_PORT
+    assert signature.parameters["serve_static"].default is False
 
 
 # sad path
+
+
+def test_run_server_exits_when_serve_static_fails_with_file_not_found() -> None:
+    """
+    GIVEN serve_static=True when frontend/dist is missing
+    WHEN run_server is called
+    THEN it logs an error and exits with status code 1
+    """
+    with unittest.mock.patch("caad_erp.api.app.create_app", side_effect=FileNotFoundError("missing dist")):
+        with pytest.raises(SystemExit) as exc_info:
+            server.run_server(serve_static=True)
+        assert exc_info.value.code == 1
 
 
 def test_run_server_requires_int_port_annotation_for_call_contract() -> None:
@@ -45,12 +60,21 @@ def test_run_server_requires_int_port_annotation_for_call_contract() -> None:
 # edge path
 
 
-def test_main_delegates_to_run_server_through_module_source_contract() -> None:
+def test_main_entry_points_delegate_to_run_server() -> None:
     """
-    GIVEN server module implementation
-    WHEN source code for main is inspected
-    THEN it contains a direct run_server invocation as the sole side effect
+    GIVEN main_api and main_full entry points
+    WHEN main_api or main_full are invoked
+    THEN run_server is called with the appropriate serve_static setting
     """
-    source = inspect.getsource(server.main)
+    with unittest.mock.patch("caad_erp.api.server.run_server") as mock_run:
+        server.main_api()
+        mock_run.assert_called_once_with(serve_static=False)
 
-    assert "run_server()" in source
+    with unittest.mock.patch("caad_erp.api.server.run_server") as mock_run:
+        server.main_full()
+        mock_run.assert_called_once_with(serve_static=True)
+
+    with unittest.mock.patch("caad_erp.api.server.run_server") as mock_run:
+        server.main()
+        mock_run.assert_called_once_with(serve_static=False)
+
