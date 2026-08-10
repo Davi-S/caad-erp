@@ -96,7 +96,8 @@ export function CustomerCartScreen({
                                             <Text size="10px" c="dimmed">
                                                 {soldOut
                                                     ? "‎ "
-                                                    : (available !== undefined ? available : 0) + " disp."}
+                                                    : (available !== undefined ? available : 0) +
+                                                      " disp."}
                                             </Text>
                                         </Stack>
                                     </Paper>

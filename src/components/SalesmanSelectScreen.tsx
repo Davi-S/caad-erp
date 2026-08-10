@@ -10,11 +10,14 @@ import {
     ThemeIcon,
     Title,
 } from "@mantine/core"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Users } from "lucide-react"
+import { createColumnHelper } from "@tanstack/react-table"
 import { ScreenShell } from "./ScreenShell"
-import type { Salesmen } from "@/types"
+import { ListControls } from "./ListControls"
+import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
+import type { Salesman, Salesmen } from "@/types"
 
 interface SalesmanSelectScreenProps {
     salesmen: Salesmen
@@ -22,6 +25,14 @@ interface SalesmanSelectScreenProps {
     title?: string
     confirmLabel?: string
 }
+
+// Search and sort configurations
+const columnHelper = createColumnHelper<Salesman>()
+
+const SALESMAN_SORT_OPTIONS: SortOption[] = [
+    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "salesman_name", desc: false }] },
+    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "salesman_name", desc: true }] },
+]
 
 // Generic "pick a salesman before continuing" gate screen.
 // Used both by the POS flow (to attribute a sale) and the Stock flow
@@ -35,6 +46,23 @@ export function SalesmanSelectScreen({
 }: SalesmanSelectScreenProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const navigate = useNavigate()
+
+    // Configure searchable and sortable columns
+    const columns = useMemo(
+        () => [
+            columnHelper.accessor("salesman_name", {
+                id: "salesman_name",
+                enableGlobalFilter: true,
+            }),
+        ],
+        [],
+    )
+
+    const { searchQuery, processedItems: processedSalesmen, controlsProps } = useTanStackListControls({
+        data: salesmen,
+        columns,
+        sortOptions: SALESMAN_SORT_OPTIONS,
+    })
 
     return (
         <ScreenShell>
@@ -57,6 +85,10 @@ export function SalesmanSelectScreen({
 
             {/* Middle Section */}
             <Stack style={{ flex: 1, minHeight: 0 }} py="lg">
+                {salesmen.length > 0 && (
+                    <ListControls {...controlsProps} searchPlaceholder="Buscar vendedor..." />
+                )}
+
                 {salesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
@@ -68,11 +100,17 @@ export function SalesmanSelectScreen({
                             </Text>
                         </Stack>
                     </Center>
+                ) : processedSalesmen.length === 0 ? (
+                    <Center style={{ flex: 1 }}>
+                        <Text c="dimmed" ta="center">
+                            Nenhum vendedor encontrado com "{searchQuery}".
+                        </Text>
+                    </Center>
                 ) : (
                     <ScrollArea type="scroll" style={{ flex: 1 }}>
                         <Radio.Group value={selectedId ?? ""} onChange={(id) => setSelectedId(id)}>
                             <Stack gap="sm">
-                                {salesmen.map((salesman) => (
+                                {processedSalesmen.map((salesman) => (
                                     <Radio.Card
                                         key={salesman.salesman_id}
                                         value={salesman.salesman_id}
