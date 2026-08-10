@@ -55,7 +55,20 @@ analyze it with the tools they already know.
 - **Python 3.12+** and [`uv`](https://docs.astral.sh/uv/)
 - **Node.js 18+** and `npm`
 
-### 1. Clone & Install Dependencies
+### Windows 1-Click Quick Start
+
+If you are running on Windows, you can perform full environment setup and launch the application with a single click:
+
+1. Clone or download the repository.
+2. Double-click `start.bat` in the root folder.
+
+*(On the first run, `start.bat` will automatically check/install missing prerequisites via `winget`, set up the virtual environment, install packages, build frontend assets, and launch the app in your default browser).*
+
+---
+
+### Manual / Linux Installation
+
+#### 1. Clone & Install Dependencies
 
 ```bash
 git clone https://github.com/Davi-S/caad-erp.git
@@ -77,7 +90,7 @@ npm install
 cd ..
 ```
 
-### 2. Excel Workbook
+#### 2. Excel Workbook
 
 The repository comes pre-packaged with a clean, initialized Excel workbook at `backend/master_workbook.xlsx`. No additional initialization step is required to run the application.
 
