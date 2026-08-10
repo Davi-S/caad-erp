@@ -16,7 +16,6 @@ def _make_context(
         data_file=data_file,
         lounge_name="Test Lounge",
         schema_version=schema_version,
-        default_salesman_id="S001",
     )
     return runtime.RuntimeContext(settings=settings, workbook=Workbook())
 
@@ -33,9 +32,6 @@ def _write_config(
                 f"DataFile = {data_file}",
                 "LoungeName = Test Lounge",
                 f"SchemaVersion = {schema_version}",
-                "",
-                "[Defaults]",
-                "DefaultSalesman = S001",
                 "",
             ]
         ),
