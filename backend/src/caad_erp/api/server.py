@@ -5,10 +5,24 @@ import uvicorn
 
 from . import app
 
+import socket
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8000
+
+
+def _get_local_ip() -> str | None:
+    """Attempt to discover the primary local network IP address."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return None
 
 
 def run_server(
@@ -29,6 +43,13 @@ def run_server(
     except FileNotFoundError as exc:
         logger.error(str(exc))
         sys.exit(1)
+
+    local_ip = _get_local_ip()
+    mode_str = "Full Application" if serve_static else "API Only"
+    print(f"\n  CAAD ERP ({mode_str}) is running at:")
+    print(f"  - Local:   http://localhost:{port}/")
+    if local_ip:
+        print(f"  - Network: http://{local_ip}:{port}/\n")
 
     uvicorn.run(application, host=host, port=port)
 
