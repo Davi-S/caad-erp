@@ -44,12 +44,14 @@ name = "caad-erp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "fastapi", extra = ["standard"] },
     { name = "openpyxl" },
-    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.optional-dependencies]
+api = [
+    { name = "fastapi", extra = ["standard"] },
+    { name = "uvicorn", extra = ["standard"] },
+]
 test = [
     { name = "httpx" },
     { name = "pytest" },
@@ -59,13 +61,13 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.122.0" },
+    { name = "fastapi", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.122.0" },
     { name = "httpx", marker = "extra == 'test'", specifier = ">=0.27.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24.0" },
     { name = "pytest-cov", marker = "extra == 'test'" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.32.0" },
 ]
 provides-extras = ["test", "cli", "api"]
 
