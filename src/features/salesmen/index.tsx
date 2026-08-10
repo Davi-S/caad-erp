@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import {
     ActionIcon,
@@ -14,20 +14,53 @@ import {
     Title,
 } from "@mantine/core"
 import { Plus, Pencil, Users, AlertTriangle, ArrowLeft } from "lucide-react"
+import { createColumnHelper } from "@tanstack/react-table"
 import { ScreenShell } from "@/components/ScreenShell"
+import { ListControls } from "@/components/ListControls"
+import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
 import { useSalesmen } from "@/hooks/queries/useSalesmen"
 import { useCreateSalesman, useUpdateSalesman } from "./hooks/useSalesmenMutations"
 import { SalesmanFormModal } from "./components/SalesmanFormModal"
 import type { Salesman } from "@/types"
 
+// Search and sort configurations
+const columnHelper = createColumnHelper<Salesman>()
+
+const SALESMAN_SORT_OPTIONS: SortOption[] = [
+    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "salesman_name", desc: false }] },
+    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "salesman_name", desc: true }] },
+]
+
 export function SalesmenManagementPage() {
     const navigate = useNavigate()
     const [showInactive, setShowInactive] = useState(false)
     const { data: salesmen, isLoading, isError } = useSalesmen()
-    // Filter the salesmen on the client side
-    const filteredSalesmen = showInactive
-        ? salesmen
-        : salesmen?.filter((salesman) => salesman.is_active)
+
+    const activeFilteredSalesmen = useMemo(
+        () => (showInactive ? salesmen : salesmen?.filter((salesman) => salesman.is_active)),
+        [salesmen, showInactive],
+    )
+
+    // Configure searchable and sortable columns
+    const columns = useMemo(
+        () => [
+            columnHelper.accessor("salesman_name", {
+                id: "salesman_name",
+                enableGlobalFilter: true,
+            }),
+            columnHelper.accessor("salesman_id", {
+                id: "salesman_id",
+                enableGlobalFilter: true,
+            }),
+        ],
+        [],
+    )
+
+    const { searchQuery, processedItems: processedSalesmen, controlsProps } = useTanStackListControls({
+        data: activeFilteredSalesmen,
+        columns,
+        sortOptions: SALESMAN_SORT_OPTIONS,
+    })
 
     const [modalOpened, setModalOpened] = useState(false)
     const [editingSalesman, setEditingSalesman] = useState<Salesman | null>(null)
@@ -110,6 +143,8 @@ export function SalesmenManagementPage() {
                     onChange={(event) => setShowInactive(event.currentTarget.checked)}
                 />
 
+                <ListControls {...controlsProps} searchPlaceholder="Buscar por nome ou código..." />
+
                 {isError && (
                     <Alert color="red" icon={<AlertTriangle size={16} />}>
                         Não foi possível carregar os vendedores.
@@ -122,23 +157,25 @@ export function SalesmenManagementPage() {
                             Carregando...
                         </Text>
                     </Center>
-                ) : !filteredSalesmen || filteredSalesmen.length === 0 ? (
+                ) : !processedSalesmen || processedSalesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
                             <ThemeIcon variant="light" color="gray" size={40} radius="xl">
                                 <Users size={20} />
                             </ThemeIcon>
                             <Text c="dimmed" size="sm" ta="center">
-                                {showInactive
-                                    ? "Nenhum vendedor cadastrado ainda."
-                                    : "Nenhum vendedor ativo. Ative a opção acima para ver os inativos."}
+                                {searchQuery
+                                    ? `Nenhum vendedor encontrado com "${searchQuery}".`
+                                    : showInactive
+                                      ? "Nenhum vendedor cadastrado ainda."
+                                      : "Nenhum vendedor ativo. Ative a opção acima para ver os inativos."}
                             </Text>
                         </Stack>
                     </Center>
                 ) : (
                     <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
                         <Stack gap="xs">
-                            {filteredSalesmen.map((salesman) => (
+                            {processedSalesmen.map((salesman) => (
                                 <Group
                                     key={salesman.salesman_id}
                                     justify="space-between"

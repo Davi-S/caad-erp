@@ -35,3 +35,6 @@ export function buildQrGrid() {
     }
     return grid
 }
+
+export * from "./search"
+
