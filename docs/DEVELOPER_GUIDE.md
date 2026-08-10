@@ -19,12 +19,12 @@ frontend web application:
 
 ```text
 caad-erp/
-├── backend/            # Python (FastAPI + openpyxl + uv) — Core API & CLI
-│   ├── src/caad_erp/   # Business logic (BLL), Data access (DAL), REST API, and CLI
+├── backend/            # Python (FastAPI + openpyxl + uv) - Core API & Ledger
+│   ├── src/caad_erp/   # Business logic (BLL), Data access (DAL), and REST API
 │   ├── tests/          # Pytest suite
 │   ├── pyproject.toml  # Python package metadata & dependencies
 │   └── setup_excel.py  # Bootstrap script for the Excel source-of-truth
-├── frontend/           # TypeScript (React + Vite + Mantine + Tailwind) — Web UI
+├── frontend/           # TypeScript (React + Vite + Mantine + Tailwind) - Web UI
 │   ├── src/            # Components, feature pages (POS, Stock, Salesmen), & state
 │   └── package.json    # Frontend dependencies & scripts
 ├── docs/               # Architecture specs & developer guides
@@ -43,27 +43,7 @@ npm run generate-api
 
 ---
 
-## Backend Usage (CLI & API Server)
-
-### Interactive CLI & REPL
-
-The backend includes a command-line interface. Run it in interactive REPL mode:
-
-```bash
-cd backend
-uv run caad-erp-cli
-```
-
-#### Available CLI Commands:
-
-- **Write Operations:** `add-product`, `edit-product`, `add-salesman`,
-  `edit-salesman`, `sale`, `bulk-sale`, `restock`, `write-off`, `pay-debt`,
-  `void`
-- **Read Operations:** `stock`, `profit`, `debts`, `log`, `list-products`,
-  `list-salesmen`
-
-Check [backend/examples/](./backend/examples/) for step-by-step CLI
-walkthroughs.
+## Backend Usage (API Server)
 
 ### FastAPI Server & Single-Process App
 
@@ -100,47 +80,9 @@ The code follows a three-layer design:
 1. **Data Access Layer (DAL)** Handles Excel I/O, implemented with `openpyxl`.
 2. **Business Logic Layer (BLL)** Encapsulates rules and workflows, calling into
    the DAL without caring about presentation concerns.
-3. **Presentation Layer (UI):** Multiple presentation layers are available:
-   - **CLI** (`src/caad_erp/cli`): A command-line interface that parses
-     arguments, converts them into command objects defined by the BLL, and
-     delegates execution. All user input is expressed through explicit long-form
-     options. No business rules live in the CLI; everything flows through the
-     `bll`. Supports two modes of operation:
-     - **One-shot mode:** Pass a sub-command directly (e.g.
-       `caad-erp-cli sale ...`). The context is loaded, the command executes,
-       the workbook is saved if the command mutated state, and the process
-       exits.
-     - **Interactive REPL mode** (`src/caad_erp/cli/repl.py`): Running
-       `caad-erp-cli` without a sub-command (or with the `repl` sub-command)
-       opens an interactive session. The `RuntimeContext` is loaded once and
-       reused across every command entered at the prompt, eliminating the
-       per-invocation I/O overhead. Commands are discovered automatically from
-       the commands package via `discover_command_specs` in `parser.py`; adding
-       a new command module with a `register_<name>_command()` factory makes it
-       available in both modes without any manual registration.
-   - **API** (`src/caad_erp/api`): A FastAPI-based headless HTTP API server that
-     translates HTTP requests into BLL calls. Intended for local network
-     operation only, enabling web-based UIs to interact with the system.
-
-#### CLI-First Parity
-
-The project follows a **CLI-First** development strategy. The CLI is the primary
-presentation layer, and the API serves as a secondary layer that maintains
-strict functional parity with the CLI.
-
-This means:
-
-- **Feature parity:** Every operation available in the API must also be
-  available in the CLI. The API endpoints mirror CLI commands as REST-ish routes
-  grouped by domain resource.
-- **Same BLL calls:** Both the CLI and API call the exact same BLL functions.
-  Neither layer contains business logic. All rules and workflows live in the
-  BLL.
-- **Consistent behavior:** Given the same inputs, both interfaces produce
-  identical outcomes because they delegate to the same underlying logic.
-
-This strategy ensures the API never drifts out of sync with the CLI and
-simplifies maintenance by having a single source of truth for business rules.
+3. **Presentation Layer (API):**: A FastAPI-based HTTP API server that
+   translates HTTP requests into BLL calls, serving web-based UIs and static
+   assets.
 
 ### Data Model
 
@@ -162,6 +104,8 @@ resolve configuration through `caad_erp.settings`.
 The workbook (an Excel file) is the source of truth and should only be modified
 through the application. It contains three sheets:
 
+- **`Dashboard`**: An overview of the data by using several commands and
+  formulas on excel
 - **`Products`**: Catalog of all products.
   - `ProductID`, `ProductName`, `SellPrice`, `IsActive`.
 - **`Salesmen`**: List of users who can record sales.
@@ -309,22 +253,6 @@ Guidelines:
 This approach keeps memory usage low (only one workbook copy) while eliminating
 the "N+1" read pattern during operations.
 
-### Error Handling in the CLI
-
-CLI command handlers wrap execution routines in exception handling logic that
-maps domain and system exceptions to standardized exit codes via
-`handle_cli_error`. When an exception occurs, the error message is output to
-standard error (`sys.stderr`) to provide user feedback, and the corresponding
-non-zero exit code is returned to the caller or shell environment.
-
-Exit code mapping:
-
-- `0`: Operation succeeded cleanly.
-- `1`: Generic unexpected runtime error (e.g. `RuntimeError`, `ValueError`).
-- `2`: Business rule violation or domain constraint failure
-  (`BusinessRuleViolation` or `MissingReferenceError`).
-- `3`: Missing configuration or data file (`FileNotFoundError`).
-
 ### Backend Tests
 
 #### Test-Driven Development (TDD)
@@ -341,12 +269,9 @@ level while retaining confidence in the full stack:
   real `openpyxl` reads and writes.
 - **`backend/tests/bll/`** - Unit coverage for the BLL with the entire data
   access layer (DAL) not mocked.
-- **`backend/tests/cli/`** - Unit coverage for the CLI (Presentation Layer) with
-  the business logic layer (BLL) not mocked.
 - **`backend/tests/api/`** - Unit coverage for the API (Presentation Layer)
   using FastAPI's TestClient.
-- **`backend/tests/integration/`** - Cross-layer integration without mocks,
-  verifying the complete workflow from CLI through the DAL.
+- **`backend/tests/integration/`** - Cross-layer integration without mocks.
 
 #### Test Structure Standards
 
@@ -423,7 +348,7 @@ sheet.
 
 When we set `P1001`'s `IsActive` to `FALSE`:
 
-1. The item vanishes from the CLI, so you can't sell any more.
+1. The item vanishes from active catalog views, so it cannot be sold any more.
 2. The `P1001 | Snickers` row **still exists** in the `Products` sheet.
 3. When you run a profit report for last month, the BLL can still look up
    `P1001`, find "Snickers," and correctly calculate your historical profit.
@@ -447,11 +372,9 @@ info
 
 `Products` and `Salesmen` are expected to stay small (dozens to low hundreds of
 rows), so pushing "include inactive" filtering to the server added complexity
-(extra cache buckets, query params, CLI flags) without a real performance
-benefit. `list_products`/`list_salesmen` (BLL), the CLI
-`list-products`/`list-salesmen` commands, and the `GET /products` /
-`GET /salesmen` endpoints always return the full dataset, so clients can filter
-or sort however they like.
+without a real performance benefit. `list_products`/`list_salesmen` (BLL) and
+the `GET /products` / `GET /salesmen` endpoints always return the full dataset,
+so clients can filter or sort however they like.
 
 ### Future Work
 
@@ -464,23 +387,8 @@ or sort however they like.
   - **Logic:** It will calculate final stock, prune inactive/empty products, and
     generate `OPEN_STOCK` entries in a new, clean workbook for the next period.
 - **Feat: Implement Automatic ID Generation**
-  - **Task:** make `--product-id` and `--salesman-id` arguments from the
-    `add-product` and `add-salesman` commands optional. Or add a special value
-    that will generate a hash
-  - **Logic:** The BLL (`products.py`, `salesmen.py`) should generate a new,
-    unique ID (e.g., using a short hash or UUID) for the new entry. This is much
-    more user-friendly.
-- **Feat (CLI): Make `--total-revenue` optional for `sale`**
-  - **Logic:** If it's _omitted_, The BLL (`transactions.py`) will then fetch
-    the `Product.SellPrice` and calculate the revenue automatically
-    (`quantity * sell_price`). If the argument _is_ provided, it overrides this
-    calculation (this is how we handle discounts).
-- **Feat (CLI): Enhance UX with Rich Table Output**
-  - **Task:** Install a library like `rich` or `tabulate` (in the
-    `[project.optional-dependencies.cli]` group).
-  - **Logic:** Update the "read-only" commands (`stock`, `profit`, `log`,
-    `debts`) to print their results in clean, formatted console tables instead
-    of simple text.
-- Add options to pass id to read-commands to read specific information only
+  - **Task:** Make `product_id` and `salesman_id` optional in creation
+    routes/commands, generating a hash/UUID automatically in the BLL.
+- Add options to pass id to read-endpoints to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
 
