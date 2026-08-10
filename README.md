@@ -1,34 +1,50 @@
 # CAAD ERP
 
-> Excel-backed inventory, sales tracker, and web point-of-sale system for student lounges.
+> Excel-backed inventory, sales tracker, and web point-of-sale system for
+> student lounges.
 
 ![Web UI Home Page](./frontend/images/caad-erp-frontend-home-page.png)
 ![Excel Dashboard Sheet](./backend/images/2026-07-26-044619_hyprshot.png)
 
 ## Motivation
 
-When managing inventory, sales, and tab debts, student lounges had to rely on over-engineered POS systems or overly simple Excel sheets.
+When managing inventory, sales, and tab debts, student lounges had to rely on
+over-engineered POS systems or overly simple Excel sheets.
 
-To solve this, I built **CAAD ERP**, a simple inventory and sales management system specifically tailored for student lounge operations.
+To solve this, I built **CAAD ERP**, a simple inventory and sales management
+system specifically tailored for student lounge operations.
 
-The project pairs Python business logic and a modern React web interface with an Excel-based "source of truth" so non-technical managers can trust the data and analyze it with the tools they already know.
+The project pairs Python business logic and a modern React web interface with an
+Excel-based "source of truth" so non-technical managers can trust the data and
+analyze it with the tools they already know.
 
 ---
 
 ## Key Features
 
-### 🎨 Web Application (Frontend)
-- **Point of Sale (POS):** Interactive cart and checkout flow, salesman selection screen, and payment confirmation (including Mercado Pago PIX QR codes).
-- **Customer Display Mode:** Separate customer-facing display view for checkout transparency.
-- **Product Management:** Tools to add, edit, or remove items from the catalog.
-- **Salesmen Management:** Register, update, and toggle active status of salespeople.
-- **Stock Management:** Direct control over inventory levels with restock and write-off modal workflows.
+### Web Application (Frontend)
 
-### 🐍 Backend & Core Ledger
-- **Append-only Transaction Ledger:** `TransactionLog` guarantees an auditable, immutable history.
-- **Excel Source of Truth:** OpenPyXL integration using locked Excel workbooks for transparent record-keeping.
-- **FastAPI REST Server:** Headless HTTP API with OpenAPI schema support for local network operation.
-- **Interactive CLI & REPL:** Console tool with a built-in REPL mode for fast interactive terminal management.
+- **Point of Sale (POS):** Interactive cart and checkout flow, salesman
+  selection screen, and payment confirmation (including Mercado Pago PIX QR
+  codes).
+- **Customer Display Mode:** Separate customer-facing display view for checkout
+  transparency.
+- **Product Management:** Tools to add, edit, or remove items from the catalog.
+- **Salesmen Management:** Register, update, and toggle active status of
+  salespeople.
+- **Stock Management:** Direct control over inventory levels with restock and
+  write-off modal workflows.
+
+### Backend & Core Ledger
+
+- **Append-only Transaction Ledger:** `TransactionLog` guarantees an auditable,
+  immutable history.
+- **Excel Source of Truth:** OpenPyXL integration using locked Excel workbooks
+  for transparent record-keeping.
+- **FastAPI REST Server:** Headless HTTP API with OpenAPI schema support for
+  local network operation.
+- **Interactive CLI & REPL:** Console tool with a built-in REPL mode for fast
+  interactive terminal management.
 
 ---
 
@@ -96,47 +112,22 @@ npm run dev:frontend
 
 ---
 
-## Backend Usage (CLI & API Server)
-
-### Interactive CLI & REPL
-
-The backend includes a command-line interface. Run it in interactive REPL mode:
-
-```bash
-cd backend
-uv run caad-erp-cli
-```
-
-#### Available CLI Commands:
-- **Write Operations:** `add-product`, `edit-product`, `add-salesman`, `edit-salesman`, `sale`, `bulk-sale`, `restock`, `write-off`, `pay-debt`, `void`
-- **Read Operations:** `stock`, `profit`, `debts`, `log`, `list-products`, `list-salesmen`
-
-Check [backend/examples/](./backend/examples/) for step-by-step CLI walkthroughs.
-
-### FastAPI Server & Interactive Docs
-
-Start the headless API server:
-
-```bash
-cd backend
-uv run caad-erp-api
-```
-
-- **Health Check:** `http://localhost:8000/health`
-- **Interactive Swagger Docs:** `http://localhost:8000/docs`
-
----
-
 ## Roadmap & Future Enhancements
 
-- **Log Audit & Void UI:** Web UI capabilities to review transaction logs and void entries directly.
-- **Analytics & Reports Dashboard:** Visual analytics for profit margins, sales summaries, and debt tracking.
-- **FastAPI Static File Serving:** Option to bundle and serve static frontend assets directly from FastAPI for single-process local deployment.
+- **Log Audit & Void UI:** Web UI capabilities to review transaction logs and
+  void entries directly.
+- **Analytics & Reports Dashboard:** Visual analytics for profit margins, sales
+  summaries, and debt tracking.
+- **FastAPI Static File Serving:** Option to bundle and serve static frontend
+  assets directly from FastAPI for single-process local deployment.
 
 ---
 
 ## Contributing & Documentation
 
 Contributions are welcome! Please check the following resources:
+
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Workflow and code style conventions.
-- [Developer Guide](./docs/DEVELOPER_GUIDE.md) - Monorepo architecture, testing workflows, offline API codegen, and system design.
+- [Developer Guide](./docs/DEVELOPER_GUIDE.md) - Monorepo architecture, testing
+  workflows, offline API codegen, and system design.
+
