@@ -14,7 +14,8 @@ maintain or extend the codebase.
 
 ## Monorepo Architecture & Development Tooling
 
-CAAD ERP is organized as a monorepo containing both the backend service and the frontend web application:
+CAAD ERP is organized as a monorepo containing both the backend service and the
+frontend web application:
 
 ```text
 caad-erp/
@@ -33,11 +34,48 @@ caad-erp/
 
 ### Offline OpenAPI Type Generation
 
-Generate TypeScript API contracts directly from Python source code without needing a live backend server:
+Generate TypeScript API contracts directly from Python source code without
+needing a live backend server:
 
 ```bash
 npm run generate-api
 ```
+
+---
+
+## Backend Usage (CLI & API Server)
+
+### Interactive CLI & REPL
+
+The backend includes a command-line interface. Run it in interactive REPL mode:
+
+```bash
+cd backend
+uv run caad-erp-cli
+```
+
+#### Available CLI Commands:
+
+- **Write Operations:** `add-product`, `edit-product`, `add-salesman`,
+  `edit-salesman`, `sale`, `bulk-sale`, `restock`, `write-off`, `pay-debt`,
+  `void`
+- **Read Operations:** `stock`, `profit`, `debts`, `log`, `list-products`,
+  `list-salesmen`
+
+Check [backend/examples/](./backend/examples/) for step-by-step CLI
+walkthroughs.
+
+### FastAPI Server & Interactive Docs
+
+Start the headless API server:
+
+```bash
+cd backend
+uv run caad-erp-api
+```
+
+- **Health Check:** `http://localhost:8000/health`
+- **Interactive Swagger Docs:** `http://localhost:8000/docs`
 
 ---
 
@@ -211,18 +249,25 @@ items in a single transaction.
 The workflow is orchestrated in `bll.record_bulk_sale` using a **2-phase,
 all-or-nothing wrapper** pattern:
 
-1. **Validation Phase**: Validates every `SaleCommand` in the input list (verifying
-   active status and existence for products and salesmen, positive quantities, and
-   valid revenue). If *any* item fails validation, an exception is raised
-   immediately and **zero** transactions are recorded.
-2. **Execution Phase**: Appends all sale transactions to the `TransactionLog` sheet
-   in sequence, invalidates the transaction cache once at the end, and returns the
-   created rows.
+1. **Validation Phase**: Validates every `SaleCommand` in the input list
+   (verifying active status and existence for products and salesmen, positive
+   quantities, and valid revenue). If _any_ item fails validation, an exception
+   is raised immediately and **zero** transactions are recorded.
+2. **Execution Phase**: Appends all sale transactions to the `TransactionLog`
+   sheet in sequence, invalidates the transaction cache once at the end, and
+   returns the created rows.
 
-*Developer Rationale*:
-- **BLL Centered**: All-or-nothing atomicity rules and validation loops live strictly in the BLL (`bll.record_bulk_sale`), never in CLI or API handlers.
-- **DTO Transformation**: API endpoint `POST /transactions/bulk-sale` accepts `BulkSaleRequest` DTOs and maps them to `list[SaleCommand]`. CLI command `bulk-sale` parses `-s`, `-p`, `-n` header options and repeated `-i PRODUCT_ID QTY TOTAL_REVENUE` flags into `list[SaleCommand]`.
-- **Single Persistence Pass**: In mutating API requests or REPL sessions, workbook changes are written to disk once at the end of the batch operation, eliminating redundant disk I/O.
+_Developer Rationale_:
+
+- **BLL Centered**: All-or-nothing atomicity rules and validation loops live
+  strictly in the BLL (`bll.record_bulk_sale`), never in CLI or API handlers.
+- **DTO Transformation**: API endpoint `POST /transactions/bulk-sale` accepts
+  `BulkSaleRequest` DTOs and maps them to `list[SaleCommand]`. CLI command
+  `bulk-sale` parses `-s`, `-p`, `-n` header options and repeated
+  `-i PRODUCT_ID QTY TOTAL_REVENUE` flags into `list[SaleCommand]`.
+- **Single Persistence Pass**: In mutating API requests or REPL sessions,
+  workbook changes are written to disk once at the end of the batch operation,
+  eliminating redundant disk I/O.
 
 ### Runtime Caching in the BLL
 
@@ -254,35 +299,42 @@ the "N+1" read pattern during operations.
 
 ### Error Handling in the CLI
 
-CLI command handlers wrap execution routines in exception handling logic that maps domain and system exceptions to standardized exit codes via `handle_cli_error`. When an exception occurs, the error message is output to standard error (`sys.stderr`) to provide user feedback, and the corresponding non-zero exit code is returned to the caller or shell environment.
+CLI command handlers wrap execution routines in exception handling logic that
+maps domain and system exceptions to standardized exit codes via
+`handle_cli_error`. When an exception occurs, the error message is output to
+standard error (`sys.stderr`) to provide user feedback, and the corresponding
+non-zero exit code is returned to the caller or shell environment.
 
 Exit code mapping:
+
 - `0`: Operation succeeded cleanly.
 - `1`: Generic unexpected runtime error (e.g. `RuntimeError`, `ValueError`).
-- `2`: Business rule violation or domain constraint failure (`BusinessRuleViolation` or `MissingReferenceError`).
+- `2`: Business rule violation or domain constraint failure
+  (`BusinessRuleViolation` or `MissingReferenceError`).
 - `3`: Missing configuration or data file (`FileNotFoundError`).
 
 ### Backend Tests
 
 #### Test-Driven Development (TDD)
 
-New functionality should be driven by `pytest`-based tests under `backend/tests/`.
+New functionality should be driven by `pytest`-based tests under
+`backend/tests/`.
 
 #### Testing Files Structure
 
 The test suite follows a pyramid structure to keep fast feedback at the unit
 level while retaining confidence in the full stack:
 
-- **`backend/tests/dal/`** - Integration coverage for the DAL that exercises real
-  `openpyxl` reads and writes.
-- **`backend/tests/bll/`** - Unit coverage for the BLL with the entire data access layer
-  (DAL) not mocked.
-- **`backend/tests/cli/`** - Unit coverage for the CLI (Presentation Layer) with the
-  business logic layer (BLL) not mocked.
-- **`backend/tests/api/`** - Unit coverage for the API (Presentation Layer) using
-  FastAPI's TestClient.
-- **`backend/tests/integration/`** - Cross-layer integration without
-  mocks, verifying the complete workflow from CLI through the DAL.
+- **`backend/tests/dal/`** - Integration coverage for the DAL that exercises
+  real `openpyxl` reads and writes.
+- **`backend/tests/bll/`** - Unit coverage for the BLL with the entire data
+  access layer (DAL) not mocked.
+- **`backend/tests/cli/`** - Unit coverage for the CLI (Presentation Layer) with
+  the business logic layer (BLL) not mocked.
+- **`backend/tests/api/`** - Unit coverage for the API (Presentation Layer)
+  using FastAPI's TestClient.
+- **`backend/tests/integration/`** - Cross-layer integration without mocks,
+  verifying the complete workflow from CLI through the DAL.
 
 #### Test Structure Standards
 
@@ -419,3 +471,4 @@ or sort however they like.
     of simple text.
 - Add options to pass id to read-commands to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
+
