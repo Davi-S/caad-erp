@@ -56,7 +56,12 @@ async def proxy_mercado_pago(
     }
     for key, val in request.headers.items():
         key_lower = key.lower()
-        if key_lower in ("authorization", "content-type", "x-idempotency-key", "accept"):
+        if key_lower in (
+            "authorization",
+            "content-type",
+            "x-idempotency-key",
+            "accept",
+        ):
             headers[key] = val
 
     req = urllib.request.Request(
@@ -88,5 +93,5 @@ async def proxy_mercado_pago(
         logger.exception("Mercado Pago proxy failure for path: %s", path)
         return fastapi.responses.JSONResponse(
             status_code=502,
-            content={"error": f"Bad Gateway forwarding to Mercado Pago: {str(exc)}"},
+            content={"error": f"Bad Gateway forwarding to Mercado Pago: {exc!s}"},
         )

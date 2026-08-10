@@ -85,7 +85,7 @@ def get_product(
 ) -> schemas.ProductResponse:
     """Get a specific product by ID."""
     products = bll.list_products(context)
-    product = list(filter(lambda row: row.product_id == product_id, products))[0]
+    product = next(filter(lambda row: row.product_id == product_id, products))
     return schemas.ProductResponse(
         product_id=product.product_id,
         product_name=product.product_name,

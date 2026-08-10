@@ -186,7 +186,7 @@ def test_iter_transactions_optional_fields_are_none_when_blank(
     )
 
     # Act
-    record = list(transactions.iter_transactions(transactions_workbook))[0]
+    record = next(iter(transactions.iter_transactions(transactions_workbook)))
 
     # Assert
     assert record.payment_type is None
@@ -281,9 +281,13 @@ def test_append_transaction_column_ordering(transactions_workbook) -> None:
 
     # Act
     transactions.append_transaction(transactions_workbook, record)
-    row = list(
-        transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True)
-    )[0]
+    row = next(
+        iter(
+            transactions_workbook["TransactionLog"].iter_rows(
+                min_row=2, values_only=True
+            )
+        )
+    )
 
     # Assert
     assert row == (
@@ -318,9 +322,13 @@ def test_append_transaction_stores_none_for_optional_fields(
 
     # Act
     transactions.append_transaction(transactions_workbook, record)
-    row = list(
-        transactions_workbook["TransactionLog"].iter_rows(min_row=2, values_only=True)
-    )[0]
+    row = next(
+        iter(
+            transactions_workbook["TransactionLog"].iter_rows(
+                min_row=2, values_only=True
+            )
+        )
+    )
 
     # Assert
     assert row[5] is None

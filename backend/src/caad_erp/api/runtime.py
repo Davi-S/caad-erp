@@ -4,13 +4,11 @@ This module provides FastAPI dependencies for accessing shared application
 state, particularly the RuntimeContext singleton initialized at startup.
 """
 
-import typing as t
-
 from caad_erp import bll
 
 # Module-level reference to the RuntimeContext singleton.
 # Initialized by the lifespan handler in app.py
-_runtime_context: t.Optional[bll.RuntimeContext] = None
+_runtime_context: bll.RuntimeContext | None = None
 
 
 def set_runtime_context(context: bll.RuntimeContext) -> None:

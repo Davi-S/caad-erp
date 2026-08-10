@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import argparse
 import configparser
+import sys
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Sequence
-import sys
 
 import openpyxl
 from openpyxl.chart import PieChart, Reference
@@ -102,7 +102,11 @@ def _build_kpi_cards(ws: Worksheet, styles: DashboardStyles) -> None:
 
     kpis = [
         ("Total Revenue", "=SUM(TransactionLog!H:H)/100", styles.currency_format),
-        ("Total Costs / Expenses", "=SUM(TransactionLog!I:I)/100", styles.currency_format),
+        (
+            "Total Costs / Expenses",
+            "=SUM(TransactionLog!I:I)/100",
+            styles.currency_format,
+        ),
         ("Net Profit", "=B2+B3", styles.currency_format),
         ("Profit Margin", "=IFERROR((B2+B3)/B2, 0)", styles.percentage_format),
         (

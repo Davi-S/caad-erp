@@ -6,9 +6,9 @@ objects to ensure callers operate on pre-validated configuration and share a
 memoized cache across requests.
 """
 
+import dataclasses
 import logging
 import typing as t
-import dataclasses
 
 from caad_erp import dal, exceptions
 
@@ -22,12 +22,12 @@ class ProductCommand:
     """Command payload used by product create and update workflows."""
 
     product_id: str
-    product_name: t.Optional[str] = None
-    sell_price: t.Optional[int] = None
-    is_active: t.Optional[bool] = None
+    product_name: str | None = None
+    sell_price: int | None = None
+    is_active: bool | None = None
 
 
-def _ensure_products_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
+def _ensure_products_cache(context: runtime.RuntimeContext) -> dict[str, t.Any]:
     """Populate the product cache bucket on demand.
 
     Args:
@@ -51,7 +51,7 @@ def _ensure_products_cache(context: runtime.RuntimeContext) -> t.Dict[str, t.Any
     return bucket
 
 
-def list_products(context: runtime.RuntimeContext) -> t.List[dal.ProductRow]:
+def list_products(context: runtime.RuntimeContext) -> list[dal.ProductRow]:
     """Return every cached product row.
 
     Args:

@@ -1,6 +1,7 @@
 import io
-import urllib.error
 import unittest.mock
+import urllib.error
+
 from fastapi.testclient import TestClient
 
 from caad_erp.api import app as app_module
@@ -61,7 +62,9 @@ def test_proxy_mercado_pago_handles_generic_exception() -> None:
     THEN it returns 502 Bad Gateway
     """
     app = app_module.create_app(skip_lifespan=True)
-    with unittest.mock.patch("urllib.request.urlopen", side_effect=RuntimeError("DNS lookup failed")):
+    with unittest.mock.patch(
+        "urllib.request.urlopen", side_effect=RuntimeError("DNS lookup failed")
+    ):
         with TestClient(app) as client:
             response = client.get("/api-mp/v1/payments/123")
 
@@ -82,4 +85,3 @@ def test_proxy_mercado_pago_handles_options_preflight() -> None:
     assert response.status_code == 200
     assert response.headers["Access-Control-Allow-Origin"] == "*"
     assert "POST" in response.headers["Access-Control-Allow-Methods"]
-

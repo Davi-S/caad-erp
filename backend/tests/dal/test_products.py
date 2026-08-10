@@ -193,7 +193,9 @@ def test_update_product_updates_single_field(products_workbook) -> None:
         "P-001",
         field_values={"ProductName": "Soda Zero"},
     )
-    row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+    row = next(
+        iter(products_workbook["Products"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert row == ("P-001", "Soda Zero", 550, True)
@@ -216,7 +218,9 @@ def test_update_product_updates_multiple_fields_simultaneously(
         "P-001",
         field_values={"ProductName": "Soda Zero", "SellPrice": 625},
     )
-    row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+    row = next(
+        iter(products_workbook["Products"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert row == ("P-001", "Soda Zero", 625, True)
@@ -237,7 +241,9 @@ def test_update_product_leaves_other_fields_unchanged(products_workbook) -> None
         "P-001",
         field_values={"ProductName": "Soda Zero"},
     )
-    row = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[0]
+    row = next(
+        iter(products_workbook["Products"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert row[0] == "P-001"
@@ -307,15 +313,15 @@ def test_update_product_empty_field_values_is_no_op(products_workbook) -> None:
     """
     # Arrange
     products_workbook["Products"].append(["P-001", "Soda", 550, True])
-    before = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[
-        0
-    ]
+    before = next(
+        iter(products_workbook["Products"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Act
     products.update_product(products_workbook, "P-001", field_values={})
-    after = list(products_workbook["Products"].iter_rows(min_row=2, values_only=True))[
-        0
-    ]
+    after = next(
+        iter(products_workbook["Products"].iter_rows(min_row=2, values_only=True))
+    )
 
     # Assert
     assert after == before
