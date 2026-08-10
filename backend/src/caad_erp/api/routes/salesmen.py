@@ -82,7 +82,7 @@ def get_salesman(
 ) -> schemas.SalesmanResponse:
     """Get a specific salesman by ID."""
     salesmen = bll.list_salesmen(context)
-    salesman = list(filter(lambda row: row.salesman_id == salesman_id, salesmen))[0]
+    salesman = next(filter(lambda row: row.salesman_id == salesman_id, salesmen))
     return schemas.SalesmanResponse(
         salesman_id=salesman.salesman_id,
         salesman_name=salesman.salesman_name,

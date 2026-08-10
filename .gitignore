@@ -45,3 +45,7 @@ lerna-debug.log*
 # ── Scripts (not tracked) ────────────────────────────────
 populate_data.sh
 create_demo_workbook.py
+
+# ── Generated / Intermediate Artifacts ───────────────────
+frontend/src/api/openapi.json
+

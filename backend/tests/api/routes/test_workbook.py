@@ -1,9 +1,12 @@
 import io
+
 import openpyxl
 from fastapi.testclient import TestClient
 
 
-def test_download_workbook_report_returns_valid_excel_file(api_client: TestClient) -> None:
+def test_download_workbook_report_returns_valid_excel_file(
+    api_client: TestClient,
+) -> None:
     """
     GIVEN an initialized API runtime context
     WHEN GET /reports/workbook is called

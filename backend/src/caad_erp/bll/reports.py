@@ -6,10 +6,10 @@ touching the workbook on every call. Callers receive plain dictionaries that
 are convenient for CLI formatting or downstream integrations.
 """
 
+import collections
 import dataclasses
 import logging
 import typing as t
-import collections
 from pathlib import Path
 
 from caad_erp import constants, exceptions
@@ -33,7 +33,7 @@ class OutstandingDebt:
     balance: int
 
 
-def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, int]:
+def calculate_inventory(context: runtime.RuntimeContext) -> dict[str, int]:
     """Compute inventory balances from the transaction logger.
 
     The routine iterates over the cached transaction list, ignoring entries
@@ -49,20 +49,20 @@ def calculate_inventory(context: runtime.RuntimeContext) -> t.Dict[str, int]:
         dict[str, int]: Mapping of ``ProductID`` to cumulative quantity
             derived by summing ``quantity_change`` across transactions.
     """
-    inventory: t.Dict[str, int] = {}
+    inventory: dict[str, int] = {}
     for transaction in transactions.list_transactions(context):
         current = inventory.get(transaction.product_id, 0)
         inventory[transaction.product_id] = current + transaction.quantity_change
     # Handle product with no transactions (sales nor restocks)
     for product in products.list_products(context):
-        if product.product_id in inventory.keys():
+        if product.product_id in inventory:
             continue
         inventory[product.product_id] = 0
     logger.debug("Calculated inventory balances for %d products", len(inventory))
     return inventory
 
 
-def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, int]:
+def calculate_profit_summary(context: runtime.RuntimeContext) -> dict[str, int]:
     """Produce aggregate revenue, cost, and profit metrics.
 
     Aggregate values are derived from cached transactions so repeated calls do
@@ -97,7 +97,7 @@ def calculate_profit_summary(context: runtime.RuntimeContext) -> t.Dict[str, int
     }
 
 
-def calculate_outstanding_debts(context: runtime.RuntimeContext) -> t.Dict[str, t.Any]:
+def calculate_outstanding_debts(context: runtime.RuntimeContext) -> dict[str, t.Any]:
     """Compute outstanding balances for credit sales.
 
     The report inspects cached transactions to locate ``SALE`` entries logged
@@ -209,5 +209,3 @@ def get_master_workbook_path(context: runtime.RuntimeContext) -> Path:
         Path: Resolved filesystem path to the master Excel workbook file.
     """
     return context.settings.data_file.resolve()
-
-
