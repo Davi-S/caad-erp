@@ -65,15 +65,27 @@ uv run caad-erp-cli
 Check [backend/examples/](./backend/examples/) for step-by-step CLI
 walkthroughs.
 
-### FastAPI Server & Interactive Docs
+### FastAPI Server & Single-Process App
 
-Start the headless API server:
+Start the full application (FastAPI REST API + built React frontend assets):
+
+```bash
+# Build frontend static bundle first if needed
+npm run build:frontend
+
+# Run full application on http://0.0.0.0:8000
+cd backend
+uv run caad-erp
+```
+
+Start the API-only server (without static frontend mounting):
 
 ```bash
 cd backend
 uv run caad-erp-api
 ```
 
+- **Full Application UI:** `http://localhost:8000/`
 - **Health Check:** `http://localhost:8000/health`
 - **Interactive Swagger Docs:** `http://localhost:8000/docs`
 
