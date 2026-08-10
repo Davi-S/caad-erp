@@ -1,0 +1,19 @@
+import type { Schemas } from "../api/apiClient"
+
+export type Product = Schemas["ProductResponse"]
+export type Products = Product[]
+export type ProductCreateRequest = Schemas["ProductCreateRequest"]
+export type ProductUpdateRequest = Schemas["ProductUpdateRequest"]
+
+export type Stock = Record<string, number>
+export type PaymentType = Schemas["PaymentType"]
+export type SaleRequest = Schemas["SaleRequest"]
+export type SalesRequests = SaleRequest[]
+export type BulkSaleRequest = Schemas["BulkSaleRequest"]
+export type RestockRequest = Schemas["RestockRequest"]
+export type WriteOffRequest = Schemas["WriteOffRequest"]
+
+export type Salesman = Schemas["SalesmanResponse"]
+export type Salesmen = Salesman[]
+export type SalesmanCreateRequest = Schemas["SalesmanCreateRequest"]
+export type SalesmanUpdateRequest = Schemas["SalesmanUpdateRequest"]
