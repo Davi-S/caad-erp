@@ -14,7 +14,6 @@ def _make_context(workbook: Workbook) -> runtime.RuntimeContext:
         data_file=Path("/tmp/data.xlsx"),
         lounge_name="Test Lounge",
         schema_version=constants.EXPECTED_SCHEMA_VERSION,
-        default_salesman_id="S001",
     )
     return runtime.RuntimeContext(settings=settings, workbook=workbook)
 

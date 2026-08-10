@@ -55,7 +55,6 @@ def _make_context(tmp_path: Path) -> bll.RuntimeContext:
         data_file=tmp_path / "data.xlsx",
         lounge_name="Test",
         schema_version=constants.EXPECTED_SCHEMA_VERSION,
-        default_salesman_id="S001",
     )
     return bll.RuntimeContext(settings=settings, workbook=wb)
 
