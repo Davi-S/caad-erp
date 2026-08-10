@@ -12,7 +12,38 @@ maintain or extend the codebase.
 - **Maintainability:** Code must remain clean, modular, and well-documented so
   new developers can onboard quickly.
 
-## Application Architecture
+## Monorepo Architecture & Development Tooling
+
+CAAD ERP is organized as a monorepo containing both the backend service and the frontend web application:
+
+```text
+caad-erp/
+├── backend/            # Python (FastAPI + openpyxl + uv) — Core API & CLI
+│   ├── src/caad_erp/   # Business logic (BLL), Data access (DAL), REST API, and CLI
+│   ├── tests/          # Pytest suite
+│   ├── pyproject.toml  # Python package metadata & dependencies
+│   └── setup_excel.py  # Bootstrap script for the Excel source-of-truth
+├── frontend/           # TypeScript (React + Vite + Mantine + Tailwind) — Web UI
+│   ├── src/            # Components, feature pages (POS, Stock, Salesmen), & state
+│   └── package.json    # Frontend dependencies & scripts
+├── docs/               # Architecture specs & developer guides
+├── package.json        # Root scripts for monorepo development & orchestration
+└── README.md
+```
+
+### Offline OpenAPI Type Generation
+
+Generate TypeScript API contracts directly from Python source code without needing a live backend server:
+
+```bash
+npm run generate-api
+```
+
+---
+
+## Backend
+
+### Application Architecture
 
 The code follows a three-layer design:
 
@@ -41,7 +72,7 @@ The code follows a three-layer design:
      translates HTTP requests into BLL calls. Intended for local network
      operation only, enabling web-based UIs to interact with the system.
 
-### CLI-First Parity
+#### CLI-First Parity
 
 The project follows a **CLI-First** development strategy. The CLI is the primary
 presentation layer, and the API serves as a secondary layer that maintains
@@ -61,11 +92,11 @@ This means:
 This strategy ensures the API never drifts out of sync with the CLI and
 simplifies maintenance by having a single source of truth for business rules.
 
-## Data Model
+### Data Model
 
 The "database" lives alongside a user-editable configuration file.
 
-### Configuration
+#### Configuration
 
 The user-editable configuration file is `config.ini`. All runtime code should
 resolve configuration through `caad_erp.settings`.
@@ -75,14 +106,8 @@ resolve configuration through `caad_erp.settings`.
   - `LoungeName`: Human-readable name for the lounge; used for reports and UI
     titles.
   - `SchemaVersion`: Used for compatibility checks.
-- `[Defaults]`
-  - `DefaultSalesman`: Fallback `SalesmanID` for new sales.
 
-`Defaults.DefaultSalesman` must correspond to a row in `Salesmen`.
-`setup_excel.create_master_workbook` seeds this record so fallbacks stay
-consistent across environments.
-
-### Excel Workbook
+#### Excel Workbook
 
 The workbook (an Excel file) is the source of truth and should only be modified
 through the application. It contains three sheets:
@@ -96,7 +121,7 @@ through the application. It contains three sheets:
     `PaymentType`, `QuantityChange`, `TotalRevenue`, `TotalCost`,
     `LinkedTransactionID`, `Notes`.
 
-#### Separate Revenue and Cost Columns
+##### Separate Revenue and Cost Columns
 
 `TotalRevenue` tracks money received; `TotalCost` tracks money spent. Using two
 columns keeps Excel analysis simple:
@@ -105,11 +130,11 @@ columns keeps Excel analysis simple:
 - Cost of stock: `SUM(TotalCost)`
 - Profit: `SUM(TotalRevenue) + SUM(TotalCost)`
 
-#### Stock Levels
+##### Stock Levels
 
 `SUM(TransactionLog.QuantityChange)` derives real-time stock levels.
 
-#### Sell Price
+##### Sell Price
 
 This is a convenience/esthetic value. It is a default or suggested price for the
 user interface.
@@ -117,19 +142,19 @@ user interface.
 The real sell price of the product is calculated by the `TotalRevenue` of a
 transaction log; this is the actual amount of money collected for the sale.
 
-#### Foreign Keys and Integrity
+##### Foreign Keys and Integrity
 
 `TransactionLog.ProductID` match a `ProductID` in the `Products` sheet.
 
 `TransactionLog.SalesmanID` points at `Salesmen.SalesmanID`.
 
-#### Linked IDs
+##### Linked IDs
 
 `TransactionLog.LinkedTransactionID` links reversal flows. `CREDIT_PAYMENT` rows
 link back to the originating credit sale, and `VOID` rows reference the
 transaction they negate.
 
-#### Column Types
+##### Column Types
 
 - Identifier columns (`ProductID`, `SalesmanID`, `TransactionID`,
   `LinkedTransactionID`) stay as text.
@@ -142,13 +167,13 @@ transaction they negate.
 - `PaymentType` stores one of the enum strings.
 - `Notes` is free-form text that can remain blank.
 
-## Immutable Transaction Log
+### Immutable Transaction Log
 
 The project uses an append-only `TransactionLog` stored in Excel. Data is never
 deleted or edited. Business logic adds new rows for every event, including
 corrections.
 
-## Transaction Types
+### Transaction Types
 
 1. `OPEN_STOCK`: Created by the archive script to seed a new period.
 2. `SALE`: Reduces stock and logs revenue.
@@ -158,27 +183,27 @@ corrections.
 6. `VOID`: Perfect reversal of an incorrect transaction, linked to the original
    entry.
 
-## Workflows
+### Workflows
 
-### Discounts
+#### Discounts
 
 Handled by allowing any `TotalRevenue` during a sale, even if it will differ
 from the product's sell price.
 
-### Sell on Credit
+#### Sell on Credit
 
 Logged as a `SALE` with `PaymentType="OnCredit"` and zero revenue, paired with a
 subsequent `CREDIT_PAYMENT` that references the original transaction via
 `LinkedTransactionID`. Credit payment entries capture the actual settlement
 method (`PaymentType` on the command) and the value paid.
 
-### Error Correction
+#### Error Correction
 
 Uses the "Reversal and Re-entry" method. A `VOID` transaction reverses the
 mistake, followed by a new entry with the correct data. The correct data is
 optional if only want to delete the mistake.
 
-### Bulk Sales (Atomic Multi-Item Checkouts)
+#### Bulk Sales (Atomic Multi-Item Checkouts)
 
 Captures real-world shopping cart checkouts where a customer purchases multiple
 items in a single transaction.
@@ -199,7 +224,7 @@ all-or-nothing wrapper** pattern:
 - **DTO Transformation**: API endpoint `POST /transactions/bulk-sale` accepts `BulkSaleRequest` DTOs and maps them to `list[SaleCommand]`. CLI command `bulk-sale` parses `-s`, `-p`, `-n` header options and repeated `-i PRODUCT_ID QTY TOTAL_REVENUE` flags into `list[SaleCommand]`.
 - **Single Persistence Pass**: In mutating API requests or REPL sessions, workbook changes are written to disk once at the end of the batch operation, eliminating redundant disk I/O.
 
-## Runtime Caching in the BLL
+### Runtime Caching in the BLL
 
 The business logic layer keeps a single workbook open inside a `RuntimeContext`
 instance. To avoid repeatedly walking the Excel sheets (an `openpyxl` iterator
@@ -227,7 +252,7 @@ Guidelines:
 This approach keeps memory usage low (only one workbook copy) while eliminating
 the "N+1" read pattern during operations.
 
-## Error handling in the CLI
+### Error Handling in the CLI
 
 CLI command handlers wrap execution routines in exception handling logic that maps domain and system exceptions to standardized exit codes via `handle_cli_error`. When an exception occurs, the error message is output to standard error (`sys.stderr`) to provide user feedback, and the corresponding non-zero exit code is returned to the caller or shell environment.
 
@@ -237,29 +262,29 @@ Exit code mapping:
 - `2`: Business rule violation or domain constraint failure (`BusinessRuleViolation` or `MissingReferenceError`).
 - `3`: Missing configuration or data file (`FileNotFoundError`).
 
-## Tests
+### Backend Tests
 
-### Test-Driven Development (TDD)
+#### Test-Driven Development (TDD)
 
-New functionality should be driven by `pytest`-based tests under `tests/`.
+New functionality should be driven by `pytest`-based tests under `backend/tests/`.
 
-### Testing Files Structure
+#### Testing Files Structure
 
 The test suite follows a pyramid structure to keep fast feedback at the unit
 level while retaining confidence in the full stack:
 
-- **`tests/dal/`** - Integration coverage for the DAL that exercises real
+- **`backend/tests/dal/`** - Integration coverage for the DAL that exercises real
   `openpyxl` reads and writes.
-- **`tests/bll/`** - Unit coverage for the BLL with the entire data access layer
+- **`backend/tests/bll/`** - Unit coverage for the BLL with the entire data access layer
   (DAL) not mocked.
-- **`tests/cli/`** - Unit coverage for the CLI (Presentation Layer) with the
+- **`backend/tests/cli/`** - Unit coverage for the CLI (Presentation Layer) with the
   business logic layer (BLL) not mocked.
-- **`tests/api/`** - Unit coverage for the API (Presentation Layer) using
+- **`backend/tests/api/`** - Unit coverage for the API (Presentation Layer) using
   FastAPI's TestClient.
-- **`tests/test_integration_layers.py`** - Cross-layer integration without
+- **`backend/tests/integration/`** - Cross-layer integration without
   mocks, verifying the complete workflow from CLI through the DAL.
 
-### Test Structure Standards
+#### Test Structure Standards
 
 To ensure our tests are readable and maintainable by new developers, all test
 functions must adhere to the following standards:
@@ -269,17 +294,17 @@ functions must adhere to the following standards:
 - **Given/When/Then (GWT) Docstrings:** All test functions must have a docstring
   in the GWT format to describe the intent of the test.
 
-## Logging
+### Logging
 
 Python's `logging` module is configured in `src/caad_erp/__init__.py`; modules
 acquire a logger with `logging.getLogger(__name__)`.
 
-## Key Design Rationale (Q&A)
+### Key Design Rationale (Q&A)
 
 This section clarifies the "why" behind a few key architectural decisions that
 were made to prioritize robustness and maintainability.
 
-### Why is PaymentType a hard-coded Enum?
+#### Why is PaymentType a hard-coded Enum?
 
 We intentionally chose to hard-code the PaymentType list in `constants.py`
 instead of creating a separate `PaymentTypes` sheet in Excel.
@@ -294,7 +319,7 @@ rename it, which would fatally break all logic for tracking and paying debts.
 workflow 100% robust and safe from user error, at the minor cost of requiring a
 developer to add new payment types.
 
-### "Deleting" something
+#### "Deleting" something
 
 Soft-delete is our method for "removing" an item (like a product or a salesman)
 without corrupting our database.
@@ -306,7 +331,7 @@ Instead of actually deleting the row from the Excel sheet, just flip the
 instantly vanish from the `stock` report and from the list of items you can
 `sale`. To the user, it's "deleted."
 
-#### Why This is Absolutely Needed
+##### Why This is Absolutely Needed
 
 The main reason is to **protect our `TransactionLog`'s history**.
 
@@ -339,7 +364,7 @@ When we set `P1001`'s `IsActive` to `FALSE`:
 3. When you run a profit report for last month, the BLL can still look up
    `P1001`, find "Snickers," and correctly calculate your historical profit.
 
-#### The only case we "Hard-Delete" (Archive Script)
+##### The only case we "Hard-Delete" (Archive Script)
 
 This is the "pruning" or "garbage collection". It happens only when a manager
 runs the period-end archive script.
@@ -354,7 +379,7 @@ if the inventory is 0. If this is true, then it will actually remove
 It does a similar thing for sellers looking at the debt and any other necessary
 info
 
-### Why don't list-products/list-salesmen filter by active status server-side?
+#### Why don't list-products/list-salesmen filter by active status server-side?
 
 `Products` and `Salesmen` are expected to stay small (dozens to low hundreds of
 rows), so pushing "include inactive" filtering to the server added complexity
@@ -364,7 +389,7 @@ benefit. `list_products`/`list_salesmen` (BLL), the CLI
 `GET /salesmen` endpoints always return the full dataset, so clients can filter
 or sort however they like.
 
-## Future Work
+### Future Work
 
 - Clean the tests to remove unused parameters, imports, variables, etc...
 - Currently, the layers are exposing all their functions. We need to expose only
@@ -394,4 +419,3 @@ or sort however they like.
     of simple text.
 - Add options to pass id to read-commands to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
-
