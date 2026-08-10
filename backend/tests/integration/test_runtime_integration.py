@@ -64,9 +64,6 @@ def test_load_context_propagates_missing_workbook_error_from_settings(
                 "LoungeName = Integration Lounge",
                 f"SchemaVersion = {constants.EXPECTED_SCHEMA_VERSION}",
                 "",
-                "[Defaults]",
-                "DefaultSalesman = GRR00000000",
-                "",
             ]
         ),
         encoding="utf-8",
@@ -98,7 +95,6 @@ def test_ensure_schema_version_rejects_mismatched_version_in_config(
         data_file=initialized_context.settings.data_file,
         lounge_name=initialized_context.settings.lounge_name,
         schema_version="9.9.9",
-        default_salesman_id=initialized_context.settings.default_salesman_id,
     )
     mismatched_context = runtime.RuntimeContext(
         settings=mismatched_settings,
