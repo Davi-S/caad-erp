@@ -11,7 +11,7 @@
         "format": "oxfmt",
         "format:check": "oxfmt --check",
         "preview": "vite preview",
-        "generate-api": "npx openapi-typescript http://192.168.0.164:8000/openapi.json -o ./src/api/schema.ts"
+        "generate-api": "cd ../backend && uv run python -c \"import json; from caad_erp.api.app import create_app; print(json.dumps(create_app(skip_lifespan=True).openapi()))\" > ../frontend/src/api/openapi.json && cd ../frontend && npx openapi-typescript ./src/api/openapi.json -o ./src/api/schema.ts"
     },
     "dependencies": {
         "@mantine/carousel": "^9.4.1",
