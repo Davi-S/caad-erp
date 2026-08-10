@@ -15,20 +15,8 @@ export default defineConfig({
     server: {
         proxy: {
             "/api-mp": {
-                target: "https://api.mercadopago.com",
+                target: "http://localhost:8000",
                 changeOrigin: true,
-                secure: true,
-                rewrite: (path) => path.replace(/^\/api-mp/, ""),
-            },
-        },
-    },
-    preview: {
-        proxy: {
-            "/api-mp": {
-                target: "https://api.mercadopago.com",
-                changeOrigin: true,
-                secure: true,
-                rewrite: (path) => path.replace(/^\/api-mp/, ""),
             },
         },
     },

@@ -7,10 +7,12 @@ FastAPI application instance with all middleware and routes configured.
 import contextlib
 import importlib.metadata
 import logging
+import pathlib
 import typing as t
 
 import fastapi
 import fastapi.middleware.cors
+import fastapi.responses
 
 from caad_erp import bll
 
@@ -28,6 +30,12 @@ APP_DESCRIPTION = (
 def _get_app_version() -> str:
     """Get the application version from package metadata."""
     return importlib.metadata.version("caad-erp")
+
+
+def _get_frontend_dist_dir() -> pathlib.Path:
+    """Resolve the default frontend/dist directory relative to the repository root."""
+    backend_dir = pathlib.Path(__file__).resolve().parents[3]
+    return backend_dir.parent / "frontend" / "dist"
 
 
 @contextlib.asynccontextmanager
@@ -56,15 +64,28 @@ async def lifespan(app: fastapi.FastAPI) -> t.AsyncIterator[None]:
     logger.info("RuntimeContext shutdown complete")
 
 
-def create_app(*, skip_lifespan: bool = False) -> fastapi.FastAPI:
+def create_app(
+    *,
+    skip_lifespan: bool = False,
+    serve_static: bool = False,
+    static_dir: pathlib.Path | None = None,
+) -> fastapi.FastAPI:
     """Create and configure the FastAPI application instance.
 
     Args:
         skip_lifespan: If True, skip the lifespan handler. Useful for testing
             routes without initializing the full runtime context.
+        serve_static: If True, mount static frontend assets from frontend/dist
+            and provide Single Page Application (SPA) routing fallback.
+        static_dir: Optional explicit directory path to static assets. Defaults
+            to frontend/dist in the workspace.
 
     Returns:
         FastAPI: The configured application ready to serve requests.
+
+    Raises:
+        FileNotFoundError: If serve_static is True but frontend/dist (or index.html)
+            is missing.
     """
     app = fastapi.FastAPI(
         title=APP_TITLE,
@@ -84,10 +105,27 @@ def create_app(*, skip_lifespan: bool = False) -> fastapi.FastAPI:
         allow_headers=["*"],
     )
 
-    # Register routes
+    # Register API routes
     app.include_router(routes.router)
 
     # Register global exception handlers
     errors.register_handlers(app)
 
+    # Mount static assets and SPA catch-all fallback if requested
+    if serve_static:
+        dist_dir = (static_dir or _get_frontend_dist_dir()).resolve()
+        if not dist_dir.exists() or not (dist_dir / "index.html").exists():
+            raise FileNotFoundError(
+                f"frontend/dist directory not found at '{dist_dir}'. "
+                "Please build the frontend assets first by running 'npm run build:frontend'."
+            )
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def serve_spa(full_path: str) -> fastapi.responses.FileResponse:
+            target = dist_dir / full_path
+            if full_path and target.is_file():
+                return fastapi.responses.FileResponse(target)
+            return fastapi.responses.FileResponse(dist_dir / "index.html")
+
     return app
+
