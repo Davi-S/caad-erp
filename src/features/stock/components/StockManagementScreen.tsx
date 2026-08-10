@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
     ActionIcon,
     Alert,
@@ -13,7 +13,10 @@ import {
     Title,
 } from "@mantine/core"
 import { ArrowLeft, PackagePlus, PackageMinus, Package, AlertTriangle } from "lucide-react"
+import { createColumnHelper } from "@tanstack/react-table"
 import { ScreenShell } from "@/components/ScreenShell"
+import { ListControls } from "@/components/ListControls"
+import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
 import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
 import { useRestock, useWriteOff } from "../hooks/useStockMutations"
@@ -26,15 +29,50 @@ interface StockManagementScreenProps {
     onSwitchSalesman: () => void
 }
 
+// Search and sort configurations
+const columnHelper = createColumnHelper<Product>()
+
+const STOCK_SORT_OPTIONS: SortOption[] = [
+    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "name", desc: false }] },
+    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "name", desc: true }] },
+    { value: "stock-asc", label: "Estoque (Menor)", sorting: [{ id: "stock", desc: false }] },
+    { value: "stock-desc", label: "Estoque (Maior)", sorting: [{ id: "stock", desc: true }] },
+]
+
 export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManagementScreenProps) {
     const [showInactive, setShowInactive] = useState(false)
     const { data: products, isLoading, isError } = useProducts()
     const { data: stock } = useStock()
 
-    // Filter the products on the client side, same pattern as the Products page
-    const filteredProducts = showInactive
-        ? products
-        : products?.filter((product) => product.is_active)
+    const activeFilteredProducts = useMemo(
+        () => (showInactive ? products : products?.filter((product) => product.is_active)),
+        [products, showInactive],
+    )
+
+    // Configure searchable and sortable columns
+    const columns = useMemo(
+        () => [
+            columnHelper.accessor("product_name", {
+                id: "name",
+                enableGlobalFilter: true,
+            }),
+            columnHelper.accessor("product_id", {
+                id: "code",
+                enableGlobalFilter: true,
+            }),
+            columnHelper.accessor((p) => stock?.[p.product_id] ?? 0, {
+                id: "stock",
+                enableGlobalFilter: false,
+            }),
+        ],
+        [stock],
+    )
+
+    const { searchQuery, processedItems: processedProducts, controlsProps } = useTanStackListControls({
+        data: activeFilteredProducts,
+        columns,
+        sortOptions: STOCK_SORT_OPTIONS,
+    })
 
     const [restockingProduct, setRestockingProduct] = useState<Product | null>(null)
     const [writingOffProduct, setWritingOffProduct] = useState<Product | null>(null)
@@ -105,11 +143,15 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
 
             {/* Middle Section */}
             <Stack style={{ flex: 1, minHeight: 0 }} py="lg">
-                <Switch
-                    label="Mostrar produtos inativos"
-                    checked={showInactive}
-                    onChange={(event) => setShowInactive(event.currentTarget.checked)}
-                />
+                <Group justify="space-between" align="center">
+                    <Switch
+                        label="Mostrar produtos inativos"
+                        checked={showInactive}
+                        onChange={(event) => setShowInactive(event.currentTarget.checked)}
+                    />
+                </Group>
+
+                <ListControls {...controlsProps} searchPlaceholder="Buscar por nome ou código..." />
 
                 {isError && (
                     <Alert color="red" icon={<AlertTriangle size={16} />}>
@@ -123,23 +165,25 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                             Carregando...
                         </Text>
                     </Center>
-                ) : !filteredProducts || filteredProducts.length === 0 ? (
+                ) : !processedProducts || processedProducts.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
                             <ThemeIcon variant="light" color="gray" size={40} radius="xl">
                                 <Package size={20} />
                             </ThemeIcon>
                             <Text c="dimmed" size="sm" ta="center">
-                                {showInactive
-                                    ? "Nenhum produto cadastrado ainda."
-                                    : "Nenhum produto ativo. Ative a opção acima para ver os inativos."}
+                                {searchQuery
+                                    ? `Nenhum produto encontrado com "${searchQuery}".`
+                                    : showInactive
+                                      ? "Nenhum produto cadastrado ainda."
+                                      : "Nenhum produto ativo. Ative a opção acima para ver os inativos."}
                             </Text>
                         </Stack>
                     </Center>
                 ) : (
                     <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
                         <Stack gap="xs">
-                            {filteredProducts.map((product) => {
+                            {processedProducts.map((product) => {
                                 const quantity = stock?.[product.product_id] ?? 0
                                 const soldOut = quantity <= 0
 

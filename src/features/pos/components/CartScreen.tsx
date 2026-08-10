@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import {
     ActionIcon,
     Indicator,
@@ -14,9 +15,12 @@ import {
     Title,
 } from "@mantine/core"
 import { Plus, Minus, ArrowLeft, ShoppingCart } from "lucide-react"
+import { createColumnHelper } from "@tanstack/react-table"
 import { ScreenShell } from "@/components/ScreenShell"
+import { ListControls } from "@/components/ListControls"
+import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
 import { brl } from "@/helpers"
-import type { Salesman, Products, Stock } from "@/types"
+import type { Salesman, Product, Products, Stock } from "@/types"
 import { useCart } from "../hooks/useCart"
 
 interface CartScreenProps {
@@ -30,10 +34,51 @@ interface CartScreenProps {
     }
 }
 
+// Search and sort configurations
+const columnHelper = createColumnHelper<Product>()
+
+const PRODUCT_SORT_OPTIONS: SortOption[] = [
+    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "name", desc: false }] },
+    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "name", desc: true }] },
+    { value: "price-asc", label: "Preço (Menor)", sorting: [{ id: "price", desc: false }] },
+    { value: "price-desc", label: "Preço (Maior)", sorting: [{ id: "price", desc: true }] },
+    { value: "stock-desc", label: "Estoque (Maior)", sorting: [{ id: "stock", desc: true }] },
+    { value: "cart-first", label: "No Carrinho", sorting: [{ id: "cart", desc: true }, { id: "name", desc: false }] },
+]
+
 export function CartScreen({ salesman, products, stock, cartState, actions }: CartScreenProps) {
     const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
     const { onBack, onNext } = actions
     const availableFor = (id: string) => stock[id]
+
+    // Configure searchable and sortable columns
+    const columns = useMemo(
+        () => [
+            columnHelper.accessor("product_name", {
+                id: "name",
+                enableGlobalFilter: true,
+            }),
+            columnHelper.accessor("sell_price", {
+                id: "price",
+                enableGlobalFilter: false,
+            }),
+            columnHelper.accessor((p) => stock[p.product_id] ?? 0, {
+                id: "stock",
+                enableGlobalFilter: false,
+            }),
+            columnHelper.accessor((p) => (cart[p.product_id] ? 1 : 0), {
+                id: "cart",
+                enableGlobalFilter: false,
+            }),
+        ],
+        [stock, cart],
+    )
+
+    const { searchQuery, processedItems: processedProducts, controlsProps } = useTanStackListControls({
+        data: products,
+        columns,
+        sortOptions: PRODUCT_SORT_OPTIONS,
+    })
 
     return (
         <ScreenShell>
@@ -58,66 +103,73 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
                     <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
                         Toque para adicionar
                     </Text>
-                    <SimpleGrid cols={3} spacing="sm">
-                        {products.map((product) => {
-                            const available = availableFor(product.product_id)
-                            const soldOut = available !== undefined && available <= 0
-                            const quantity = cart[product.product_id] || 0
+                    <ListControls {...controlsProps} searchPlaceholder="Buscar produto..." />
+                    {processedProducts.length === 0 ? (
+                        <Text size="xs" c="dimmed" ta="center" py="xs">
+                            Nenhum produto encontrado com "{searchQuery}".
+                        </Text>
+                    ) : (
+                        <SimpleGrid cols={3} spacing="sm">
+                            {processedProducts.map((product) => {
+                                const available = availableFor(product.product_id)
+                                const soldOut = available !== undefined && available <= 0
+                                const quantity = cart[product.product_id] || 0
 
-                            return (
-                                <Indicator
-                                    label={`${quantity}x`}
-                                    size={18}
-                                    disabled={quantity === 0}
-                                    offset={6}
-                                >
-                                    <Checkbox.Card
+                                return (
+                                    <Indicator
                                         key={product.product_id}
-                                        checked={quantity > 0}
-                                        onClick={() =>
-                                            quantity > 0
-                                                ? removeItem(product.product_id)
-                                                : inc(product.product_id)
-                                        }
-                                        disabled={soldOut}
-                                        radius="md"
-                                        p="sm"
-                                        style={{
-                                            position: "relative",
-                                            textAlign: "center",
-                                            backgroundColor: soldOut
-                                                ? "var(--mantine-color-gray-1)"
-                                                : undefined,
-                                        }}
+                                        label={`${quantity}x`}
+                                        size={18}
+                                        disabled={quantity === 0}
+                                        offset={6}
                                     >
-                                        <Stack gap={2} align="center">
-                                            <Text size="xs" fw={600} ta="center">
-                                                {product.product_name}
-                                            </Text>
-                                            <Text
-                                                size="xs"
-                                                fw={700}
-                                                c={
-                                                    soldOut
-                                                        ? "dimmed"
-                                                        : "var(--mantine-primary-color-filled)"
-                                                }
-                                            >
-                                                {soldOut ? "Esgotado" : brl(product.sell_price)}
-                                            </Text>
-                                            <Text size="10px" c="dimmed">
-                                                {/* Hack with invisible character to make sold out
-                                                product card have the same height as the other ones */}
-                                                {soldOut
-                                                    ? "‎ "
-                                                    : stock[product.product_id] + " disp."}
-                                            </Text>
-                                        </Stack>
-                                    </Checkbox.Card>
-                                </Indicator>
-                            )
-                        })}
-                    </SimpleGrid>
+                                        <Checkbox.Card
+                                            checked={quantity > 0}
+                                            onClick={() =>
+                                                quantity > 0
+                                                    ? removeItem(product.product_id)
+                                                    : inc(product.product_id)
+                                            }
+                                            disabled={soldOut}
+                                            radius="md"
+                                            p="sm"
+                                            style={{
+                                                position: "relative",
+                                                textAlign: "center",
+                                                backgroundColor: soldOut
+                                                    ? "var(--mantine-color-gray-1)"
+                                                    : undefined,
+                                            }}
+                                        >
+                                            <Stack gap={2} align="center">
+                                                <Text size="xs" fw={600} ta="center">
+                                                    {product.product_name}
+                                                </Text>
+                                                <Text
+                                                    size="xs"
+                                                    fw={700}
+                                                    c={
+                                                        soldOut
+                                                            ? "dimmed"
+                                                            : "var(--mantine-primary-color-filled)"
+                                                    }
+                                                >
+                                                    {soldOut ? "Esgotado" : brl(product.sell_price)}
+                                                </Text>
+                                                <Text size="10px" c="dimmed">
+                                                    {/* Hack with invisible character to make sold out
+                                                    product card have the same height as the other ones */}
+                                                    {soldOut
+                                                        ? "‎ "
+                                                        : stock[product.product_id] + " disp."}
+                                                </Text>
+                                            </Stack>
+                                        </Checkbox.Card>
+                                    </Indicator>
+                                )
+                            })}
+                        </SimpleGrid>
+                    )}
                 </Stack>
 
                 {isEmpty ? (
