@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import {
     Center,
     Divider,
@@ -27,6 +28,15 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
     const cartEntries = Object.entries(cart)
     const isEmpty = cartEntries.length === 0
 
+    const sortedProducts = useMemo(() => {
+        return [...products].sort((a, b) =>
+            (a.product_name || "").localeCompare(b.product_name || "", undefined, {
+                sensitivity: "base",
+                numeric: true,
+            }),
+        )
+    }, [products])
+
     return (
         <ScreenShell>
             {/* Header */}
@@ -42,7 +52,7 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
             </Group>
 
             {/* Middle Section */}
-            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg">
+            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
                 <Stack gap="lg">
                     <Stack gap="sm">
                         <Text
@@ -55,7 +65,7 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
                             Produtos
                         </Text>
                         <SimpleGrid cols={3} spacing="sm">
-                            {products.map((product) => {
+                            {sortedProducts.map((product) => {
                                 const available = stock[product.product_id]
                                 const soldOut = available !== undefined && available <= 0
                                 const quantity = cart[product.product_id] || 0
@@ -66,7 +76,7 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
                                         label={`${quantity}x`}
                                         size={18}
                                         disabled={quantity === 0}
-                                        offset={6}
+                                        offset={15}
                                     >
                                         <Paper
                                             withBorder
@@ -81,7 +91,7 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
                                             }}
                                         >
                                             <Stack gap={2} align="center">
-                                                <Text size="xs" fw={600} ta="center">
+                                                <Text size="xs" fw={600} ta="center" truncate style={{ maxWidth: "100%" }}>
                                                     {product.product_name}
                                                 </Text>
                                                 <Text
