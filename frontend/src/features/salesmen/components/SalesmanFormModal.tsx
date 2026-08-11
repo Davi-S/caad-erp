@@ -78,18 +78,21 @@ export function SalesmanFormModal({
                 <Stack>
                     <TextInput
                         label="Identificador"
-                        placeholder="ex: joao-silva"
+                        placeholder="ex: grr00000000"
                         disabled={isEditing}
                         description={
                             isEditing
                                 ? "O identificador não pode ser alterado."
-                                : "Usado como chave única. Não poderá ser alterado depois."
+                                : "Usado como chave única. Não poderá ser alterado depois. Quanto mais detalhado, melhor."
                         }
                         {...form.getInputProps("salesman_id")}
                     />
                     <TextInput
                         label="Nome"
                         placeholder="Nome do vendedor"
+                        description={
+                            "Aparece nas telas de seleção."
+                        }
                         {...form.getInputProps("salesman_name")}
                     />
                     <Switch

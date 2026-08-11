@@ -117,15 +117,6 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
             <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
                 <Stack gap="lg">
                     <Stack gap="sm">
-                        <Text
-                            size="xs"
-                            fw={600}
-                            tt="uppercase"
-                            c="dimmed"
-                            style={{ letterSpacing: 1 }}
-                        >
-                            Toque para adicionar
-                        </Text>
                         <ListControls {...controlsProps} searchPlaceholder="Buscar produto..." />
                         {groupedProducts.length === 0 ? (
                             <Text size="xs" c="dimmed" ta="center" py="xs">
@@ -226,7 +217,7 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
                     </Text>
                 </Group>
                 <Button size="lg" disabled={total === 0} onClick={onNext}>
-                    Fechar venda
+                    Prosseguir para o pagamento
                 </Button>
             </Stack>
         </ScreenShell>
