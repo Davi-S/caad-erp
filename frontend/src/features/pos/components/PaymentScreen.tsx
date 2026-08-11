@@ -13,6 +13,7 @@ import {
     Title,
     Box,
     Loader,
+    ThemeIcon,
 } from "@mantine/core"
 import { Check, ArrowLeft, AlertTriangle, QrCode, Banknote, RotateCw } from "lucide-react"
 import { brl } from "@/helpers"
@@ -147,11 +148,17 @@ export function PaymentScreen({
                         shadow="sm"
                         radius="md"
                         p="lg"
-                        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            flex: 1,
+                            minHeight: 0,
+                            borderColor: confirmed ? "var(--mantine-color-green-5)" : undefined,
+                        }}
                     >
                         <Stack align="center" gap="xs" style={{ flex: 1, minHeight: 0 }}>
                             <Badge
-                                color={confirmed ? "var(--mantine-primary-color-filled)" : "yellow"}
+                                color={confirmed ? "green" : "yellow"}
                                 variant={confirmed ? "filled" : "light"}
                                 radius="xl"
                                 leftSection={confirmed ? <Check size={12} /> : undefined}
@@ -159,7 +166,12 @@ export function PaymentScreen({
                                 {confirmed ? "Pago" : "Aguardando pagamento"}
                             </Badge>
 
-                            <Text size="32px" fw={700} ff="monospace">
+                            <Text
+                                size="32px"
+                                fw={700}
+                                ff="monospace"
+                                c={confirmed ? "green.7" : undefined}
+                            >
                                 {brl(cartState.total)}
                             </Text>
 
@@ -184,7 +196,13 @@ export function PaymentScreen({
                                 mt="sm"
                                 w="100%"
                                 style={{
-                                    borderStyle: "dashed",
+                                    borderStyle: confirmed ? "solid" : "dashed",
+                                    borderColor: confirmed
+                                        ? "var(--mantine-color-green-3)"
+                                        : undefined,
+                                    backgroundColor: confirmed
+                                        ? "var(--mantine-color-green-0)"
+                                        : undefined,
                                     flex: 1,
                                     minHeight: 0,
                                     position: "relative",
@@ -199,84 +217,107 @@ export function PaymentScreen({
                                         right: 16,
                                     }}
                                 >
-                                    {method === "PIX" && (
-                                        <Stack
-                                            align="center"
-                                            justify="center"
-                                            gap="xs"
-                                            style={{ width: "100%", height: "100%" }}
-                                        >
-                                            {pixState.loading && (
-                                                <Stack align="center" gap="xs">
-                                                    <Loader size="md" />
-                                                    <Text size="sm" c="dimmed">
-                                                        Gerando QR Code PIX no Mercado Pago...
-                                                    </Text>
+                                    {confirmed ? (
+                                        <Stack align="center" justify="center" gap="xs">
+                                            <ThemeIcon
+                                                color="green"
+                                                variant="light"
+                                                size={56}
+                                                radius="xl"
+                                            >
+                                                <Check size={32} />
+                                            </ThemeIcon>
+                                            <Text fw={700} size="md" c="green.8">
+                                                Pagamento recebido com sucesso!
+                                            </Text>
+                                            <Text size="xs" c="dimmed">
+                                                Forma:{" "}
+                                                {method === "PIX" ? "Pix" : "Dinheiro em espécie"}
+                                            </Text>
+                                        </Stack>
+                                    ) : (
+                                        <>
+                                            {method === "PIX" && (
+                                                <Stack
+                                                    align="center"
+                                                    justify="center"
+                                                    gap="xs"
+                                                    style={{ width: "100%", height: "100%" }}
+                                                >
+                                                    {pixState.loading && (
+                                                        <Stack align="center" gap="xs">
+                                                            <Loader size="md" />
+                                                            <Text size="sm" c="dimmed">
+                                                                Gerando QR Code PIX no Mercado
+                                                                Pago...
+                                                            </Text>
+                                                        </Stack>
+                                                    )}
+
+                                                    {!pixState.loading && pixState.error && (
+                                                        <Alert
+                                                            color="red"
+                                                            icon={<AlertTriangle size={16} />}
+                                                            title="Erro no Mercado Pago"
+                                                        >
+                                                            <Text size="xs" mb="xs">
+                                                                {pixState.error}
+                                                            </Text>
+                                                            <Button
+                                                                size="xs"
+                                                                variant="light"
+                                                                color="red"
+                                                                leftSection={<RotateCw size={12} />}
+                                                                onClick={pixState.retry}
+                                                            >
+                                                                Tentar novamente
+                                                            </Button>
+                                                        </Alert>
+                                                    )}
+
+                                                    {!pixState.loading &&
+                                                        !pixState.error &&
+                                                        pixState.qrCodeBase64 && (
+                                                            <Stack
+                                                                align="center"
+                                                                gap="xs"
+                                                                style={{
+                                                                    height: "100%",
+                                                                    justifyContent: "center",
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        height: "100%",
+                                                                        maxWidth: 240,
+                                                                        maxHeight: 240,
+                                                                        display: "flex",
+                                                                        justifyContent: "center",
+                                                                        alignItems: "center",
+                                                                    }}
+                                                                >
+                                                                    <img
+                                                                        src={`data:image/png;base64,${pixState.qrCodeBase64}`}
+                                                                        alt="QR Code PIX Mercado Pago"
+                                                                        style={{
+                                                                            maxWidth: "100%",
+                                                                            maxHeight: "100%",
+                                                                            objectFit: "contain",
+                                                                        }}
+                                                                    />
+                                                                </Box>
+                                                            </Stack>
+                                                        )}
                                                 </Stack>
                                             )}
 
-                                            {!pixState.loading && pixState.error && (
-                                                <Alert
-                                                    color="red"
-                                                    icon={<AlertTriangle size={16} />}
-                                                    title="Erro no Mercado Pago"
-                                                >
-                                                    <Text size="xs" mb="xs">
-                                                        {pixState.error}
-                                                    </Text>
-                                                    <Button
-                                                        size="xs"
-                                                        variant="light"
-                                                        color="red"
-                                                        leftSection={<RotateCw size={12} />}
-                                                        onClick={pixState.retry}
-                                                    >
-                                                        Tentar novamente
-                                                    </Button>
-                                                </Alert>
+                                            {method === "Cash" && (
+                                                <Text size="sm" c="dimmed" ta="center">
+                                                    Receba o valor em espécie e confirme abaixo.
+                                                </Text>
                                             )}
-
-                                            {!pixState.loading &&
-                                                !pixState.error &&
-                                                pixState.qrCodeBase64 && (
-                                                    <Stack
-                                                        align="center"
-                                                        gap="xs"
-                                                        style={{
-                                                            height: "100%",
-                                                            justifyContent: "center",
-                                                        }}
-                                                    >
-                                                        <Box
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                                maxWidth: 240,
-                                                                maxHeight: 240,
-                                                                display: "flex",
-                                                                justifyContent: "center",
-                                                                alignItems: "center",
-                                                            }}
-                                                        >
-                                                            <img
-                                                                src={`data:image/png;base64,${pixState.qrCodeBase64}`}
-                                                                alt="QR Code PIX Mercado Pago"
-                                                                style={{
-                                                                    maxWidth: "100%",
-                                                                    maxHeight: "100%",
-                                                                    objectFit: "contain",
-                                                                }}
-                                                            />
-                                                        </Box>
-                                                    </Stack>
-                                                )}
-                                        </Stack>
-                                    )}
-
-                                    {method === "Cash" && (
-                                        <Text size="sm" c="dimmed" ta="center">
-                                            Receba o valor em espécie e confirme abaixo.
-                                        </Text>
+                                        </>
                                     )}
                                 </Center>
                             </Paper>
@@ -307,7 +348,7 @@ export function PaymentScreen({
                         </Group>
                     )
                 ) : (
-                    <Button size="lg" onClick={onNewSale}>
+                    <Button size="lg" color="green" onClick={onNewSale}>
                         Nova venda
                     </Button>
                 )}
