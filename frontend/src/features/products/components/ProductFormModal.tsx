@@ -94,18 +94,21 @@ export function ProductFormModal({
                 <Stack>
                     <TextInput
                         label="Identificador"
-                        placeholder="ex: cerveja-lata"
+                        placeholder="ex: fanta-laranja-lata-350ml"
                         disabled={isEditing}
                         description={
                             isEditing
                                 ? "O identificador não pode ser alterado."
-                                : "Usado como chave única. Não poderá ser alterado depois."
+                                : "Usado como chave única. Não poderá ser alterado depois. Quanto mais detalhado, melhor."
                         }
                         {...form.getInputProps("product_id")}
                     />
                     <TextInput
                         label="Nome"
                         placeholder="Nome do produto"
+                        description={
+                            "Aparece na tela de vendas. Use \" - \" para separar variações do mesmo produto."
+                        }
                         {...form.getInputProps("product_name")}
                     />
                     <CurrencyInput
