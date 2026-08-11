@@ -42,79 +42,86 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
             </Group>
 
             {/* Middle Section */}
-            <Stack style={{ flex: 1, minHeight: 0 }} py="lg">
-                <Stack gap="sm">
-                    <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
-                        Produtos
-                    </Text>
-                    <SimpleGrid cols={3} spacing="sm">
-                        {products.map((product) => {
-                            const available = stock[product.product_id]
-                            const soldOut = available !== undefined && available <= 0
-                            const quantity = cart[product.product_id] || 0
+            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg">
+                <Stack gap="lg">
+                    <Stack gap="sm">
+                        <Text
+                            size="xs"
+                            fw={600}
+                            tt="uppercase"
+                            c="dimmed"
+                            style={{ letterSpacing: 1 }}
+                        >
+                            Produtos
+                        </Text>
+                        <SimpleGrid cols={3} spacing="sm">
+                            {products.map((product) => {
+                                const available = stock[product.product_id]
+                                const soldOut = available !== undefined && available <= 0
+                                const quantity = cart[product.product_id] || 0
 
-                            return (
-                                <Indicator
-                                    key={product.product_id}
-                                    label={`${quantity}x`}
-                                    size={18}
-                                    disabled={quantity === 0}
-                                    offset={6}
-                                >
-                                    <Paper
-                                        withBorder
-                                        radius="md"
-                                        p="sm"
-                                        style={{
-                                            position: "relative",
-                                            textAlign: "center",
-                                            backgroundColor: soldOut
-                                                ? "var(--mantine-color-gray-1)"
-                                                : undefined,
-                                        }}
+                                return (
+                                    <Indicator
+                                        key={product.product_id}
+                                        label={`${quantity}x`}
+                                        size={18}
+                                        disabled={quantity === 0}
+                                        offset={6}
                                     >
-                                        <Stack gap={2} align="center">
-                                            <Text size="xs" fw={600} ta="center">
-                                                {product.product_name}
-                                            </Text>
-                                            <Text
-                                                size="xs"
-                                                fw={700}
-                                                c={
-                                                    soldOut
-                                                        ? "dimmed"
-                                                        : "var(--mantine-primary-color-filled)"
-                                                }
-                                            >
-                                                {soldOut ? "Esgotado" : brl(product.sell_price)}
-                                            </Text>
-                                            <Text size="10px" c="dimmed">
-                                                {soldOut
-                                                    ? "‎ "
-                                                    : (available !== undefined ? available : 0) +
-                                                      " disp."}
-                                            </Text>
-                                        </Stack>
-                                    </Paper>
-                                </Indicator>
-                            )
-                        })}
-                    </SimpleGrid>
-                </Stack>
+                                        <Paper
+                                            withBorder
+                                            radius="md"
+                                            p="sm"
+                                            style={{
+                                                position: "relative",
+                                                textAlign: "center",
+                                                backgroundColor: soldOut
+                                                    ? "var(--mantine-color-gray-1)"
+                                                    : undefined,
+                                            }}
+                                        >
+                                            <Stack gap={2} align="center">
+                                                <Text size="xs" fw={600} ta="center">
+                                                    {product.product_name}
+                                                </Text>
+                                                <Text
+                                                    size="xs"
+                                                    fw={700}
+                                                    c={
+                                                        soldOut
+                                                            ? "dimmed"
+                                                            : "var(--mantine-primary-color-filled)"
+                                                    }
+                                                >
+                                                    {soldOut ? "Esgotado" : brl(product.sell_price)}
+                                                </Text>
+                                                <Text size="10px" c="dimmed">
+                                                    {soldOut
+                                                        ? "‎ "
+                                                        : (available !== undefined
+                                                              ? available
+                                                              : 0) + " disp."}
+                                                </Text>
+                                            </Stack>
+                                        </Paper>
+                                    </Indicator>
+                                )
+                            })}
+                        </SimpleGrid>
+                    </Stack>
 
-                {isEmpty ? (
-                    <Center style={{ flex: 1 }}>
-                        <Stack align="center" gap="xs">
-                            <ThemeIcon variant="light" color="gray" size={40} radius="xl">
-                                <ShoppingCart size={20} />
-                            </ThemeIcon>
-                            <Text c="dimmed" size="sm" ta="center">
-                                Nenhum item ainda.
-                            </Text>
-                        </Stack>
-                    </Center>
-                ) : (
-                    <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
+                    {isEmpty ? (
+                        <Center py="xl">
+                            <Stack align="center" gap="xs">
+                                <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                                    <ShoppingCart size={20} />
+                                </ThemeIcon>
+                                <Text c="dimmed" size="sm" ta="center">
+                                    Nenhum item ainda.
+                                </Text>
+                            </Stack>
+                        </Center>
+                    ) : (
                         <Stack gap={4}>
                             <Text
                                 size="xs"
@@ -153,9 +160,9 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
                                 )
                             })}
                         </Stack>
-                    </ScrollArea>
-                )}
-            </Stack>
+                    )}
+                </Stack>
+            </ScrollArea>
 
             {/* Footer */}
             <Stack gap="xs">
