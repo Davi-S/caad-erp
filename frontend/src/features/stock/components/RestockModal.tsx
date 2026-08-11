@@ -45,9 +45,9 @@ export function RestockModal({
         validate: {
             quantity: (value) => (value > 0 ? null : "Informe uma quantidade válida"),
             unit_cost: (value, values) =>
-                values.cost_mode === "unit" && value <= 0 ? "Informe um custo válido" : null,
+                values.cost_mode === "unit" && value < 0 ? "Informe um custo válido" : null,
             total_cost: (value, values) =>
-                values.cost_mode === "total" && value <= 0 ? "Informe um custo válido" : null,
+                values.cost_mode === "total" && value < 0 ? "Informe um custo válido" : null,
         },
     })
 

@@ -44,7 +44,7 @@ export function ProductFormModal({
             product_id: (value) =>
                 isEditing || value.trim().length > 0 ? null : "Informe um identificador",
             product_name: (value) => (value.trim().length > 0 ? null : "Informe um nome"),
-            sell_price: (value) => (value > 0 ? null : "Informe um preço válido"),
+            sell_price: (value) => (value >= 0 ? null : "Informe um preço válido"),
         },
     })
 
