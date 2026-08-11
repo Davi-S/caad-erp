@@ -42,9 +42,6 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
             {/* Header */}
             <Group justify="space-between" align="center">
                 <Stack gap={0}>
-                    <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: 1 }}>
-                        Venda em andamento
-                    </Text>
                     <Title order={1} size="h5">
                         Catálogo de Produtos
                     </Title>
@@ -55,15 +52,6 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
             <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
                 <Stack gap="lg">
                     <Stack gap="sm">
-                        <Text
-                            size="xs"
-                            fw={600}
-                            tt="uppercase"
-                            c="dimmed"
-                            style={{ letterSpacing: 1 }}
-                        >
-                            Produtos
-                        </Text>
                         <SimpleGrid cols={3} spacing="sm">
                             {sortedProducts.map((product) => {
                                 const available = stock[product.product_id]

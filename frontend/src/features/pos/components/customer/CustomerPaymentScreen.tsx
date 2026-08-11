@@ -178,8 +178,7 @@ export function CustomerPaymentScreen({
                                         <Stack align="center" justify="center" gap="xs">
                                             <Banknote size={32} color="gray" />
                                             <Text size="sm" c="dimmed" ta="center">
-                                                Receba o valor em espécie e confirme com o
-                                                atendente.
+                                                Entregue o valor em espécie para o atendente.
                                             </Text>
                                         </Stack>
                                     )}
