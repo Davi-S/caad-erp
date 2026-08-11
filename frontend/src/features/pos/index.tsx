@@ -63,7 +63,7 @@ export function POSFlow() {
             // useState like CartScreen.
             <SalesmanSelectScreen
                 salesmen={salesmen.filter((s) => s.is_active)}
-                title="Quem tá vendendo hoje?"
+                title="Quem está vendendo?"
                 confirmLabel="Começar venda"
                 onNext={(id) => {
                     setSelectedSalesmanId(id)
