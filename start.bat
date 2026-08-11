@@ -111,8 +111,14 @@ if not exist "frontend\dist\index.html" (
 )
 
 echo.
+echo ====================================================================
+echo  [IMPORTANT WARNING]
+echo  DO NOT CLOSE THIS TERMINAL WINDOW!
+echo  Closing this window will immediately stop the CAAD ERP application.
+echo  To exit properly, press Ctrl+C in this terminal.
+echo ====================================================================
+echo.
 echo Starting CAAD ERP server at http://localhost:8000 ...
-echo Press Ctrl+C to terminate the server.
 echo.
 
 :: Open browser after a brief delay
