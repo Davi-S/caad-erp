@@ -180,8 +180,22 @@ export function ProductGroupCard({
                     </Checkbox.Card>
                 </Menu.Target>
 
-                <Menu.Dropdown>
-                    <Menu.Label>Variações de {group.name}</Menu.Label>
+                <Menu.Dropdown
+                    style={{
+                        maxHeight: 260,
+                        overflowY: "auto",
+                    }}
+                >
+                    <Menu.Label
+                        style={{
+                            position: "sticky",
+                            top: 0,
+                            backgroundColor: "var(--mantine-color-body)",
+                            zIndex: 1,
+                        }}
+                    >
+                        Variações de {group.name}
+                    </Menu.Label>
                     {group.variants.map((v) => {
                         const product = v.product
                         const available = stock[product.product_id] ?? 0
