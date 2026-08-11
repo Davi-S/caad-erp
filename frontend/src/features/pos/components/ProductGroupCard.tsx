@@ -180,53 +180,55 @@ export function ProductGroupCard({
                     </Checkbox.Card>
                 </Menu.Target>
 
-                <Menu.Dropdown>
-                    <Menu.Label>Variações de {group.name}</Menu.Label>
-                    {group.variants.map((v) => {
-                        const product = v.product
-                        const available = stock[product.product_id] ?? 0
-                        const soldOut = available <= 0
-                        const qty = cart[product.product_id] || 0
+                <Menu.Dropdown p="xs">
+                    <Menu.Label pb={6}>Variações de {group.name}</Menu.Label>
+                    <div style={{ maxHeight: 240, overflowY: "auto" }}>
+                        {group.variants.map((v) => {
+                            const product = v.product
+                            const available = stock[product.product_id] ?? 0
+                            const soldOut = available <= 0
+                            const qty = cart[product.product_id] || 0
 
-                        return (
-                            <Menu.Item
-                                key={product.product_id}
-                                disabled={soldOut}
-                                onClick={() => {
-                                    if (!soldOut) {
-                                        if (qty > 0) {
-                                            removeItem(product.product_id)
-                                        } else {
-                                            inc(product.product_id)
+                            return (
+                                <Menu.Item
+                                    key={product.product_id}
+                                    disabled={soldOut}
+                                    onClick={() => {
+                                        if (!soldOut) {
+                                            if (qty > 0) {
+                                                removeItem(product.product_id)
+                                            } else {
+                                                inc(product.product_id)
+                                            }
                                         }
-                                    }
-                                }}
-                                style={{ padding: "8px 10px" }}
-                            >
-                                <Group justify="space-between" align="center" wrap="nowrap">
-                                    <Stack gap={0} style={{ minWidth: 0 }}>
-                                        <Text size="xs" fw={600} truncate>
-                                            {v.label}
-                                        </Text>
-                                        <Text size="10px" c="dimmed">
-                                            {soldOut ? "Esgotado" : `${available} disp.`}
-                                        </Text>
-                                    </Stack>
+                                    }}
+                                    style={{ padding: "8px 10px" }}
+                                >
+                                    <Group justify="space-between" align="center" wrap="nowrap">
+                                        <Stack gap={0} style={{ minWidth: 0 }}>
+                                            <Text size="xs" fw={600} truncate>
+                                                {v.label}
+                                            </Text>
+                                            <Text size="10px" c="dimmed">
+                                                {soldOut ? "Esgotado" : `${available} disp.`}
+                                            </Text>
+                                        </Stack>
 
-                                    <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
-                                        {qty > 0 && (
-                                            <Badge size="xs" variant="filled">
-                                                {qty}x
-                                            </Badge>
-                                        )}
-                                        <Text size="xs" fw={700} c="var(--mantine-primary-color-filled)">
-                                            {brl(product.sell_price)}
-                                        </Text>
+                                        <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
+                                            {qty > 0 && (
+                                                <Badge size="xs" variant="filled">
+                                                    {qty}x
+                                                </Badge>
+                                            )}
+                                            <Text size="xs" fw={700} c="var(--mantine-primary-color-filled)">
+                                                {brl(product.sell_price)}
+                                            </Text>
+                                        </Group>
                                     </Group>
-                                </Group>
-                            </Menu.Item>
-                        )
-                    })}
+                                </Menu.Item>
+                            )
+                        })}
+                    </div>
                 </Menu.Dropdown>
             </Menu>
         </Indicator>
