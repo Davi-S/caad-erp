@@ -62,6 +62,14 @@ If you are running on Windows, you can perform full environment setup and launch
 
 *(On the first run, `start.bat` will automatically check/install missing prerequisites via `winget`, set up the virtual environment, install packages, build frontend assets, and launch the app in your default browser).*
 
+### Windows 1-Click Update
+
+To update CAAD ERP to the latest version while preserving your configuration (`.env`) and data (`master_workbook.xlsx`):
+
+1. Double-click `update.bat` in the root folder.
+
+*(This script backs up your user data and environment files, pulls the latest updates from the `main` branch, updates dependencies, rebuilds frontend assets, and restores your files).*
+
 ---
 
 ### Manual / Linux Installation
