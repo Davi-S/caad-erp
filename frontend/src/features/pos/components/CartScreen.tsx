@@ -1,10 +1,8 @@
 import { useMemo } from "react"
 import {
     ActionIcon,
-    Indicator,
     Button,
     Center,
-    Checkbox,
     Divider,
     Group,
     ScrollArea,
@@ -22,6 +20,9 @@ import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackLis
 import { brl } from "@/helpers"
 import type { Salesman, Product, Products, Stock } from "@/types"
 import { useCart } from "../hooks/useCart"
+
+import { groupProducts } from "../utils/productGrouping"
+import { ProductGroupCard } from "./ProductGroupCard"
 
 interface CartScreenProps {
     salesman: Salesman
@@ -56,7 +57,6 @@ const PRODUCT_SORT_OPTIONS: SortOption[] = [
 export function CartScreen({ salesman, products, stock, cartState, actions }: CartScreenProps) {
     const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
     const { onBack, onNext } = actions
-    const availableFor = (id: string) => stock[id]
 
     // Configure searchable and sortable columns
     const columns = useMemo(
@@ -91,6 +91,11 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
         sortOptions: PRODUCT_SORT_OPTIONS,
     })
 
+    const groupedProducts = useMemo(
+        () => groupProducts(processedProducts),
+        [processedProducts],
+    )
+
     return (
         <ScreenShell>
             {/* Header */}
@@ -109,7 +114,7 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
             </Group>
 
             {/* Middle Section */}
-            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg">
+            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
                 <Stack gap="lg">
                     <Stack gap="sm">
                         <Text
@@ -122,72 +127,22 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
                             Toque para adicionar
                         </Text>
                         <ListControls {...controlsProps} searchPlaceholder="Buscar produto..." />
-                        {processedProducts.length === 0 ? (
+                        {groupedProducts.length === 0 ? (
                             <Text size="xs" c="dimmed" ta="center" py="xs">
                                 Nenhum produto encontrado com "{searchQuery}".
                             </Text>
                         ) : (
                             <SimpleGrid cols={3} spacing="sm">
-                                {processedProducts.map((product) => {
-                                    const available = availableFor(product.product_id)
-                                    const soldOut = available !== undefined && available <= 0
-                                    const quantity = cart[product.product_id] || 0
-
-                                    return (
-                                        <Indicator
-                                            key={product.product_id}
-                                            label={`${quantity}x`}
-                                            size={18}
-                                            disabled={quantity === 0}
-                                            offset={6}
-                                        >
-                                            <Checkbox.Card
-                                                checked={quantity > 0}
-                                                onClick={() =>
-                                                    quantity > 0
-                                                        ? removeItem(product.product_id)
-                                                        : inc(product.product_id)
-                                                }
-                                                disabled={soldOut}
-                                                radius="md"
-                                                p="sm"
-                                                style={{
-                                                    position: "relative",
-                                                    textAlign: "center",
-                                                    backgroundColor: soldOut
-                                                        ? "var(--mantine-color-gray-1)"
-                                                        : undefined,
-                                                }}
-                                            >
-                                                <Stack gap={2} align="center">
-                                                    <Text size="xs" fw={600} ta="center">
-                                                        {product.product_name}
-                                                    </Text>
-                                                    <Text
-                                                        size="xs"
-                                                        fw={700}
-                                                        c={
-                                                            soldOut
-                                                                ? "dimmed"
-                                                                : "var(--mantine-primary-color-filled)"
-                                                        }
-                                                    >
-                                                        {soldOut
-                                                            ? "Esgotado"
-                                                            : brl(product.sell_price)}
-                                                    </Text>
-                                                    <Text size="10px" c="dimmed">
-                                                        {/* Hack with invisible character to make sold out
-                                                        product card have the same height as the other ones */}
-                                                        {soldOut
-                                                            ? "‎ "
-                                                            : stock[product.product_id] + " disp."}
-                                                    </Text>
-                                                </Stack>
-                                            </Checkbox.Card>
-                                        </Indicator>
-                                    )
-                                })}
+                                {groupedProducts.map((group) => (
+                                    <ProductGroupCard
+                                        key={group.id}
+                                        group={group}
+                                        cart={cart}
+                                        stock={stock}
+                                        inc={inc}
+                                        removeItem={removeItem}
+                                    />
+                                ))}
                             </SimpleGrid>
                         )}
                     </Stack>
