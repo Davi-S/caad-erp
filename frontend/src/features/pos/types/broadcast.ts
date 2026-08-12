@@ -21,6 +21,7 @@ export interface POSBroadcastState {
     checkoutStatus: "idle" | "pending" | "success" | "error"
     checkoutError: string | null
     total: number
+    openGroupId?: string | null
 }
 
 export const EMPTY_POS_STATE: POSBroadcastState = {
@@ -31,6 +32,7 @@ export const EMPTY_POS_STATE: POSBroadcastState = {
     checkoutStatus: "idle",
     checkoutError: null,
     total: 0,
+    openGroupId: null,
 }
 
 export type POSBroadcastMessage =

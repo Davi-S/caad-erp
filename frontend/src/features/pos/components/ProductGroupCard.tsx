@@ -10,9 +10,21 @@ interface ProductGroupCardProps {
     stock: Record<string, number>
     inc: (productId: string) => void
     removeItem: (productId: string) => void
+    opened?: boolean
+    onOpenChange?: (opened: boolean) => void
+    readOnly?: boolean
 }
 
-export function ProductGroupCard({ group, cart, stock, inc, removeItem }: ProductGroupCardProps) {
+export function ProductGroupCard({
+    group,
+    cart,
+    stock,
+    inc,
+    removeItem,
+    opened,
+    onOpenChange,
+    readOnly = false,
+}: ProductGroupCardProps) {
     // Standalone product (group with 1 variant)
     if (group.variants.length === 1) {
         const product = group.variants[0].product
@@ -24,9 +36,14 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
             <Indicator label={`${quantity}x`} size={18} disabled={quantity === 0} offset={15}>
                 <Checkbox.Card
                     checked={quantity > 0}
-                    onClick={() =>
-                        quantity > 0 ? removeItem(product.product_id) : inc(product.product_id)
-                    }
+                    onClick={() => {
+                        if (readOnly) return
+                        if (quantity > 0) {
+                            removeItem(product.product_id)
+                        } else {
+                            inc(product.product_id)
+                        }
+                    }}
                     disabled={soldOut}
                     radius="md"
                     p="sm"
@@ -34,6 +51,7 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
                         position: "relative",
                         textAlign: "center",
                         backgroundColor: soldOut ? "var(--mantine-color-gray-1)" : undefined,
+                        cursor: readOnly ? "default" : "pointer",
                     }}
                 >
                     <Stack gap={2} align="center">
@@ -90,6 +108,8 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
     const useMultiColumn = group.variants.length > 3
     const dropdownWidth = useMultiColumn ? 480 : 220
 
+    const menuProps = opened !== undefined ? { opened, onChange: onOpenChange } : {}
+
     return (
         <Indicator
             label={`${totalGroupQuantityInCart}x`}
@@ -103,6 +123,7 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
                 shadow="md"
                 width={dropdownWidth}
                 closeOnItemClick={true}
+                {...menuProps}
             >
                 <Menu.Target>
                     <Checkbox.Card
@@ -180,12 +201,11 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
                                         key={product.product_id}
                                         disabled={soldOut}
                                         onClick={() => {
-                                            if (!soldOut) {
-                                                if (qty > 0) {
-                                                    removeItem(product.product_id)
-                                                } else {
-                                                    inc(product.product_id)
-                                                }
+                                            if (readOnly || soldOut) return
+                                            if (qty > 0) {
+                                                removeItem(product.product_id)
+                                            } else {
+                                                inc(product.product_id)
                                             }
                                         }}
                                         style={{

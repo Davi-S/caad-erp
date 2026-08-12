@@ -3,8 +3,6 @@ import {
     Center,
     Divider,
     Group,
-    Indicator,
-    Paper,
     ScrollArea,
     SimpleGrid,
     Stack,
@@ -16,15 +14,26 @@ import { ShoppingCart } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
 import type { Products, Stock } from "@/types"
+import { groupProducts } from "../../utils/productGrouping"
+import { ProductGroupCard } from "../ProductGroupCard"
 
 interface CustomerCartScreenProps {
     products: Products
     stock: Stock
     cart: Record<string, number>
     total: number
+    openGroupId?: string | null
 }
 
-export function CustomerCartScreen({ products, stock, cart, total }: CustomerCartScreenProps) {
+const noop = () => {}
+
+export function CustomerCartScreen({
+    products,
+    stock,
+    cart,
+    total,
+    openGroupId,
+}: CustomerCartScreenProps) {
     const cartEntries = Object.entries(cart)
     const isEmpty = cartEntries.length === 0
 
@@ -36,6 +45,8 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
             }),
         )
     }, [products])
+
+    const groupedProducts = useMemo(() => groupProducts(sortedProducts), [sortedProducts])
 
     return (
         <ScreenShell>
@@ -53,64 +64,18 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
                 <Stack gap="lg">
                     <Stack gap="sm">
                         <SimpleGrid cols={3} spacing="sm">
-                            {sortedProducts.map((product) => {
-                                const available = stock[product.product_id]
-                                const soldOut = available !== undefined && available <= 0
-                                const quantity = cart[product.product_id] || 0
-
-                                return (
-                                    <Indicator
-                                        key={product.product_id}
-                                        label={`${quantity}x`}
-                                        size={18}
-                                        disabled={quantity === 0}
-                                        offset={15}
-                                    >
-                                        <Paper
-                                            withBorder
-                                            radius="md"
-                                            p="sm"
-                                            style={{
-                                                position: "relative",
-                                                textAlign: "center",
-                                                backgroundColor: soldOut
-                                                    ? "var(--mantine-color-gray-1)"
-                                                    : undefined,
-                                            }}
-                                        >
-                                            <Stack gap={2} align="center">
-                                                <Text
-                                                    size="xs"
-                                                    fw={600}
-                                                    ta="center"
-                                                    truncate
-                                                    style={{ maxWidth: "100%" }}
-                                                >
-                                                    {product.product_name}
-                                                </Text>
-                                                <Text
-                                                    size="xs"
-                                                    fw={700}
-                                                    c={
-                                                        soldOut
-                                                            ? "dimmed"
-                                                            : "var(--mantine-primary-color-filled)"
-                                                    }
-                                                >
-                                                    {soldOut ? "Esgotado" : brl(product.sell_price)}
-                                                </Text>
-                                                <Text size="10px" c="dimmed">
-                                                    {soldOut
-                                                        ? "‎ "
-                                                        : (available !== undefined
-                                                              ? available
-                                                              : 0) + " disp."}
-                                                </Text>
-                                            </Stack>
-                                        </Paper>
-                                    </Indicator>
-                                )
-                            })}
+                            {groupedProducts.map((group) => (
+                                <ProductGroupCard
+                                    key={group.id}
+                                    group={group}
+                                    cart={cart}
+                                    stock={stock}
+                                    inc={noop}
+                                    removeItem={noop}
+                                    opened={openGroupId === group.id}
+                                    readOnly={true}
+                                />
+                            ))}
                         </SimpleGrid>
                     </Stack>
 
