@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { Badge, Checkbox, Group, Indicator, Menu, Stack, Text } from "@mantine/core"
+import { Badge, Checkbox, Group, Indicator, Menu, SimpleGrid, Stack, Text } from "@mantine/core"
 import { ChevronDown } from "lucide-react"
 import { brl } from "@/helpers"
 import type { ProductGroup } from "../utils/productGrouping"
@@ -87,6 +87,9 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
         return `A partir de ${brl(minPrice)}`
     }, [group.variants])
 
+    const useMultiColumn = group.variants.length > 3
+    const dropdownWidth = useMultiColumn ? 480 : 220
+
     return (
         <Indicator
             label={`${totalGroupQuantityInCart}x`}
@@ -94,7 +97,13 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
             disabled={totalGroupQuantityInCart === 0}
             offset={15}
         >
-            <Menu position="bottom" withArrow shadow="md" width={220} closeOnItemClick={true}>
+            <Menu
+                position="bottom"
+                withArrow
+                shadow="md"
+                width={dropdownWidth}
+                closeOnItemClick={true}
+            >
                 <Menu.Target>
                     <Checkbox.Card
                         checked={totalGroupQuantityInCart > 0}
@@ -147,57 +156,80 @@ export function ProductGroupCard({ group, cart, stock, inc, removeItem }: Produc
                 </Menu.Target>
 
                 <Menu.Dropdown p="xs">
-                    <Menu.Label pb={6}>Variações de {group.name}</Menu.Label>
-                    <div style={{ maxHeight: 240, overflowY: "auto" }}>
-                        {group.variants.map((v) => {
-                            const product = v.product
-                            const available = stock[product.product_id] ?? 0
-                            const soldOut = available <= 0
-                            const qty = cart[product.product_id] || 0
+                    <Menu.Label
+                        pb={6}
+                        style={{
+                            position: "sticky",
+                            top: 0,
+                            backgroundColor: "var(--mantine-color-body)",
+                            zIndex: 2,
+                        }}
+                    >
+                        Variações de {group.name}
+                    </Menu.Label>
+                    <div style={{ maxHeight: 260, overflowY: "auto" }}>
+                        <SimpleGrid cols={useMultiColumn ? 3 : 1} spacing={6}>
+                            {group.variants.map((v) => {
+                                const product = v.product
+                                const available = stock[product.product_id] ?? 0
+                                const soldOut = available <= 0
+                                const qty = cart[product.product_id] || 0
 
-                            return (
-                                <Menu.Item
-                                    key={product.product_id}
-                                    disabled={soldOut}
-                                    onClick={() => {
-                                        if (!soldOut) {
-                                            if (qty > 0) {
-                                                removeItem(product.product_id)
-                                            } else {
-                                                inc(product.product_id)
+                                return (
+                                    <Menu.Item
+                                        key={product.product_id}
+                                        disabled={soldOut}
+                                        onClick={() => {
+                                            if (!soldOut) {
+                                                if (qty > 0) {
+                                                    removeItem(product.product_id)
+                                                } else {
+                                                    inc(product.product_id)
+                                                }
                                             }
-                                        }
-                                    }}
-                                    style={{ padding: "8px 10px" }}
-                                >
-                                    <Group justify="space-between" align="center" wrap="nowrap">
-                                        <Stack gap={0} style={{ minWidth: 0 }}>
-                                            <Text size="xs" fw={600} truncate>
-                                                {v.label}
-                                            </Text>
-                                            <Text size="10px" c="dimmed">
-                                                {soldOut ? "Esgotado" : `${available} disp.`}
-                                            </Text>
-                                        </Stack>
+                                        }}
+                                        style={{
+                                            padding: "6px 8px",
+                                            borderRadius: "var(--mantine-radius-sm)",
+                                            border:
+                                                qty > 0
+                                                    ? "1px solid var(--mantine-primary-color-filled)"
+                                                    : "1px solid var(--mantine-color-default-border)",
+                                            backgroundColor:
+                                                qty > 0
+                                                    ? "var(--mantine-primary-color-light)"
+                                                    : undefined,
+                                        }}
+                                    >
+                                        <Group justify="space-between" align="center" wrap="nowrap">
+                                            <Stack gap={0} style={{ minWidth: 0 }}>
+                                                <Text size="xs" fw={600} truncate>
+                                                    {v.label}
+                                                </Text>
+                                                <Text size="10px" c="dimmed">
+                                                    {soldOut ? "Esgotado" : `${available} disp.`}
+                                                </Text>
+                                            </Stack>
 
-                                        <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
-                                            {qty > 0 && (
-                                                <Badge size="xs" variant="filled">
-                                                    {qty}x
-                                                </Badge>
-                                            )}
-                                            <Text
-                                                size="xs"
-                                                fw={700}
-                                                c="var(--mantine-primary-color-filled)"
-                                            >
-                                                {brl(product.sell_price)}
-                                            </Text>
+                                            <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+                                                {qty > 0 && (
+                                                    <Badge size="xs" variant="filled">
+                                                        {qty}x
+                                                    </Badge>
+                                                )}
+                                                <Text
+                                                    size="xs"
+                                                    fw={700}
+                                                    c="var(--mantine-primary-color-filled)"
+                                                >
+                                                    {brl(product.sell_price)}
+                                                </Text>
+                                            </Group>
                                         </Group>
-                                    </Group>
-                                </Menu.Item>
-                            )
-                        })}
+                                    </Menu.Item>
+                                )
+                            })}
+                        </SimpleGrid>
                     </div>
                 </Menu.Dropdown>
             </Menu>
