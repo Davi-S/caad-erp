@@ -107,7 +107,7 @@ export function ProductFormModal({
                         label="Nome"
                         placeholder="Nome do produto"
                         description={
-                            "Aparece na tela de vendas. Use \" - \" para separar variações do mesmo produto."
+                            'Aparece na tela de vendas. Use " - " para separar variações do mesmo produto.'
                         }
                         {...form.getInputProps("product_name")}
                     />

@@ -79,7 +79,13 @@ export function CustomerCartScreen({ products, stock, cart, total }: CustomerCar
                                             }}
                                         >
                                             <Stack gap={2} align="center">
-                                                <Text size="xs" fw={600} ta="center" truncate style={{ maxWidth: "100%" }}>
+                                                <Text
+                                                    size="xs"
+                                                    fw={600}
+                                                    ta="center"
+                                                    truncate
+                                                    style={{ maxWidth: "100%" }}
+                                                >
                                                     {product.product_name}
                                                 </Text>
                                                 <Text

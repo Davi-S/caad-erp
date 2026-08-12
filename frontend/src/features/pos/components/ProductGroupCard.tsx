@@ -1,13 +1,5 @@
 import { useMemo } from "react"
-import {
-    Badge,
-    Checkbox,
-    Group,
-    Indicator,
-    Menu,
-    Stack,
-    Text,
-} from "@mantine/core"
+import { Badge, Checkbox, Group, Indicator, Menu, Stack, Text } from "@mantine/core"
 import { ChevronDown } from "lucide-react"
 import { brl } from "@/helpers"
 import type { ProductGroup } from "../utils/productGrouping"
@@ -20,13 +12,7 @@ interface ProductGroupCardProps {
     removeItem: (productId: string) => void
 }
 
-export function ProductGroupCard({
-    group,
-    cart,
-    stock,
-    inc,
-    removeItem,
-}: ProductGroupCardProps) {
+export function ProductGroupCard({ group, cart, stock, inc, removeItem }: ProductGroupCardProps) {
     // Standalone product (group with 1 variant)
     if (group.variants.length === 1) {
         const product = group.variants[0].product
@@ -35,18 +21,11 @@ export function ProductGroupCard({
         const quantity = cart[product.product_id] || 0
 
         return (
-            <Indicator
-                label={`${quantity}x`}
-                size={18}
-                disabled={quantity === 0}
-                offset={15}
-            >
+            <Indicator label={`${quantity}x`} size={18} disabled={quantity === 0} offset={15}>
                 <Checkbox.Card
                     checked={quantity > 0}
                     onClick={() =>
-                        quantity > 0
-                            ? removeItem(product.product_id)
-                            : inc(product.product_id)
+                        quantity > 0 ? removeItem(product.product_id) : inc(product.product_id)
                     }
                     disabled={soldOut}
                     radius="md"
@@ -54,9 +33,7 @@ export function ProductGroupCard({
                     style={{
                         position: "relative",
                         textAlign: "center",
-                        backgroundColor: soldOut
-                            ? "var(--mantine-color-gray-1)"
-                            : undefined,
+                        backgroundColor: soldOut ? "var(--mantine-color-gray-1)" : undefined,
                     }}
                 >
                     <Stack gap={2} align="center">
@@ -66,18 +43,12 @@ export function ProductGroupCard({
                         <Text
                             size="xs"
                             fw={700}
-                            c={
-                                soldOut
-                                    ? "dimmed"
-                                    : "var(--mantine-primary-color-filled)"
-                            }
+                            c={soldOut ? "dimmed" : "var(--mantine-primary-color-filled)"}
                         >
                             {soldOut ? "Esgotado" : brl(product.sell_price)}
                         </Text>
                         <Text size="10px" c="dimmed">
-                            {soldOut
-                                ? "‎ "
-                                : (stock[product.product_id] ?? 0) + " disp."}
+                            {soldOut ? "‎ " : (stock[product.product_id] ?? 0) + " disp."}
                         </Text>
                     </Stack>
                 </Checkbox.Card>
@@ -87,20 +58,12 @@ export function ProductGroupCard({
 
     // Consolidated Product Variation Family (variants.length > 1)
     const totalGroupQuantityInCart = useMemo(
-        () =>
-            group.variants.reduce(
-                (sum, v) => sum + (cart[v.product.product_id] || 0),
-                0,
-            ),
+        () => group.variants.reduce((sum, v) => sum + (cart[v.product.product_id] || 0), 0),
         [group.variants, cart],
     )
 
     const totalStock = useMemo(
-        () =>
-            group.variants.reduce(
-                (sum, v) => sum + (stock[v.product.product_id] ?? 0),
-                0,
-            ),
+        () => group.variants.reduce((sum, v) => sum + (stock[v.product.product_id] ?? 0), 0),
         [group.variants, stock],
     )
 
@@ -131,13 +94,7 @@ export function ProductGroupCard({
             disabled={totalGroupQuantityInCart === 0}
             offset={15}
         >
-            <Menu
-                position="bottom"
-                withArrow
-                shadow="md"
-                width={220}
-                closeOnItemClick={true}
-            >
+            <Menu position="bottom" withArrow shadow="md" width={220} closeOnItemClick={true}>
                 <Menu.Target>
                     <Checkbox.Card
                         checked={totalGroupQuantityInCart > 0}
@@ -154,8 +111,19 @@ export function ProductGroupCard({
                         }}
                     >
                         <Stack gap={2} align="center">
-                            <Group gap={3} justify="center" wrap="nowrap" style={{ maxWidth: "100%", overflow: "hidden" }}>
-                                <Text size="xs" fw={600} ta="center" truncate style={{ flexShrink: 1, minWidth: 0 }}>
+                            <Group
+                                gap={3}
+                                justify="center"
+                                wrap="nowrap"
+                                style={{ maxWidth: "100%", overflow: "hidden" }}
+                            >
+                                <Text
+                                    size="xs"
+                                    fw={600}
+                                    ta="center"
+                                    truncate
+                                    style={{ flexShrink: 1, minWidth: 0 }}
+                                >
                                     {group.name}
                                 </Text>
                                 <ChevronDown size={12} style={{ flexShrink: 0, opacity: 0.7 }} />
@@ -172,9 +140,7 @@ export function ProductGroupCard({
                                 {allVariantsSoldOut ? "Esgotado" : priceDisplay}
                             </Text>
                             <Text size="10px" c="dimmed">
-                                {allVariantsSoldOut
-                                    ? "‎ "
-                                    : `${totalStock} disp.`}
+                                {allVariantsSoldOut ? "‎ " : `${totalStock} disp.`}
                             </Text>
                         </Stack>
                     </Checkbox.Card>
@@ -220,7 +186,11 @@ export function ProductGroupCard({
                                                     {qty}x
                                                 </Badge>
                                             )}
-                                            <Text size="xs" fw={700} c="var(--mantine-primary-color-filled)">
+                                            <Text
+                                                size="xs"
+                                                fw={700}
+                                                c="var(--mantine-primary-color-filled)"
+                                            >
                                                 {brl(product.sell_price)}
                                             </Text>
                                         </Group>
