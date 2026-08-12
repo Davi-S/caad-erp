@@ -340,6 +340,17 @@ def test_record_sale_appends_transaction_and_invalidates_cache() -> None:
     context = _make_context(workbook)
     _seed_product(workbook, "P1", is_active=True)
     _seed_salesman(workbook, "S1", is_active=True)
+    _seed_transaction(
+        workbook,
+        "R1",
+        constants.TransactionType.RESTOCK.value,
+        "P1",
+        "S1",
+        None,
+        10,
+        0,
+        -1000,
+    )
     transactions.list_transactions(context)  # warm cache
 
     # Act
@@ -716,6 +727,17 @@ def test_record_write_off_appends_transaction_and_invalidates_cache() -> None:
     context = _make_context(workbook)
     _seed_product(workbook, "P1")
     _seed_salesman(workbook, "S1")
+    _seed_transaction(
+        workbook,
+        "R1",
+        constants.TransactionType.RESTOCK.value,
+        "P1",
+        "S1",
+        None,
+        10,
+        0,
+        -1000,
+    )
     transactions.list_transactions(context)
 
     # Act
@@ -1049,32 +1071,6 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
             linked_transaction_id=None,
             notes=None,
         ),
-        dal.TransactionRow(
-            transaction_id="X3",
-            timestamp_iso="2026-03-15T10:00:00+00:00",
-            transaction_type=constants.TransactionType.SALE.value,
-            product_id="P1",
-            salesman_id="S1",
-            payment_type=constants.PaymentType.ON_CREDIT.value,
-            quantity_change=-1,
-            total_revenue=100,
-            total_cost=0,
-            linked_transaction_id=None,
-            notes=None,
-        ),
-        dal.TransactionRow(
-            transaction_id="X4",
-            timestamp_iso="2026-03-15T10:00:00+00:00",
-            transaction_type=constants.TransactionType.SALE.value,
-            product_id="P1",
-            salesman_id="S1",
-            payment_type=constants.PaymentType.ON_CREDIT.value,
-            quantity_change=-1,
-            total_revenue=0,
-            total_cost=0,
-            linked_transaction_id="OTHER",
-            notes=None,
-        ),
     ],
 )
 def test_validate_credit_sale_link_rejects_ineligible_transactions(link_case) -> None:
@@ -1083,9 +1079,13 @@ def test_validate_credit_sale_link_rejects_ineligible_transactions(link_case) ->
     WHEN _validate_credit_sale_link is called
     THEN BusinessRuleViolation is raised
     """
-    # Arrange / Act / Assert
+    # Arrange
+    wb = _make_workbook()
+    context = _make_context(wb)
+
+    # Act / Assert
     with pytest.raises(BusinessRuleViolation):
-        transactions._validate_credit_sale_link(link_case)
+        transactions._validate_credit_sale_link(context, link_case)
 
 
 def test_validate_credit_sale_link_accepts_valid_credit_sale() -> None:
@@ -1095,6 +1095,8 @@ def test_validate_credit_sale_link_accepts_valid_credit_sale() -> None:
     THEN no exception is raised
     """
     # Arrange
+    wb = _make_workbook()
+    context = _make_context(wb)
     valid = dal.TransactionRow(
         transaction_id="SALE1",
         timestamp_iso="2026-03-15T10:00:00+00:00",
@@ -1110,7 +1112,7 @@ def test_validate_credit_sale_link_accepts_valid_credit_sale() -> None:
     )
 
     # Act / Assert
-    transactions._validate_credit_sale_link(valid)
+    transactions._validate_credit_sale_link(context, valid)
 
 
 def test_record_open_stock_appends_transaction_and_invalidates_cache() -> None:
@@ -1306,14 +1308,13 @@ def test_record_void_propagates_unknown_target_transaction() -> None:
 
 def test_record_void_rejects_ineligible_target_types() -> None:
     """
-    GIVEN a void command targeting transaction type VOID or CREDIT_PAYMENT
+    GIVEN a void command targeting transaction type VOID
     WHEN record_void is called
     THEN BusinessRuleViolation is raised
     """
     # Arrange
     for tx_type in [
         constants.TransactionType.VOID.value,
-        constants.TransactionType.CREDIT_PAYMENT.value,
     ]:
         workbook = _make_workbook()
         context = _make_context(workbook)
@@ -1378,12 +1379,11 @@ def test_build_void_transaction_negates_numeric_fields_and_links_original_id() -
     "ineligible_type",
     [
         constants.TransactionType.VOID.value,
-        constants.TransactionType.CREDIT_PAYMENT.value,
     ],
 )
 def test_validate_void_target_rejects_ineligible_types(ineligible_type) -> None:
     """
-    GIVEN a transaction whose type is VOID or CREDIT_PAYMENT
+    GIVEN a transaction whose type is VOID
     WHEN _validate_void_target is called
     THEN BusinessRuleViolation is raised
     """
@@ -1443,6 +1443,8 @@ def test_record_bulk_sale_success() -> None:
     _seed_product(wb, "P001")
     _seed_product(wb, "P002")
     _seed_salesman(wb, "S001")
+    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P001", "S001", None, 10, 0, -1000)
+    _seed_transaction(wb, "R2", constants.TransactionType.RESTOCK.value, "P002", "S001", None, 10, 0, -1000)
     context = _make_context(wb)
 
     cmd1 = transactions.SaleCommand(
@@ -1473,7 +1475,7 @@ def test_record_bulk_sale_success() -> None:
     assert results[1].quantity_change == -1
 
     all_txs = list(dal.iter_transactions(context.workbook))
-    assert len(all_txs) == 2
+    assert len(all_txs) == 4
 
 
 def test_record_bulk_sale_atomic_rollback_on_inactive_product() -> None:
@@ -1487,6 +1489,8 @@ def test_record_bulk_sale_atomic_rollback_on_inactive_product() -> None:
     _seed_product(wb, "P001", is_active=True)
     _seed_product(wb, "P002", is_active=False)
     _seed_salesman(wb, "S001")
+    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P001", "S001", None, 10, 0, -1000)
+    _seed_transaction(wb, "R2", constants.TransactionType.RESTOCK.value, "P002", "S001", None, 10, 0, -1000)
     context = _make_context(wb)
 
     cmd1 = transactions.SaleCommand(
@@ -1508,7 +1512,7 @@ def test_record_bulk_sale_atomic_rollback_on_inactive_product() -> None:
     with pytest.raises(BusinessRuleViolation):
         transactions.record_bulk_sale(context, [cmd1, cmd2])
 
-    assert len(list(dal.iter_transactions(context.workbook))) == 0
+    assert len(list(dal.iter_transactions(context.workbook))) == 2
 
 
 def test_record_bulk_sale_atomic_rollback_on_missing_salesman() -> None:
@@ -1562,6 +1566,7 @@ def test_record_bulk_sale_invalidates_cache() -> None:
     wb = _make_workbook()
     _seed_product(wb, "P001")
     _seed_salesman(wb, "S001")
+    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P001", "S001", None, 10, 0, -1000)
     context = _make_context(wb)
     transactions.list_transactions(context)  # warm cache
     assert "transactions" in context._cache
@@ -1579,3 +1584,152 @@ def test_record_bulk_sale_invalidates_cache() -> None:
 
     # Assert
     assert "transactions" not in context._cache
+
+
+def test_record_sale_rejects_insufficient_stock() -> None:
+    """
+    GIVEN a sale command requesting more quantity than available stock
+    WHEN record_sale is called
+    THEN BusinessRuleViolation is raised
+    """
+    wb = _make_workbook()
+    _seed_product(wb, "P1")
+    _seed_salesman(wb, "S1")
+    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 3, 0, -300)
+    context = _make_context(wb)
+
+    with pytest.raises(BusinessRuleViolation) as exc_info:
+        transactions.record_sale(
+            context,
+            transactions.SaleCommand(
+                product_id="P1",
+                salesman_id="S1",
+                quantity=5,
+                total_revenue=500,
+                payment_type=constants.PaymentType.CASH,
+            ),
+        )
+    assert "Insufficient stock" in str(exc_info.value)
+
+
+def test_record_bulk_sale_rejects_insufficient_aggregate_stock() -> None:
+    """
+    GIVEN a bulk sale request where aggregate cart items exceed product stock
+    WHEN record_bulk_sale is called
+    THEN BusinessRuleViolation is raised and zero sales are recorded
+    """
+    wb = _make_workbook()
+    _seed_product(wb, "P1")
+    _seed_salesman(wb, "S1")
+    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 3, 0, -300)
+    context = _make_context(wb)
+
+    cmd1 = transactions.SaleCommand(product_id="P1", salesman_id="S1", quantity=2, total_revenue=200, payment_type=constants.PaymentType.CASH)
+    cmd2 = transactions.SaleCommand(product_id="P1", salesman_id="S1", quantity=2, total_revenue=200, payment_type=constants.PaymentType.CASH)
+
+    with pytest.raises(BusinessRuleViolation) as exc_info:
+        transactions.record_bulk_sale(context, [cmd1, cmd2])
+    assert "Insufficient stock" in str(exc_info.value)
+
+
+def test_record_write_off_rejects_insufficient_stock() -> None:
+    """
+    GIVEN a write-off command requesting more quantity than available stock
+    WHEN record_write_off is called
+    THEN BusinessRuleViolation is raised
+    """
+    wb = _make_workbook()
+    _seed_product(wb, "P1")
+    _seed_salesman(wb, "S1")
+    context = _make_context(wb)
+
+    with pytest.raises(BusinessRuleViolation) as exc_info:
+        transactions.record_write_off(
+            context,
+            transactions.WriteOffCommand(product_id="P1", salesman_id="S1", quantity=1),
+        )
+    assert "Cannot write off" in str(exc_info.value)
+
+
+def test_record_credit_payment_allows_multiple_and_overpayment() -> None:
+    """
+    GIVEN an active credit sale
+    WHEN multiple credit payments including overpayments are recorded
+    THEN all payment transactions succeed and record expected revenue
+    """
+    wb = _make_workbook()
+    _seed_product(wb, "P1")
+    _seed_salesman(wb, "S1")
+    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 5, 0, -500)
+    context = _make_context(wb)
+
+    sale = transactions.record_sale(
+        context,
+        transactions.SaleCommand(
+            product_id="P1",
+            salesman_id="S1",
+            quantity=1,
+            total_revenue=0,
+            payment_type=constants.PaymentType.ON_CREDIT,
+        ),
+    )
+
+    p1 = transactions.record_credit_payment(
+        context,
+        transactions.CreditPaymentCommand(
+            linked_transaction_id=sale.transaction_id,
+            salesman_id="S1",
+            total_revenue=500,
+            payment_type=constants.PaymentType.CASH,
+        ),
+    )
+    p2 = transactions.record_credit_payment(
+        context,
+        transactions.CreditPaymentCommand(
+            linked_transaction_id=sale.transaction_id,
+            salesman_id="S1",
+            total_revenue=600,
+            payment_type=constants.PaymentType.PIX,
+        ),
+    )
+
+    assert p1.total_revenue == 500
+    assert p2.total_revenue == 600
+
+
+def test_record_void_allows_voiding_credit_payment() -> None:
+    """
+    GIVEN a credit payment transaction
+    WHEN record_void is executed targeting the credit payment
+    THEN a VOID transaction is appended negating the payment revenue
+    """
+    wb = _make_workbook()
+    _seed_product(wb, "P1")
+    _seed_salesman(wb, "S1")
+    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 5, 0, -500)
+    context = _make_context(wb)
+
+    sale = transactions.record_sale(
+        context,
+        transactions.SaleCommand(
+            product_id="P1", salesman_id="S1", quantity=1, total_revenue=0, payment_type=constants.PaymentType.ON_CREDIT
+        ),
+    )
+    payment = transactions.record_credit_payment(
+        context,
+        transactions.CreditPaymentCommand(
+            linked_transaction_id=sale.transaction_id,
+            salesman_id="S1",
+            total_revenue=500,
+            payment_type=constants.PaymentType.CASH,
+        ),
+    )
+
+    void_tx = transactions.record_void(
+        context,
+        transactions.VoidCommand(linked_transaction_id=payment.transaction_id),
+    )
+
+    assert void_tx.transaction_type == constants.TransactionType.VOID.value
+    assert void_tx.linked_transaction_id == payment.transaction_id
+    assert void_tx.total_revenue == -500

@@ -109,6 +109,24 @@ def test_bulk_sale_end_to_end_flow(api_client: TestClient) -> None:
     _create_product(api_client, "BULK-API-P1")
     _create_product(api_client, "BULK-API-P2")
     _create_salesman(api_client, "BULK-API-S1")
+    api_client.post(
+        "/transactions/restock",
+        json={
+            "product_id": "BULK-API-P1",
+            "salesman_id": "BULK-API-S1",
+            "quantity": 10,
+            "total_cost": 1000,
+        },
+    )
+    api_client.post(
+        "/transactions/restock",
+        json={
+            "product_id": "BULK-API-P2",
+            "salesman_id": "BULK-API-S1",
+            "quantity": 10,
+            "total_cost": 1000,
+        },
+    )
 
     bulk_response = api_client.post(
         "/transactions/bulk-sale",
@@ -138,7 +156,12 @@ def test_bulk_sale_end_to_end_flow(api_client: TestClient) -> None:
     log_response = api_client.get("/reports/log")
     assert log_response.status_code == 200
     txs = log_response.json()["transactions"]
-    e2e_txs = [tx for tx in txs if tx["salesman_id"] == "BULK-API-S1"]
+    e2e_txs = [
+        tx
+        for tx in txs
+        if tx["salesman_id"] == "BULK-API-S1"
+        and tx["transaction_type"] == constants.TransactionType.SALE.value
+    ]
     assert len(e2e_txs) == 2
 
 
@@ -191,6 +214,15 @@ def test_transaction_mutation_endpoints_create_transaction_records(
     """
     _create_product(api_client, "API-PTX")
     _create_salesman(api_client, "API-STX")
+    api_client.post(
+        "/transactions/restock",
+        json={
+            "product_id": "API-PTX",
+            "salesman_id": "API-STX",
+            "quantity": 100,
+            "total_cost": 10000,
+        },
+    )
 
     payload_by_endpoint = {
         "sale": {
@@ -476,6 +508,16 @@ def test_api_maps_missing_references_to_404(
         )
     elif missing_reference_case == "sale_unknown_salesman":
         _create_product(api_client, "MR-P001")
+        _create_salesman(api_client, "MR-S001")
+        api_client.post(
+            "/transactions/restock",
+            json={
+                "product_id": "MR-P001",
+                "salesman_id": "MR-S001",
+                "quantity": 10,
+                "total_cost": 1000,
+            },
+        )
         response = api_client.post(
             "/transactions/sale",
             json={
@@ -572,32 +614,26 @@ def test_api_maps_business_rule_violations_to_409(
     else:
         _create_product(api_client, "BR-P004")
         _create_salesman(api_client, "BR-S004")
-        credit_sale_response = api_client.post(
-            "/transactions/sale",
+        restock = api_client.post(
+            "/transactions/restock",
             json={
                 "product_id": "BR-P004",
                 "salesman_id": "BR-S004",
                 "quantity": 2,
-                "total_revenue": 0,
-                "payment_type": constants.PaymentType.ON_CREDIT.value,
+                "total_cost": 500,
             },
         )
-        assert credit_sale_response.status_code == 201
-        credit_sale_id = credit_sale_response.json()["data"]["transaction_id"]
-        payment_response = api_client.post(
-            "/transactions/pay-debt",
-            json={
-                "linked_transaction_id": credit_sale_id,
-                "salesman_id": "BR-S004",
-                "total_revenue": 500,
-                "payment_type": constants.PaymentType.CASH.value,
-            },
+        assert restock.status_code == 201
+        restock_id = restock.json()["data"]["transaction_id"]
+        first_void = api_client.post(
+            "/transactions/void",
+            json={"linked_transaction_id": restock_id},
         )
-        assert payment_response.status_code == 201
-        credit_payment_id = payment_response.json()["data"]["transaction_id"]
+        assert first_void.status_code == 201
+        void_id = first_void.json()["data"]["transaction_id"]
         response = api_client.post(
             "/transactions/void",
-            json={"linked_transaction_id": credit_payment_id},
+            json={"linked_transaction_id": void_id},
         )
 
     body = response.json()
@@ -751,6 +787,17 @@ def test_master_workbook_download_integration_flow(api_client: TestClient) -> No
 
     _create_product(api_client, "INT-WB-P1", sell_price=1500)
     _create_salesman(api_client, "INT-WB-S1")
+
+    restock_res = api_client.post(
+        "/transactions/restock",
+        json={
+            "product_id": "INT-WB-P1",
+            "salesman_id": "INT-WB-S1",
+            "quantity": 10,
+            "total_cost": 1000,
+        },
+    )
+    assert restock_res.status_code == 201
 
     sale_res = api_client.post(
         "/transactions/sale",
