@@ -91,10 +91,7 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
         sortOptions: PRODUCT_SORT_OPTIONS,
     })
 
-    const groupedProducts = useMemo(
-        () => groupProducts(processedProducts),
-        [processedProducts],
-    )
+    const groupedProducts = useMemo(() => groupProducts(processedProducts), [processedProducts])
 
     return (
         <ScreenShell>
