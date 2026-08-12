@@ -179,23 +179,45 @@ corrections.
 
 ### Workflows
 
+#### Stock Availability Enforcement
+
+Sales (`record_sale`, `record_bulk_sale`) and write-offs (`record_write_off`)
+strictly enforce stock availability. The business logic layer calculates dynamic
+inventory balances (`calculate_inventory`) from the transaction log and rejects
+any sale or write-off request where requested quantity exceeds available stock.
+Bulk sales validate aggregate cart item quantities per product atomically.
+
 #### Discounts
 
 Handled by allowing any `TotalRevenue` during a sale, even if it will differ
 from the product's sell price.
 
-#### Sell on Credit
+#### Sell on Credit & Flexible Credit Payments
 
-Logged as a `SALE` with `PaymentType="OnCredit"` and zero revenue, paired with a
-subsequent `CREDIT_PAYMENT` that references the original transaction via
-`LinkedTransactionID`. Credit payment entries capture the actual settlement
-method (`PaymentType` on the command) and the value paid.
+Logged as a `SALE` with `PaymentType="OnCredit"` and zero revenue, paired with
+subsequent `CREDIT_PAYMENT` transactions referencing the original sale via
+`LinkedTransactionID`.
 
-#### Error Correction
+- **Multiple Partial Payments:** Customers can make multiple partial payments
+  over time.
+- **Overpayments & Interest:** Payment amounts are not capped by the remaining
+  debt balance, allowing salesmen to record interest, late fees, or extra
+  payments.
+- **Traceability & Reports:** Outstanding debt reports sum all non-voided
+  `CREDIT_PAYMENT` entries for a sale, excluding fully settled or overpaid debts
+  from outstanding balances.
+
+#### Error Correction & Voiding Credit Payments
 
 Uses the "Reversal and Re-entry" method. A `VOID` transaction reverses the
-mistake, followed by a new entry with the correct data. The correct data is
-optional if only want to delete the mistake.
+mistake by flipping quantity/revenue/cost deltas, followed by a new entry if
+correcting data.
+
+- **Voiding Credit Payments:** `CREDIT_PAYMENT` entries can be voided just like
+  sales or restocks. Voiding a credit payment automatically restores the unpaid
+  debt balance on the linked credit sale.
+- **Immutability of Voids:** Only `VOID` transactions themselves cannot be
+  voided to prevent infinite reversal loops.
 
 #### Bulk Sales (Atomic Multi-Item Checkouts)
 
