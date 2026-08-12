@@ -27,6 +27,7 @@ export function POSFlow() {
     const cartState = useCart()
     const checkoutState = useCheckout()
     const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null)
+    const [openGroupId, setOpenGroupId] = useState<string | null>(null)
 
     // Instead of passing seven different variables into useEffect, bundle
     // them into a single, cohesive data state object
@@ -39,6 +40,7 @@ export function POSFlow() {
             checkoutStatus: checkoutState.status,
             checkoutError: checkoutState.error,
             total: cartState.total,
+            openGroupId,
         }
     }, [
         screen,
@@ -48,6 +50,7 @@ export function POSFlow() {
         paymentDetails,
         checkoutState.status,
         checkoutState.error,
+        openGroupId,
     ])
 
     const { broadcastState } = usePOSBroadcast("seller", getLatestPOSState)
@@ -80,6 +83,8 @@ export function POSFlow() {
                 products={products.filter((p) => p.is_active)}
                 stock={stock}
                 cartState={cartState}
+                openGroupId={openGroupId}
+                onOpenGroupIdChange={setOpenGroupId}
                 actions={{
                     onBack: () => setScreen("salesmen"),
                     onNext: () => setScreen("payment"),
