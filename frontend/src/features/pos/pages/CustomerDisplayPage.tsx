@@ -30,6 +30,7 @@ export function CustomerDisplayPage() {
             stock={stock}
             cart={cart}
             total={total}
+            openGroupId={syncedState?.openGroupId || null}
         />
     )
 }

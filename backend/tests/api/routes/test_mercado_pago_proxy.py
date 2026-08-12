@@ -62,11 +62,13 @@ def test_proxy_mercado_pago_handles_generic_exception() -> None:
     THEN it returns 502 Bad Gateway
     """
     app = app_module.create_app(skip_lifespan=True)
-    with unittest.mock.patch(
-        "urllib.request.urlopen", side_effect=RuntimeError("DNS lookup failed")
+    with (
+        unittest.mock.patch(
+            "urllib.request.urlopen", side_effect=RuntimeError("DNS lookup failed")
+        ),
+        TestClient(app) as client,
     ):
-        with TestClient(app) as client:
-            response = client.get("/api-mp/v1/payments/123")
+        response = client.get("/api-mp/v1/payments/123")
 
     assert response.status_code == 502
     assert "Bad Gateway" in response.json()["error"]
