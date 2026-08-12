@@ -21,8 +21,18 @@ def _setup_product_and_salesman(client: TestClient) -> None:
             "is_active": True,
         },
     )
+    restock_response = client.post(
+        "/transactions/restock",
+        json={
+            "product_id": "TP001",
+            "salesman_id": "TS001",
+            "quantity": 100,
+            "total_cost": 50000,
+        },
+    )
     assert product_response.status_code == 201
     assert salesman_response.status_code == 201
+    assert restock_response.status_code == 201
 
 
 # happy path

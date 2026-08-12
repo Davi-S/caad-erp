@@ -7,6 +7,7 @@ business rules through centralized validators, and maintain cache coherence so
 reporting modules observe consistent state.
 """
 
+import collections
 import dataclasses
 import datetime
 import logging
@@ -14,7 +15,7 @@ import typing as t
 
 from caad_erp import constants, dal, exceptions
 
-from . import products, runtime, salesmen
+from . import products, reports, runtime, salesmen
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +238,19 @@ def _validate_sale_command(
     _require_positive_quantity(command.quantity)
     _require_nonnegative_money(command.total_revenue)
 
+    inventory = reports.calculate_inventory(context)
+    available_stock = inventory.get(command.product_id, 0)
+    if command.quantity > available_stock:
+        logger.warning(
+            "Attempted sale exceeding stock for product '%s' (available=%s, requested=%s)",
+            command.product_id,
+            available_stock,
+            command.quantity,
+        )
+        raise exceptions.BusinessRuleViolation(
+            f"Insufficient stock for product '{command.product_id}': available {available_stock}, requested {command.quantity}"
+        )
+
 
 def record_sale(
     context: runtime.RuntimeContext, command: SaleCommand
@@ -309,6 +323,24 @@ def record_bulk_sale(
 
     for command in commands:
         _validate_sale_command(context, command)
+
+    inventory = reports.calculate_inventory(context)
+    aggregate_quantities: dict[str, int] = collections.defaultdict(int)
+    for command in commands:
+        aggregate_quantities[command.product_id] += command.quantity
+
+    for product_id, total_requested in aggregate_quantities.items():
+        available_stock = inventory.get(product_id, 0)
+        if total_requested > available_stock:
+            logger.warning(
+                "Bulk sale total requested exceeding stock for product '%s' (available=%s, total_requested=%s)",
+                product_id,
+                available_stock,
+                total_requested,
+            )
+            raise exceptions.BusinessRuleViolation(
+                f"Insufficient stock for product '{product_id}': available {available_stock}, total requested in cart {total_requested}"
+            )
 
     recorded: list[dal.TransactionRow] = []
     for command in commands:
@@ -462,7 +494,7 @@ def record_write_off(
         dal.TransactionRow: Newly appended write-off entry.
 
     Raises:
-        BusinessRuleViolation: If the product is inactive.
+        BusinessRuleViolation: If the product is inactive or quantity exceeds stock.
         MissingReferenceError: When the referenced product id is unknown.
         ValueError: If the quantity fails validation.
     """
@@ -484,6 +516,19 @@ def record_write_off(
             f"Salesman '{command.salesman_id}' is inactive"
         )
     _require_positive_quantity(command.quantity)
+
+    inventory = reports.calculate_inventory(context)
+    available_stock = inventory.get(command.product_id, 0)
+    if command.quantity > available_stock:
+        logger.warning(
+            "Attempted write-off exceeding stock for product '%s' (available=%s, requested=%s)",
+            command.product_id,
+            available_stock,
+            command.quantity,
+        )
+        raise exceptions.BusinessRuleViolation(
+            f"Cannot write off {command.quantity} units of product '{command.product_id}': only {available_stock} available"
+        )
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_write_off_transaction(
@@ -556,12 +601,17 @@ def record_credit_payment(
             credit payment linkage.
         MissingReferenceError: When the linked transaction identifier is
             unknown.
-        ValueError: If the payment amount is negative.
+        ValueError: If the payment amount is negative or zero.
     """
     now = datetime.datetime.now(datetime.UTC)
     linked_sale = get_transaction(context, command.linked_transaction_id)
-    _validate_credit_sale_link(linked_sale)
-    _require_nonnegative_money(command.total_revenue)
+    _validate_credit_sale_link(context, linked_sale)
+    if command.total_revenue <= 0:
+        logger.error(
+            "Credit payment validation failed: non-positive revenue '%s'",
+            command.total_revenue,
+        )
+        raise ValueError("Payment amount must be greater than zero")
     salesman = salesmen.get_salesman(context, command.salesman_id)
     if not salesman.is_active:
         logger.warning(
@@ -596,24 +646,7 @@ def _build_credit_payment_transaction(
     timestamp: datetime.datetime,
     product_id: str,
 ) -> dal.TransactionRow:
-    """Materialize a :class:`CreditPaymentCommand` into a DAL transaction row.
-
-    Args:
-        command (CreditPaymentCommand): User intent describing the credit
-            payment.
-        transaction_id (str): Unique identifier allocated for the transaction.
-        timestamp (datetime): Timestamp assigned to the transaction.
-        product_id (str): Product identifier inferred from the linked sale.
-
-    Returns:
-        dal.TransactionRow: Row ready for persistence via the data
-            layer.
-
-    Credit payments do not affect stock, so the quantity is fixed at zero. The
-    helper records the payment type supplied by the caller so downstream
-    reporting can distinguish how the credit was settled. The linked sale
-    identifier is copied for traceability.
-    """
+    """Materialize a :class:`CreditPaymentCommand` into a DAL transaction row."""
     return dal.TransactionRow(
         transaction_id=transaction_id,
         timestamp_iso=timestamp.isoformat(),
@@ -629,21 +662,19 @@ def _build_credit_payment_transaction(
     )
 
 
-def _validate_credit_sale_link(transaction: dal.TransactionRow) -> None:
+def _validate_credit_sale_link(
+    context: runtime.RuntimeContext, transaction: dal.TransactionRow
+) -> None:
     """Ensure a sale transaction qualifies for credit payment linkage.
 
     Args:
+        context (RuntimeContext): Active runtime context.
         transaction (dal.TransactionRow): Transaction row purportedly
             representing a credit sale.
 
     Raises:
         BusinessRuleViolation: If ``transaction`` is not a credit sale eligible
             for a payment linkage.
-
-    Credit payments are only allowed to target sales that were recorded on
-    credit, have not yet reported revenue, and are not already linked to another
-    transaction. These conditions prevent double-settling or misclassifying a
-    cash sale as credit.
     """
     if transaction.transaction_type != constants.TransactionType.SALE.value:
         logger.error(
@@ -660,22 +691,19 @@ def _validate_credit_sale_link(transaction: dal.TransactionRow) -> None:
             transaction.payment_type,
         )
         raise exceptions.BusinessRuleViolation("Linked sale is not recorded as credit")
-    if transaction.total_revenue > 0:
+    voided_tx_ids = {
+        tx.linked_transaction_id
+        for tx in list_transactions(context)
+        if tx.transaction_type == constants.TransactionType.VOID.value
+        and tx.linked_transaction_id
+    }
+    if transaction.transaction_id in voided_tx_ids:
         logger.error(
-            "Credit payment validation failed: transaction '%s' already reports revenue",
+            "Credit payment validation failed: sale transaction '%s' is voided",
             transaction.transaction_id,
         )
         raise exceptions.BusinessRuleViolation(
-            "Linked credit sale already reports revenue"
-        )
-    if transaction.linked_transaction_id is not None:
-        logger.error(
-            "Credit payment validation failed: transaction '%s' already links to '%s'",
-            transaction.transaction_id,
-            transaction.linked_transaction_id,
-        )
-        raise exceptions.BusinessRuleViolation(
-            "Linked sale already references another transaction"
+            "Cannot process credit payment for voided transaction"
         )
 
 
@@ -860,9 +888,8 @@ def _validate_void_target(transaction: dal.TransactionRow) -> None:
         BusinessRuleViolation: If the transaction type is ineligible for
             voiding.
 
-    VOID and CREDIT_PAYMENT transactions are intentionally immutable because a
-    second void would create loops and credit payments represent actual cash
-    settlements. Attempting to void these entries surfaces a domain error.
+    VOID transactions are intentionally immutable because a second void would
+    create loops. Attempting to void a VOID surfaces a domain error.
     """
     if transaction.transaction_type == constants.TransactionType.VOID.value:
         logger.error(
@@ -870,11 +897,3 @@ def _validate_void_target(transaction: dal.TransactionRow) -> None:
             transaction.transaction_id,
         )
         raise exceptions.BusinessRuleViolation("Cannot void a VOID transaction")
-    if transaction.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value:
-        logger.error(
-            "Cannot void transaction '%s' because it is a credit payment",
-            transaction.transaction_id,
-        )
-        raise exceptions.BusinessRuleViolation(
-            "Cannot void a credit payment transaction"
-        )

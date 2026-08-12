@@ -118,20 +118,22 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> dict[str, t.
 
     all_transactions = transactions.list_transactions(context)
 
+    voided_tx_ids = {
+        entry.linked_transaction_id
+        for entry in all_transactions
+        if entry.transaction_type == constants.TransactionType.VOID.value
+        and entry.linked_transaction_id
+    }
+
     payments_by_sale: dict[str, int] = collections.defaultdict(int)
-    voided_sales: set[str] = set()
 
     for entry in all_transactions:
         if (
             entry.transaction_type == constants.TransactionType.CREDIT_PAYMENT.value
             and entry.linked_transaction_id
+            and entry.transaction_id not in voided_tx_ids
         ):
             payments_by_sale[entry.linked_transaction_id] += entry.total_revenue
-        elif (
-            entry.transaction_type == constants.TransactionType.VOID.value
-            and entry.linked_transaction_id
-        ):
-            voided_sales.add(entry.linked_transaction_id)
 
     balances: list[OutstandingDebt] = []
     total_balance = 0
@@ -141,7 +143,7 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> dict[str, t.
             continue
         if entry.payment_type != constants.PaymentType.ON_CREDIT.value:
             continue
-        if entry.transaction_id in voided_sales:
+        if entry.transaction_id in voided_tx_ids:
             continue
 
         quantity = abs(entry.quantity_change)

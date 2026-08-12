@@ -95,6 +95,15 @@ def test_profit_summary_matches_revenue_plus_cost_over_transaction_log(
     _add_product(initialized_context, "RP-P002")
     _add_salesman(initialized_context, "RP-S002")
 
+    bll.record_restock(
+        initialized_context,
+        bll.RestockCommand(
+            product_id="RP-P002",
+            salesman_id="RP-S002",
+            quantity=2,
+            total_cost=750,
+        ),
+    )
     bll.record_sale(
         initialized_context,
         bll.SaleCommand(
@@ -103,15 +112,6 @@ def test_profit_summary_matches_revenue_plus_cost_over_transaction_log(
             quantity=1,
             total_revenue=3000,
             payment_type=constants.PaymentType.CASH,
-        ),
-    )
-    bll.record_restock(
-        initialized_context,
-        bll.RestockCommand(
-            product_id="RP-P002",
-            salesman_id="RP-S002",
-            quantity=2,
-            total_cost=750,
         ),
     )
 
@@ -131,6 +131,15 @@ def test_outstanding_debts_report_tracks_partial_and_full_credit_payments(
     """
     _add_product(initialized_context, "RP-P003", price=1000)
     _add_salesman(initialized_context, "RP-S003")
+    bll.record_open_stock(
+        initialized_context,
+        bll.OpenStockCommand(
+            product_id="RP-P003",
+            salesman_id="RP-S003",
+            quantity=10,
+            total_revenue=0,
+        ),
+    )
 
     partially_paid_sale = bll.record_sale(
         initialized_context,
@@ -190,6 +199,15 @@ def test_outstanding_debts_excludes_voided_credit_sales_in_end_to_end_flow(
     """
     _add_product(initialized_context, "RP-P004", price=1200)
     _add_salesman(initialized_context, "RP-S004")
+    bll.record_open_stock(
+        initialized_context,
+        bll.OpenStockCommand(
+            product_id="RP-P004",
+            salesman_id="RP-S004",
+            quantity=10,
+            total_revenue=0,
+        ),
+    )
 
     credit_sale = bll.record_sale(
         initialized_context,
@@ -304,6 +322,24 @@ def test_outstanding_debts_ignores_overpaid_sales_and_aggregates_remaining_balan
     _add_product(initialized_context, "RP-P007", price=1000)
     _add_product(initialized_context, "RP-P008", price=600)
     _add_salesman(initialized_context, "RP-S007")
+    bll.record_open_stock(
+        initialized_context,
+        bll.OpenStockCommand(
+            product_id="RP-P007",
+            salesman_id="RP-S007",
+            quantity=10,
+            total_revenue=0,
+        ),
+    )
+    bll.record_open_stock(
+        initialized_context,
+        bll.OpenStockCommand(
+            product_id="RP-P008",
+            salesman_id="RP-S007",
+            quantity=10,
+            total_revenue=0,
+        ),
+    )
 
     overpaid_sale = bll.record_sale(
         initialized_context,
