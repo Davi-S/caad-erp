@@ -90,9 +90,7 @@ export function SalesmanFormModal({
                     <TextInput
                         label="Nome"
                         placeholder="Nome do vendedor"
-                        description={
-                            "Aparece nas telas de seleção."
-                        }
+                        description={"Aparece nas telas de seleção."}
                         {...form.getInputProps("salesman_name")}
                     />
                     <Switch

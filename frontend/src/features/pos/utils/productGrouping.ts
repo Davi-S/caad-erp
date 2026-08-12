@@ -7,7 +7,6 @@ export interface ProductVariant {
     product: Product
 }
 
-
 export interface ProductGroup {
     // Case-insensitive normalized base name used for React keys and dictionary Map matching
     id: string

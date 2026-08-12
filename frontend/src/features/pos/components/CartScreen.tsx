@@ -29,6 +29,8 @@ interface CartScreenProps {
     products: Products
     stock: Stock
     cartState: ReturnType<typeof useCart>
+    openGroupId?: string | null
+    onOpenGroupIdChange?: (groupId: string | null) => void
     actions: {
         onBack: () => void
         onNext: () => void
@@ -54,7 +56,15 @@ const PRODUCT_SORT_OPTIONS: SortOption[] = [
     },
 ]
 
-export function CartScreen({ salesman, products, stock, cartState, actions }: CartScreenProps) {
+export function CartScreen({
+    salesman,
+    products,
+    stock,
+    cartState,
+    openGroupId,
+    onOpenGroupIdChange,
+    actions,
+}: CartScreenProps) {
     const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
     const { onBack, onNext } = actions
 
@@ -91,10 +101,7 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
         sortOptions: PRODUCT_SORT_OPTIONS,
     })
 
-    const groupedProducts = useMemo(
-        () => groupProducts(processedProducts),
-        [processedProducts],
-    )
+    const groupedProducts = useMemo(() => groupProducts(processedProducts), [processedProducts])
 
     return (
         <ScreenShell>
@@ -132,6 +139,10 @@ export function CartScreen({ salesman, products, stock, cartState, actions }: Ca
                                         stock={stock}
                                         inc={inc}
                                         removeItem={removeItem}
+                                        opened={openGroupId === group.id}
+                                        onOpenChange={(isOpen) =>
+                                            onOpenGroupIdChange?.(isOpen ? group.id : null)
+                                        }
                                     />
                                 ))}
                             </SimpleGrid>
