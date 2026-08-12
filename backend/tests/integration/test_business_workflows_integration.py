@@ -154,6 +154,15 @@ def test_credit_sale_then_payment_reduces_outstanding_debt(
     """
     _add_product(initialized_context, "WF-P006", price=1000)
     _add_salesman(initialized_context, "WF-S006")
+    bll.record_open_stock(
+        initialized_context,
+        bll.OpenStockCommand(
+            product_id="WF-P006",
+            salesman_id="WF-S006",
+            quantity=10,
+            total_revenue=0,
+        ),
+    )
     sale = bll.record_sale(
         initialized_context,
         bll.SaleCommand(
@@ -441,11 +450,20 @@ def test_invalid_void_chains_raise_without_creating_partial_rows(
 ) -> None:
     """
     GIVEN a credit-sale lifecycle with a settlement payment and a valid sale void
-    WHEN invalid void attempts target a credit-payment row and then a void row
-    THEN business errors are raised and transaction count only changes for the valid void
+    WHEN invalid void attempts target a void row
+    THEN business errors are raised and transaction count only changes for valid voids
     """
     _add_product(initialized_context, "WF-P013", price=900)
     _add_salesman(initialized_context, "WF-S013")
+    bll.record_open_stock(
+        initialized_context,
+        bll.OpenStockCommand(
+            product_id="WF-P013",
+            salesman_id="WF-S013",
+            quantity=10,
+            total_revenue=0,
+        ),
+    )
 
     credit_sale = bll.record_sale(
         initialized_context,
@@ -467,13 +485,12 @@ def test_invalid_void_chains_raise_without_creating_partial_rows(
         ),
     )
 
-    before_invalid_voids = len(bll.list_transactions(initialized_context))
+    payment_void = bll.record_void(
+        initialized_context,
+        bll.VoidCommand(linked_transaction_id=payment.transaction_id),
+    )
 
-    with pytest.raises(exceptions.BusinessRuleViolation):
-        bll.record_void(
-            initialized_context,
-            bll.VoidCommand(linked_transaction_id=payment.transaction_id),
-        )
+    before_invalid_voids = len(bll.list_transactions(initialized_context))
 
     valid_void = bll.record_void(
         initialized_context,
