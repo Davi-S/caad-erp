@@ -3,6 +3,8 @@
 This module provides REST endpoints for managing products.
 """
 
+import typing as t
+
 import fastapi
 
 from caad_erp import bll
@@ -11,10 +13,14 @@ from .. import persistence, runtime, schemas
 
 router = fastapi.APIRouter(prefix="/products", tags=["Products"])
 
+ContextDep = t.Annotated[
+    bll.RuntimeContext, fastapi.Depends(runtime.get_runtime_context)
+]
+
 
 @router.get("", response_model=schemas.ProductListResponse)
 def list_products(
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.ProductListResponse:
     """List all products.
 
@@ -44,7 +50,7 @@ def list_products(
 @persistence.mutating_endpoint
 def create_product(
     request: schemas.ProductCreateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Create a new product.
 
@@ -81,7 +87,7 @@ def create_product(
 @router.get("/{product_id}", response_model=schemas.ProductResponse)
 def get_product(
     product_id: str,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.ProductResponse:
     """Get a specific product by ID."""
     products = bll.list_products(context)
@@ -99,7 +105,7 @@ def get_product(
 def update_product_details(
     product_id: str,
     request: schemas.ProductUpdateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Update an existing product.
 
