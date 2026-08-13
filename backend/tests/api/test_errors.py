@@ -117,9 +117,7 @@ def test_unhandled_exception_handler_sanitizes_internal_error_message() -> None:
     WHEN unhandled_exception_handler is executed
     THEN payload hides internals behind generic internal_server_error detail
     """
-    response = asyncio.run(
-        errors.unhandled_exception_handler(None, TypeError("boom"))
-    )
+    response = asyncio.run(errors.unhandled_exception_handler(None, TypeError("boom")))
     payload = response.body.decode("utf-8")
 
     assert response.status_code == 500
