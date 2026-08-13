@@ -10,9 +10,8 @@ import dataclasses
 import logging
 import typing as t
 
-from caad_erp import dal, exceptions
-
-from . import runtime
+from caad_erp import dal
+from caad_erp.bll import rules, runtime
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,31 @@ class ProductCommand:
     is_active: bool | None = None
 
 
+# Rationale (Product Update Workflow):
+# 1. Non-blank Identifiers (DEVELOPER_GUIDE.md #Column Types):
+#    - ProductID and ProductName stay as text and must be non-empty strings.
+# 2. Suggested Sell Price (DEVELOPER_GUIDE.md #Sell Price):
+#    - Product.SellPrice is a suggested price for UI convenience and must be >= 0 if provided.
+#      Actual transaction revenue is calculated per sale.
+PRODUCT_UPDATE_RULES: list[rules.BaseRule] = [
+    rules.NON_EMPTY_PRODUCT_ID,
+    rules.NON_EMPTY_PRODUCT_NAME,
+    rules.NONNEGATIVE_SELL_PRICE,
+    rules.AT_LEAST_ONE_PRODUCT_FIELD,
+]
+
+# Rationale (Product Creation Workflow):
+# 1. Mandatory Attributes:
+#    - All product creations must explicitly specify a non-blank ID, non-blank name,
+#      non-negative suggested sell price, and active status flag.
+PRODUCT_ADD_RULES: list[rules.BaseRule] = [
+    rules.NON_EMPTY_PRODUCT_ID,
+    rules.REQUIRED_PRODUCT_NAME,
+    rules.REQUIRED_SELL_PRICE,
+    rules.REQUIRED_IS_ACTIVE,
+]
+
+
 def _ensure_products_cache(context: runtime.RuntimeContext) -> dict[str, t.Any]:
     """Populate the product cache bucket on demand.
 
@@ -38,7 +62,6 @@ def _ensure_products_cache(context: runtime.RuntimeContext) -> dict[str, t.Any]:
         dict[str, t.Any]: Bucket containing ``all`` products and a ``by_id``
             lookup dictionary. Reuses prior computations when available.
     """
-
     bucket = runtime.get_cache_bucket(context, "products")
     if "all" not in bucket:
         all_products = list(dal.iter_products(context.workbook))
@@ -52,16 +75,7 @@ def _ensure_products_cache(context: runtime.RuntimeContext) -> dict[str, t.Any]:
 
 
 def list_products(context: runtime.RuntimeContext) -> list[dal.ProductRow]:
-    """Return every cached product row.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-
-    Returns:
-        list[dal.ProductRow]: Copy of the cached product dataset in
-            sheet order.
-    """
+    """Return every cached product row."""
     cache = _ensure_products_cache(context)
     return list(cache["all"])
 
@@ -69,28 +83,15 @@ def list_products(context: runtime.RuntimeContext) -> list[dal.ProductRow]:
 def get_product(context: runtime.RuntimeContext, product_id: str) -> dal.ProductRow:
     """Resolve a product record by its identifier.
 
-    The lookup leverages the product cache for near constant-time access and
-    raises :class:`MissingReferenceError` when the workbook does not contain
-    the requested identifier.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        product_id (str): Identifier populated in the ``Products`` sheet.
-
-    Returns:
-        dal.ProductRow: Matching product dataclass sourced from cache.
-
-    Raises:
-        MissingReferenceError: If ``product_id`` is absent from the workbook.
+    Raises ProductNotFoundError if product_id is absent from the workbook.
     """
     cache = _ensure_products_cache(context)
     try:
         return cache["by_id"][product_id]
     except KeyError as exc:
         logger.warning("Product lookup failed for id '%s'", product_id)
-        raise exceptions.MissingReferenceError(
-            f"Unknown product id: {product_id}"
+        raise rules.ProductNotFoundError(
+            f"[Product Exists] Unknown product id: {product_id}"
         ) from exc
 
 
@@ -99,42 +100,24 @@ def update_product(
     command: ProductCommand,
 ) -> dal.ProductRow:
     """Update selected fields for an existing product and refresh caches."""
+    rules.enforce_rules(context, command, PRODUCT_UPDATE_RULES)
 
     normalized_id = command.product_id.strip()
-    if not normalized_id:
-        logger.error("Product update rejected: blank product_id")
-        raise ValueError("Product ID must be provided")
-
     field_values: dict[str, t.Any] = {}
 
     if command.product_name is not None:
-        normalized_name = command.product_name.strip()
-        if not normalized_name:
-            logger.error("Product update rejected: blank product_name")
-            raise ValueError("Product name must be provided")
-        field_values["ProductName"] = normalized_name
-
+        field_values["ProductName"] = command.product_name.strip()
     if command.sell_price is not None:
-        price = command.sell_price
-        if price < 0:
-            logger.error("Product update rejected: negative sell_price '%s'", price)
-            raise ValueError("Sell price must be zero or positive")
-
-        field_values["SellPrice"] = price
-
+        field_values["SellPrice"] = command.sell_price
     if command.is_active is not None:
         field_values["IsActive"] = command.is_active
-
-    if not field_values:
-        logger.error("Product update rejected: no fields provided")
-        raise ValueError("At least one field must be provided to update")
 
     try:
         dal.update_product(context.workbook, normalized_id, field_values=field_values)
     except KeyError as exc:
         logger.warning("Product update failed for id '%s'", normalized_id)
-        raise exceptions.MissingReferenceError(
-            f"Unknown product id: {normalized_id}"
+        raise rules.ProductNotFoundError(
+            f"[Product Exists] Unknown product id: {normalized_id}"
         ) from exc
 
     runtime.invalidate_cache(context, "products")
@@ -151,62 +134,23 @@ def add_product(
     context: runtime.RuntimeContext,
     command: ProductCommand,
 ) -> dal.ProductRow:
-    """Append a product row after enforcing catalog invariants.
-
-    Args:
-        context (RuntimeContext): Active runtime context encapsulating settings
-            and workbook references.
-        command (ProductCommand): Structured command that must provide all
-            mutable fields when creating a product.
-
-    Returns:
-        dal.ProductRow: Persisted product record represented as a DAL
-            dataclass.
-
-    Raises:
-        ValueError: If identifiers, names, or monetary values fail validation.
-        BusinessRuleViolation: When attempting to register a duplicate product
-            identifier.
-    """
+    """Append a product row after enforcing catalog invariants."""
+    rules.enforce_rules(context, command, PRODUCT_ADD_RULES)
 
     normalized_id = command.product_id.strip()
-    if not normalized_id:
-        logger.error("Product creation rejected: blank product_id")
-        raise ValueError("Product ID must be provided")
-
-    if command.product_name is None:
-        logger.error("Product creation rejected: missing product_name")
-        raise ValueError("Product name must be provided")
-    normalized_name = command.product_name.strip()
-    if not normalized_name:
-        logger.error("Product creation rejected: blank product_name")
-        raise ValueError("Product name must be provided")
-
-    if command.sell_price is None:
-        logger.error("Product creation rejected: missing sell_price")
-        raise ValueError("Sell price must be provided")
-
-    price = command.sell_price
-    if price < 0:
-        logger.error("Product creation rejected: negative sell_price '%s'", price)
-        raise ValueError("Sell price must be zero or positive")
-
-    if command.is_active is None:
-        logger.error("Product creation rejected: missing is_active")
-        raise ValueError("is_active must be provided")
+    normalized_name = command.product_name.strip() if command.product_name else ""
+    price = command.sell_price if command.sell_price is not None else 0
 
     bucket = _ensure_products_cache(context)
     if normalized_id in bucket["by_id"]:
         logger.error("Product creation rejected: duplicate id '%s'", normalized_id)
-        raise exceptions.BusinessRuleViolation(
-            f"Product '{normalized_id}' already exists"
-        )
+        raise rules.DuplicateProductError(f"Product '{normalized_id}' already exists")
 
     record = dal.ProductRow(
         product_id=normalized_id,
         product_name=normalized_name,
         sell_price=price,
-        is_active=command.is_active,
+        is_active=bool(command.is_active),
     )
 
     dal.append_product(context.workbook, record)

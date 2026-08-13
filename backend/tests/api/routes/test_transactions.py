@@ -225,7 +225,7 @@ def test_transaction_endpoints_map_domain_errors_to_http_contract(
             "payment_type": constants.PaymentType.CASH.value,
         },
     )
-    assert business_rule.status_code == 409
+    assert business_rule.status_code == 400
 
 
 # edge path

@@ -4,8 +4,7 @@ import pytest
 from openpyxl.workbook import Workbook
 
 from caad_erp import constants, dal
-from caad_erp.bll import products, runtime
-from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
+from caad_erp.bll import products, rules, runtime
 from caad_erp.settings import AppSettings
 
 
@@ -150,7 +149,7 @@ def test_get_product_raises_missing_reference_for_unknown_id(
     _seed_product(products_workbook, "P001")
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.ProductNotFoundError):
         products.get_product(context, "UNKNOWN")
 
 
@@ -217,7 +216,7 @@ def test_update_product_rejects_blank_product_id(products_workbook: Workbook) ->
     command = products.ProductCommand(product_id="   ", product_name="Name")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         products.update_product(context, command)
 
 
@@ -233,7 +232,7 @@ def test_update_product_rejects_blank_product_name(products_workbook: Workbook) 
     command = products.ProductCommand(product_id="P001", product_name="   ")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         products.update_product(context, command)
 
 
@@ -253,7 +252,7 @@ def test_update_product_rejects_negative_sell_price(
     command = products.ProductCommand(product_id="P001", sell_price=sell_price)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidMonetaryValueError):
         products.update_product(context, command)
 
 
@@ -270,7 +269,7 @@ def test_update_product_requires_at_least_one_field(
     _seed_product(products_workbook, "P001")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         products.update_product(context, products.ProductCommand(product_id="P001"))
 
 
@@ -287,7 +286,7 @@ def test_update_product_maps_dal_key_error_to_missing_reference(
     command = products.ProductCommand(product_id="P999", product_name="New Name")
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.ProductNotFoundError):
         products.update_product(context, command)
 
 
@@ -374,7 +373,7 @@ def test_add_product_rejects_blank_product_id(products_workbook: Workbook) -> No
     context = _make_context(products_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         products.add_product(
             context,
             products.ProductCommand(
@@ -400,7 +399,7 @@ def test_add_product_requires_nonblank_product_name(
     context = _make_context(products_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         products.add_product(
             context,
             products.ProductCommand(
@@ -422,7 +421,7 @@ def test_add_product_requires_sell_price(products_workbook: Workbook) -> None:
     context = _make_context(products_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidMonetaryValueError):
         products.add_product(
             context,
             products.ProductCommand(
@@ -448,7 +447,7 @@ def test_add_product_rejects_negative_sell_price(
     context = _make_context(products_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidMonetaryValueError):
         products.add_product(
             context,
             products.ProductCommand(
@@ -470,7 +469,7 @@ def test_add_product_requires_is_active(products_workbook: Workbook) -> None:
     context = _make_context(products_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         products.add_product(
             context,
             products.ProductCommand(
@@ -493,7 +492,7 @@ def test_add_product_rejects_duplicate_product_id(products_workbook: Workbook) -
     _seed_product(products_workbook, "P001")
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(rules.DuplicateProductError):
         products.add_product(
             context,
             products.ProductCommand(

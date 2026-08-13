@@ -1,6 +1,6 @@
 import pytest
 
-from caad_erp import bll, constants, exceptions
+from caad_erp import bll, constants
 
 
 def _add_product(
@@ -241,7 +241,7 @@ def test_invalid_workflows_raise_domain_errors_without_partial_state_changes(
         bll.update_product(
             context, bll.ProductCommand(product_id="WF-P008", is_active=False)
         )
-        with pytest.raises(exceptions.BusinessRuleViolation):
+        with pytest.raises(bll.rules.ProductInactiveError):
             bll.record_sale(
                 context,
                 bll.SaleCommand(
@@ -256,7 +256,7 @@ def test_invalid_workflows_raise_domain_errors_without_partial_state_changes(
         bll.update_salesman(
             context, bll.SalesmanCommand(salesman_id="WF-S008", is_active=False)
         )
-        with pytest.raises(exceptions.BusinessRuleViolation):
+        with pytest.raises(bll.rules.SalesmanInactiveError):
             bll.record_restock(
                 context,
                 bll.RestockCommand(
@@ -267,7 +267,7 @@ def test_invalid_workflows_raise_domain_errors_without_partial_state_changes(
                 ),
             )
     else:
-        with pytest.raises(exceptions.MissingReferenceError):
+        with pytest.raises(bll.rules.TransactionNotFoundError):
             bll.record_credit_payment(
                 context,
                 bll.CreditPaymentCommand(
@@ -485,7 +485,7 @@ def test_invalid_void_chains_raise_without_creating_partial_rows(
         ),
     )
 
-    payment_void = bll.record_void(
+    bll.record_void(
         initialized_context,
         bll.VoidCommand(linked_transaction_id=payment.transaction_id),
     )
@@ -497,7 +497,7 @@ def test_invalid_void_chains_raise_without_creating_partial_rows(
         bll.VoidCommand(linked_transaction_id=credit_sale.transaction_id),
     )
 
-    with pytest.raises(exceptions.BusinessRuleViolation):
+    with pytest.raises(bll.rules.IneligibleVoidTargetError):
         bll.record_void(
             initialized_context,
             bll.VoidCommand(linked_transaction_id=valid_void.transaction_id),

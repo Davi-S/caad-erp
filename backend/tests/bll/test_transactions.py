@@ -6,8 +6,7 @@ import pytest
 from openpyxl.workbook import Workbook
 
 from caad_erp import constants, dal
-from caad_erp.bll import runtime, transactions
-from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
+from caad_erp.bll import rules, runtime, transactions
 from caad_erp.settings import AppSettings
 
 
@@ -215,47 +214,71 @@ def test_generate_transaction_id_is_lexicographically_sortable() -> None:
 @pytest.mark.parametrize("quantity", [1, 99])
 def test_require_positive_quantity_accepts_positive_values(quantity: int) -> None:
     """
-    GIVEN a strictly positive quantity
-    WHEN _require_positive_quantity is called
+    GIVEN a positive quantity
+    WHEN PositiveQuantityRule is enforced
     THEN no exception is raised
     """
-    # Arrange / Act / Assert
-    transactions._require_positive_quantity(quantity)
+    cmd = transactions.SaleCommand(
+        product_id="P1",
+        salesman_id="S1",
+        quantity=quantity,
+        total_revenue=100,
+        payment_type=constants.PaymentType.CASH,
+    )
+    rules.POSITIVE_QUANTITY.enforce(None, cmd)
 
 
 @pytest.mark.parametrize("quantity", [0, -10, -5])
 def test_require_positive_quantity_rejects_zero_or_negative(quantity: int) -> None:
     """
     GIVEN a zero or negative quantity
-    WHEN _require_positive_quantity is called
-    THEN ValueError is raised
+    WHEN PositiveQuantityRule is enforced
+    THEN InvalidQuantityError is raised
     """
-    # Arrange / Act / Assert
-    with pytest.raises(ValueError):
-        transactions._require_positive_quantity(quantity)
+    cmd = transactions.SaleCommand(
+        product_id="P1",
+        salesman_id="S1",
+        quantity=quantity,
+        total_revenue=100,
+        payment_type=constants.PaymentType.CASH,
+    )
+    with pytest.raises(rules.InvalidQuantityError):
+        rules.POSITIVE_QUANTITY.enforce(None, cmd)
 
 
 @pytest.mark.parametrize("amount", [0, 1, 500])
 def test_require_nonnegative_money_accepts_nonnegative_values(amount: int) -> None:
     """
     GIVEN a nonnegative monetary amount
-    WHEN _require_nonnegative_money is called
+    WHEN NonnegativeRevenueRule is enforced
     THEN no exception is raised
     """
-    # Arrange / Act / Assert
-    transactions._require_nonnegative_money(amount)
+    cmd = transactions.SaleCommand(
+        product_id="P1",
+        salesman_id="S1",
+        quantity=1,
+        total_revenue=amount,
+        payment_type=constants.PaymentType.CASH,
+    )
+    rules.NONNEGATIVE_REVENUE.enforce(None, cmd)
 
 
 @pytest.mark.parametrize("amount", [-1, -500])
 def test_require_nonnegative_money_rejects_negative_values(amount: int) -> None:
     """
     GIVEN a negative monetary amount
-    WHEN _require_nonnegative_money is called
-    THEN ValueError is raised
+    WHEN NonnegativeRevenueRule is enforced
+    THEN InvalidMonetaryValueError is raised
     """
-    # Arrange / Act / Assert
-    with pytest.raises(ValueError):
-        transactions._require_nonnegative_money(amount)
+    cmd = transactions.SaleCommand(
+        product_id="P1",
+        salesman_id="S1",
+        quantity=1,
+        total_revenue=amount,
+        payment_type=constants.PaymentType.CASH,
+    )
+    with pytest.raises(rules.InvalidMonetaryValueError):
+        rules.NONNEGATIVE_REVENUE.enforce(None, cmd)
 
 
 def test_list_transactions_returns_copy_of_cached_log() -> None:
@@ -325,7 +348,7 @@ def test_get_transaction_raises_missing_reference_for_unknown_id() -> None:
     context = _make_context(_make_workbook())
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.TransactionNotFoundError):
         transactions.get_transaction(context, "UNKNOWN")
 
 
@@ -385,8 +408,13 @@ def test_record_sale_rejects_inactive_product_or_salesman(inactive_party) -> Non
     _seed_product(workbook, "P1", is_active=(inactive_party != "product"))
     _seed_salesman(workbook, "S1", is_active=(inactive_party != "salesman"))
 
+    expected_exc = (
+        rules.ProductInactiveError
+        if inactive_party == "product"
+        else rules.SalesmanInactiveError
+    )
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(expected_exc):
         transactions.record_sale(
             context,
             transactions.SaleCommand(
@@ -416,8 +444,13 @@ def test_record_sale_propagates_product_or_salesman_missing_reference(
     if missing_reference != "salesman":
         _seed_salesman(workbook, "S1")
 
+    expected_exc = (
+        rules.ProductNotFoundError
+        if missing_reference == "product"
+        else rules.SalesmanNotFoundError
+    )
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(expected_exc):
         transactions.record_sale(
             context,
             transactions.SaleCommand(
@@ -444,7 +477,7 @@ def test_record_sale_rejects_nonpositive_quantity(invalid_quantity: int) -> None
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidQuantityError):
         transactions.record_sale(
             context,
             transactions.SaleCommand(
@@ -471,7 +504,7 @@ def test_record_sale_rejects_negative_revenue(invalid_revenue: int) -> None:
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidMonetaryValueError):
         transactions.record_sale(
             context,
             transactions.SaleCommand(
@@ -587,7 +620,7 @@ def test_record_restock_rejects_inactive_product_or_salesman() -> None:
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(rules.ProductInactiveError):
         transactions.record_restock(
             context,
             transactions.RestockCommand(
@@ -613,7 +646,7 @@ def test_record_restock_rejects_nonpositive_quantity(invalid_quantity: int) -> N
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidQuantityError):
         transactions.record_restock(
             context,
             transactions.RestockCommand(
@@ -771,8 +804,13 @@ def test_record_write_off_rejects_inactive_product_or_salesman(inactive_party) -
     _seed_product(workbook, "P1", is_active=(inactive_party != "product"))
     _seed_salesman(workbook, "S1", is_active=(inactive_party != "salesman"))
 
+    expected_exc = (
+        rules.ProductInactiveError
+        if inactive_party == "product"
+        else rules.SalesmanInactiveError
+    )
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(expected_exc):
         transactions.record_write_off(
             context,
             transactions.WriteOffCommand(
@@ -797,7 +835,7 @@ def test_record_write_off_rejects_nonpositive_quantity(invalid_quantity: int) ->
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidQuantityError):
         transactions.record_write_off(
             context,
             transactions.WriteOffCommand(
@@ -902,7 +940,7 @@ def test_record_credit_payment_rejects_inactive_salesman() -> None:
     )
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(rules.SalesmanInactiveError):
         transactions.record_credit_payment(
             context,
             transactions.CreditPaymentCommand(
@@ -926,7 +964,7 @@ def test_record_credit_payment_propagates_unknown_linked_transaction() -> None:
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.TransactionNotFoundError):
         transactions.record_credit_payment(
             context,
             transactions.CreditPaymentCommand(
@@ -962,7 +1000,7 @@ def test_record_credit_payment_rejects_negative_revenue(invalid_revenue: int) ->
     )
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidMonetaryValueError):
         transactions.record_credit_payment(
             context,
             transactions.CreditPaymentCommand(
@@ -997,7 +1035,7 @@ def test_record_credit_payment_rejects_ineligible_linked_sale() -> None:
     )
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(rules.IneligibleCreditSaleError):
         transactions.record_credit_payment(
             context,
             transactions.CreditPaymentCommand(
@@ -1076,43 +1114,64 @@ def test_build_credit_payment_transaction_applies_expected_field_mapping() -> No
 def test_validate_credit_sale_link_rejects_ineligible_transactions(link_case) -> None:
     """
     GIVEN a linked transaction that violates credit linkage constraints
-    WHEN _validate_credit_sale_link is called
-    THEN BusinessRuleViolation is raised
+    WHEN CREDIT_SALE_LINK_ELIGIBLE is enforced
+    THEN IneligibleCreditSaleError is raised
     """
     # Arrange
     wb = _make_workbook()
+    _seed_transaction(
+        wb,
+        link_case.transaction_id,
+        link_case.transaction_type,
+        link_case.product_id,
+        link_case.salesman_id,
+        link_case.payment_type,
+        link_case.quantity_change,
+        link_case.total_revenue,
+        link_case.total_cost,
+    )
     context = _make_context(wb)
 
+    cmd = transactions.CreditPaymentCommand(
+        linked_transaction_id=link_case.transaction_id,
+        salesman_id="S1",
+        total_revenue=100,
+        payment_type=constants.PaymentType.CASH,
+    )
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
-        transactions._validate_credit_sale_link(context, link_case)
+    with pytest.raises(rules.IneligibleCreditSaleError):
+        rules.CREDIT_SALE_LINK_ELIGIBLE.enforce(context, cmd)
 
 
 def test_validate_credit_sale_link_accepts_valid_credit_sale() -> None:
     """
     GIVEN a SALE transaction recorded as OnCredit with allowed revenue and linkage state
-    WHEN _validate_credit_sale_link is called
+    WHEN CREDIT_SALE_LINK_ELIGIBLE is enforced
     THEN no exception is raised
     """
     # Arrange
     wb = _make_workbook()
+    _seed_transaction(
+        wb,
+        "SALE1",
+        constants.TransactionType.SALE.value,
+        "P1",
+        "S1",
+        constants.PaymentType.ON_CREDIT.value,
+        -1,
+        0,
+        0,
+    )
     context = _make_context(wb)
-    valid = dal.TransactionRow(
-        transaction_id="SALE1",
-        timestamp_iso="2026-03-15T10:00:00+00:00",
-        transaction_type=constants.TransactionType.SALE.value,
-        product_id="P1",
+    cmd = transactions.CreditPaymentCommand(
+        linked_transaction_id="SALE1",
         salesman_id="S1",
-        payment_type=constants.PaymentType.ON_CREDIT.value,
-        quantity_change=-1,
-        total_revenue=0,
-        total_cost=0,
-        linked_transaction_id=None,
-        notes=None,
+        total_revenue=100,
+        payment_type=constants.PaymentType.CASH,
     )
 
     # Act / Assert
-    transactions._validate_credit_sale_link(context, valid)
+    rules.CREDIT_SALE_LINK_ELIGIBLE.enforce(context, cmd)
 
 
 def test_record_open_stock_appends_transaction_and_invalidates_cache() -> None:
@@ -1160,8 +1219,13 @@ def test_record_open_stock_rejects_inactive_product_or_salesman(inactive_party) 
     _seed_product(workbook, "P1", is_active=(inactive_party != "product"))
     _seed_salesman(workbook, "S1", is_active=(inactive_party != "salesman"))
 
+    expected_exc = (
+        rules.ProductInactiveError
+        if inactive_party == "product"
+        else rules.SalesmanInactiveError
+    )
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(expected_exc):
         transactions.record_open_stock(
             context,
             transactions.OpenStockCommand(
@@ -1187,7 +1251,7 @@ def test_record_open_stock_rejects_nonpositive_quantity(invalid_quantity: int) -
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidQuantityError):
         transactions.record_open_stock(
             context,
             transactions.OpenStockCommand(
@@ -1213,7 +1277,7 @@ def test_record_open_stock_rejects_negative_revenue(invalid_revenue: int) -> Non
     _seed_salesman(workbook, "S1")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidMonetaryValueError):
         transactions.record_open_stock(
             context,
             transactions.OpenStockCommand(
@@ -1299,7 +1363,7 @@ def test_record_void_propagates_unknown_target_transaction() -> None:
     context = _make_context(_make_workbook())
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.TransactionNotFoundError):
         transactions.record_void(
             context,
             transactions.VoidCommand(linked_transaction_id="UNKNOWN"),
@@ -1331,7 +1395,7 @@ def test_record_void_rejects_ineligible_target_types() -> None:
         )
 
         # Act / Assert
-        with pytest.raises(BusinessRuleViolation):
+        with pytest.raises(rules.IneligibleVoidTargetError):
             transactions.record_void(
                 context,
                 transactions.VoidCommand(linked_transaction_id="TARGET"),
@@ -1403,14 +1467,14 @@ def test_validate_void_target_rejects_ineligible_types(ineligible_type) -> None:
     )
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
-        transactions._validate_void_target(row)
+    with pytest.raises(rules.IneligibleVoidTargetError):
+        rules.VOID_TARGET_ELIGIBLE.enforce(None, row)
 
 
 def test_validate_void_target_accepts_other_transaction_types() -> None:
     """
     GIVEN a transaction type that is eligible for voiding
-    WHEN _validate_void_target is called
+    WHEN VOID_TARGET_ELIGIBLE is enforced
     THEN no exception is raised
     """
     # Arrange
@@ -1429,7 +1493,7 @@ def test_validate_void_target_accepts_other_transaction_types() -> None:
     )
 
     # Act / Assert
-    transactions._validate_void_target(row)
+    rules.VOID_TARGET_ELIGIBLE.enforce(None, row)
 
 
 def test_record_bulk_sale_success() -> None:
@@ -1443,8 +1507,28 @@ def test_record_bulk_sale_success() -> None:
     _seed_product(wb, "P001")
     _seed_product(wb, "P002")
     _seed_salesman(wb, "S001")
-    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P001", "S001", None, 10, 0, -1000)
-    _seed_transaction(wb, "R2", constants.TransactionType.RESTOCK.value, "P002", "S001", None, 10, 0, -1000)
+    _seed_transaction(
+        wb,
+        "R1",
+        constants.TransactionType.RESTOCK.value,
+        "P001",
+        "S001",
+        None,
+        10,
+        0,
+        -1000,
+    )
+    _seed_transaction(
+        wb,
+        "R2",
+        constants.TransactionType.RESTOCK.value,
+        "P002",
+        "S001",
+        None,
+        10,
+        0,
+        -1000,
+    )
     context = _make_context(wb)
 
     cmd1 = transactions.SaleCommand(
@@ -1489,8 +1573,28 @@ def test_record_bulk_sale_atomic_rollback_on_inactive_product() -> None:
     _seed_product(wb, "P001", is_active=True)
     _seed_product(wb, "P002", is_active=False)
     _seed_salesman(wb, "S001")
-    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P001", "S001", None, 10, 0, -1000)
-    _seed_transaction(wb, "R2", constants.TransactionType.RESTOCK.value, "P002", "S001", None, 10, 0, -1000)
+    _seed_transaction(
+        wb,
+        "R1",
+        constants.TransactionType.RESTOCK.value,
+        "P001",
+        "S001",
+        None,
+        10,
+        0,
+        -1000,
+    )
+    _seed_transaction(
+        wb,
+        "R2",
+        constants.TransactionType.RESTOCK.value,
+        "P002",
+        "S001",
+        None,
+        10,
+        0,
+        -1000,
+    )
     context = _make_context(wb)
 
     cmd1 = transactions.SaleCommand(
@@ -1509,7 +1613,7 @@ def test_record_bulk_sale_atomic_rollback_on_inactive_product() -> None:
     )
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(rules.ProductInactiveError):
         transactions.record_bulk_sale(context, [cmd1, cmd2])
 
     assert len(list(dal.iter_transactions(context.workbook))) == 2
@@ -1535,7 +1639,7 @@ def test_record_bulk_sale_atomic_rollback_on_missing_salesman() -> None:
     )
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.SalesmanNotFoundError):
         transactions.record_bulk_sale(context, [cmd1])
 
     assert len(list(dal.iter_transactions(context.workbook))) == 0
@@ -1552,7 +1656,7 @@ def test_record_bulk_sale_empty_list_raises_error() -> None:
     context = _make_context(wb)
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(rules.EmptyBulkOperationError):
         transactions.record_bulk_sale(context, [])
 
 
@@ -1566,7 +1670,17 @@ def test_record_bulk_sale_invalidates_cache() -> None:
     wb = _make_workbook()
     _seed_product(wb, "P001")
     _seed_salesman(wb, "S001")
-    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P001", "S001", None, 10, 0, -1000)
+    _seed_transaction(
+        wb,
+        "R1",
+        constants.TransactionType.RESTOCK.value,
+        "P001",
+        "S001",
+        None,
+        10,
+        0,
+        -1000,
+    )
     context = _make_context(wb)
     transactions.list_transactions(context)  # warm cache
     assert "transactions" in context._cache
@@ -1595,10 +1709,12 @@ def test_record_sale_rejects_insufficient_stock() -> None:
     wb = _make_workbook()
     _seed_product(wb, "P1")
     _seed_salesman(wb, "S1")
-    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 3, 0, -300)
+    _seed_transaction(
+        wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 3, 0, -300
+    )
     context = _make_context(wb)
 
-    with pytest.raises(BusinessRuleViolation) as exc_info:
+    with pytest.raises(rules.InsufficientStockError) as exc_info:
         transactions.record_sale(
             context,
             transactions.SaleCommand(
@@ -1621,13 +1737,27 @@ def test_record_bulk_sale_rejects_insufficient_aggregate_stock() -> None:
     wb = _make_workbook()
     _seed_product(wb, "P1")
     _seed_salesman(wb, "S1")
-    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 3, 0, -300)
+    _seed_transaction(
+        wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 3, 0, -300
+    )
     context = _make_context(wb)
 
-    cmd1 = transactions.SaleCommand(product_id="P1", salesman_id="S1", quantity=2, total_revenue=200, payment_type=constants.PaymentType.CASH)
-    cmd2 = transactions.SaleCommand(product_id="P1", salesman_id="S1", quantity=2, total_revenue=200, payment_type=constants.PaymentType.CASH)
+    cmd1 = transactions.SaleCommand(
+        product_id="P1",
+        salesman_id="S1",
+        quantity=2,
+        total_revenue=200,
+        payment_type=constants.PaymentType.CASH,
+    )
+    cmd2 = transactions.SaleCommand(
+        product_id="P1",
+        salesman_id="S1",
+        quantity=2,
+        total_revenue=200,
+        payment_type=constants.PaymentType.CASH,
+    )
 
-    with pytest.raises(BusinessRuleViolation) as exc_info:
+    with pytest.raises(rules.InsufficientStockError) as exc_info:
         transactions.record_bulk_sale(context, [cmd1, cmd2])
     assert "Insufficient stock" in str(exc_info.value)
 
@@ -1643,7 +1773,7 @@ def test_record_write_off_rejects_insufficient_stock() -> None:
     _seed_salesman(wb, "S1")
     context = _make_context(wb)
 
-    with pytest.raises(BusinessRuleViolation) as exc_info:
+    with pytest.raises(rules.InsufficientStockError) as exc_info:
         transactions.record_write_off(
             context,
             transactions.WriteOffCommand(product_id="P1", salesman_id="S1", quantity=1),
@@ -1660,7 +1790,9 @@ def test_record_credit_payment_allows_multiple_and_overpayment() -> None:
     wb = _make_workbook()
     _seed_product(wb, "P1")
     _seed_salesman(wb, "S1")
-    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 5, 0, -500)
+    _seed_transaction(
+        wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 5, 0, -500
+    )
     context = _make_context(wb)
 
     sale = transactions.record_sale(
@@ -1706,13 +1838,19 @@ def test_record_void_allows_voiding_credit_payment() -> None:
     wb = _make_workbook()
     _seed_product(wb, "P1")
     _seed_salesman(wb, "S1")
-    _seed_transaction(wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 5, 0, -500)
+    _seed_transaction(
+        wb, "R1", constants.TransactionType.RESTOCK.value, "P1", "S1", None, 5, 0, -500
+    )
     context = _make_context(wb)
 
     sale = transactions.record_sale(
         context,
         transactions.SaleCommand(
-            product_id="P1", salesman_id="S1", quantity=1, total_revenue=0, payment_type=constants.PaymentType.ON_CREDIT
+            product_id="P1",
+            salesman_id="S1",
+            quantity=1,
+            total_revenue=0,
+            payment_type=constants.PaymentType.ON_CREDIT,
         ),
     )
     payment = transactions.record_credit_payment(
