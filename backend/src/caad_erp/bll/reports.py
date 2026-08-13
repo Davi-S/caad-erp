@@ -12,9 +12,8 @@ import logging
 import typing as t
 from pathlib import Path
 
-from caad_erp import constants, exceptions
-
-from . import products, runtime, transactions
+from caad_erp import constants
+from caad_erp.bll import products, rules, runtime, transactions
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +153,7 @@ def calculate_outstanding_debts(context: runtime.RuntimeContext) -> dict[str, t.
         expected_from_price = 0
         try:
             product = products.get_product(context, entry.product_id)
-        except exceptions.MissingReferenceError:
+        except rules.ProductNotFoundError:
             logger.warning(
                 "Skipping price lookup for missing product '%s' referenced by credit sale '%s'",
                 entry.product_id,

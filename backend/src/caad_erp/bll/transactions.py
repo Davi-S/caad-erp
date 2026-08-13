@@ -7,15 +7,13 @@ business rules through centralized validators, and maintain cache coherence so
 reporting modules observe consistent state.
 """
 
-import collections
 import dataclasses
 import datetime
 import logging
 import typing as t
 
-from caad_erp import constants, dal, exceptions
-
-from . import products, reports, runtime, salesmen
+from caad_erp import constants, dal
+from caad_erp.bll import rules, runtime
 
 logger = logging.getLogger(__name__)
 
@@ -82,23 +80,90 @@ class VoidCommand:
     notes: str | None = None
 
 
-# Type this correctly so it returns t.Dict[str, dal.TransactionRow]
+# Rationale (Single Sale Workflow):
+# 1. Soft-Delete Protection (DEVELOPER_GUIDE.md #Soft-delete):
+#    - Inactive products and salesmen cannot participate in new sales so they instantly vanish
+#      from POS views and active catalog selections.
+#    - However, historical catalog rows remain in Products/Salesmen sheets to ensure past
+#      TransactionLog rows are never orphaned or corrupted.
+# 2. Flexible Discounts (DEVELOPER_GUIDE.md #Discounts):
+#    - Revenue is not hard-coded to suggested Product.SellPrice. Custom prices and discounts
+#      are handled by allowing any total_revenue >= 0.
+# 3. Stock Availability Enforcement (DEVELOPER_GUIDE.md #Stock Availability Enforcement):
+#    - SUM(QuantityChange) derives real-time inventory. Sales reduce stock and cannot exceed
+#      currently available inventory balances.
+RECORD_SALE_RULES: list[rules.BaseRule] = [
+    rules.PRODUCT_EXISTS,
+    rules.PRODUCT_IS_ACTIVE,
+    rules.SALESMAN_EXISTS,
+    rules.SALESMAN_IS_ACTIVE,
+    rules.POSITIVE_QUANTITY,
+    rules.NONNEGATIVE_REVENUE,
+    rules.SUFFICIENT_STOCK,
+]
+
+# Rationale (Restock Workflow):
+# 1. Active Catalog Attribution (DEVELOPER_GUIDE.md #RESTOCK):
+#    - Inventory restocks increase physical stock (> 0) and must be attributed to an active product
+#      and active salesman.
+# 2. Donated & Promotional Items (DEVELOPER_GUIDE.md #RESTOCK / #Separate Revenue and Cost Columns):
+#    - Total cost is stored as a negative delta in TotalCost.
+#    - Total cost of 0 is explicitly allowed to support donated items, promotional samples,
+#      or free inventory additions without breaking cost accounting.
+RECORD_RESTOCK_RULES: list[rules.BaseRule] = [
+    rules.PRODUCT_EXISTS,
+    rules.PRODUCT_IS_ACTIVE,
+    rules.SALESMAN_EXISTS,
+    rules.SALESMAN_IS_ACTIVE,
+    rules.POSITIVE_QUANTITY,
+    rules.NONNEGATIVE_COST,
+]
+
+# Rationale (Write-Off Workflow):
+# 1. Spoilage & Loss Tracking (DEVELOPER_GUIDE.md #WRITE_OFF):
+#    - Write-offs represent inventory loss (spoilage, theft, loss, damage) without revenue or cost deltas.
+# 2. Stock Balance Guard (DEVELOPER_GUIDE.md #Stock Availability Enforcement):
+#    - Write-off quantities must be positive and cannot exceed currently available inventory.
+RECORD_WRITE_OFF_RULES: list[rules.BaseRule] = [
+    rules.PRODUCT_EXISTS,
+    rules.PRODUCT_IS_ACTIVE,
+    rules.SALESMAN_EXISTS,
+    rules.SALESMAN_IS_ACTIVE,
+    rules.POSITIVE_QUANTITY,
+    rules.SUFFICIENT_WRITE_OFF_STOCK,
+]
+
+# Rationale (Credit Payment Workflow):
+# 1. Credit Sale Link (DEVELOPER_GUIDE.md #Sell on Credit & Flexible Credit Payments):
+#    - Must reference a valid SALE transaction recorded with PaymentType='OnCredit'.
+# 2. Void Immutability Guard (DEVELOPER_GUIDE.md #Error Correction & Voiding Credit Payments):
+#    - Voided sales cannot accept credit payments to prevent phantom debt settlements and keep audit logs immutable.
+# 3. Flexible Payments & Overpayments (DEVELOPER_GUIDE.md #Overpayments & Interest):
+#    - Payment amount must be strictly > 0. Payments are intentionally NOT capped by remaining debt,
+#      allowing salesmen to record partial payments, full settlements, interest, or late fees.
+# 4. Active Salesman:
+#    - Cash collection must be logged by an active salesman.
+RECORD_CREDIT_PAYMENT_RULES: list[rules.BaseRule] = [
+    rules.CREDIT_SALE_LINK_ELIGIBLE,
+    rules.POSITIVE_REVENUE,
+    rules.SALESMAN_EXISTS,
+    rules.SALESMAN_IS_ACTIVE,
+]
+
+# Rationale (Open Stock Workflow):
+# 1. Period Initialization (DEVELOPER_GUIDE.md #OPEN_STOCK / #Archive Script):
+#    - OPEN_STOCK entries seed beginning-of-period inventory during archive processing for active catalog items.
+RECORD_OPEN_STOCK_RULES: list[rules.BaseRule] = [
+    rules.PRODUCT_EXISTS,
+    rules.PRODUCT_IS_ACTIVE,
+    rules.SALESMAN_EXISTS,
+    rules.SALESMAN_IS_ACTIVE,
+    rules.POSITIVE_QUANTITY,
+    rules.NONNEGATIVE_REVENUE,
+]
+
+
 def _ensure_transactions_cache(context: runtime.RuntimeContext) -> dict[str, t.Any]:
-    """Populate the transaction log cache bucket on demand.
-
-    Because transactions are immutable after creation, caching the full list
-    and a dictionary keyed by ``transaction_id`` avoids repeated worksheet
-    scans even for complex reporting operations.
-
-    Args:
-        context (RuntimeContext): Runtime state used to access the workbook and
-            shared caches.
-
-    Returns:
-        dict[str, t.Any]: Bucket containing ``all`` transactions and a ``by_id``
-            dictionary for quick primary key lookups.
-    """
-
     bucket = runtime.get_cache_bucket(context, "transactions")
     if "all" not in bucket:
         all_transactions = list(dal.iter_transactions(context.workbook))
@@ -114,75 +179,10 @@ def _ensure_transactions_cache(context: runtime.RuntimeContext) -> dict[str, t.A
 
 
 def _generate_transaction_id(when: datetime.datetime) -> str:
-    """Generate a sortable transaction identifier using UTC timestamps.
-
-    Args:
-        when (datetime): Timestamp used for deterministically producing
-            the identifier.
-
-    Returns:
-        str: Identifier formed as ``YYYYMMDDHHMMSSffffff``.
-
-    The format preserves chronological ordering and packs microseconds to avoid
-    collisions when multiple transactions occur within the same second. Caller
-    supplied timestamps allow deterministic identifiers during testing or data
-    migrations.
-    """
     return when.strftime("%Y%m%d%H%M%S%f")
 
 
-def _require_positive_quantity(quantity: int) -> None:
-    """Validate that a quantity is strictly positive.
-
-    Args:
-        quantity (int): Quantity supplied by a command object.
-
-    Raises:
-        ValueError: If ``quantity`` is zero or negative.
-
-    Inventory adjustments that decrease stock convert the quantity into a
-    negative value later in the pipeline, so callers always submit positive
-    magnitudes here. Using :class:`ValueError` keeps the guard consistent with
-    other validation helpers in the module.
-    """
-    if quantity <= 0:
-        logger.error("Quantity validation failed: %s", quantity)
-        raise ValueError("Quantity must be greater than zero")
-
-
-def _require_nonnegative_money(amount: int) -> None:
-    """Validate that a monetary value is nonnegative.
-
-    Args:
-        amount (int): Currency value supplied by a command object.
-
-    Raises:
-        ValueError: If ``amount`` is less than zero.
-
-    Monetary fields are stored as signed integers within the transaction logger.
-    This helper ensures upstream workflows never pass negative revenue or cost
-    figures without explicitly opting into that behavior.
-    """
-    if amount < 0:
-        logger.error("Monetary value validation failed: %s", amount)
-        raise ValueError("Amount must be zero or positive")
-
-
 def list_transactions(context: runtime.RuntimeContext) -> list[dal.TransactionRow]:
-    """Fetch the immutable transaction log from cache.
-
-    The returned list is a shallow copy of the cached sequence so callers can
-    freely sort or filter without mutating the shared cache. Entries remain in
-    workbook order, matching the append-only transaction log semantics.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-
-    Returns:
-        list[dal.TransactionRow]: Snapshot of the entire transaction log in
-            workbook order.
-    """
     cache = _ensure_transactions_cache(context)
     return list(cache["all"])
 
@@ -190,97 +190,22 @@ def list_transactions(context: runtime.RuntimeContext) -> list[dal.TransactionRo
 def get_transaction(
     context: runtime.RuntimeContext, transaction_id: str
 ) -> dal.TransactionRow:
-    """Retrieve a transaction row by its primary identifier.
-
-    Transactions are resolved from the cached ``by_id`` mapping and returned as
-    immutable dataclasses. An unknown identifier triggers a
-    :class:`MissingReferenceError` to signal data integrity issues immediately.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        transaction_id (str): Transaction identifier from the log sheet.
-
-    Returns:
-        dal.TransactionRow: Matching transaction dataclass fetched from cache.
-
-    Raises:
-        MissingReferenceError: If the log lacks the supplied identifier.
-    """
     cache = _ensure_transactions_cache(context)
     try:
         return cache["by_id"][transaction_id]
     except KeyError as exc:
         logger.warning("Transaction lookup failed for id '%s'", transaction_id)
-        raise exceptions.MissingReferenceError(
-            f"Unknown transaction id: {transaction_id}"
+        raise rules.TransactionNotFoundError(
+            f"[Transaction Exists] Unknown transaction id: {transaction_id}"
         ) from exc
-
-
-def _validate_sale_command(
-    context: runtime.RuntimeContext, command: SaleCommand
-) -> None:
-    """Validate that a SaleCommand meets all domain rules before execution."""
-    product = products.get_product(context, command.product_id)
-    if not product.is_active:
-        logger.warning("Attempted sale on inactive product '%s'", command.product_id)
-        raise exceptions.BusinessRuleViolation(
-            f"Product '{command.product_id}' is inactive"
-        )
-    salesman = salesmen.get_salesman(context, command.salesman_id)
-    if not salesman.is_active:
-        logger.warning(
-            "Attempted sale with inactive salesman '%s'", command.salesman_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Salesman '{command.salesman_id}' is inactive"
-        )
-    _require_positive_quantity(command.quantity)
-    _require_nonnegative_money(command.total_revenue)
-
-    inventory = reports.calculate_inventory(context)
-    available_stock = inventory.get(command.product_id, 0)
-    if command.quantity > available_stock:
-        logger.warning(
-            "Attempted sale exceeding stock for product '%s' (available=%s, requested=%s)",
-            command.product_id,
-            available_stock,
-            command.quantity,
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Insufficient stock for product '{command.product_id}': available {available_stock}, requested {command.quantity}"
-        )
 
 
 def record_sale(
     context: runtime.RuntimeContext, command: SaleCommand
 ) -> dal.TransactionRow:
-    """Validate and append a ``SALE`` transaction to the logger.
-
-    The workflow ensures products and salesmen are active, enforces positive
-    quantities, verifies monetary values, generates a unique identifier, and
-    persists the resulting transaction. Quantities are stored as negative
-    deltas to reflect stock depletion, and revenue is attributed directly to
-    the sale. The transaction cache is invalidated so subsequent reads observe
-    the new entry.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        command (SaleCommand): Structured intent describing the sale request.
-
-    Returns:
-        dal.TransactionRow: Newly appended sale transaction.
-
-    Raises:
-        BusinessRuleViolation: If the referenced product or salesman is
-            inactive or the payment type is unsupported.
-        MissingReferenceError: If the product or salesman identifiers are
-            unknown.
-        ValueError: When quantity or revenue validations fail.
-    """
+    """Validate and append a ``SALE`` transaction to the logger."""
     now = datetime.datetime.now(datetime.UTC)
-    _validate_sale_command(context, command)
+    rules.enforce_rules(context, command, RECORD_SALE_RULES)
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_sale_transaction(
@@ -301,46 +226,15 @@ def record_sale(
 def record_bulk_sale(
     context: runtime.RuntimeContext, commands: list[SaleCommand]
 ) -> list[dal.TransactionRow]:
-    """Validate and append a list of ``SALE`` transactions atomically.
-
-    All commands in the list are validated upfront. If any command fails
-    validation (e.g. referencing an inactive product or salesman), a domain
-    exception is raised immediately and zero transactions are recorded.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access.
-        commands (list[SaleCommand]): List of sale intents to record.
-
-    Returns:
-        list[dal.TransactionRow]: Appended sale transaction rows.
-
-    Raises:
-        BusinessRuleViolation: If the command list is empty or any item is invalid.
-        MissingReferenceError: If any product or salesman is unknown.
-    """
-    if not commands:
-        raise exceptions.BusinessRuleViolation("Bulk sale requires at least one item")
+    """Validate and append a list of ``SALE`` transactions atomically."""
+    rules.enforce_rules(context, commands, [rules.NON_EMPTY_BULK_SALE])
 
     for command in commands:
-        _validate_sale_command(context, command)
+        rules.enforce_rules(
+            context, command, RECORD_SALE_RULES[:-1]
+        )  # validate individual item checks
 
-    inventory = reports.calculate_inventory(context)
-    aggregate_quantities: dict[str, int] = collections.defaultdict(int)
-    for command in commands:
-        aggregate_quantities[command.product_id] += command.quantity
-
-    for product_id, total_requested in aggregate_quantities.items():
-        available_stock = inventory.get(product_id, 0)
-        if total_requested > available_stock:
-            logger.warning(
-                "Bulk sale total requested exceeding stock for product '%s' (available=%s, total_requested=%s)",
-                product_id,
-                available_stock,
-                total_requested,
-            )
-            raise exceptions.BusinessRuleViolation(
-                f"Insufficient stock for product '{product_id}': available {available_stock}, total requested in cart {total_requested}"
-            )
+    rules.enforce_rules(context, commands, [rules.BULK_SUFFICIENT_STOCK])
 
     recorded: list[dal.TransactionRow] = []
     for command in commands:
@@ -352,22 +246,6 @@ def record_bulk_sale(
 def _build_sale_transaction(
     command: SaleCommand, *, transaction_id: str, timestamp: datetime.datetime
 ) -> dal.TransactionRow:
-    """Materialize a :class:`SaleCommand` into a DAL transaction row.
-
-    Args:
-        command (SaleCommand): User intent describing the sale.
-        transaction_id (str): Unique identifier allocated for the transaction.
-        timestamp (datetime): Timestamp assigned to the transaction.
-
-    Returns:
-        dal.TransactionRow: Row ready for persistence via the data
-            layer.
-
-    Quantities are stored as negative values to indicate stock depletion, and
-    costs remain zero because they are captured during restock events. The
-    payment type is serialized from the enum into the workbook's expected text
-    representation.
-    """
     quantity_change = -abs(command.quantity)
     return dal.TransactionRow(
         transaction_id=transaction_id,
@@ -387,43 +265,9 @@ def _build_sale_transaction(
 def record_restock(
     context: runtime.RuntimeContext, command: RestockCommand
 ) -> dal.TransactionRow:
-    """Validate and append a ``RESTOCK`` transaction.
-
-    Stock increases must specify positive quantities and nonnegative costs. The
-    generated transaction records quantity additions and stores costs as
-    negative values so that later profit calculations can sum without special
-    logic.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        command (RestockCommand): Structured restock intent.
-
-    Returns:
-        dal.TransactionRow: Newly appended restock entry.
-
-    Raises:
-        BusinessRuleViolation: If the targeted product is inactive.
-        MissingReferenceError: When the referenced product cannot be located.
-        ValueError: If quantity or total cost validations fail.
-    """
+    """Validate and append a ``RESTOCK`` transaction."""
     now = datetime.datetime.now(datetime.UTC)
-    product = products.get_product(context, command.product_id)
-    if not product.is_active:
-        logger.warning("Attempted restock on inactive product '%s'", command.product_id)
-        raise exceptions.BusinessRuleViolation(
-            f"Product '{command.product_id}' is inactive"
-        )
-    salesman = salesmen.get_salesman(context, command.salesman_id)
-    if not salesman.is_active:
-        logger.warning(
-            "Attempted restock with inactive salesman '%s'", command.salesman_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Salesman '{command.salesman_id}' is inactive"
-        )
-    _require_positive_quantity(command.quantity)
-    _require_nonnegative_money(abs(command.total_cost))
+    rules.enforce_rules(context, command, RECORD_RESTOCK_RULES)
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_restock_transaction(
@@ -444,21 +288,6 @@ def record_restock(
 def _build_restock_transaction(
     command: RestockCommand, *, transaction_id: str, timestamp: datetime.datetime
 ) -> dal.TransactionRow:
-    """Materialize a :class:`RestockCommand` into a DAL transaction row.
-
-    Args:
-        command (RestockCommand): User intent describing the restock.
-        transaction_id (str): Unique identifier allocated for the transaction.
-        timestamp (datetime): Timestamp assigned to the transaction.
-
-    Returns:
-        dal.TransactionRow: Row ready for persistence via the data
-            layer.
-
-    Restocks add inventory, so the quantity is expressed as a positive value.
-    Costs are encoded as negative amounts, aligning with the transaction log's
-    convention that expenses subtract from profit.
-    """
     quantity_change = abs(command.quantity)
     cost_value = -abs(command.total_cost)
     return dal.TransactionRow(
@@ -479,56 +308,9 @@ def _build_restock_transaction(
 def record_write_off(
     context: runtime.RuntimeContext, command: WriteOffCommand
 ) -> dal.TransactionRow:
-    """Validate and append a ``WRITE_OFF`` transaction.
-
-    Write-offs reduce inventory without affecting revenue or cost ledgers. The
-    quantity is recorded as a negative change to ensure downstream inventory
-    calculations treat the write-off as a depletion.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        command (WriteOffCommand): Structured write-off intent.
-
-    Returns:
-        dal.TransactionRow: Newly appended write-off entry.
-
-    Raises:
-        BusinessRuleViolation: If the product is inactive or quantity exceeds stock.
-        MissingReferenceError: When the referenced product id is unknown.
-        ValueError: If the quantity fails validation.
-    """
+    """Validate and append a ``WRITE_OFF`` transaction."""
     now = datetime.datetime.now(datetime.UTC)
-    product = products.get_product(context, command.product_id)
-    if not product.is_active:
-        logger.warning(
-            "Attempted write-off on inactive product '%s'", command.product_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Product '{command.product_id}' is inactive"
-        )
-    salesman = salesmen.get_salesman(context, command.salesman_id)
-    if not salesman.is_active:
-        logger.warning(
-            "Attempted write-off with inactive salesman '%s'", command.salesman_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Salesman '{command.salesman_id}' is inactive"
-        )
-    _require_positive_quantity(command.quantity)
-
-    inventory = reports.calculate_inventory(context)
-    available_stock = inventory.get(command.product_id, 0)
-    if command.quantity > available_stock:
-        logger.warning(
-            "Attempted write-off exceeding stock for product '%s' (available=%s, requested=%s)",
-            command.product_id,
-            available_stock,
-            command.quantity,
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Cannot write off {command.quantity} units of product '{command.product_id}': only {available_stock} available"
-        )
+    rules.enforce_rules(context, command, RECORD_WRITE_OFF_RULES)
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_write_off_transaction(
@@ -548,21 +330,6 @@ def record_write_off(
 def _build_write_off_transaction(
     command: WriteOffCommand, *, transaction_id: str, timestamp: datetime.datetime
 ) -> dal.TransactionRow:
-    """Materialize a :class:`WriteOffCommand` into a DAL transaction row.
-
-    Args:
-        command (WriteOffCommand): User intent describing the write-off.
-        transaction_id (str): Unique identifier allocated for the transaction.
-        timestamp (datetime): Timestamp assigned to the transaction.
-
-    Returns:
-        dal.TransactionRow: Row ready for persistence via the data
-            layer.
-
-    Write-offs reduce stock without touching revenue or cost columns. The
-    constructed row therefore contains a negative quantity delta and zeroed
-    monetary amounts.
-    """
     quantity_change = -abs(command.quantity)
     return dal.TransactionRow(
         transaction_id=transaction_id,
@@ -582,44 +349,10 @@ def _build_write_off_transaction(
 def record_credit_payment(
     context: runtime.RuntimeContext, command: CreditPaymentCommand
 ) -> dal.TransactionRow:
-    """Append a ``CREDIT_PAYMENT`` transaction linked to an outstanding sale.
-
-    Before persisting, the routine verifies that the referenced sale truly
-    represents outstanding credit. The resulting transaction keeps quantity at
-    zero while attributing cash revenue to the linked sale identifier.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        command (CreditPaymentCommand): Structured credit payment intent.
-
-    Returns:
-        dal.TransactionRow: Newly appended credit payment entry.
-
-    Raises:
-        BusinessRuleViolation: If the referenced sale is not eligible for
-            credit payment linkage.
-        MissingReferenceError: When the linked transaction identifier is
-            unknown.
-        ValueError: If the payment amount is negative or zero.
-    """
+    """Append a ``CREDIT_PAYMENT`` transaction linked to an outstanding sale."""
     now = datetime.datetime.now(datetime.UTC)
+    rules.enforce_rules(context, command, RECORD_CREDIT_PAYMENT_RULES)
     linked_sale = get_transaction(context, command.linked_transaction_id)
-    _validate_credit_sale_link(context, linked_sale)
-    if command.total_revenue <= 0:
-        logger.error(
-            "Credit payment validation failed: non-positive revenue '%s'",
-            command.total_revenue,
-        )
-        raise ValueError("Payment amount must be greater than zero")
-    salesman = salesmen.get_salesman(context, command.salesman_id)
-    if not salesman.is_active:
-        logger.warning(
-            "Attempted credit payment with inactive salesman '%s'", command.salesman_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Salesman '{command.salesman_id}' is inactive"
-        )
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_credit_payment_transaction(
@@ -646,7 +379,6 @@ def _build_credit_payment_transaction(
     timestamp: datetime.datetime,
     product_id: str,
 ) -> dal.TransactionRow:
-    """Materialize a :class:`CreditPaymentCommand` into a DAL transaction row."""
     return dal.TransactionRow(
         transaction_id=transaction_id,
         timestamp_iso=timestamp.isoformat(),
@@ -662,93 +394,12 @@ def _build_credit_payment_transaction(
     )
 
 
-def _validate_credit_sale_link(
-    context: runtime.RuntimeContext, transaction: dal.TransactionRow
-) -> None:
-    """Ensure a sale transaction qualifies for credit payment linkage.
-
-    Args:
-        context (RuntimeContext): Active runtime context.
-        transaction (dal.TransactionRow): Transaction row purportedly
-            representing a credit sale.
-
-    Raises:
-        BusinessRuleViolation: If ``transaction`` is not a credit sale eligible
-            for a payment linkage.
-    """
-    if transaction.transaction_type != constants.TransactionType.SALE.value:
-        logger.error(
-            "Credit payment validation failed: transaction '%s' is not a sale",
-            transaction.transaction_id,
-        )
-        raise exceptions.BusinessRuleViolation(
-            "Credit payments must reference a SALE transaction"
-        )
-    if transaction.payment_type != constants.PaymentType.ON_CREDIT.value:
-        logger.error(
-            "Credit payment validation failed: transaction '%s' payment type is '%s'",
-            transaction.transaction_id,
-            transaction.payment_type,
-        )
-        raise exceptions.BusinessRuleViolation("Linked sale is not recorded as credit")
-    voided_tx_ids = {
-        tx.linked_transaction_id
-        for tx in list_transactions(context)
-        if tx.transaction_type == constants.TransactionType.VOID.value
-        and tx.linked_transaction_id
-    }
-    if transaction.transaction_id in voided_tx_ids:
-        logger.error(
-            "Credit payment validation failed: sale transaction '%s' is voided",
-            transaction.transaction_id,
-        )
-        raise exceptions.BusinessRuleViolation(
-            "Cannot process credit payment for voided transaction"
-        )
-
-
 def record_open_stock(
     context: runtime.RuntimeContext, command: OpenStockCommand
 ) -> dal.TransactionRow:
-    """Append an ``OPEN_STOCK`` transaction for period initialization.
-
-    Opening stock transactions seed beginning-of-period inventory. Quantities
-    are stored as positive adjustments, and any associated valuation is
-    recorded in ``total_revenue`` to make subsequent summaries aware of the
-    starting inventory worth.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        command (OpenStockCommand): Structured open stock intent.
-
-    Returns:
-        dal.TransactionRow: Newly appended open stock entry.
-
-    Raises:
-        BusinessRuleViolation: If the targeted product is inactive.
-        MissingReferenceError: When the product identifier is unknown.
-        ValueError: If quantity or revenue validations fail.
-    """
+    """Append an ``OPEN_STOCK`` transaction for period initialization."""
     now = datetime.datetime.now(datetime.UTC)
-    product = products.get_product(context, command.product_id)
-    if not product.is_active:
-        logger.warning(
-            "Attempted open stock on inactive product '%s'", command.product_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Product '{command.product_id}' is inactive"
-        )
-    salesman = salesmen.get_salesman(context, command.salesman_id)
-    if not salesman.is_active:
-        logger.warning(
-            "Attempted open stock with inactive salesman '%s'", command.salesman_id
-        )
-        raise exceptions.BusinessRuleViolation(
-            f"Salesman '{command.salesman_id}' is inactive"
-        )
-    _require_positive_quantity(command.quantity)
-    _require_nonnegative_money(command.total_revenue)
+    rules.enforce_rules(context, command, RECORD_OPEN_STOCK_RULES)
 
     transaction_id = _generate_transaction_id(when=now)
     transaction = _build_open_stock_transaction(
@@ -769,21 +420,6 @@ def record_open_stock(
 def _build_open_stock_transaction(
     command: OpenStockCommand, *, transaction_id: str, timestamp: datetime.datetime
 ) -> dal.TransactionRow:
-    """Materialize an :class:`OpenStockCommand` into a DAL transaction row.
-
-    Args:
-        command (OpenStockCommand): User intent describing the opening stock.
-        transaction_id (str): Unique identifier allocated for the transaction.
-        timestamp (datetime): Timestamp assigned to the transaction.
-
-    Returns:
-        dal.TransactionRow: Row ready for persistence via the data
-            layer.
-
-    Opening stock transactions provide a baseline for inventory and valuation
-    reports, so the helper records the quantity as a positive adjustment and
-    propagates ``total_revenue`` unchanged to capture the initial valuation.
-    """
     quantity_change = abs(command.quantity)
     return dal.TransactionRow(
         transaction_id=transaction_id,
@@ -803,29 +439,11 @@ def _build_open_stock_transaction(
 def record_void(
     context: runtime.RuntimeContext, command: VoidCommand
 ) -> dal.TransactionRow:
-    """Record a ``VOID`` reversal negating a prior transaction.
-
-    The function writes a reversal entry that mirrors the target transaction
-    with inverted deltas, ensuring downstream calculations observe the
-    correction. Transaction caches are invalidated before returning so
-    subsequent readers consume the updated state.
-
-    Args:
-        context (RuntimeContext): Runtime context providing workbook access and
-            caches.
-        command (VoidCommand): Structured void intent describing the target.
-
-    Returns:
-        dal.TransactionRow: Reversal transaction recorded in the log.
-
-    Raises:
-        BusinessRuleViolation: If the target transaction cannot be voided.
-        MissingReferenceError: When the referenced transaction is unknown.
-    """
+    """Record a ``VOID`` reversal negating a prior transaction."""
     now = datetime.datetime.now(datetime.UTC)
     logger.info("Recording VOID for transaction '%s'", command.linked_transaction_id)
     target = get_transaction(context, command.linked_transaction_id)
-    _validate_void_target(target)
+    rules.enforce_rules(context, target, [rules.VOID_TARGET_ELIGIBLE])
 
     reversal = _build_void_transaction(target, timestamp=now, notes=command.notes)
     dal.append_transaction(context.workbook, reversal)
@@ -844,24 +462,6 @@ def _build_void_transaction(
     timestamp: datetime.datetime,
     notes: str | None,
 ) -> dal.TransactionRow:
-    """Create a reversal transaction that negates a prior entry.
-
-    Args:
-        transaction (dal.TransactionRow): Original transaction being
-            reversed.
-        timestamp (datetime): Timestamp to apply to the reversal entry.
-        notes (str | None): t.Optional contextual notes to persist alongside the
-            reversal.
-
-    Returns:
-        dal.TransactionRow: Synthetic ``VOID`` transaction that
-            negates the quantities, costs, and revenues of ``transaction``.
-
-    The reversal mirrors the original transaction's identifiers while flipping
-    all numeric deltas and storing the original identifier in
-    ``linked_transaction_id``. Consumers can use this metadata to establish
-    audit trails.
-    """
     return dal.TransactionRow(
         transaction_id=_generate_transaction_id(when=timestamp),
         timestamp_iso=timestamp.isoformat(),
@@ -875,25 +475,3 @@ def _build_void_transaction(
         linked_transaction_id=transaction.transaction_id,
         notes=notes,
     )
-
-
-def _validate_void_target(transaction: dal.TransactionRow) -> None:
-    """Confirm that a transaction may be voided under business rules.
-
-    Args:
-        transaction (dal.TransactionRow): Transaction row selected for
-            voiding.
-
-    Raises:
-        BusinessRuleViolation: If the transaction type is ineligible for
-            voiding.
-
-    VOID transactions are intentionally immutable because a second void would
-    create loops. Attempting to void a VOID surfaces a domain error.
-    """
-    if transaction.transaction_type == constants.TransactionType.VOID.value:
-        logger.error(
-            "Cannot void transaction '%s' because it is already a void",
-            transaction.transaction_id,
-        )
-        raise exceptions.BusinessRuleViolation("Cannot void a VOID transaction")
