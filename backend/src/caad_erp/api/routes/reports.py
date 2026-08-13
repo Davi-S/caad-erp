@@ -4,6 +4,8 @@ This module provides REST endpoints for generating various reports,
 mirroring the CLI commands stock, profit, debts, and log.
 """
 
+import typing as t
+
 import fastapi
 
 from caad_erp import bll
@@ -12,10 +14,14 @@ from .. import runtime, schemas
 
 router = fastapi.APIRouter(prefix="/reports", tags=["Reports"])
 
+ContextDep = t.Annotated[
+    bll.RuntimeContext, fastapi.Depends(runtime.get_runtime_context)
+]
+
 
 @router.get("/stock", response_model=schemas.StockReportResponse)
 def get_stock_report(
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StockReportResponse:
     """Get current stock levels for all products.
 
@@ -35,7 +41,7 @@ def get_stock_report(
 
 @router.get("/profit", response_model=schemas.ProfitReportResponse)
 def get_profit_report(
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.ProfitReportResponse:
     """Get profit summary with revenue and cost totals.
 
@@ -55,7 +61,7 @@ def get_profit_report(
 
 @router.get("/debts", response_model=schemas.DebtsReportResponse)
 def get_debts_report(
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.DebtsReportResponse:
     """Get outstanding credit balances.
 
@@ -87,7 +93,7 @@ def get_debts_report(
 
 @router.get("/log", response_model=schemas.LogReportResponse)
 def get_log_report(
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.LogReportResponse:
     """Get the full transaction log.
 
@@ -120,7 +126,7 @@ def get_log_report(
 
 @router.get("/workbook", response_class=fastapi.responses.FileResponse)
 def get_workbook_report(
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> fastapi.responses.FileResponse:
     """Download the current master Excel workbook file.
 

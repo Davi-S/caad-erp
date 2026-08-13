@@ -20,13 +20,15 @@ def test_proxy_mercado_pago_forwards_successful_response() -> None:
     mock_resp.status = 201
     mock_resp.headers = {"content-type": "application/json"}
 
-    with unittest.mock.patch("urllib.request.urlopen", return_value=mock_resp):
-        with TestClient(app) as client:
-            response = client.post(
-                "/api-mp/v1/payments",
-                json={"transaction_amount": 10.0},
-                headers={"Authorization": "Bearer TEST_TOKEN"},
-            )
+    with (
+        unittest.mock.patch("urllib.request.urlopen", return_value=mock_resp),
+        TestClient(app) as client,
+    ):
+        response = client.post(
+            "/api-mp/v1/payments",
+            json={"transaction_amount": 10.0},
+            headers={"Authorization": "Bearer TEST_TOKEN"},
+        )
 
     assert response.status_code == 201
     assert response.json()["id"] == 12345
@@ -47,9 +49,11 @@ def test_proxy_mercado_pago_handles_http_error() -> None:
         fp=io.BytesIO(b'{"message": "Invalid payment data"}'),
     )
 
-    with unittest.mock.patch("urllib.request.urlopen", side_effect=mock_error):
-        with TestClient(app) as client:
-            response = client.post("/api-mp/v1/payments", json={})
+    with (
+        unittest.mock.patch("urllib.request.urlopen", side_effect=mock_error),
+        TestClient(app) as client,
+    ):
+        response = client.post("/api-mp/v1/payments", json={})
 
     assert response.status_code == 400
     assert response.json()["message"] == "Invalid payment data"

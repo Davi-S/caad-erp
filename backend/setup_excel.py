@@ -11,7 +11,7 @@ import argparse
 import configparser
 import sys
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import openpyxl
@@ -61,9 +61,9 @@ class SetupSettings:
 class DashboardStyles:
     """Centralized formatting tokens used across Dashboard builders."""
 
-    title_font: Font = Font(bold=True, size=14)
-    header_font: Font = Font(bold=True, size=11)
-    bold_font: Font = Font(bold=True)
+    title_font: Font = field(default_factory=lambda: Font(bold=True, size=14))
+    header_font: Font = field(default_factory=lambda: Font(bold=True, size=11))
+    bold_font: Font = field(default_factory=lambda: Font(bold=True))
     currency_format: str = "$#,##0.00"
     percentage_format: str = "0.0%"
 
