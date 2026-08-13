@@ -4,8 +4,7 @@ import pytest
 from openpyxl.workbook import Workbook
 
 from caad_erp import constants, dal
-from caad_erp.bll import runtime, salesmen
-from caad_erp.exceptions import BusinessRuleViolation, MissingReferenceError
+from caad_erp.bll import rules, runtime, salesmen
 from caad_erp.settings import AppSettings
 
 
@@ -147,7 +146,7 @@ def test_get_salesman_raises_missing_reference_for_unknown_id(
     _seed_salesman(salesmen_workbook, "S001")
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.SalesmanNotFoundError):
         salesmen.get_salesman(context, "UNKNOWN")
 
 
@@ -211,7 +210,7 @@ def test_add_salesman_rejects_blank_salesman_id(salesmen_workbook: Workbook) -> 
     context = _make_context(salesmen_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         salesmen.add_salesman(
             context,
             salesmen.SalesmanCommand(
@@ -236,7 +235,7 @@ def test_add_salesman_requires_nonblank_salesman_name(
     context = _make_context(salesmen_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         salesmen.add_salesman(
             context,
             salesmen.SalesmanCommand(
@@ -257,7 +256,7 @@ def test_add_salesman_requires_is_active(salesmen_workbook: Workbook) -> None:
     context = _make_context(salesmen_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         salesmen.add_salesman(
             context,
             salesmen.SalesmanCommand(
@@ -281,7 +280,7 @@ def test_add_salesman_rejects_duplicate_salesman_id(
     _seed_salesman(salesmen_workbook, "S001", salesman_name="Original")
 
     # Act / Assert
-    with pytest.raises(BusinessRuleViolation):
+    with pytest.raises(rules.DuplicateSalesmanError):
         salesmen.add_salesman(
             context,
             salesmen.SalesmanCommand(
@@ -350,7 +349,7 @@ def test_update_salesman_rejects_blank_salesman_id(salesmen_workbook: Workbook) 
     context = _make_context(salesmen_workbook)
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         salesmen.update_salesman(
             context,
             salesmen.SalesmanCommand(salesman_id="   ", salesman_name="Updated"),
@@ -370,7 +369,7 @@ def test_update_salesman_rejects_blank_salesman_name(
     _seed_salesman(salesmen_workbook, "S001")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         salesmen.update_salesman(
             context,
             salesmen.SalesmanCommand(salesman_id="S001", salesman_name="   "),
@@ -390,7 +389,7 @@ def test_update_salesman_requires_at_least_one_field(
     _seed_salesman(salesmen_workbook, "S001")
 
     # Act / Assert
-    with pytest.raises(ValueError):
+    with pytest.raises(rules.InvalidAttributeError):
         salesmen.update_salesman(context, salesmen.SalesmanCommand(salesman_id="S001"))
 
 
@@ -406,7 +405,7 @@ def test_update_salesman_maps_dal_key_error_to_missing_reference(
     context = _make_context(salesmen_workbook)
 
     # Act / Assert
-    with pytest.raises(MissingReferenceError):
+    with pytest.raises(rules.SalesmanNotFoundError):
         salesmen.update_salesman(
             context,
             salesmen.SalesmanCommand(salesman_id="S999", salesman_name="Updated"),
