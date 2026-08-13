@@ -4,6 +4,8 @@ This module provides REST endpoints for recording various transaction types,
 mirroring the CLI commands sale, restock, write-off, void, and pay-debt.
 """
 
+import typing as t
+
 import fastapi
 
 from caad_erp import bll, dal
@@ -11,6 +13,10 @@ from caad_erp import bll, dal
 from .. import persistence, runtime, schemas
 
 router = fastapi.APIRouter(prefix="/transactions", tags=["Transactions"])
+
+ContextDep = t.Annotated[
+    bll.RuntimeContext, fastapi.Depends(runtime.get_runtime_context)
+]
 
 
 def _transaction_to_response(
@@ -36,7 +42,7 @@ def _transaction_to_response(
 @persistence.mutating_endpoint
 def record_sale(
     request: schemas.SaleRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Record a sale transaction.
 
@@ -69,7 +75,7 @@ def record_sale(
 @persistence.mutating_endpoint
 def record_bulk_sale(
     request: schemas.BulkSaleRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Record multiple sale transactions in a single atomic operation.
 
@@ -106,7 +112,7 @@ def record_bulk_sale(
 @persistence.mutating_endpoint
 def record_restock(
     request: schemas.RestockRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Record a restock transaction.
 
@@ -138,7 +144,7 @@ def record_restock(
 @persistence.mutating_endpoint
 def record_write_off(
     request: schemas.WriteOffRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Record a write-off transaction.
 
@@ -169,7 +175,7 @@ def record_write_off(
 @persistence.mutating_endpoint
 def record_void(
     request: schemas.VoidRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Void an existing transaction.
 
@@ -198,7 +204,7 @@ def record_void(
 @persistence.mutating_endpoint
 def record_pay_debt(
     request: schemas.PayDebtRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Record a credit payment for an outstanding sale.
 

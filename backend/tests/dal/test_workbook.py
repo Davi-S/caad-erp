@@ -66,7 +66,7 @@ def test_open_workbook_raises_for_invalid_file_content(
     invalid_path.write_bytes(invalid_file_payload)
 
     # Act / Assert
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match=r".+"):
         dal_workbook.open_workbook(invalid_path)
 
 

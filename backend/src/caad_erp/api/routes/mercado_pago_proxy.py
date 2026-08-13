@@ -5,6 +5,7 @@ Mercado Pago API, preventing browser CORS restrictions during local network oper
 and single-process deployment.
 """
 
+import asyncio
 import logging
 import urllib.error
 import urllib.request
@@ -72,15 +73,20 @@ async def proxy_mercado_pago(
     )
 
     try:
-        with urllib.request.urlopen(req) as resp:
-            resp_body = resp.read()
-            status_code = int(getattr(resp, "status", getattr(resp, "code", 200)))
-            content_type = resp.headers.get("content-type", "application/json")
-            return fastapi.responses.Response(
-                content=resp_body,
-                status_code=status_code,
-                media_type=content_type,
-            )
+
+        def _fetch():
+            with urllib.request.urlopen(req) as resp:
+                resp_body = resp.read()
+                status_code = int(getattr(resp, "status", getattr(resp, "code", 200)))
+                content_type = resp.headers.get("content-type", "application/json")
+                return resp_body, status_code, content_type
+
+        resp_body, status_code, content_type = await asyncio.to_thread(_fetch)
+        return fastapi.responses.Response(
+            content=resp_body,
+            status_code=status_code,
+            media_type=content_type,
+        )
     except urllib.error.HTTPError as err:
         err_body = err.read()
         content_type = err.headers.get("content-type", "application/json")

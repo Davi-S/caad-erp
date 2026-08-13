@@ -3,6 +3,8 @@
 This module provides REST endpoints for managing salesmen,
 """
 
+import typing as t
+
 import fastapi
 
 from caad_erp import bll
@@ -11,10 +13,14 @@ from .. import persistence, runtime, schemas
 
 router = fastapi.APIRouter(prefix="/salesmen", tags=["Salesmen"])
 
+ContextDep = t.Annotated[
+    bll.RuntimeContext, fastapi.Depends(runtime.get_runtime_context)
+]
+
 
 @router.get("", response_model=schemas.SalesmanListResponse)
 def list_salesmen(
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.SalesmanListResponse:
     """List all salesmen.
 
@@ -43,7 +49,7 @@ def list_salesmen(
 @persistence.mutating_endpoint
 def create_salesman(
     request: schemas.SalesmanCreateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Create a new salesman.
 
@@ -78,7 +84,7 @@ def create_salesman(
 @router.get("/{salesman_id}", response_model=schemas.SalesmanResponse)
 def get_salesman(
     salesman_id: str,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.SalesmanResponse:
     """Get a specific salesman by ID."""
     salesmen = bll.list_salesmen(context)
@@ -95,7 +101,7 @@ def get_salesman(
 def update_salesman_details(
     salesman_id: str,
     request: schemas.SalesmanUpdateRequest,
-    context: bll.RuntimeContext = fastapi.Depends(runtime.get_runtime_context),
+    context: ContextDep,
 ) -> schemas.StandardResponse:
     """Update an existing salesman.
 

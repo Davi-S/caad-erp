@@ -20,7 +20,7 @@ def _get_local_ip() -> str | None:
         ip = s.getsockname()[0]
         s.close()
         return ip
-    except Exception:
+    except OSError:
         return None
 
 
