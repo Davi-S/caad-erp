@@ -142,7 +142,7 @@ def test_create_salesman_maps_duplicate_id_to_409_conflict(
 
     assert first.status_code == 201
     assert duplicate.status_code == 409
-    assert duplicate.json()["error_type"] == "BusinessRuleViolation"
+    assert duplicate.json()["error_type"] == "DuplicateSalesmanError"
 
 
 def test_deactivate_salesman_returns_404_when_salesman_is_missing(
@@ -151,12 +151,12 @@ def test_deactivate_salesman_returns_404_when_salesman_is_missing(
     """
     GIVEN a salesman id not present in storage
     WHEN POST /salesmen/{salesman_id}/deactivate is called
-    THEN endpoint returns 404 via MissingReferenceError mapping
+    THEN endpoint returns 404 via SalesmanNotFoundError mapping
     """
     response = api_client.patch("/salesmen/UNKNOWN", json={"is_active": False})
 
     assert response.status_code == 404
-    assert response.json()["error_type"] == "MissingReferenceError"
+    assert response.json()["error_type"] == "SalesmanNotFoundError"
 
 
 # edge path

@@ -1,38 +1,80 @@
 import asyncio
-import logging
 
 import fastapi
 import fastapi.exceptions
 import pytest
 
-from caad_erp import exceptions
 from caad_erp.api import errors
+from caad_erp.bll import rules
 
 
-# happy path
-def test_default_error_response_builder_returns_standard_payload_shape() -> None:
+def test_build_error_response_returns_standard_payload_shape() -> None:
     """
-    GIVEN a domain exception and target status code
-    WHEN ErrorResponseBuilder.default is called
-    THEN JSON payload includes detail code and error_type with expected status
+    GIVEN status code, detail, code, and error type
+    WHEN build_error_response is called
+    THEN JSON response includes expected payload fields and status code
     """
-    response = errors.ErrorResponseBuilder.default(
-        409,
-        exceptions.BusinessRuleViolation("duplicate"),
+    response = errors.build_error_response(
+        status_code=409,
+        detail="Duplicate product",
+        code="duplicateproducterror",
+        error_type="DuplicateProductError",
     )
     payload = response.body.decode("utf-8")
 
     assert response.status_code == 409
-    assert "duplicate" in payload
-    assert "businessruleviolation" in payload
-    assert "BusinessRuleViolation" in payload
+    assert "Duplicate product" in payload
+    assert "duplicateproducterror" in payload
+    assert "DuplicateProductError" in payload
 
 
-def test_validation_error_response_builder_includes_structured_errors_list() -> None:
+@pytest.mark.parametrize(
+    "exc, expected_status",
+    [
+        (rules.ProductNotFoundError("missing"), 404),
+        (rules.SalesmanNotFoundError("missing"), 404),
+        (rules.TransactionNotFoundError("missing"), 404),
+        (rules.DuplicateProductError("duplicate"), 409),
+        (rules.DuplicateSalesmanError("duplicate"), 409),
+        (rules.InvalidQuantityError("invalid"), 400),
+        (rules.BusinessRuleViolation("generic violation"), 400),
+        (ValueError("bad value"), 400),
+        (RuntimeError("system down"), 503),
+        (KeyError("unknown key"), 500),
+    ],
+)
+def test_get_status_code_resolves_mro_inheritance(
+    exc: Exception, expected_status: int
+) -> None:
     """
-    GIVEN a FastAPI RequestValidationError containing field-level entries
-    WHEN ErrorResponseBuilder.validation is called
-    THEN payload includes summarized detail and full errors array
+    GIVEN an exception instance
+    WHEN _get_status_code is called
+    THEN it resolves the expected HTTP status code via STATUS_MAP MRO lookup
+    """
+    assert errors._get_status_code(exc) == expected_status
+
+
+def test_domain_exception_handler_returns_correct_status_and_body() -> None:
+    """
+    GIVEN a domain rule exception
+    WHEN domain_exception_handler is executed asynchronously
+    THEN returns JSONResponse with mapped status code and structured detail
+    """
+    exc = rules.ProductNotFoundError("Product P999 not found")
+    response = asyncio.run(errors.domain_exception_handler(None, exc))
+    payload = response.body.decode("utf-8")
+
+    assert response.status_code == 404
+    assert "Product P999 not found" in payload
+    assert "productnotfounderror" in payload
+    assert "ProductNotFoundError" in payload
+
+
+def test_validation_exception_handler_includes_structured_errors_list() -> None:
+    """
+    GIVEN a FastAPI RequestValidationError containing field-level items
+    WHEN validation_exception_handler is executed
+    THEN payload includes summarized location detail and errors array
     """
     error = fastapi.exceptions.RequestValidationError(
         [
@@ -45,22 +87,39 @@ def test_validation_error_response_builder_includes_structured_errors_list() -> 
         ]
     )
 
-    response = errors.ErrorResponseBuilder.validation(422, error)
+    response = asyncio.run(errors.validation_exception_handler(None, error))
     payload = response.body.decode("utf-8")
 
     assert response.status_code == 422
     assert "validation_error" in payload
-    assert "body.quantity" in payload
+    assert "body.quantity: Input should be greater than 0" in payload
     assert "errors" in payload
 
 
-def test_catch_all_response_builder_sanitizes_internal_error_message() -> None:
+def test_validation_exception_handler_handles_empty_errors_list_gracefully() -> None:
+    """
+    GIVEN a RequestValidationError with an empty errors list
+    WHEN validation_exception_handler is executed
+    THEN response returns stable default validation error payload
+    """
+    error = fastapi.exceptions.RequestValidationError([])
+    response = asyncio.run(errors.validation_exception_handler(None, error))
+    payload = response.body.decode("utf-8")
+
+    assert response.status_code == 422
+    assert "Validation error" in payload
+    assert '"errors":[]' in payload
+
+
+def test_unhandled_exception_handler_sanitizes_internal_error_message() -> None:
     """
     GIVEN an unexpected internal exception
-    WHEN ErrorResponseBuilder.catch_all is called
+    WHEN unhandled_exception_handler is executed
     THEN payload hides internals behind generic internal_server_error detail
     """
-    response = errors.ErrorResponseBuilder.catch_all(500, TypeError("boom"))
+    response = asyncio.run(
+        errors.unhandled_exception_handler(None, TypeError("boom"))
+    )
     payload = response.body.decode("utf-8")
 
     assert response.status_code == 500
@@ -69,156 +128,16 @@ def test_catch_all_response_builder_sanitizes_internal_error_message() -> None:
     assert "TypeError" in payload
 
 
-def test_exception_handler_registry_registers_handlers_by_specificity_order() -> None:
+def test_register_handlers_attaches_all_exception_handlers() -> None:
     """
-    GIVEN valid exception handler specs with mixed inheritance depth
-    WHEN ExceptionHandlerRegistry.register is invoked
-    THEN handlers are attached from most specific to least specific classes
-    """
-    calls: list[str] = []
-
-    class FakeApp:
-        def add_exception_handler(self, exception_class, _handler):
-            calls.append(exception_class.__name__)
-
-    specs = [
-        errors.ExceptionHandlerSpec(
-            Exception, 500, errors.ErrorResponseBuilder.catch_all
-        ),
-        errors.ExceptionHandlerSpec(
-            exceptions.BusinessRuleViolation, 409, errors.ErrorResponseBuilder.default
-        ),
-        errors.ExceptionHandlerSpec(
-            exceptions.MissingReferenceError, 404, errors.ErrorResponseBuilder.default
-        ),
-    ]
-
-    registry = errors.ExceptionHandlerRegistry(
-        specs, logger_instance=logging.getLogger("t")
-    )
-    registry.register(FakeApp())
-
-    assert calls == ["MissingReferenceError", "BusinessRuleViolation", "Exception"]
-
-
-def test_register_handlers_builds_registry_and_registers_all_defaults() -> None:
-    """
-    GIVEN the default EXCEPTION_HANDLER_SPECS mapping
+    GIVEN a FastAPI application instance
     WHEN register_handlers is called
-    THEN application receives the complete centralized exception handling policy
+    THEN all STATUS_MAP exception types and validation/catch-all handlers are attached
     """
     app = fastapi.FastAPI()
     errors.register_handlers(app)
 
-    for spec in errors.EXCEPTION_HANDLER_SPECS:
-        assert spec.exception_class in app.exception_handlers
-
-
-# sad path
-@pytest.mark.parametrize(
-    "invalid_spec_case",
-    [
-        "empty_specs",
-        "duplicate_exception_class",
-        "missing_catch_all",
-        "multiple_catch_all",
-        "invalid_status_code_low",
-        "invalid_status_code_high",
-    ],
-)
-def test_exception_handler_registry_rejects_invalid_spec_configurations(
-    invalid_spec_case: str,
-) -> None:
-    """
-    GIVEN malformed exception handler specifications
-    WHEN ExceptionHandlerRegistry is initialized
-    THEN configuration validation fails with a descriptive RuntimeError
-    """
-    default_factory = errors.ErrorResponseBuilder.default
-    catch_all_factory = errors.ErrorResponseBuilder.catch_all
-
-    if invalid_spec_case == "empty_specs":
-        specs = []
-    elif invalid_spec_case == "duplicate_exception_class":
-        specs = [
-            errors.ExceptionHandlerSpec(ValueError, 400, default_factory),
-            errors.ExceptionHandlerSpec(ValueError, 422, default_factory),
-            errors.ExceptionHandlerSpec(Exception, 500, catch_all_factory),
-        ]
-    elif invalid_spec_case == "missing_catch_all":
-        specs = [errors.ExceptionHandlerSpec(ValueError, 400, default_factory)]
-    elif invalid_spec_case == "multiple_catch_all":
-        specs = [
-            errors.ExceptionHandlerSpec(Exception, 500, catch_all_factory),
-            errors.ExceptionHandlerSpec(Exception, 501, catch_all_factory),
-        ]
-    elif invalid_spec_case == "invalid_status_code_low":
-        specs = [
-            errors.ExceptionHandlerSpec(ValueError, 99, default_factory),
-            errors.ExceptionHandlerSpec(Exception, 500, catch_all_factory),
-        ]
-    else:
-        specs = [
-            errors.ExceptionHandlerSpec(ValueError, 600, default_factory),
-            errors.ExceptionHandlerSpec(Exception, 500, catch_all_factory),
-        ]
-
-    with pytest.raises(RuntimeError):
-        errors.ExceptionHandlerRegistry(specs, logger_instance=logging.getLogger("t"))
-
-
-# edge path
-def test_validation_error_builder_handles_empty_errors_list_gracefully() -> None:
-    """
-    GIVEN a RequestValidationError exposing no concrete error items
-    WHEN ErrorResponseBuilder.validation is called
-    THEN response still returns a stable validation_error payload structure
-    """
-    error = fastapi.exceptions.RequestValidationError([])
-    response = errors.ErrorResponseBuilder.validation(422, error)
-    payload = response.body.decode("utf-8")
-
-    assert response.status_code == 422
-    assert "Validation error" in payload
-    assert '"errors":[]' in payload
-
-
-@pytest.mark.parametrize("log_level", [10, 20, 30, 40, 50])
-def test_built_exception_handler_logs_using_specified_log_level(
-    log_level: int, caplog: pytest.LogCaptureFixture
-) -> None:
-    """
-    GIVEN an ExceptionHandlerSpec with a specific log level
-    WHEN generated handler processes an exception
-    THEN logging behavior follows the configured severity policy
-    """
-    logger = logging.getLogger(f"test-errors-{log_level}")
-    logger.setLevel(logging.DEBUG)
-
-    spec = errors.ExceptionHandlerSpec(
-        exception_class=ValueError,
-        status_code=400,
-        response_factory=errors.ErrorResponseBuilder.default,
-        log_level=log_level,
-    )
-    registry = errors.ExceptionHandlerRegistry(
-        [
-            spec,
-            errors.ExceptionHandlerSpec(
-                Exception, 500, errors.ErrorResponseBuilder.catch_all
-            ),
-        ],
-        logger_instance=logger,
-    )
-    handler = registry._build_handler(spec)
-
-    caplog.set_level(logging.DEBUG, logger=logger.name)
-
-    response = asyncio.run(handler(None, ValueError("boom")))
-    expected_level = min(logging.ERROR, log_level)
-
-    assert response.status_code == 400
-    assert any(
-        record.levelno == expected_level and "ValueError" in record.message
-        for record in caplog.records
-    )
+    for exc_cls in errors.STATUS_MAP:
+        assert exc_cls in app.exception_handlers
+    assert fastapi.exceptions.RequestValidationError in app.exception_handlers
+    assert Exception in app.exception_handlers

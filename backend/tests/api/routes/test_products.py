@@ -155,7 +155,7 @@ def test_create_product_maps_domain_failures_to_expected_error_codes(
 
     assert first.status_code == 201
     assert duplicate.status_code == 409
-    assert duplicate.json()["error_type"] == "BusinessRuleViolation"
+    assert duplicate.json()["error_type"] == "DuplicateProductError"
 
 
 def test_deactivate_product_returns_404_when_product_is_missing(
@@ -164,12 +164,12 @@ def test_deactivate_product_returns_404_when_product_is_missing(
     """
     GIVEN a product id not present in storage
     WHEN PATCH /products/{product_id} is called
-    THEN endpoint returns 404 via MissingReferenceError mapping
+    THEN endpoint returns 404 via ProductNotFoundError mapping
     """
     response = api_client.patch("/products/UNKNOWN", json={"is_active": False})
 
     assert response.status_code == 404
-    assert response.json()["error_type"] == "MissingReferenceError"
+    assert response.json()["error_type"] == "ProductNotFoundError"
 
 
 # edge path
