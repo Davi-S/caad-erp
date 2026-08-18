@@ -1,7 +1,7 @@
 /**
- * Zod validation schemas and command payload types for salesmen and transactions.
+ * Zod validation schemas and command payload types for transactions.
  *
- * Defines runtime input validation schemas for salesman and transaction commands,
+ * Defines runtime input validation schemas for transaction commands,
  * attaching explicit domain exception classes via Zod `params.errorClass` metadata.
  */
 
@@ -10,52 +10,6 @@ import { paymentTypeValues } from "../dal/index.js"
 import { InvalidAttributeError, InvalidMonetaryValueError, InvalidQuantityError } from "./errors.js"
 
 export { validateSchema } from "./validator.js"
-
-/**
- * Zod schema for adding a new salesman.
- */
-export const addSalesmanSchema = z.object({
-    salesmanId: z
-        .string()
-        .trim()
-        .min(1, {
-            message: "Salesman ID must be provided",
-            params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
-    salesmanName: z
-        .string()
-        .trim()
-        .min(1, {
-            message: "Salesman name must be provided",
-            params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
-    isActive: z.boolean(),
-})
-
-/**
- * Command payload for registering a new salesman.
- */
-export type AddSalesmanCommand = z.infer<typeof addSalesmanSchema>
-
-/**
- * Zod schema for updating an existing salesman.
- */
-export const updateSalesmanSchema = z.object({
-    salesmanName: z
-        .string()
-        .trim()
-        .min(1, {
-            message: "Salesman name must be provided",
-            params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>)
-        .optional(),
-    isActive: z.boolean().optional(),
-})
-
-/**
- * Command payload for updating selected fields of a salesman.
- */
-export type UpdateSalesmanCommand = z.infer<typeof updateSalesmanSchema>
 
 /**
  * Zod schema for recording a sale transaction.

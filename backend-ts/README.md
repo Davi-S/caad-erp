@@ -63,7 +63,8 @@ backend-ts/
 │   │   ├── errors.ts       # Custom domain exception classes
 │   │   ├── validator.ts    # Shared Zod validation helper
 │   │   ├── products.ts     # Products BLL (Zod schemas, command types, workflows)
-│   │   ├── rules.ts        # Salesmen & Transaction Zod payload schemas
+│   │   ├── salesmen.ts     # Salesmen BLL (Zod schemas, command types, workflows)
+│   │   ├── rules.ts        # Transaction Zod payload schemas
 │   │   └── index.ts        # Barrel export module
 │   └── dal/                # Data Access Layer (Drizzle ORM & SQLite queries)
 │       ├── schema.ts       # Database table definitions & inferred TypeScript types
@@ -96,3 +97,4 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Implemented BLL domain exceptions (`errors.ts`), Zod validation schemas, and command payload types (`rules.ts`), establishing a symmetric error hierarchy with `EntityNotFoundError` and `EntityInactiveError` base classes.
 - **2026-08-17**: Adopted colocated BLL architecture moving Zod schemas, command payload types (`AddProductCommand`, `UpdateProductCommand`), and handlers into `products.ts`, writing update schemas explicitly in full.
 - **2026-08-17**: Configured Zod schemas with explicit `params: { errorClass: ... }` metadata on validation rules, enabling `validateSchema` to map validation failures directly to custom domain exception classes without string guessing fallbacks.
+- **2026-08-17**: Implemented `salesmen.ts` BLL module following the colocated architecture, with schemas placed directly above their respective workflow functions and explicit update schemas.
