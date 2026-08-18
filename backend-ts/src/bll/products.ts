@@ -9,7 +9,12 @@
 import { z } from "zod"
 import type { DB, ProductRow } from "../dal/index.js"
 import * as dal from "../dal/index.js"
-import { DuplicateProductError, ProductNotFoundError } from "./errors.js"
+import {
+    DuplicateProductError,
+    InvalidAttributeError,
+    InvalidMonetaryValueError,
+    ProductNotFoundError,
+} from "./errors.js"
 import { validateSchema } from "./validator.js"
 
 /**
@@ -42,11 +47,33 @@ export function getProduct(db: DB, productId: string): ProductRow {
  * Zod validation schema and command payload for registering a new product.
  */
 export const addProductSchema = z.object({
-    productId: z.string().trim().min(1, "Product ID must be provided"),
-    productName: z.string().trim().min(1, "Product name must be provided"),
-    sellPrice: z.number().int().min(0, "Sell price must be zero or positive"),
+    productId: z
+        .string()
+        .trim()
+        .min(1, {
+            message: "Product ID must be provided",
+            params: { errorClass: InvalidAttributeError },
+        } as Record<string, unknown>),
+    productName: z
+        .string()
+        .trim()
+        .min(1, {
+            message: "Product name must be provided",
+            params: { errorClass: InvalidAttributeError },
+        } as Record<string, unknown>),
+    sellPrice: z
+        .number()
+        .int({
+            message: "Sell price must be zero or positive",
+            params: { errorClass: InvalidMonetaryValueError },
+        } as Record<string, unknown>)
+        .min(0, {
+            message: "Sell price must be zero or positive",
+            params: { errorClass: InvalidMonetaryValueError },
+        } as Record<string, unknown>),
     isActive: z.boolean(),
 })
+
 export type AddProductCommand = z.infer<typeof addProductSchema>
 
 /**
@@ -75,13 +102,30 @@ export function addProduct(db: DB, command: AddProductCommand): ProductRow {
 
 /**
  * Zod validation schema and command payload for updating selected fields of a product.
-
  */
 export const updateProductSchema = z.object({
-    productName: z.string().trim().min(1, "Product name must be provided").optional(),
-    sellPrice: z.number().int().min(0, "Sell price must be zero or positive").optional(),
+    productName: z
+        .string()
+        .trim()
+        .min(1, {
+            message: "Product name must be provided",
+            params: { errorClass: InvalidAttributeError },
+        } as Record<string, unknown>)
+        .optional(),
+    sellPrice: z
+        .number()
+        .int({
+            message: "Sell price must be zero or positive",
+            params: { errorClass: InvalidMonetaryValueError },
+        } as Record<string, unknown>)
+        .min(0, {
+            message: "Sell price must be zero or positive",
+            params: { errorClass: InvalidMonetaryValueError },
+        } as Record<string, unknown>)
+        .optional(),
     isActive: z.boolean().optional(),
 })
+
 export type UpdateProductCommand = z.infer<typeof updateProductSchema>
 
 /**
