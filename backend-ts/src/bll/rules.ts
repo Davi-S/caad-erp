@@ -78,7 +78,7 @@ export const saleCommandSchema = z.object({
     quantity: z
         .number()
         .int({
-            message: "Quantity must be greater than zero",
+            message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
         } as Record<string, unknown>)
         .positive({
@@ -88,7 +88,7 @@ export const saleCommandSchema = z.object({
     totalRevenue: z
         .number()
         .int({
-            message: "Amount must be zero or positive",
+            message: "Amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
         } as Record<string, unknown>)
         .min(0, {
@@ -125,7 +125,7 @@ export const restockCommandSchema = z.object({
     quantity: z
         .number()
         .int({
-            message: "Quantity must be greater than zero",
+            message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
         } as Record<string, unknown>)
         .positive({
@@ -135,7 +135,7 @@ export const restockCommandSchema = z.object({
     totalCost: z
         .number()
         .int({
-            message: "Amount must be zero or positive",
+            message: "Amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
         } as Record<string, unknown>)
         .min(0, {
@@ -171,7 +171,7 @@ export const writeOffCommandSchema = z.object({
     quantity: z
         .number()
         .int({
-            message: "Quantity must be greater than zero",
+            message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
         } as Record<string, unknown>)
         .positive({
@@ -207,7 +207,7 @@ export const creditPaymentCommandSchema = z.object({
     totalRevenue: z
         .number()
         .int({
-            message: "Payment amount must be greater than zero",
+            message: "Payment amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
         } as Record<string, unknown>)
         .positive({
@@ -244,7 +244,7 @@ export const openStockCommandSchema = z.object({
     quantity: z
         .number()
         .int({
-            message: "Quantity must be greater than zero",
+            message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
         } as Record<string, unknown>)
         .positive({
@@ -254,7 +254,7 @@ export const openStockCommandSchema = z.object({
     totalRevenue: z
         .number()
         .int({
-            message: "Amount must be zero or positive",
+            message: "Amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
         } as Record<string, unknown>)
         .min(0, {

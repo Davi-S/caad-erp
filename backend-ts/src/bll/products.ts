@@ -64,7 +64,7 @@ export const addProductSchema = z.object({
     sellPrice: z
         .number()
         .int({
-            message: "Sell price must be zero or positive",
+            message: "Sell price must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
         } as Record<string, unknown>)
         .min(0, {
@@ -115,7 +115,7 @@ export const updateProductSchema = z.object({
     sellPrice: z
         .number()
         .int({
-            message: "Sell price must be zero or positive",
+            message: "Sell price must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
         } as Record<string, unknown>)
         .min(0, {
