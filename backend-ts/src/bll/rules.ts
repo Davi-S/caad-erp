@@ -27,7 +27,10 @@ export type AddSalesmanCommand = z.infer<typeof addSalesmanSchema>
 /**
  * Zod schema for updating an existing salesman.
  */
-export const updateSalesmanSchema = addSalesmanSchema.omit({ salesmanId: true }).partial()
+export const updateSalesmanSchema = z.object({
+    salesmanName: z.string().trim().min(1, "Salesman name must be provided").optional(),
+    isActive: z.boolean().optional(),
+})
 
 /**
  * Command payload for updating selected fields of a salesman.
