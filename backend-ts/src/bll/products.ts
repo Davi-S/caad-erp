@@ -13,31 +13,6 @@ import { DuplicateProductError, ProductNotFoundError } from "./errors.js"
 import { validateSchema } from "./validator.js"
 
 /**
- * Zod validation schema for adding a new product.
- */
-export const addProductSchema = z.object({
-    productId: z.string().trim().min(1, "Product ID must be provided"),
-    productName: z.string().trim().min(1, "Product name must be provided"),
-    sellPrice: z.number().int().min(0, "Sell price must be zero or positive"),
-    isActive: z.boolean(),
-})
-
-/**
- * Command payload for registering a new product.
- */
-export type AddProductCommand = z.infer<typeof addProductSchema>
-
-/**
- * Zod validation schema for updating an existing product, derived from {@link addProductSchema}.
- */
-export const updateProductSchema = addProductSchema.omit({ productId: true }).partial()
-
-/**
- * Command payload for updating selected fields of a product.
- */
-export type UpdateProductCommand = z.infer<typeof updateProductSchema>
-
-/**
  * Retrieves all product records from the catalog.
  *
  * @param db - Active database client instance.
@@ -64,6 +39,17 @@ export function getProduct(db: DB, productId: string): ProductRow {
 }
 
 /**
+ * Zod validation schema and command payload for registering a new product.
+ */
+export const addProductSchema = z.object({
+    productId: z.string().trim().min(1, "Product ID must be provided"),
+    productName: z.string().trim().min(1, "Product name must be provided"),
+    sellPrice: z.number().int().min(0, "Sell price must be zero or positive"),
+    isActive: z.boolean(),
+})
+export type AddProductCommand = z.infer<typeof addProductSchema>
+
+/**
  * Validates input payload and registers a new product in the catalog.
  *
  * @param db - Active database client instance.
@@ -86,6 +72,17 @@ export function addProduct(db: DB, command: AddProductCommand): ProductRow {
     // Persist new product record in SQLite database
     return dal.appendProduct(db, validated)
 }
+
+/**
+ * Zod validation schema and command payload for updating selected fields of a product.
+
+ */
+export const updateProductSchema = z.object({
+    productName: z.string().trim().min(1, "Product name must be provided").optional(),
+    sellPrice: z.number().int().min(0, "Sell price must be zero or positive").optional(),
+    isActive: z.boolean().optional(),
+})
+export type UpdateProductCommand = z.infer<typeof updateProductSchema>
 
 /**
  * Validates update payload and modifies an existing product in the catalog.
