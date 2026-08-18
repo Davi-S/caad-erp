@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "build": "tsc",
+        "test": "vitest run",
         "lint": "oxlint",
         "lint:fix": "oxlint --fix",
         "format": "oxfmt",
@@ -12,7 +13,7 @@
         "fix": "oxlint --fix && oxfmt"
     },
     "dependencies": {
-        "better-sqlite3": "^11.8.1",
+        "better-sqlite3": "^13.0.3",
         "drizzle-orm": "^0.38.4"
     },
     "devDependencies": {
@@ -20,6 +21,7 @@
         "@types/node": "^22.13.4",
         "oxfmt": "^0.62.0",
         "oxlint": "^1.71.0",
-        "typescript": "^5.7.3"
+        "typescript": "^5.7.3",
+        "vitest": "^3.0.5"
     }
 }

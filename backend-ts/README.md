@@ -85,3 +85,5 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Enforced strict empty update payload handling in `updateProduct` and `updateSalesman` (throwing an explicit Error if `fieldValues` is empty `{}`).
 - **2026-08-17**: Documented all DAL schemas, types, and query functions using Google TypeScript / TSDoc standard formatting.
 - **2026-08-17**: Configured `oxlint` and `oxfmt` for `backend-ts` matching the frontend formatting (`tabWidth: 4`, `semi: false`) and added root monorepo linting/formatting scripts.
+- **2026-08-17**: Created comprehensive Vitest unit test suite (`tests/dal/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/DB specific assertions (28 tests passing).
+- **2026-08-17**: Standardized unit tests to use the Arrange-Act-Assert (AAA) pattern (`// Arrange`, `// Act`, `// Assert`) and Given-When-Then (GWT) descriptive `it()` titles.
