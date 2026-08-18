@@ -28,14 +28,31 @@ export function listProducts(db: DB): ProductRow[] {
 }
 
 /**
+ * Zod validation schema and command payload for retrieving a product by identifier.
+ */
+export const getProductSchema = z.object({
+    productId: z
+        .string()
+        .trim()
+        .refine((val) => val.length >= 1, {
+            message: "Product ID must be provided",
+            params: { errorClass: InvalidAttributeError },
+        }),
+})
+
+export type GetProductCommand = z.infer<typeof getProductSchema>
+
+/**
  * Retrieves a single product record by identifier.
  *
  * @param db - Active database client instance.
  * @param productId - Unique product identifier.
  * @returns The matching {@link ProductRow}.
+ * @throws {@link InvalidAttributeError} If product ID is empty string.
  * @throws {@link ProductNotFoundError} If no product exists with the given ID.
  */
 export function getProduct(db: DB, productId: string): ProductRow {
+    validateSchema(getProductSchema, { productId })
     const product = dal.getProduct(db, productId)
     if (!product) {
         throw new ProductNotFoundError(`Unknown product id: ${productId}`)
