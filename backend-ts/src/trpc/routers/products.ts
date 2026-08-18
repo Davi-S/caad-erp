@@ -7,6 +7,7 @@ import {
     addProduct,
     addProductSchema,
     getProduct,
+    getProductSchema,
     listProducts,
     updateProduct,
     updateProductSchema,
@@ -24,15 +25,9 @@ export const productsRouter = router({
     /**
      * Retrieves a single product record by identifier.
      */
-    get: publicProcedure
-        .input(
-            z.object({
-                productId: z.string().trim().min(1, "Product ID is required"),
-            }),
-        )
-        .query(({ ctx, input }) => {
-            return getProduct(ctx.db, input.productId)
-        }),
+    get: publicProcedure.input(getProductSchema).query(({ ctx, input }) => {
+        return getProduct(ctx.db, input.productId)
+    }),
 
     /**
      * Registers a new product in the catalog.

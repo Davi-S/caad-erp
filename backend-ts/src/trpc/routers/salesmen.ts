@@ -7,6 +7,7 @@ import {
     addSalesman,
     addSalesmanSchema,
     getSalesman,
+    getSalesmanSchema,
     listSalesmen,
     updateSalesman,
     updateSalesmanSchema,
@@ -24,15 +25,9 @@ export const salesmenRouter = router({
     /**
      * Retrieves a single salesman record by identifier.
      */
-    get: publicProcedure
-        .input(
-            z.object({
-                salesmanId: z.string().trim().min(1, "Salesman ID is required"),
-            }),
-        )
-        .query(({ ctx, input }) => {
-            return getSalesman(ctx.db, input.salesmanId)
-        }),
+    get: publicProcedure.input(getSalesmanSchema).query(({ ctx, input }) => {
+        return getSalesman(ctx.db, input.salesmanId)
+    }),
 
     /**
      * Registers a new salesman in the team list.

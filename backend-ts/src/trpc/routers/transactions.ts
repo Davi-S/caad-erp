@@ -6,6 +6,7 @@ import { z } from "zod"
 import {
     creditPaymentCommandSchema,
     getTransaction,
+    getTransactionSchema,
     listTransactions,
     recordBulkSale,
     recordCreditPayment,
@@ -31,15 +32,9 @@ export const transactionsRouter = router({
     /**
      * Retrieves a single transaction record by identifier.
      */
-    get: publicProcedure
-        .input(
-            z.object({
-                transactionId: z.string().trim().min(1, "Transaction ID is required"),
-            }),
-        )
-        .query(({ ctx, input }) => {
-            return getTransaction(ctx.db, input.transactionId)
-        }),
+    get: publicProcedure.input(getTransactionSchema).query(({ ctx, input }) => {
+        return getTransaction(ctx.db, input.transactionId)
+    }),
 
     /**
      * Records a single SALE transaction.
