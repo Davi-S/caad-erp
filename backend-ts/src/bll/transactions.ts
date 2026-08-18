@@ -23,27 +23,19 @@ import {
     SalesmanInactiveError,
     TransactionNotFoundError,
 } from "./errors.js"
+import { v7 as uuidv7 } from "uuid"
 import { getProduct } from "./products.js"
 import { calculateInventory } from "./reports.js"
 import { getSalesman } from "./salesmen.js"
 import { validateSchema } from "./validator.js"
 
 /**
- * Generates a timestamp-based unique transaction identifier string (e.g. `20260818120000000`).
+ * Generates a RFC 9562 compliant UUID v7 transaction identifier string.
  *
- * @param now - Optional JavaScript Date instance. Defaults to current time.
- * @returns Formatted transaction ID string.
+ * @returns Time-ordered 36-character UUID v7 string.
  */
-export function generateTransactionId(now = new Date()): string {
-    const pad = (n: number, len = 2) => String(n).padStart(len, "0")
-    const year = now.getUTCFullYear()
-    const month = pad(now.getUTCMonth() + 1)
-    const day = pad(now.getUTCDate())
-    const hours = pad(now.getUTCHours())
-    const minutes = pad(now.getUTCMinutes())
-    const seconds = pad(now.getUTCSeconds())
-    const ms = pad(now.getUTCMilliseconds(), 3)
-    return `${year}${month}${day}${hours}${minutes}${seconds}${ms}`
+export function generateTransactionId(): string {
+    return uuidv7()
 }
 
 /**
@@ -157,7 +149,7 @@ export function recordSale(db: DB, command: SaleCommand): TransactionRow {
     // Build and persist normalized SALE transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(now),
+        transactionId: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "SALE",
         productId: validated.productId,
@@ -176,6 +168,9 @@ export function recordSale(db: DB, command: SaleCommand): TransactionRow {
 /**
  * Validates and records a batch list of `SALE` transactions atomically with cart stock checking.
  *
+ * Implements an all-or-nothing checkout workflow that validates cart item availability
+ * prior to appending sale transactions to the ledger log in sequence.
+ *
  * @param db - Active database client instance.
  * @param commands - List of raw sale command objects matching {@link SaleCommand}.
  * @returns Array of recorded {@link TransactionRow} items.
@@ -183,20 +178,20 @@ export function recordSale(db: DB, command: SaleCommand): TransactionRow {
  * @throws {@link InsufficientStockError} If aggregate cart quantity exceeds available stock.
  */
 export function recordBulkSale(db: DB, commands: SaleCommand[]): TransactionRow[] {
+    // Ensure cart contains at least one item
     if (!commands || commands.length === 0) {
         throw new EmptyBulkOperationError("Bulk sale requires at least one item")
     }
 
-    // Calculate aggregate quantities requested per product across all cart items
+    // Validate payload schemas and sum total requested quantity per product ID
     const aggregateQuantities: Record<string, number> = {}
     for (const cmd of commands) {
-        // Validate input payload structure and boundary types using Zod
         const validated = validateSchema(saleCommandSchema, cmd)
         aggregateQuantities[validated.productId] =
             (aggregateQuantities[validated.productId] ?? 0) + validated.quantity
     }
 
-    // Enforce aggregate stock availability against current inventory
+    // Ensure aggregate cart quantities do not exceed available stock
     const inventory = calculateInventory(db)
     for (const [productId, requestedTotal] of Object.entries(aggregateQuantities)) {
         const availableStock = inventory[productId] ?? 0
@@ -207,7 +202,7 @@ export function recordBulkSale(db: DB, commands: SaleCommand[]): TransactionRow[
         }
     }
 
-    // Execute individual sale recordings
+    // Record each sale transaction in the ledger log
     const recorded: TransactionRow[] = []
     for (const cmd of commands) {
         recorded.push(recordSale(db, cmd))
@@ -288,7 +283,7 @@ export function recordRestock(db: DB, command: RestockCommand): TransactionRow {
     // Build and persist normalized RESTOCK transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(now),
+        transactionId: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "RESTOCK",
         productId: validated.productId,
@@ -377,7 +372,7 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): TransactionRow
     // Build and persist normalized WRITE_OFF transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(now),
+        transactionId: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "WRITE_OFF",
         productId: validated.productId,
@@ -471,7 +466,7 @@ export function recordCreditPayment(db: DB, command: CreditPaymentCommand): Tran
     // Build and persist normalized CREDIT_PAYMENT transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(now),
+        transactionId: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "CREDIT_PAYMENT",
         productId: linkedSale.productId,
@@ -559,7 +554,7 @@ export function recordOpenStock(db: DB, command: OpenStockCommand): TransactionR
     // Build and persist normalized OPEN_STOCK transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(now),
+        transactionId: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "OPEN_STOCK",
         productId: validated.productId,
@@ -615,7 +610,7 @@ export function recordVoid(db: DB, command: VoidCommand): TransactionRow {
     // Build and persist exact reversing VOID transaction record
     const now = new Date()
     const reversalRecord: TransactionRow = {
-        transactionId: generateTransactionId(now),
+        transactionId: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "VOID",
         productId: target.productId,

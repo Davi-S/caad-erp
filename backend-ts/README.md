@@ -101,3 +101,4 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Implemented `salesmen.ts` BLL module following the colocated architecture, with schemas placed directly above their respective workflow functions and explicit update schemas.
 - **2026-08-17**: Implemented `transactions.ts` BLL module colocating transaction Zod schemas and ledger workflows (`recordSale`, `recordBulkSale`, `recordRestock`, `recordWriteOff`, `recordCreditPayment`, `recordOpenStock`, `recordVoid`), eliminating the centralized `rules.ts` file.
 - **2026-08-17**: Implemented `reports.ts` BLL module providing atomic analytics functions (`calculateInventory`, `calculateTotalRevenue`, `calculateTotalCost`, `calculateNetProfit`, `calculateOutstandingDebts`).
+- **2026-08-17**: Updated transaction ID generation to standard time-ordered RFC 9562 UUID v7 (`import { v7 as uuidv7 } from 'uuid'`).
