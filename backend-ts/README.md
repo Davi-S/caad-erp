@@ -87,3 +87,4 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Configured `oxlint` and `oxfmt` for `backend-ts` matching the frontend formatting (`tabWidth: 4`, `semi: false`) and added root monorepo linting/formatting scripts.
 - **2026-08-17**: Created comprehensive Vitest unit test suite (`tests/dal/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/DB specific assertions (28 tests passing).
 - **2026-08-17**: Standardized unit tests to use the Arrange-Act-Assert (AAA) pattern (`// Arrange`, `// Act`, `// Assert`) and Given-When-Then (GWT) descriptive `it()` titles.
+- **2026-08-17**: Implemented Business Logic Layer (BLL) with Zod validation schemas (`rules.ts`), domain exception hierarchy (`errors.ts`), entity handlers (`products.ts`, `salesmen.ts`), transaction ledger routines (`transactions.ts`), and analytics reporting (`reports.ts`).
