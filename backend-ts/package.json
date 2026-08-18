@@ -13,6 +13,7 @@
         "fix": "oxlint --fix && oxfmt"
     },
     "dependencies": {
+        "@trpc/server": "^11.18.0",
         "better-sqlite3": "^13.0.3",
         "drizzle-orm": "^0.38.4",
         "uuid": "^14.0.2",
