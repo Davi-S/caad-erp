@@ -20,7 +20,6 @@ import {
     listTransactions,
     recordBulkSale,
     recordCreditPayment,
-    recordOpenStock,
     recordRestock,
     recordSale,
     recordVoid,
@@ -312,21 +311,6 @@ describe("Transaction Ledger BLL Handlers", () => {
                 paymentType: "Cash",
             }),
         ).toThrow(IneligibleCreditSaleError)
-    })
-
-    it("GIVEN open stock command WHEN recordOpenStock is called THEN appends OPEN_STOCK entry", () => {
-        // Arrange & Act
-        const openStockTx = recordOpenStock(db, {
-            productId: "P-001",
-            salesmanId: "S-001",
-            quantity: 5,
-            totalRevenue: 2500,
-        })
-
-        // Assert
-        expect(openStockTx.transactionType).toBe("OPEN_STOCK")
-        expect(openStockTx.quantityChange).toBe(5)
-        expect(calculateInventory(db)["P-001"]).toBe(15)
     })
 
     it("GIVEN a target transaction WHEN recordVoid is called THEN creates exact reversing VOID entry", () => {

@@ -37,6 +37,28 @@ This directory contains the full-stack **TypeScript backend rewrite** for `caad-
 
 ---
 
+### 4. Business Logic Layer (BLL) Modernization & Differences from Python
+
+- **Removal of `OPEN_STOCK` Workflow**:
+  The legacy Python backend required an `OPEN_STOCK` transaction type to re-seed starting inventory whenever a manager generated a brand-new Excel spreadsheet file for a new semester. With our single, high-performance SQLite database (`caad_erp.db`), all transactions are stored continuously in a relational table without creating separate files. Real-time stock is calculated cleanly across all time via `SUM(quantity_change)`, rendering `OPEN_STOCK` obsolete and keeping the transaction ledger 100% truthful.
+
+- **Time-Ordered RFC 9562 UUID v7 Transaction IDs**:
+  Legacy Python generated timestamp string IDs (`YYYYMMDDHHmmssSSS`), which suffered from collisions when multiple transactions executed in the same millisecond during synchronous workflows or unit tests. We adopted standard **UUID v7** (`import { v7 as uuidv7 } from 'uuid'`). UUID v7 embeds a 48-bit millisecond timestamp followed by 74 random bits, ensuring perfect chronological sorting in SQLite B-tree indexes while guaranteeing 100% collision-free generation.
+
+- **Colocated BLL Module Architecture**:
+  Instead of centralizing all Zod validation schemas in a separate `rules.ts` file, schemas and command payload types (`AddProductCommand`, `UpdateProductCommand`, `SaleCommand`, etc.) are colocated directly inside their respective handler files (`products.ts`, `salesmen.ts`, `transactions.ts`). Each schema is placed directly above its corresponding workflow function.
+
+- **Explicit Update Schemas**:
+  Update schemas (`updateProductSchema`, `updateSalesmanSchema`) are written out explicitly in full rather than derived via `.omit().partial()` shorthand composition, ensuring distinct intent and self-documenting boundary contracts.
+
+- **Zod `params.errorClass` Exception Translation**:
+  Validation rules use Zod `.refine(...)` metadata with `{ params: { errorClass: CustomDomainError } }`. The shared runner **`validateSchema`** extracts this metadata to throw explicit domain exception classes (`InvalidAttributeError`, `InvalidMonetaryValueError`, `InvalidQuantityError`) directly without string guessing or regex pattern matching.
+
+- **Atomic Reporting Analytics**:
+  The legacy `calculate_profit_summary` function returned a dictionary containing revenue, cost, and profit. In `reports.ts`, these are refactored into clean, atomic functions (`calculateTotalRevenue`, `calculateTotalCost`, `calculateNetProfit`) that each return a single primitive `number`.
+
+---
+
 ### 5. Documentation Standard: TSDoc / JSDoc
 
 - **Google TypeScript & TSDoc Style**: All exported functions, schemas, and types are documented using standard `/** ... */` TSDoc block comments.
@@ -99,7 +121,8 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Adopted colocated BLL architecture moving Zod schemas, command payload types (`AddProductCommand`, `UpdateProductCommand`), and handlers into `products.ts`, writing update schemas explicitly in full.
 - **2026-08-17**: Configured Zod schemas with explicit `params: { errorClass: ... }` metadata on validation rules, enabling `validateSchema` to map validation failures directly to custom domain exception classes without string guessing fallbacks.
 - **2026-08-17**: Implemented `salesmen.ts` BLL module following the colocated architecture, with schemas placed directly above their respective workflow functions and explicit update schemas.
-- **2026-08-17**: Implemented `transactions.ts` BLL module colocating transaction Zod schemas and ledger workflows (`recordSale`, `recordBulkSale`, `recordRestock`, `recordWriteOff`, `recordCreditPayment`, `recordOpenStock`, `recordVoid`), eliminating the centralized `rules.ts` file.
+- **2026-08-17**: Implemented `transactions.ts` BLL module colocating transaction Zod schemas and ledger workflows (`recordSale`, `recordBulkSale`, `recordRestock`, `recordWriteOff`, `recordCreditPayment`, `recordVoid`), eliminating the centralized `rules.ts` file.
 - **2026-08-17**: Implemented `reports.ts` BLL module providing atomic analytics functions (`calculateInventory`, `calculateTotalRevenue`, `calculateTotalCost`, `calculateNetProfit`, `calculateOutstandingDebts`).
-- **2026-08-17**: Created complete BLL Vitest unit test suite (`tests/bll/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/Zod boundary assertions (73 tests passing total across DAL & BLL).
+- **2026-08-17**: Created complete BLL Vitest unit test suite (`tests/bll/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/Zod boundary assertions (72 tests passing total across DAL & BLL).
 - **2026-08-17**: Updated transaction ID generation to standard time-ordered RFC 9562 UUID v7 (`import { v7 as uuidv7 } from 'uuid'`).
+- **2026-08-17**: Removed obsolete `OPEN_STOCK` transaction workflow from `schema.ts`, `transactions.ts`, and test suites, as single persistent SQLite database eliminates period spreadsheet re-seeding.
