@@ -50,27 +50,27 @@ export const addProductSchema = z.object({
     productId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Product ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     productName: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Product name must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     sellPrice: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Sell price must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>)
-        .min(0, {
+        })
+        .refine((val) => val >= 0, {
             message: "Sell price must be zero or positive",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>),
+        }),
     isActive: z.boolean(),
 })
 
@@ -107,21 +107,21 @@ export const updateProductSchema = z.object({
     productName: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Product name must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>)
+        })
         .optional(),
     sellPrice: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Sell price must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>)
-        .min(0, {
+        })
+        .refine((val) => val >= 0, {
             message: "Sell price must be zero or positive",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>)
+        })
         .optional(),
     isActive: z.boolean().optional(),
 })

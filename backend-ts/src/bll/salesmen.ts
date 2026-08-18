@@ -45,17 +45,17 @@ export const addSalesmanSchema = z.object({
     salesmanId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     salesmanName: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman name must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     isActive: z.boolean(),
 })
 
@@ -91,10 +91,10 @@ export const updateSalesmanSchema = z.object({
     salesmanName: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman name must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>)
+        })
         .optional(),
     isActive: z.boolean().optional(),
 })

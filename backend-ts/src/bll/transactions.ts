@@ -80,37 +80,37 @@ export const saleCommandSchema = z.object({
     productId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Product ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     salesmanId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     quantity: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>)
-        .positive({
+        })
+        .refine((val) => val > 0, {
             message: "Quantity must be greater than zero",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>),
+        }),
     totalRevenue: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>)
-        .min(0, {
+        })
+        .refine((val) => val >= 0, {
             message: "Amount must be zero or positive",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>),
+        }),
     paymentType: z.enum(paymentTypeValues),
     notes: z.string().nullable().optional(),
 })
@@ -222,37 +222,37 @@ export const restockCommandSchema = z.object({
     productId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Product ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     salesmanId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     quantity: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>)
-        .positive({
+        })
+        .refine((val) => val > 0, {
             message: "Quantity must be greater than zero",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>),
+        }),
     totalCost: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>)
-        .min(0, {
+        })
+        .refine((val) => val >= 0, {
             message: "Amount must be zero or positive",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>),
+        }),
     notes: z.string().nullable().optional(),
 })
 
@@ -311,27 +311,27 @@ export const writeOffCommandSchema = z.object({
     productId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Product ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     salesmanId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     quantity: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>)
-        .positive({
+        })
+        .refine((val) => val > 0, {
             message: "Quantity must be greater than zero",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>),
+        }),
     notes: z.string().nullable().optional(),
 })
 
@@ -400,27 +400,27 @@ export const creditPaymentCommandSchema = z.object({
     linkedTransactionId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Transaction ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     salesmanId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     totalRevenue: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Payment amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>)
-        .positive({
+        })
+        .refine((val) => val > 0, {
             message: "Payment amount must be greater than zero",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>),
+        }),
     paymentType: z.enum(paymentTypeValues),
     notes: z.string().nullable().optional(),
 })
@@ -494,37 +494,37 @@ export const openStockCommandSchema = z.object({
     productId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Product ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     salesmanId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Salesman ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     quantity: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Quantity must be an integer",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>)
-        .positive({
+        })
+        .refine((val) => val > 0, {
             message: "Quantity must be greater than zero",
             params: { errorClass: InvalidQuantityError },
-        } as Record<string, unknown>),
+        }),
     totalRevenue: z
         .number()
-        .int({
+        .refine((val) => Number.isInteger(val), {
             message: "Amount must be an integer",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>)
-        .min(0, {
+        })
+        .refine((val) => val >= 0, {
             message: "Amount must be zero or positive",
             params: { errorClass: InvalidMonetaryValueError },
-        } as Record<string, unknown>),
+        }),
 })
 
 export type OpenStockCommand = z.infer<typeof openStockCommandSchema>
@@ -582,10 +582,10 @@ export const voidCommandSchema = z.object({
     linkedTransactionId: z
         .string()
         .trim()
-        .min(1, {
+        .refine((val) => val.length >= 1, {
             message: "Transaction ID must be provided",
             params: { errorClass: InvalidAttributeError },
-        } as Record<string, unknown>),
+        }),
     notes: z.string().nullable().optional(),
 })
 
