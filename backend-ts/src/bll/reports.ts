@@ -1,9 +1,9 @@
 /**
  * Analytics and reporting handlers derived from database transaction records.
  *
- * Implements high-level analytical calculation routines (`calculateInventory`,
- * `calculateProfitSummary`, `calculateOutstandingDebts`) providing consolidated
- * business metrics for inventory stock balances, profit summaries, and unpaid credit balances.
+ * Implements analytical calculation routines (`calculateInventory`,
+ * `calculateTotalRevenue`, `calculateTotalCost`, `calculateNetProfit`,
+ * `calculateOutstandingDebts`) providing consolidated business metrics.
  */
 
 import type { DB } from "../dal/index.js"
@@ -22,15 +22,6 @@ export interface OutstandingDebt {
     expectedAmount: number
     amountPaid: number
     balance: number
-}
-
-/**
- * Summary containing aggregate revenue, cost, and net profit metrics.
- */
-export interface ProfitSummary {
-    totalRevenue: number
-    totalCost: number
-    profit: number
 }
 
 /**
@@ -66,27 +57,41 @@ export function calculateInventory(db: DB): Record<string, number> {
 }
 
 /**
- * Produces aggregate revenue, cost, and net profit metrics across all transactions.
+ * Computes total gross revenue collected across all transactions.
  *
  * @param db - Active database client instance.
- * @returns {@link ProfitSummary} containing gross revenue, total cost spend, and net profit.
+ * @returns Gross revenue amount.
  */
-export function calculateProfitSummary(db: DB): ProfitSummary {
+export function calculateTotalRevenue(db: DB): number {
     let totalRevenue = 0
-    let totalCost = 0
-
     for (const tx of dal.listTransactions(db)) {
         totalRevenue += tx.totalRevenue
+    }
+    return totalRevenue
+}
+
+/**
+ * Computes total inventory spend / costs incurred across all transactions.
+ *
+ * @param db - Active database client instance.
+ * @returns Total cost amount (stored as a negative number).
+ */
+export function calculateTotalCost(db: DB): number {
+    let totalCost = 0
+    for (const tx of dal.listTransactions(db)) {
         totalCost += tx.totalCost
     }
+    return totalCost
+}
 
-    const profit = totalRevenue + totalCost
-
-    return {
-        totalRevenue,
-        totalCost,
-        profit,
-    }
+/**
+ * Computes net profit across all transactions (`totalRevenue + totalCost`).
+ *
+ * @param db - Active database client instance.
+ * @returns Net profit amount.
+ */
+export function calculateNetProfit(db: DB): number {
+    return calculateTotalRevenue(db) + calculateTotalCost(db)
 }
 
 /**
