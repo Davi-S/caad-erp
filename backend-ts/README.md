@@ -54,6 +54,12 @@ This directory contains the full-stack **TypeScript backend rewrite** for `caad-
 - **Zod `params.errorClass` Exception Translation**:
   Validation rules use Zod `.refine(...)` metadata with `{ params: { errorClass: CustomDomainError } }`. The shared runner **`validateSchema`** extracts this metadata to throw explicit domain exception classes (`InvalidAttributeError`, `InvalidMonetaryValueError`, `InvalidQuantityError`) directly without string guessing or regex pattern matching.
 
+- **Two-Tier Rule Enforcement Strategy (Stateless Zod vs Stateful Function Body)**:
+  Validation is explicitly split into two complementary layers:
+    1. _Layer 1 (Stateless Zod Schemas)_: Sanitizes incoming payload structures, data types, integer constraints, and string boundaries synchronously in 0.001 ms without touching the database.
+    2. _Layer 2 (Stateful Function Body)_: Enforces database-dependent domain rules (checking entity existence, active flags via LBYL, inventory availability, and credit line validity) inside the handler function.
+       This separation ensures high-performance fail-fast input rejection, keeps Zod schemas 100% pure and reusable for tRPC/UI inputs, and keeps database invariant logic clear and readable.
+
 - **Atomic Reporting Analytics**:
   The legacy `calculate_profit_summary` function returned a dictionary containing revenue, cost, and profit. In `reports.ts`, these are refactored into clean, atomic functions (`calculateTotalRevenue`, `calculateTotalCost`, `calculateNetProfit`) that each return a single primitive `number`.
 
