@@ -59,6 +59,10 @@ backend-ts/
 ├── .oxfmtrc.json           # Formatting rules (tabWidth 4, semi false)
 ├── .oxlintrc.json          # Linting rules matching frontend
 ├── src/
+│   ├── bll/                # Business Logic Layer (Validation & Domain logic)
+│   │   ├── errors.ts       # Custom domain exception classes
+│   │   ├── rules.ts        # Zod payload validation schemas & rules
+│   │   └── index.ts        # Barrel export module
 │   └── dal/                # Data Access Layer (Drizzle ORM & SQLite queries)
 │       ├── schema.ts       # Database table definitions & inferred TypeScript types
 │       ├── client.ts       # Database connection factory (better-sqlite3)
@@ -87,4 +91,4 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Configured `oxlint` and `oxfmt` for `backend-ts` matching the frontend formatting (`tabWidth: 4`, `semi: false`) and added root monorepo linting/formatting scripts.
 - **2026-08-17**: Created comprehensive Vitest unit test suite (`tests/dal/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/DB specific assertions (28 tests passing).
 - **2026-08-17**: Standardized unit tests to use the Arrange-Act-Assert (AAA) pattern (`// Arrange`, `// Act`, `// Assert`) and Given-When-Then (GWT) descriptive `it()` titles.
-- **2026-08-17**: Implemented Business Logic Layer (BLL) with Zod validation schemas (`rules.ts`), domain exception hierarchy (`errors.ts`), entity handlers (`products.ts`, `salesmen.ts`), transaction ledger routines (`transactions.ts`), and analytics reporting (`reports.ts`).
+- **2026-08-17**: Implemented BLL domain exceptions (`errors.ts`), Zod validation schemas, and command payload types (`rules.ts`).
