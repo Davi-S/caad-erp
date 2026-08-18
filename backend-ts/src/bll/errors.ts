@@ -146,7 +146,7 @@ export class InvalidMonetaryValueError extends BusinessRuleViolationError {
 }
 
 /**
- * Raised when required entity identifiers or names are missing or blank.
+ * Raised when required entity identifiers or names are missing or invalid.
  */
 export class InvalidAttributeError extends BusinessRuleViolationError {
     constructor(message: string) {

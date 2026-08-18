@@ -3,21 +3,16 @@
  */
 
 import type { z } from "zod"
-import {
-    BusinessRuleViolationError,
-    InvalidAttributeError,
-    InvalidMonetaryValueError,
-    InvalidQuantityError,
-} from "./errors.js"
+import { BusinessRuleViolationError, InvalidAttributeError } from "./errors.js"
 
 /**
  * Validates raw data against a Zod schema and transforms Zod errors into domain exception classes
- * using custom `params.errorClass` metadata attached to schema rules, with fallback field-name mapping.
+ * using custom `params.errorClass` metadata attached to schema rules.
  *
  * @param schema - The Zod schema to validate against.
  * @param data - The raw input data to validate.
  * @returns The parsed and typed data payload.
- * @throws {@link BusinessRuleViolationError} Subclass specified by `params.errorClass` or inferred field type.
+ * @throws {@link BusinessRuleViolationError} Subclass specified by `params.errorClass` metadata, or {@link InvalidAttributeError} for structural type mismatches.
  */
 export function validateSchema<T>(schema: z.ZodSchema<T>, data: unknown): T {
     const result = schema.safeParse(data)
@@ -25,7 +20,7 @@ export function validateSchema<T>(schema: z.ZodSchema<T>, data: unknown): T {
         const firstIssue = result.error.issues[0]
         const message = firstIssue.message
 
-        // Check for explicit params.errorClass metadata
+        // Extract explicit params.errorClass metadata attached to the failing Zod rule
         const params = (
             firstIssue as {
                 params?: { errorClass?: typeof BusinessRuleViolationError }
@@ -36,20 +31,7 @@ export function validateSchema<T>(schema: z.ZodSchema<T>, data: unknown): T {
             throw new CustomClass(message)
         }
 
-        // Fallback to deterministic field-name mapping
-        const fieldName = String(firstIssue.path[0] ?? "").toLowerCase()
-        if (fieldName.includes("quantity")) {
-            throw new InvalidQuantityError(message)
-        }
-        if (
-            fieldName.includes("price") ||
-            fieldName.includes("revenue") ||
-            fieldName.includes("cost") ||
-            fieldName.includes("amount")
-        ) {
-            throw new InvalidMonetaryValueError(message)
-        }
-
+        // Default fallback for root structural type mismatches (e.g. passing non-object payloads)
         throw new InvalidAttributeError(message)
     }
     return result.data
