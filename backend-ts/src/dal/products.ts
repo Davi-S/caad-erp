@@ -5,9 +5,9 @@
  * product records in the SQLite database using Drizzle ORM.
  */
 
-import { eq } from 'drizzle-orm';
-import type { DB } from './client.js';
-import { products, type ProductRow } from './schema.js';
+import { eq } from "drizzle-orm"
+import type { DB } from "./client.js"
+import { products, type ProductRow } from "./schema.js"
 
 /**
  * Retrieves all product records from the database.
@@ -16,7 +16,7 @@ import { products, type ProductRow } from './schema.js';
  * @returns Array of all {@link ProductRow} records currently stored.
  */
 export function listProducts(db: DB): ProductRow[] {
-  return db.select().from(products).all();
+    return db.select().from(products).all()
 }
 
 /**
@@ -27,11 +27,7 @@ export function listProducts(db: DB): ProductRow[] {
  * @returns The matching {@link ProductRow}, or `undefined` if missing.
  */
 export function getProduct(db: DB, productId: string): ProductRow | undefined {
-  return db
-    .select()
-    .from(products)
-    .where(eq(products.productId, productId))
-    .get();
+    return db.select().from(products).where(eq(products.productId, productId)).get()
 }
 
 /**
@@ -42,7 +38,7 @@ export function getProduct(db: DB, productId: string): ProductRow | undefined {
  * @returns The inserted {@link ProductRow} record.
  */
 export function appendProduct(db: DB, record: ProductRow): ProductRow {
-  return db.insert(products).values(record).returning().get();
+    return db.insert(products).values(record).returning().get()
 }
 
 /**
@@ -55,23 +51,23 @@ export function appendProduct(db: DB, record: ProductRow): ProductRow {
  * @throws {@link Error} If the product ID is not found or if `fieldValues` is empty.
  */
 export function updateProduct(
-  db: DB,
-  productId: string,
-  fieldValues: Partial<Omit<ProductRow, 'productId'>>
+    db: DB,
+    productId: string,
+    fieldValues: Partial<Omit<ProductRow, "productId">>,
 ): ProductRow {
-  const existing = getProduct(db, productId);
-  if (!existing) {
-    throw new Error(`Product not found: ${productId}`);
-  }
+    const existing = getProduct(db, productId)
+    if (!existing) {
+        throw new Error(`Product not found: ${productId}`)
+    }
 
-  if (Object.keys(fieldValues).length === 0) {
-    throw new Error(`At least one field must be provided to update product: ${productId}`);
-  }
+    if (Object.keys(fieldValues).length === 0) {
+        throw new Error(`At least one field must be provided to update product: ${productId}`)
+    }
 
-  return db
-    .update(products)
-    .set(fieldValues)
-    .where(eq(products.productId, productId))
-    .returning()
-    .get();
+    return db
+        .update(products)
+        .set(fieldValues)
+        .where(eq(products.productId, productId))
+        .returning()
+        .get()
 }

@@ -5,8 +5,8 @@
  * records in the SQLite database using Drizzle ORM.
  */
 
-import type { DB } from './client.js';
-import { transactions, type TransactionRow } from './schema.js';
+import type { DB } from "./client.js"
+import { transactions, type TransactionRow } from "./schema.js"
 
 /**
  * Retrieves all transaction log records from the database.
@@ -15,7 +15,7 @@ import { transactions, type TransactionRow } from './schema.js';
  * @returns Array of all {@link TransactionRow} log records.
  */
 export function listTransactions(db: DB): TransactionRow[] {
-  return db.select().from(transactions).all();
+    return db.select().from(transactions).all()
 }
 
 /**
@@ -26,5 +26,5 @@ export function listTransactions(db: DB): TransactionRow[] {
  * @returns The inserted {@link TransactionRow} record.
  */
 export function appendTransaction(db: DB, record: TransactionRow): TransactionRow {
-  return db.insert(transactions).values(record).returning().get();
+    return db.insert(transactions).values(record).returning().get()
 }

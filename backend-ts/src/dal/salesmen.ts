@@ -5,9 +5,9 @@
  * salesman records in the SQLite database using Drizzle ORM.
  */
 
-import { eq } from 'drizzle-orm';
-import type { DB } from './client.js';
-import { salesmen, type SalesmanRow } from './schema.js';
+import { eq } from "drizzle-orm"
+import type { DB } from "./client.js"
+import { salesmen, type SalesmanRow } from "./schema.js"
 
 /**
  * Retrieves all salesman records from the database.
@@ -16,7 +16,7 @@ import { salesmen, type SalesmanRow } from './schema.js';
  * @returns Array of all {@link SalesmanRow} records currently stored.
  */
 export function listSalesmen(db: DB): SalesmanRow[] {
-  return db.select().from(salesmen).all();
+    return db.select().from(salesmen).all()
 }
 
 /**
@@ -27,11 +27,7 @@ export function listSalesmen(db: DB): SalesmanRow[] {
  * @returns The matching {@link SalesmanRow}, or `undefined` if missing.
  */
 export function getSalesman(db: DB, salesmanId: string): SalesmanRow | undefined {
-  return db
-    .select()
-    .from(salesmen)
-    .where(eq(salesmen.salesmanId, salesmanId))
-    .get();
+    return db.select().from(salesmen).where(eq(salesmen.salesmanId, salesmanId)).get()
 }
 
 /**
@@ -42,7 +38,7 @@ export function getSalesman(db: DB, salesmanId: string): SalesmanRow | undefined
  * @returns The inserted {@link SalesmanRow} record.
  */
 export function appendSalesman(db: DB, record: SalesmanRow): SalesmanRow {
-  return db.insert(salesmen).values(record).returning().get();
+    return db.insert(salesmen).values(record).returning().get()
 }
 
 /**
@@ -55,23 +51,23 @@ export function appendSalesman(db: DB, record: SalesmanRow): SalesmanRow {
  * @throws {@link Error} If the salesman ID is not found or if `fieldValues` is empty.
  */
 export function updateSalesman(
-  db: DB,
-  salesmanId: string,
-  fieldValues: Partial<Omit<SalesmanRow, 'salesmanId'>>
+    db: DB,
+    salesmanId: string,
+    fieldValues: Partial<Omit<SalesmanRow, "salesmanId">>,
 ): SalesmanRow {
-  const existing = getSalesman(db, salesmanId);
-  if (!existing) {
-    throw new Error(`Salesman not found: ${salesmanId}`);
-  }
+    const existing = getSalesman(db, salesmanId)
+    if (!existing) {
+        throw new Error(`Salesman not found: ${salesmanId}`)
+    }
 
-  if (Object.keys(fieldValues).length === 0) {
-    throw new Error(`At least one field must be provided to update salesman: ${salesmanId}`);
-  }
+    if (Object.keys(fieldValues).length === 0) {
+        throw new Error(`At least one field must be provided to update salesman: ${salesmanId}`)
+    }
 
-  return db
-    .update(salesmen)
-    .set(fieldValues)
-    .where(eq(salesmen.salesmanId, salesmanId))
-    .returning()
-    .get();
+    return db
+        .update(salesmen)
+        .set(fieldValues)
+        .where(eq(salesmen.salesmanId, salesmanId))
+        .returning()
+        .get()
 }
