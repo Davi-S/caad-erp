@@ -59,6 +59,14 @@ backend-ts/
 ├── .oxfmtrc.json           # Formatting rules (tabWidth 4, semi false)
 ├── .oxlintrc.json          # Linting rules matching frontend
 ├── src/
+│   ├── bll/                # Business Logic Layer (Validation & Domain logic)
+│   │   ├── errors.ts       # Custom domain exception classes
+│   │   ├── validator.ts    # Shared Zod validation helper
+│   │   ├── products.ts     # Products BLL (Zod schemas, command types, workflows)
+│   │   ├── salesmen.ts     # Salesmen BLL (Zod schemas, command types, workflows)
+│   │   ├── transactions.ts # Transactions BLL (Zod schemas, command types, workflows)
+│   │   ├── reports.ts      # Analytics BLL (Inventory, Profit, Credit Debts)
+│   │   └── index.ts        # Barrel export module
 │   └── dal/                # Data Access Layer (Drizzle ORM & SQLite queries)
 │       ├── schema.ts       # Database table definitions & inferred TypeScript types
 │       ├── client.ts       # Database connection factory (better-sqlite3)
@@ -87,3 +95,11 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Configured `oxlint` and `oxfmt` for `backend-ts` matching the frontend formatting (`tabWidth: 4`, `semi: false`) and added root monorepo linting/formatting scripts.
 - **2026-08-17**: Created comprehensive Vitest unit test suite (`tests/dal/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/DB specific assertions (28 tests passing).
 - **2026-08-17**: Standardized unit tests to use the Arrange-Act-Assert (AAA) pattern (`// Arrange`, `// Act`, `// Assert`) and Given-When-Then (GWT) descriptive `it()` titles.
+- **2026-08-17**: Implemented BLL domain exceptions (`errors.ts`), Zod validation schemas, and command payload types (`rules.ts`), establishing a symmetric error hierarchy with `EntityNotFoundError` and `EntityInactiveError` base classes.
+- **2026-08-17**: Adopted colocated BLL architecture moving Zod schemas, command payload types (`AddProductCommand`, `UpdateProductCommand`), and handlers into `products.ts`, writing update schemas explicitly in full.
+- **2026-08-17**: Configured Zod schemas with explicit `params: { errorClass: ... }` metadata on validation rules, enabling `validateSchema` to map validation failures directly to custom domain exception classes without string guessing fallbacks.
+- **2026-08-17**: Implemented `salesmen.ts` BLL module following the colocated architecture, with schemas placed directly above their respective workflow functions and explicit update schemas.
+- **2026-08-17**: Implemented `transactions.ts` BLL module colocating transaction Zod schemas and ledger workflows (`recordSale`, `recordBulkSale`, `recordRestock`, `recordWriteOff`, `recordCreditPayment`, `recordOpenStock`, `recordVoid`), eliminating the centralized `rules.ts` file.
+- **2026-08-17**: Implemented `reports.ts` BLL module providing atomic analytics functions (`calculateInventory`, `calculateTotalRevenue`, `calculateTotalCost`, `calculateNetProfit`, `calculateOutstandingDebts`).
+- **2026-08-17**: Created complete BLL Vitest unit test suite (`tests/bll/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/Zod boundary assertions (73 tests passing total across DAL & BLL).
+- **2026-08-17**: Updated transaction ID generation to standard time-ordered RFC 9562 UUID v7 (`import { v7 as uuidv7 } from 'uuid'`).
