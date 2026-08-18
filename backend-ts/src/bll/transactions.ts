@@ -24,6 +24,7 @@ import {
     TransactionNotFoundError,
 } from "./errors.js"
 import { getProduct } from "./products.js"
+import { calculateInventory } from "./reports.js"
 import { getSalesman } from "./salesmen.js"
 import { validateSchema } from "./validator.js"
 
@@ -43,25 +44,6 @@ export function generateTransactionId(now = new Date()): string {
     const seconds = pad(now.getUTCSeconds())
     const ms = pad(now.getUTCMilliseconds(), 3)
     return `${year}${month}${day}${hours}${minutes}${seconds}${ms}`
-}
-
-/**
- * Computes real-time available inventory balances per product by summing signed `quantityChange` values.
- *
- * @param db - Active database client instance.
- * @returns Mapping of product IDs to cumulative on-hand stock quantities.
- */
-export function calculateInventory(db: DB): Record<string, number> {
-    const inventory: Record<string, number> = {}
-    for (const tx of dal.listTransactions(db)) {
-        inventory[tx.productId] = (inventory[tx.productId] ?? 0) + tx.quantityChange
-    }
-    for (const p of dal.listProducts(db)) {
-        if (!(p.productId in inventory)) {
-            inventory[p.productId] = 0
-        }
-    }
-    return inventory
 }
 
 /**
