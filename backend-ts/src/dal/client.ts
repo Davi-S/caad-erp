@@ -10,13 +10,9 @@ import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
 import { products, salesmen, transactions } from "./schema.js"
 
 /**
- * Explicit schema dictionary containing all application tables.
- */
-export const schema = { products, salesmen, transactions }
-
-/**
  * Type alias for the configured Drizzle database connection instance.
  */
+export const schema = { products, salesmen, transactions }
 export type DB = BetterSQLite3Database<typeof schema>
 
 /**

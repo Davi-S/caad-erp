@@ -8,17 +8,13 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 
 /**
- * Array of canonical payment type values supported by the transaction log.
- */
-export const paymentTypeValues = ["Cash", "OnCredit", "PIX", "Other"] as const
-
-/**
  * Supported payment mechanism for sales transactions.
  */
+export const paymentTypeValues = ["Cash", "OnCredit", "PIX", "Other"] as const
 export type PaymentType = (typeof paymentTypeValues)[number]
 
 /**
- * Array of canonical transaction type values supported by the transaction log.
+ * Supported transaction ledger type classification.
  */
 export const transactionTypeValues = [
     "SALE",
@@ -28,10 +24,6 @@ export const transactionTypeValues = [
     "OPEN_STOCK",
     "VOID",
 ] as const
-
-/**
- * Supported transaction ledger type classification.
- */
 export type TransactionType = (typeof transactionTypeValues)[number]
 
 /**
@@ -75,16 +67,9 @@ export const transactions = sqliteTable("transactions", {
 })
 
 /**
- * In-memory representation of a row from the `products` table.
+ * In-memory representation of a row from the `products`, `salesman`, and
+ * `transaction` tables.
  */
 export type ProductRow = typeof products.$inferSelect
-
-/**
- * In-memory representation of a row from the `salesmen` table.
- */
 export type SalesmanRow = typeof salesmen.$inferSelect
-
-/**
- * In-memory representation of a row from the `transactions` table.
- */
 export type TransactionRow = typeof transactions.$inferSelect
