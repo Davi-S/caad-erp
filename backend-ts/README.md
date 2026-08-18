@@ -95,13 +95,24 @@ backend-ts/
 │   │   ├── transactions.ts # Transactions BLL (Zod schemas, command types, workflows)
 │   │   ├── reports.ts      # Analytics BLL (Inventory, Profit, Credit Debts)
 │   │   └── index.ts        # Barrel export module
-│   └── dal/                # Data Access Layer (Drizzle ORM & SQLite queries)
-│       ├── schema.ts       # Database table definitions & inferred TypeScript types
-│       ├── client.ts       # Database connection factory (better-sqlite3)
-│       ├── products.ts     # Products DAL functions
-│       ├── salesmen.ts     # Salesmen DAL functions
-│       ├── transactions.ts # Transactions DAL functions
-│       └── index.ts        # Barrel export module
+│   ├── dal/                # Data Access Layer (Drizzle ORM & SQLite queries)
+│   │   ├── schema.ts       # Database table definitions & inferred TypeScript types
+│   │   ├── client.ts       # Database connection factory (better-sqlite3)
+│   │   ├── products.ts     # Products DAL functions
+│   │   ├── salesmen.ts     # Salesmen DAL functions
+│   │   ├── transactions.ts # Transactions DAL functions
+│   │   └── index.ts        # Barrel export module
+│   ├── trpc/               # Presentation & Service Layer (tRPC Routers)
+│   │   ├── context.ts      # Request Context holding active SQLite DB
+│   │   ├── trpc.ts         # tRPC initialization & domain error translator middleware
+│   │   ├── routers/        # Feature routers (products, salesmen, transactions, reports)
+│   │   │   ├── products.ts
+│   │   │   ├── salesmen.ts
+│   │   │   ├── transactions.ts
+│   │   │   ├── reports.ts
+│   │   │   └── _app.ts     # Combined AppRouter & exported AppRouter type
+│   │   └── index.ts        # Barrel export module
+│   └── server.ts           # Standalone HTTP server runner (Port 8000)
 ├── package.json
 └── tsconfig.json
 ```
@@ -132,3 +143,4 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Created complete BLL Vitest unit test suite (`tests/bll/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/Zod boundary assertions (72 tests passing total across DAL & BLL).
 - **2026-08-17**: Updated transaction ID generation to standard time-ordered RFC 9562 UUID v7 (`import { v7 as uuidv7 } from 'uuid'`).
 - **2026-08-17**: Removed obsolete `OPEN_STOCK` transaction workflow from `schema.ts`, `transactions.ts`, and test suites, as single persistent SQLite database eliminates period spreadsheet re-seeding.
+- **2026-08-17**: Implemented Phase 3 tRPC presentation and service layer (`src/trpc/`) exposing feature routers (`products`, `salesmen`, `transactions`, `reports`), automatic domain-to-tRPC error status translation (`NOT_FOUND`, `CONFLICT`, `BAD_REQUEST`), standalone HTTP server (`src/server.ts` on port 8000), and integration test suite (`tests/trpc/`) (89 tests passing total across DAL, BLL, and tRPC).

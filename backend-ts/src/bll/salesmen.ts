@@ -23,14 +23,31 @@ export function listSalesmen(db: DB): SalesmanRow[] {
 }
 
 /**
+ * Zod validation schema and command payload for retrieving a salesman by identifier.
+ */
+export const getSalesmanSchema = z.object({
+    salesmanId: z
+        .string()
+        .trim()
+        .refine((val) => val.length >= 1, {
+            message: "Salesman ID must be provided",
+            params: { errorClass: InvalidAttributeError },
+        }),
+})
+
+export type GetSalesmanCommand = z.infer<typeof getSalesmanSchema>
+
+/**
  * Retrieves a single salesman record by identifier.
  *
  * @param db - Active database client instance.
  * @param salesmanId - Unique salesman identifier.
  * @returns The matching {@link SalesmanRow}.
+ * @throws {@link InvalidAttributeError} If salesman ID is empty string.
  * @throws {@link SalesmanNotFoundError} If no salesman exists with the given ID.
  */
 export function getSalesman(db: DB, salesmanId: string): SalesmanRow {
+    validateSchema(getSalesmanSchema, { salesmanId })
     const salesman = dal.getSalesman(db, salesmanId)
     if (!salesman) {
         throw new SalesmanNotFoundError(`Unknown salesman id: ${salesmanId}`)

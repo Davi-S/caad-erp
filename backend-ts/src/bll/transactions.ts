@@ -49,14 +49,31 @@ export function listTransactions(db: DB): TransactionRow[] {
 }
 
 /**
+ * Zod validation schema and command payload for retrieving a transaction by identifier.
+ */
+export const getTransactionSchema = z.object({
+    transactionId: z
+        .string()
+        .trim()
+        .refine((val) => val.length >= 1, {
+            message: "Transaction ID must be provided",
+            params: { errorClass: InvalidAttributeError },
+        }),
+})
+
+export type GetTransactionCommand = z.infer<typeof getTransactionSchema>
+
+/**
  * Retrieves a single transaction record by identifier.
  *
  * @param db - Active database client instance.
  * @param transactionId - Unique transaction identifier.
  * @returns The matching {@link TransactionRow}.
+ * @throws {@link InvalidAttributeError} If transaction ID is empty string.
  * @throws {@link TransactionNotFoundError} If no transaction exists with the given ID.
  */
 export function getTransaction(db: DB, transactionId: string): TransactionRow {
+    validateSchema(getTransactionSchema, { transactionId })
     const all = dal.listTransactions(db)
     const transaction = all.find((tx) => tx.transactionId === transactionId)
     if (!transaction) {
