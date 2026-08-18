@@ -64,7 +64,7 @@ backend-ts/
 │   │   ├── validator.ts    # Shared Zod validation helper
 │   │   ├── products.ts     # Products BLL (Zod schemas, command types, workflows)
 │   │   ├── salesmen.ts     # Salesmen BLL (Zod schemas, command types, workflows)
-│   │   ├── rules.ts        # Transaction Zod payload schemas
+│   │   ├── transactions.ts # Transactions BLL (Zod schemas, command types, workflows)
 │   │   └── index.ts        # Barrel export module
 │   └── dal/                # Data Access Layer (Drizzle ORM & SQLite queries)
 │       ├── schema.ts       # Database table definitions & inferred TypeScript types
@@ -98,3 +98,4 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Adopted colocated BLL architecture moving Zod schemas, command payload types (`AddProductCommand`, `UpdateProductCommand`), and handlers into `products.ts`, writing update schemas explicitly in full.
 - **2026-08-17**: Configured Zod schemas with explicit `params: { errorClass: ... }` metadata on validation rules, enabling `validateSchema` to map validation failures directly to custom domain exception classes without string guessing fallbacks.
 - **2026-08-17**: Implemented `salesmen.ts` BLL module following the colocated architecture, with schemas placed directly above their respective workflow functions and explicit update schemas.
+- **2026-08-17**: Implemented `transactions.ts` BLL module colocating transaction Zod schemas and ledger workflows (`recordSale`, `recordBulkSale`, `recordRestock`, `recordWriteOff`, `recordCreditPayment`, `recordOpenStock`, `recordVoid`), eliminating the centralized `rules.ts` file.

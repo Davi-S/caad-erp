@@ -7,6 +7,6 @@
 
 export * from "./errors.js"
 export * from "./products.js"
-export * from "./rules.js"
 export * from "./salesmen.js"
+export * from "./transactions.js"
 export * from "./validator.js"
