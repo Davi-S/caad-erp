@@ -61,7 +61,9 @@ backend-ts/
 ├── src/
 │   ├── bll/                # Business Logic Layer (Validation & Domain logic)
 │   │   ├── errors.ts       # Custom domain exception classes
-│   │   ├── rules.ts        # Zod payload validation schemas & rules
+│   │   ├── validator.ts    # Shared Zod validation helper
+│   │   ├── products.ts     # Products BLL (Zod schemas, command types, workflows)
+│   │   ├── rules.ts        # Salesmen & Transaction Zod payload schemas
 │   │   └── index.ts        # Barrel export module
 │   └── dal/                # Data Access Layer (Drizzle ORM & SQLite queries)
 │       ├── schema.ts       # Database table definitions & inferred TypeScript types
@@ -92,3 +94,4 @@ _(This section records architectural clarifications and decisions addressed duri
 - **2026-08-17**: Created comprehensive Vitest unit test suite (`tests/dal/`) with in-memory SQLite setup (`:memory:`), covering 100% of Python test parity plus TS/DB specific assertions (28 tests passing).
 - **2026-08-17**: Standardized unit tests to use the Arrange-Act-Assert (AAA) pattern (`// Arrange`, `// Act`, `// Assert`) and Given-When-Then (GWT) descriptive `it()` titles.
 - **2026-08-17**: Implemented BLL domain exceptions (`errors.ts`), Zod validation schemas, and command payload types (`rules.ts`), establishing a symmetric error hierarchy with `EntityNotFoundError` and `EntityInactiveError` base classes.
+- **2026-08-17**: Adopted colocated BLL architecture moving Zod schemas, command payload types (`AddProductCommand`, `UpdateProductCommand`), and handlers into `products.ts`, using Zod `.omit().partial()` composition.
