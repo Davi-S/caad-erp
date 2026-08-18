@@ -19,9 +19,10 @@ const t = initTRPC.context<Context>().create()
  * Middleware translating custom BLL domain exception classes into standard {@link TRPCError} status codes.
  */
 const domainErrorTranslator = t.middleware(async ({ next }) => {
-    try {
-        return await next()
-    } catch (cause) {
+    const result = await next()
+    if (!result.ok) {
+        const cause = result.error.cause ?? result.error
+
         if (
             cause instanceof ProductNotFoundError ||
             cause instanceof SalesmanNotFoundError ||
@@ -49,9 +50,8 @@ const domainErrorTranslator = t.middleware(async ({ next }) => {
                 cause,
             })
         }
-
-        throw cause
     }
+    return result
 })
 
 /**
