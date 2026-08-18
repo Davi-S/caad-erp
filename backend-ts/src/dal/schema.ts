@@ -21,7 +21,6 @@ export const transactionTypeValues = [
     "RESTOCK",
     "WRITE_OFF",
     "CREDIT_PAYMENT",
-    "OPEN_STOCK",
     "VOID",
 ] as const
 export type TransactionType = (typeof transactionTypeValues)[number]
