@@ -208,6 +208,7 @@ export function recordBulkSale(db: DB, commands: SaleCommand[]): TransactionRow[
     // Calculate aggregate quantities requested per product across all cart items
     const aggregateQuantities: Record<string, number> = {}
     for (const cmd of commands) {
+        // Validate input payload structure and boundary types using Zod
         const validated = validateSchema(saleCommandSchema, cmd)
         aggregateQuantities[validated.productId] =
             (aggregateQuantities[validated.productId] ?? 0) + validated.quantity
