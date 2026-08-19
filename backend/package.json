@@ -1,0 +1,32 @@
+{
+  "name": "caad-erp-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "fix": "oxlint --fix && oxfmt"
+  },
+  "dependencies": {
+    "@trpc/server": "^11.18.0",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.38.4",
+    "uuid": "^14.0.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.13.4",
+    "@types/uuid": "^10.0.0",
+    "oxfmt": "^0.62.0",
+    "oxlint": "^1.71.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}

@@ -13,8 +13,8 @@ if not exist "node_modules" (
     echo [INFO] Root dependencies missing. Starting setup...
     goto SETUP
 )
-if not exist "backend-ts\node_modules" (
-    echo [INFO] Backend-TS dependencies missing. Starting setup...
+if not exist "backend\node_modules" (
+    echo [INFO] Backend dependencies missing. Starting setup...
     goto SETUP
 )
 if not exist "frontend\node_modules" (
@@ -48,12 +48,12 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [3/4] Setting up TypeScript backend environment...
-cd backend-ts
+echo [3/4] Setting up backend environment...
+cd backend
 call npm install
 call npm run build
 if %errorlevel% neq 0 (
-    echo [ERROR] Backend-TS build failed!
+    echo [ERROR] Backend build failed!
     cd ..
     pause
     exit /b 1
