@@ -1,4 +1,4 @@
-import type { SalesRequests } from "@/types"
+import type { SaleRequest } from "@/types"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { trpcClient } from "@/utils/trpc"
 
@@ -18,7 +18,7 @@ export function useCheckout() {
     const queryClient = useQueryClient()
 
     const mutation = useMutation({
-        mutationFn: async (salesRequests: SalesRequests) => {
+        mutationFn: async (salesRequests: SaleRequest[]) => {
             try {
                 return await trpcClient.transactions.recordBulkSale.mutate(salesRequests)
             } catch (err) {

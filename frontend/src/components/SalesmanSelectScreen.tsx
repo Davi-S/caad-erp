@@ -17,10 +17,10 @@ import { createColumnHelper } from "@tanstack/react-table"
 import { ScreenShell } from "./ScreenShell"
 import { ListControls } from "./ListControls"
 import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
-import type { Salesman, Salesmen } from "@/types"
+import type { Salesman } from "@/types"
 
 interface SalesmanSelectScreenProps {
-    salesmen: Salesmen
+    salesmen: Salesman[]
     onNext: (salesmanId: string) => void
     title?: string
     confirmLabel?: string

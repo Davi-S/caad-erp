@@ -13,12 +13,12 @@ import {
 import { ShoppingCart } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
-import type { Products, Stock } from "@/types"
+import type { Product, Stock } from "@/types"
 import { groupProducts } from "../../utils/productGrouping"
 import { ProductGroupCard } from "../ProductGroupCard"
 
 interface CustomerCartScreenProps {
-    products: Products
+    products: Product[]
     stock: Stock
     cart: Record<string, number>
     total: number

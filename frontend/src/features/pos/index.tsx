@@ -9,7 +9,7 @@ import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
 import { usePOSBroadcast } from "./hooks/usePOSBroadcast"
 import type { POSBroadcastState, PaymentDetails } from "./types/broadcast"
-import type { PaymentType, Products } from "@/types"
+import type { PaymentType, Product } from "@/types"
 
 export function POSFlow() {
     // Get the API data from the queries
@@ -139,7 +139,7 @@ function assemblySalesRequest(
     selectedSalesmanId: string,
     method: PaymentType,
     cartState: ReturnType<typeof useCart>,
-    products: Products,
+    products: Product[],
 ) {
     return cartState.cartIterable.map(([productId, quantity]) => {
         const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0

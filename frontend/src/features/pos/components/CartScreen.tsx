@@ -18,7 +18,7 @@ import { ScreenShell } from "@/components/ScreenShell"
 import { ListControls } from "@/components/ListControls"
 import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
 import { brl } from "@/helpers"
-import type { Salesman, Product, Products, Stock } from "@/types"
+import type { Salesman, Product, Stock } from "@/types"
 import { useCart } from "../hooks/useCart"
 
 import { groupProducts } from "../utils/productGrouping"
@@ -26,7 +26,7 @@ import { ProductGroupCard } from "./ProductGroupCard"
 
 interface CartScreenProps {
     salesman: Salesman | null
-    products: Products
+    products: Product[]
     stock: Stock
     cartState: ReturnType<typeof useCart>
     openGroupId?: string | null
