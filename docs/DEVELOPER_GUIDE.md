@@ -233,6 +233,12 @@ Restocks are logged via `RESTOCK` transactions (`recordRestock`).
 - **Financial Effect:** Records total inventory purchase cost in `totalCost`
   (stored as a negative integer representing cents). `totalRevenue` is recorded
   as `0`.
+- **Zero-Cost Restocks (`totalCost = 0`):** Initial purchase cost can be zero
+  (`totalCost = 0`) for donated stock (such as alumni or sponsor donations),
+  vendor promotional samples, or zero-cost inventory adjustments. Zero-cost
+  restocks increase available inventory without incurring cash expense, allowing
+  subsequent sales of donated items to contribute 100% of their revenue directly
+  to net profit.
 
 ### Bulk Sales and Atomic Cart Checkout Workflow
 
