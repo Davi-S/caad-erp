@@ -1,415 +1,257 @@
 # Developer Guide
 
-This guide captures the internal architecture decisions, design principles, and
-development workflow for the CAAD ERP project. It is intended for developers who
-maintain or extend the codebase.
+This guide captures the architecture, high-level design decisions, system
+rationale, and development workflows for the CAAD ERP project. It serves as the
+primary technical reference for developers maintaining or extending the
+codebase.
 
-## Guiding Principles
+---
 
-- **Robustness and Integrity:** The system must never diverge from the truth; an
-  audit trail is mandatory.
-- **Ease of Analysis:** Outputs are optimized for Microsoft Excel users.
-- **Maintainability:** Code must remain clean, modular, and well-documented so
-  new developers can onboard quickly.
+## System Overview and Guiding Principles
 
-## Monorepo Architecture & Development Tooling
+CAAD ERP is an end-to-end full-stack TypeScript application designed for student
+lounge operations, managing point-of-sale checkouts, product catalogs,
+salespeople, inventory levels, credit tab tracking, and financial analytics.
 
-CAAD ERP is organized as a monorepo containing both the backend service and the
-frontend web application:
+The system is built around several core architectural principles:
+
+- **Immutability and Auditability:** All financial and stock events are recorded
+  in an append-only ledger. Data is never deleted or overwritten in place,
+  guaranteeing a complete audit trail.
+- **End-to-End Type Safety:** Strict static typing spans from database tables up
+  through domain models and tRPC service procedures directly into React UI
+  components and hooks without manual code generation.
+- **Zero-Configuration Local Deployment:** The application runs embedded without
+  external database processes, making installation, backups, and local network
+  execution straightforward.
+- **Pure Layering and Separation of Concerns:** Core domain rules are decoupled
+  from presentation concerns and data storage drivers, keeping logic testable
+  and predictable.
+
+---
+
+## Monorepo Architecture
+
+The project is structured as an npm Workspaces Monorepo separating the backend
+server and frontend web consumer while sharing tooling and configuration at the
+root:
 
 ```text
 caad-erp/
-├── backend/            # Python (FastAPI + openpyxl + uv) - Core API & Ledger
-│   ├── src/caad_erp/   # Business logic (BLL), Data access (DAL), and REST API
-│   ├── tests/          # Pytest suite
-│   ├── pyproject.toml  # Python package metadata & dependencies
-│   └── setup_excel.py  # Bootstrap script for the Excel source-of-truth
-├── frontend/           # TypeScript (React + Vite + Mantine + Tailwind) - Web UI
-│   ├── src/            # Components, feature pages (POS, Stock, Salesmen), & state
-│   └── package.json    # Frontend dependencies & scripts
-├── docs/               # Architecture specs & developer guides
-├── package.json        # Root scripts for monorepo development & orchestration
-└── README.md
-```
-
-### Offline OpenAPI Type Generation
-
-Generate TypeScript API contracts directly from Python source code without
-needing a live backend server:
-
-```bash
-npm run generate-api
+├── backend/            # Backend Workspace (Node.js + Drizzle ORM + SQLite + tRPC)
+│   ├── src/
+│   │   ├── dal/        # Data Access Layer (Schema definitions and SQLite queries)
+│   │   ├── bll/        # Business Logic Layer (Colocated Zod schemas and domain logic)
+│   │   ├── trpc/       # Presentation Layer (tRPC routers and context)
+│   │   └── server.ts   # Standalone HTTP server
+│   └── tests/          # Vitest suite (DAL, BLL, tRPC integration tests)
+├── frontend/           # Frontend Workspace (React 19 + Vite + Mantine + React Query)
+│   ├── src/            # Features (POS, Stock, Salesmen, Home), components, and hooks
+│   └── package.json    # Frontend package definition
+├── docs/               # Technical specifications and developer guide
+├── package.json        # Root npm Workspaces orchestration and shared scripts
+├── .oxlintrc.json      # Shared monorepo linting rules
+├── .oxfmtrc.json      # Shared monorepo code formatting rules
+└── start.bat           # Windows 1-click launch and setup script
 ```
 
 ---
 
-## Backend Usage (API Server)
+## Architectural Rationale and High-Level Decisions
 
-### FastAPI Server & Single-Process App
+### Embedded Relational Database (SQLite + `better-sqlite3`)
 
-Start the full application (FastAPI REST API + built React frontend assets):
+The backend uses SQLite via native C++ bindings (`better-sqlite3`) rather than
+an external database server like PostgreSQL or MySQL.
 
-```bash
-# Build frontend static bundle first if needed
-npm run build:frontend
+- **Zero-Config Execution:** Eliminates administrative overhead (no background
+  database daemon, user permissions, or port configurations required).
+- **Single-File Portability:** All application state is stored in a single
+  portable file (`caad_erp.db`), simplifying backups and migration.
+- **In-Process Performance:** Queries execute in-process with zero network
+  socket latency, providing sub-millisecond execution speeds that exceed the
+  requirements of local POS checkouts.
 
-# Run full application on http://0.0.0.0:8000
-cd backend
-uv run caad-erp
-```
+### Explicit Schema Design (Drizzle ORM)
 
-Start the API-only server (without static frontend mounting):
+Drizzle ORM provides lightweight, type-safe SQL query generation without runtime
+abstraction overhead.
 
-```bash
-cd backend
-uv run caad-erp-api
-```
+- **Boolean Type Mapping:** SQLite lacks a native boolean column type and stores
+  flags as integers (`1` or `0`). Drizzle handles two-way conversion
+  automatically between TypeScript booleans and SQLite integers.
+- **Explicit Constraints over Fallbacks:** Non-null columns are declared without
+  implicit default fallbacks. Creation functions require callers to explicitly
+  supply all attributes, preventing silent data fallbacks.
+- **Constrained Union Enums:** Transaction types and payment methods are
+  declared as strict database string enums, enforcing valid domain values at
+  compile time.
 
-- **Full Application UI:** `http://localhost:8000/`
-- **Health Check:** `http://localhost:8000/health`
-- **Interactive Swagger Docs:** `http://localhost:8000/docs`
+### End-to-End Contract Typing (tRPC)
+
+The presentation layer uses tRPC (`@trpc/server` and `@trpc/react-query`) to
+link backend handlers to the React frontend.
+
+- **Compile-Time Type Sharing:** The frontend imports the backend router type
+  definition directly (`import type { AppRouter } from 'caad-erp-backend'`),
+  giving UI components instant autocompletion and type checking for procedure
+  inputs and outputs without running build steps or OpenAPI codegen tools.
+- **Automatic Error Translation:** Domain exceptions thrown in the business
+  logic layer are intercepted by tRPC middleware and mapped automatically to
+  semantic HTTP error statuses (such as mapping missing entities to `NOT_FOUND`
+  or stock shortages to `BAD_REQUEST`).
+
+### UI Framework and State Management (React + Mantine + React Query)
+
+The frontend uses React 19, Vite, Mantine UI components, and TanStack React
+Query.
+
+- **Server-State Synchronization:** React Query manages caching, automatic
+  refetching, and cache invalidation for catalog data and inventory balances
+  upon mutation.
+- **Component Ergonomics:** Mantine provides responsive layout controls,
+  accessible modal forms, theme support, and notification systems designed for
+  touch or desktop POS screens.
 
 ---
 
-## Backend
+## Layered System Architecture
 
-### Application Architecture
+The backend follows a strict 3-layer architecture:
 
-The code follows a three-layer design:
+```mermaid
+graph TD
+    UI[Frontend React App / tRPC Client] -->|tRPC Calls| TRPC[Presentation Layer: tRPC Routers]
+    TRPC -->|Validated Commands| BLL[Business Logic Layer: Domain Handlers and Zod Schemas]
+    BLL -->|Typed Rows| DAL[Data Access Layer: Drizzle ORM Queries]
+    DAL -->|SQL Execution| DB[(SQLite Database: caad_erp.db)]
+```
+
+### Data Access Layer (DAL)
+
+The Data Access Layer (`backend/src/dal/`) contains pure SQL query functions.
+Every DAL function accepts an active database client instance as its first
+argument, keeping functions stateless and side-effect-free.
+
+### Business Logic Layer (BLL)
 
-1. **Data Access Layer (DAL)** Handles Excel I/O, implemented with `openpyxl`.
-2. **Business Logic Layer (BLL)** Encapsulates rules and workflows, calling into
-   the DAL without caring about presentation concerns.
-3. **Presentation Layer (API):**: A FastAPI-based HTTP API server that
-   translates HTTP requests into BLL calls, serving web-based UIs and static
-   assets.
+The Business Logic Layer (`backend/src/bll/`) encapsulates business rules,
+analytics calculations, and validation logic.
 
-### Data Model
+- **Two-Tier Validation Strategy:** Validation is split into two complementary
+  phases:
+  - _Stateless Boundary Validation:_ Zod schemas validate structural types,
+    string length, and numeric bounds synchronously before reaching domain
+    handlers.
+  - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
+    rules (such as checking stock availability, active flags, or credit line
+    links).
+- **Colocated Schemas and Handlers:** Validation schemas and command payload types
+  are colocated directly alongside their handler functions (`products.ts`,
+  `salesmen.ts`, `transactions.ts`), keeping workflow definitions concise and
+  self-contained.
 
-The "database" lives alongside a user-editable configuration file.
+### Presentation Layer (tRPC Routers)
 
-#### Configuration
+The Presentation Layer (`backend/src/trpc/`) exposes procedures for feature
+modules (`products`, `salesmen`, `transactions`, `reports`). It constructs
+context containing the active database client and routes validated inputs into
+BLL handlers.
 
-The user-editable configuration file is `config.ini`. All runtime code should
-resolve configuration through `caad_erp.settings`.
+---
 
-- `[System]`
-    - `DataFile`: Path to the Excel data file.
-    - `LoungeName`: Human-readable name for the lounge; used for reports and UI
-      titles.
-    - `SchemaVersion`: Used for compatibility checks.
+## Core Domain Workflows and Ledger Rules
 
-#### Excel Workbook
+### Append-Only Transaction Ledger
 
-The workbook (an Excel file) is the source of truth and should only be modified
-through the application. It contains three sheets:
+All inventory movements and financial events are recorded in an append-only
+`transactions` table.
 
-- **`Dashboard`**: An overview of the data by using several commands and
-  formulas on excel
-- **`Products`**: Catalog of all products.
-    - `ProductID`, `ProductName`, `SellPrice`, `IsActive`.
-- **`Salesmen`**: List of users who can record sales.
-    - `SalesmanID`, `SalesmanName`, `IsActive`.
-- **`TransactionLog`**: Immutable ledger of every event.
-    - `TransactionID`, `Timestamp`, `TransactionType`, `ProductID`, `SalesmanID`,
-      `PaymentType`, `QuantityChange`, `TotalRevenue`, `TotalCost`,
-      `LinkedTransactionID`, `Notes`.
+- **Transaction Types:**
+  - `SALE`: Decreases stock and records gross revenue.
+  - `RESTOCK`: Increases stock and records inventory spend.
+  - `WRITE_OFF`: Decreases stock without revenue (spoilage, loss, or damage).
+  - `CREDIT_PAYMENT`: Records money collected toward a prior credit sale.
+  - `VOID`: Exact reversing entry referencing a negated transaction.
 
-##### Separate Revenue and Cost Columns
+### Stock Availability Enforcement
 
-`TotalRevenue` tracks money received; `TotalCost` tracks money spent. Using two
-columns keeps Excel analysis simple:
+Sales and write-offs strictly enforce inventory availability. The business logic
+calculates dynamic stock balances by summing quantity changes across the
+transaction ledger, rejecting any operation where requested items exceed on-hand
+inventory. Bulk checkouts validate aggregate cart quantities across all line
+items atomically before recording entries.
 
-- Total sales: `SUM(TotalRevenue)`
-- Cost of stock: `SUM(TotalCost)`
-- Profit: `SUM(TotalRevenue) + SUM(TotalCost)`
+### Flexible Credit Tab Management
 
-##### Stock Levels
+Sales can be recorded on credit (`paymentType = "OnCredit"`) with zero immediate
+revenue. Subsequent customer payments are logged as `CREDIT_PAYMENT` entries
+referencing the original credit sale.
 
-`SUM(TransactionLog.QuantityChange)` derives real-time stock levels.
+- **Partial Payments and Overpayments:** Customers can make multiple partial
+  payments over time. Payments are recorded as received, allowing for interest
+  or partial settlements.
+- **Outstanding Debt Analytics:** Outstanding debt balances sum non-voided
+  credit payments per sale, calculating remaining debt accurately across all
+  active tabs.
 
-##### Sell Price
+### Reversal and Void Workflow
 
-This is a convenience/esthetic value. It is a default or suggested price for the
-user interface.
+To correct errors without altering history, the system uses a
+reversal-and-re-entry approach. A `VOID` transaction reverses a prior entry by
+negating quantity, revenue, and cost deltas while referencing the target entry
+ID. Voids automatically restore inventory levels or unpaid credit debt. To
+prevent infinite loops, `VOID` entries themselves cannot be voided.
 
-The real sell price of the product is calculated by the `TotalRevenue` of a
-transaction log; this is the actual amount of money collected for the sale.
+### Chronological UUID v7 Identifiers
 
-##### Foreign Keys and Integrity
+Transactions use RFC 9562 UUID v7 identifiers. UUID v7 embeds a 48-bit
+millisecond timestamp followed by random bits. This guarantees time-ordered
+sorting in database indexes while preventing identifier collisions during rapid
+concurrent checkouts.
 
-`TransactionLog.ProductID` match a `ProductID` in the `Products` sheet.
+---
 
-`TransactionLog.SalesmanID` points at `Salesmen.SalesmanID`.
+## Frontend Feature Architecture and Customer Display
 
-##### Linked IDs
+The frontend UI is organized into intuitive feature modules:
 
-`TransactionLog.LinkedTransactionID` links reversal flows. `CREDIT_PAYMENT` rows
-link back to the originating credit sale, and `VOID` rows reference the
-transaction they negate.
+- **Point of Sale (POS):** Checkout screen featuring salesman selection, cart
+  management, payment method selection (Cash, Credit, PIX, Other), and Mercado
+  Pago PIX QR code integration.
+- **Customer Display Mode (`/display`):** Dedicated customer-facing display view
+  that mirrors active POS checkouts in real time, providing customer
+  transparency.
+- **Product Management:** Modal interfaces to register new products, update
+  prices, or toggle active catalog status.
+- **Salespeople Management:** Interface to manage salespeople and their active
+  status.
+- **Stock Management:** Inventory control view with modal workflows for restocks
+  and write-offs.
 
-##### Column Types
+---
 
-- Identifier columns (`ProductID`, `SalesmanID`, `TransactionID`,
-  `LinkedTransactionID`) stay as text.
-- `Timestamp` cells store ISO 8601 strings captured by the business layer.
-- `QuantityChange` uses integers
-- Monetary columns are written as integers and represents cents. Revenue entries
-  stay positive, while costs are stored as negative numbers.
-- Boolean columns (`Products.IsActive`, `Salesmen.IsActive`) store Excel
-  booleans; the DAL coerces them back to `bool` on read.
-- `PaymentType` stores one of the enum strings.
-- `Notes` is free-form text that can remain blank.
+## Testing and Quality Assurance
 
-### Immutable Transaction Log
+### Vitest Integration and Unit Test Hierarchy
 
-The project uses an append-only `TransactionLog` stored in Excel. Data is never
-deleted or edited. Business logic adds new rows for every event, including
-corrections.
+All backend layers are tested using Vitest against isolated in-memory SQLite
+databases (`:memory:`):
 
-### Transaction Types
+- **Data Access Tests (`backend/tests/dal/`):** Verify schema mapping, query
+  execution, and database constraints.
+- **Business Logic Tests (`backend/tests/bll/`):** Verify domain workflows,
+  validation rules, stock limits, credit tracking, and void reversals.
+- **Service Layer Tests (`backend/tests/trpc/`):** Verify procedure routing,
+  input parsing, and error status code translations.
 
-1. `OPEN_STOCK`: Created by the archive script to seed a new period.
-2. `SALE`: Reduces stock and logs revenue.
-3. `RESTOCK`: Increases stock and records inventory spend.
-4. `WRITE_OFF`: Reduces stock without revenue (spoilage, theft, lost, etc.).
-5. `CREDIT_PAYMENT`: Captures the payment received for an earlier credit sale.
-6. `VOID`: Perfect reversal of an incorrect transaction, linked to the original
-   entry.
-
-### Workflows
-
-#### Stock Availability Enforcement
-
-Sales (`record_sale`, `record_bulk_sale`) and write-offs (`record_write_off`)
-strictly enforce stock availability. The business logic layer calculates dynamic
-inventory balances (`calculate_inventory`) from the transaction log and rejects
-any sale or write-off request where requested quantity exceeds available stock.
-Bulk sales validate aggregate cart item quantities per product atomically.
+### Test Structure Standards
 
-#### Discounts
+Test cases follow the Arrange-Act-Assert (AAA) pattern with explicit phase
+comments and Given/When/Then descriptive titles to maintain test clarity.
 
-Handled by allowing any `TotalRevenue` during a sale, even if it will differ
-from the product's sell price.
+### Unified Monorepo Tooling (Oxc)
 
-#### Sell on Credit & Flexible Credit Payments
-
-Logged as a `SALE` with `PaymentType="OnCredit"` and zero revenue, paired with
-subsequent `CREDIT_PAYMENT` transactions referencing the original sale via
-`LinkedTransactionID`.
-
-- **Multiple Partial Payments:** Customers can make multiple partial payments
-  over time.
-- **Overpayments & Interest:** Payment amounts are not capped by the remaining
-  debt balance, allowing salesmen to record interest, late fees, or extra
-  payments.
-- **Traceability & Reports:** Outstanding debt reports sum all non-voided
-  `CREDIT_PAYMENT` entries for a sale, excluding fully settled or overpaid debts
-  from outstanding balances.
-
-#### Error Correction & Voiding Credit Payments
-
-Uses the "Reversal and Re-entry" method. A `VOID` transaction reverses the
-mistake by flipping quantity/revenue/cost deltas, followed by a new entry if
-correcting data.
-
-- **Voiding Credit Payments:** `CREDIT_PAYMENT` entries can be voided just like
-  sales or restocks. Voiding a credit payment automatically restores the unpaid
-  debt balance on the linked credit sale.
-- **Immutability of Voids:** Only `VOID` transactions themselves cannot be
-  voided to prevent infinite reversal loops.
-
-#### Bulk Sales (Atomic Multi-Item Checkouts)
-
-Captures real-world shopping cart checkouts where a customer purchases multiple
-items in a single transaction.
-
-The workflow is orchestrated in `bll.record_bulk_sale` using a **2-phase,
-all-or-nothing wrapper** pattern:
-
-1. **Validation Phase**: Validates every `SaleCommand` in the input list
-   (verifying active status and existence for products and salesmen, positive
-   quantities, and valid revenue). If _any_ item fails validation, an exception
-   is raised immediately and **zero** transactions are recorded.
-2. **Execution Phase**: Appends all sale transactions to the `TransactionLog`
-   sheet in sequence, invalidates the transaction cache once at the end, and
-   returns the created rows.
-
-_Developer Rationale_:
-
-- **BLL Centered**: All-or-nothing atomicity rules and validation loops live
-  strictly in the BLL (`bll.record_bulk_sale`), never in CLI or API handlers.
-- **DTO Transformation**: API endpoint `POST /transactions/bulk-sale` accepts
-  `BulkSaleRequest` DTOs and maps them to `list[SaleCommand]`. CLI command
-  `bulk-sale` parses `-s`, `-p`, `-n` header options and repeated
-  `-i PRODUCT_ID QTY TOTAL_REVENUE` flags into `list[SaleCommand]`.
-- **Single Persistence Pass**: In mutating API requests or REPL sessions,
-  workbook changes are written to disk once at the end of the batch operation,
-  eliminating redundant disk I/O.
-
-### Runtime Caching in the BLL
-
-The business logic layer keeps a single workbook open inside a `RuntimeContext`
-instance. To avoid repeatedly walking the Excel sheets (an `openpyxl` iterator
-can be expensive for large ledgers), the context maintains an in-memory cache
-with these buckets:
-
-- `products`: memoized list of every product (`all`), id-index map (`by_id`).
-- `salesmen`: the same structure for salesmen.
-- `transactions`: immutable transaction rows plus an id-index.
-
-Whenever one of the `record_*` functions appends a new row, the relevant bucket
-is invalidated. The next read repopulates the cache from the workbook so future
-lookups stay consistent without reloading the file.
-
-Guidelines:
-
-- Prefer accessing data through the public helpers (`list_products`,
-  `get_transaction`) so the caches stay transparent to callers.
-- If you add write flows that modify products or salesmen, call
-  `invalidate_cache(context, "products")` or
-  `invalidate_cache(context, "salesmen")` right after the DAL operation.
-- Avoid mutating the workbook directly from outside the BLL. Doing so bypasses
-  the invalidation hook and can leave cached data stale.
-
-This approach keeps memory usage low (only one workbook copy) while eliminating
-the "N+1" read pattern during operations.
-
-### Backend Tests
-
-#### Test-Driven Development (TDD)
-
-New functionality should be driven by `pytest`-based tests under
-`backend/tests/`.
-
-#### Testing Files Structure
-
-The test suite follows a pyramid structure to keep fast feedback at the unit
-level while retaining confidence in the full stack:
-
-- **`backend/tests/dal/`** - Integration coverage for the DAL that exercises
-  real `openpyxl` reads and writes.
-- **`backend/tests/bll/`** - Unit coverage for the BLL with the entire data
-  access layer (DAL) not mocked.
-- **`backend/tests/api/`** - Unit coverage for the API (Presentation Layer)
-  using FastAPI's TestClient.
-- **`backend/tests/integration/`** - Cross-layer integration without mocks.
-
-#### Test Structure Standards
-
-To ensure our tests are readable and maintainable by new developers, all test
-functions must adhere to the following standards:
-
-- **Arrange-Act-Assert (AAA) Pattern:** The body of every test function must be
-  explicitly divided by comments to make its logic clear.
-- **Given/When/Then (GWT) Docstrings:** All test functions must have a docstring
-  in the GWT format to describe the intent of the test.
-
-### Logging
-
-Python's `logging` module is configured in `src/caad_erp/__init__.py`; modules
-acquire a logger with `logging.getLogger(__name__)`.
-
-### Key Design Rationale (Q&A)
-
-This section clarifies the "why" behind a few key architectural decisions that
-were made to prioritize robustness and maintainability.
-
-#### Why is PaymentType a hard-coded Enum?
-
-We intentionally chose to hard-code the PaymentType list in `constants.py`
-instead of creating a separate `PaymentTypes` sheet in Excel.
-
-**Reason**: The value "On Credit" is a critical business rule, not just user
-data.
-
-**Risk**: If it were in an Excel sheet, a user could accidentally delete or
-rename it, which would fatally break all logic for tracking and paying debts.
-
-**Benefit**: By making it a hard-coded Enum, we make our "Sell on Credit"
-workflow 100% robust and safe from user error, at the minor cost of requiring a
-developer to add new payment types.
-
-#### "Deleting" something
-
-Soft-delete is our method for "removing" an item (like a product or a salesman)
-without corrupting our database.
-
-Instead of actually deleting the row from the Excel sheet, just flip the
-`TRUE`/`FALSE` **`IsActive` column** in your `Products` and `Salesmen` sheets.
-
-**The Effect:** The BLL is built to ignore inactive items. That product will
-instantly vanish from the `stock` report and from the list of items you can
-`sale`. To the user, it's "deleted."
-
-##### Why This is Absolutely Needed
-
-The main reason is to **protect our `TransactionLog`'s history**.
-
-Our entire system is built on one rule: the `TransactionLog` is a perfect,
-immutable, historical record. It contains rows like this:
-
-`T1001 | ... | P1001 | ... | -1 | 1.50 | ...`
-
-This row says we sold "P1001". The system knows "P1001" is "Snickers" by looking
-it up in the `Products` sheet.
-
-**The "Hard-Delete" Disaster (What we AVOID):**
-
-Imagine we _actually_ deleted the "Snickers" row (`P1001`) from the `Products`
-sheet.
-
-1. The `T1001` transaction log entry is now **orphaned**.
-2. When you run a profit report for last month, the BLL will find `T1001`, look
-   for `P1001`, and find... nothing.
-3. The entire history of that product is now corrupted. We can't get its name,
-   or any of its historical data. We have permanently broken our "source of
-   truth."
-
-**The "Soft-Delete" Solution (What we DO):**
-
-When we set `P1001`'s `IsActive` to `FALSE`:
-
-1. The item vanishes from active catalog views, so it cannot be sold any more.
-2. The `P1001 | Snickers` row **still exists** in the `Products` sheet.
-3. When you run a profit report for last month, the BLL can still look up
-   `P1001`, find "Snickers," and correctly calculate your historical profit.
-
-##### The only case we "Hard-Delete" (Archive Script)
-
-This is the "pruning" or "garbage collection". It happens only when a manager
-runs the period-end archive script.
-
-When you run that script, it builds a brand new, clean workbook by looking at
-the old one.
-
-As it copies the Products sheet over, it checks if the product is not active and
-if the inventory is 0. If this is true, then it will actually remove
-(hard-delete) the product row from the excel file.
-
-It does a similar thing for sellers looking at the debt and any other necessary
-info
-
-#### Why don't list-products/list-salesmen filter by active status server-side?
-
-`Products` and `Salesmen` are expected to stay small (dozens to low hundreds of
-rows), so pushing "include inactive" filtering to the server added complexity
-without a real performance benefit. `list_products`/`list_salesmen` (BLL) and
-the `GET /products` / `GET /salesmen` endpoints always return the full dataset,
-so clients can filter or sort however they like.
-
-### Future Work
-
-- Clean the tests to remove unused parameters, imports, variables, etc...
-- Currently, the layers are exposing all their functions. We need to expose only
-  the public methods. Private methods (even if not explicited by the "underscore
-  notation" should not be exposed.
-- **Feat: Implement Period-End Archive Script**
-    - **Task:** Create the `archive.py` script as defined in the guide.
-    - **Logic:** It will calculate final stock, prune inactive/empty products, and
-      generate `OPEN_STOCK` entries in a new, clean workbook for the next period.
-- **Feat: Implement Automatic ID Generation**
-    - **Task:** Make `product_id` and `salesman_id` optional in creation
-      routes/commands, generating a hash/UUID automatically in the BLL.
-- Add options to pass id to read-endpoints to read specific information only
-- Add more columns in the product sheet (supplier, etc...)
+The project uses Oxc (`oxlint` and `oxfmt`) configured at the root
+(`.oxlintrc.json` and `.oxfmtrc.json`) to enforce code formatting
+(`tabWidth: 4`, `semi: false`) and lint rules across all workspace packages.
