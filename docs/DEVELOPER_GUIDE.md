@@ -275,16 +275,44 @@ deltas while referencing the target transaction ID.
 
 `VOID` entries themselves cannot be voided, preventing infinite reversal loops.
 
-### Chronological UUID v7 Identifiers
+### Product Catalog Price Changes and Historical Ledger Independence Workflow
 
-Transactions use RFC 9562 UUID v7 identifiers. UUID v7 embeds a 48-bit
-millisecond timestamp followed by random bits. This guarantees time-ordered
-sorting in database indexes while preventing identifier collisions during rapid
-concurrent checkouts.
+Updating a product's default catalog `sellPrice` (for example, increasing an
+item's price from $5.00 to $6.00 via `updateProduct`) updates the suggested
+default price for future checkouts and new credit tab calculations.
+
+- **Historical Ledger Immutability:** Existing `SALE` entries in the append-only
+  ledger retain their original `totalRevenue` (e.g. $5.00). Historical revenue,
+  cost, and net profit calculations reflect actual past transactions without
+  being retroactively altered by catalog price updates.
+- **Credit Tab Calculations and Operational Caveat:** Outstanding debt
+  calculations (`calculateOutstandingDebts`) evaluate credit sales using the
+  current catalog `sellPrice` of the product. Developers and lounge managers
+  must exercise care when updating catalog prices: if a credit sale was recorded
+  when a product cost $5.00 and the customer paid $5.00, increasing the catalog
+  `sellPrice` to
+  $6.00 later will cause `calculateOutstandingDebts` to compute expected debt as $6.00
+  and report a pending balance of $1.00 even though the debt was previously
+  satisfied.
 
 ---
 
 ## Detailed Rationale and System Decisions (Q&A)
+
+### Why use UUID v7 for Transaction IDs instead of Auto-Incrementing Integers?
+
+Transaction records use RFC 9562 UUID v7 string identifiers (`uuidv7()`)
+generated in the application layer instead of database auto-incrementing integer
+IDs (`1, 2, 3...`).
+
+- **Time-Ordered Index Locality:** UUID v7 embeds a 48-bit millisecond UTC
+  timestamp followed by 74 random bits. In SQLite B-tree indexes, UUID v7
+  entries sort naturally in chronological order just like auto-incrementing
+  integers, maintaining high index insertion performance.
+- **Collision-Free Application Generation:** UUID v7 identifiers can be
+  generated safely in application memory or client transactions before hitting
+  the database, avoiding sequential database lock contention or ID allocation
+  bottlenecks during concurrent operations or batch checkouts.
 
 ### Why Hard-Code PaymentType as an Enum?
 
