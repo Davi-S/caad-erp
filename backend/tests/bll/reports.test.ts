@@ -113,7 +113,7 @@ describe("Reporting Analytics BLL Handlers", () => {
             productId: "P-001",
             salesmanId: "S-001",
             quantity: 2,
-            totalRevenue: 1000,
+            totalRevenue: 0,
             paymentType: "OnCredit",
         })
         recordCreditPayment(db, {
@@ -147,7 +147,7 @@ describe("Reporting Analytics BLL Handlers", () => {
             productId: "P-001",
             salesmanId: "S-001",
             quantity: 2,
-            totalRevenue: 1000,
+            totalRevenue: 0,
             paymentType: "OnCredit",
         })
         recordVoid(db, {

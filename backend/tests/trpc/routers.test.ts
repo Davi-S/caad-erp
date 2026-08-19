@@ -320,7 +320,7 @@ describe("tRPC Service Layer Integration Suite", () => {
                 productId: "P-001",
                 salesmanId: "S-001",
                 quantity: 2,
-                totalRevenue: 1000,
+                totalRevenue: 0,
                 paymentType: "OnCredit",
             })
 

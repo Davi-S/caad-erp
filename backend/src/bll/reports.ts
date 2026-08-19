@@ -140,16 +140,13 @@ export function calculateOutstandingDebts(db: DB): OutstandingDebtsReport {
 
         const quantity = Math.abs(entry.quantityChange)
 
-        // Derive expected amount from explicit sale revenue or product sell price
-        let expectedAmount = entry.totalRevenue
-        if (expectedAmount <= 0) {
-            try {
-                const product = getProduct(db, entry.productId)
-                expectedAmount = product.sellPrice * quantity
-            } catch {
-                // Fall back gracefully if product lookups fail
-                expectedAmount = 0
-            }
+        // Derive expected amount directly from catalog product price * quantity
+        let expectedAmount = 0
+        try {
+            const product = getProduct(db, entry.productId)
+            expectedAmount = product.sellPrice * quantity
+        } catch {
+            expectedAmount = 0
         }
 
         if (expectedAmount <= 0) {
