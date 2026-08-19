@@ -11,12 +11,18 @@
 import "dotenv/config"
 import { createHTTPHandler } from "@trpc/server/adapters/standalone"
 import http from "http"
-import { createDb } from "../dal/index.js"
+import Database from "better-sqlite3"
+import { drizzle } from "drizzle-orm/better-sqlite3"
+import { schema } from "../dal/index.js"
 import { appRouter, createContext } from "./index.js"
 import { handlePaymentsRoute } from "../payments/mercadoPago.js"
 
-// Initialize SQLite database connection client
-const db = createDb()
+// Create the raw SQLite connection so we can checkpoint it on shutdown
+const sqlite = new Database("caad_erp.db")
+sqlite.pragma("journal_mode = WAL")
+sqlite.pragma("foreign_keys = ON")
+
+const db = drizzle(sqlite, { schema })
 
 // Build the tRPC handler (handles any path, does NOT create a server itself)
 const trpcHandler = createHTTPHandler({
@@ -70,3 +76,18 @@ server.listen(PORT, () => {
     console.log(`tRPC server running at http://localhost:${PORT}`)
     console.log(`Payments API at http://localhost:${PORT}/api/payments/pix`)
 })
+
+// Graceful shutdown — checkpoint WAL so the -shm and -wal sidecar files are
+// merged back into the main .db file and removed cleanly on process exit.
+function shutdown(signal: string) {
+    console.log(`\n[${signal}] Shutting down...`)
+    server.close(() => {
+        sqlite.pragma("wal_checkpoint(TRUNCATE)")
+        sqlite.close()
+        console.log("Database closed. Goodbye.")
+        process.exit(0)
+    })
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"))
+process.on("SIGTERM", () => shutdown("SIGTERM"))
