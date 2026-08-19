@@ -29,5 +29,5 @@ const server = createHTTPServer({
 const PORT = 8000
 
 server.listen(PORT, () => {
-    console.log(`tRPC server running at http://localhost:${PORT}/trpc`)
+    console.log(`tRPC server running at http://localhost:${PORT}`)
 })
