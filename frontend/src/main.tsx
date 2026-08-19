@@ -2,6 +2,7 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import { trpc, trpcClient } from "@/utils/trpc"
 import { HomePage } from "./features/home/"
 import { POSFlow } from "./features/pos/"
 import { CustomerDisplayPage } from "./features/pos/pages/CustomerDisplayPage"
@@ -87,10 +88,12 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <MantineProvider>
-                <RouterProvider router={router} />
-            </MantineProvider>
-        </QueryClientProvider>
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+            <QueryClientProvider client={queryClient}>
+                <MantineProvider>
+                    <RouterProvider router={router} />
+                </MantineProvider>
+            </QueryClientProvider>
+        </trpc.Provider>
     </StrictMode>,
 )
