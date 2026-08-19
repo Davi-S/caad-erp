@@ -27,7 +27,12 @@ describe("Excel Exporter (exportWorkbook)", () => {
     it("formats Dashboard formulas, currency values, and product rows correctly", async () => {
         const db = createTestDb()
 
-        dal.appendProduct(db, { id: "P1", name: "Cerveja Heineken 600ml", sellPrice: 1200, isActive: true })
+        dal.appendProduct(db, {
+            id: "P1",
+            name: "Cerveja Heineken 600ml",
+            sellPrice: 1200,
+            isActive: true,
+        })
         dal.appendProduct(db, { id: "P2", name: "Batata Frita", sellPrice: 2500, isActive: true })
         dal.appendSalesman(db, { id: "S1", name: "Carlos Vendedor", isActive: true })
         dal.appendSalesman(db, { id: "S2", name: "Vendedor Inativo", isActive: false })
@@ -57,10 +62,10 @@ describe("Excel Exporter (exportWorkbook)", () => {
 
         // Formula assertions
         const revCell = dashSheet?.getCell("B5")
-        expect((revCell?.value as { formula: string }).formula).toBe("SUM(TransactionLog!H:H)")
+        expect(revCell?.value).toEqual({ formula: "SUM(TransactionLog!H:H)" })
 
         const profitCell = dashSheet?.getCell("B7")
-        expect((profitCell?.value as { formula: string }).formula).toBe("B5+B6")
+        expect(profitCell?.value).toEqual({ formula: "B5+B6" })
 
         // Products Sheet Assertions (cents converted to BRL currency float: 1200 -> 12)
         const prodSheet = workbook.getWorksheet("Products")
@@ -105,7 +110,12 @@ describe("Excel Importer (importWorkbook)", () => {
     it("atomically replaces existing database records with imported workbook rows", async () => {
         const sourceDb = createTestDb()
 
-        dal.appendProduct(sourceDb, { id: "P_NEW", name: "Novo Produto", sellPrice: 1800, isActive: true })
+        dal.appendProduct(sourceDb, {
+            id: "P_NEW",
+            name: "Novo Produto",
+            sellPrice: 1800,
+            isActive: true,
+        })
         dal.appendSalesman(sourceDb, { id: "S_NEW", name: "Novo Vendedor", isActive: true })
         dal.appendTransaction(sourceDb, {
             id: "T_NEW",
@@ -125,7 +135,12 @@ describe("Excel Importer (importWorkbook)", () => {
 
         // Create target DB containing old data
         const targetDb = createTestDb()
-        dal.appendProduct(targetDb, { id: "P_OLD", name: "Produto Antigo", sellPrice: 500, isActive: true })
+        dal.appendProduct(targetDb, {
+            id: "P_OLD",
+            name: "Produto Antigo",
+            sellPrice: 500,
+            isActive: true,
+        })
         dal.appendSalesman(targetDb, { id: "S_OLD", name: "Vendedor Antigo", isActive: true })
 
         const result = await importWorkbook(targetDb, buffer)
@@ -166,7 +181,12 @@ describe("Excel Importer (importWorkbook)", () => {
 
     it("handles optional missing fields gracefully during import", async () => {
         const sourceDb = createTestDb()
-        dal.appendProduct(sourceDb, { id: "P1", name: "Produto Sem Notas", sellPrice: 1000, isActive: true })
+        dal.appendProduct(sourceDb, {
+            id: "P1",
+            name: "Produto Sem Notas",
+            sellPrice: 1000,
+            isActive: true,
+        })
         dal.appendSalesman(sourceDb, { id: "S1", name: "Vendedor Sem Notas", isActive: true })
         dal.appendTransaction(sourceDb, {
             id: "T1",
