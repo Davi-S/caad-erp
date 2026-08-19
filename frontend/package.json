@@ -10,8 +10,8 @@
         "lint:fix": "oxlint --fix",
         "format": "oxfmt",
         "format:check": "oxfmt --check",
-        "preview": "vite preview",
-        "generate-api": "cd ../backend && uv run python -c \"import json; from caad_erp.api.app import create_app; print(json.dumps(create_app(skip_lifespan=True).openapi()))\" > ../frontend/src/api/openapi.json && cd ../frontend && npx openapi-typescript ./src/api/openapi.json -o ./src/api/schema.ts"
+        "fix": "oxlint --fix && oxfmt",
+        "preview": "vite preview"
     },
     "dependencies": {
         "@mantine/carousel": "^9.4.1",
@@ -35,12 +35,11 @@
         "@tiptap/starter-kit": "^3.28.0",
         "@trpc/client": "^11.18.0",
         "@trpc/react-query": "^11.18.0",
+        "caad-erp-backend": "*",
         "dayjs": "^1.11.21",
         "embla-carousel": "^8.6.0",
         "embla-carousel-react": "^8.6.0",
         "lucide-react": "^1.24.0",
-        "openapi-fetch": "^0.17.0",
-        "oxfmt": "^0.62.0",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
         "react-qrcode-pix": "^5.0.0",
@@ -57,8 +56,6 @@
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^6.0.3",
         "babel-plugin-react-compiler": "^1.0.0",
-        "openapi-typescript": "^7.13.0",
-        "oxlint": "^1.71.0",
         "postcss": "^8.5.19",
         "postcss-preset-mantine": "^1.18.0",
         "postcss-simple-vars": "^7.0.1",

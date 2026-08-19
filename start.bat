@@ -10,15 +10,7 @@ echo.
 
 :: 1. Check if first-time setup is needed
 if not exist "node_modules" (
-    echo [INFO] Root dependencies missing. Starting setup...
-    goto SETUP
-)
-if not exist "backend\node_modules" (
-    echo [INFO] Backend dependencies missing. Starting setup...
-    goto SETUP
-)
-if not exist "frontend\node_modules" (
-    echo [INFO] Frontend dependencies missing. Starting setup...
+    echo [INFO] Monorepo dependencies missing. Starting setup...
     goto SETUP
 )
 if not exist "frontend\dist\index.html" (
@@ -30,7 +22,7 @@ goto LAUNCH
 
 :SETUP
 echo.
-echo [1/4] Checking prerequisites (Node.js)...
+echo [1/3] Checking prerequisites (Node.js)...
 
 :: Check Node.js / npm
 where node >nul 2>nul
@@ -40,7 +32,7 @@ if %errorlevel% neq 0 (
     call :REFRESH_PATH
 )
 
-echo [2/4] Installing root orchestration dependencies...
+echo [2/3] Installing workspace dependencies...
 call npm install
 if %errorlevel% neq 0 (
     echo [ERROR] npm install failed!
@@ -48,29 +40,13 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [3/4] Setting up backend environment...
-cd backend
-call npm install
-call npm run build
-if %errorlevel% neq 0 (
-    echo [ERROR] Backend build failed!
-    cd ..
-    pause
-    exit /b 1
-)
-cd ..
-
-echo [4/4] Setting up frontend environment...
-cd frontend
-call npm install
-call npm run build
+echo [3/3] Building production frontend assets...
+call npm run build:frontend
 if %errorlevel% neq 0 (
     echo [ERROR] Frontend build failed!
-    cd ..
     pause
     exit /b 1
 )
-cd ..
 
 echo.
 echo [SUCCESS] Setup complete!
