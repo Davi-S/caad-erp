@@ -146,8 +146,8 @@ analytics calculations, and validation logic.
   - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
     rules (such as checking stock availability, active flags, or credit line
     links).
-- **Colocated Schemas and Handlers:** Validation schemas and command payload types
-  are colocated directly alongside their handler functions (`products.ts`,
+- **Colocated Schemas and Handlers:** Validation schemas and command payload
+  types are colocated directly alongside their handler functions (`products.ts`,
   `salesmen.ts`, `transactions.ts`), keeping workflow definitions concise and
   self-contained.
 
@@ -184,16 +184,22 @@ items atomically before recording entries.
 
 ### Flexible Credit Tab Management
 
-Sales can be recorded on credit (`paymentType = "OnCredit"`) with zero immediate
-revenue. Subsequent customer payments are logged as `CREDIT_PAYMENT` entries
-referencing the original credit sale.
+Sales recorded on credit (`paymentType = "OnCredit"`) strictly enforce zero
+initial revenue (`totalRevenue = 0`). This design guarantees that cash-basis
+revenue calculations (`calculateTotalRevenue`) never double-count revenue when
+customer payments are collected later.
 
+- **Zero Revenue Enforcement:** Credit sales are validated at the schema
+  boundary to ensure `totalRevenue = 0`. Storing zero revenue at checkout
+  prevents inflating total revenue before cash is physically received.
+- **Expected Debt Calculation:** Outstanding debt analytics
+  (`calculateOutstandingDebts`) derive expected debt amounts directly from
+  catalog product prices (`product.sellPrice * quantity`) and subtract all
+  non-voided `CREDIT_PAYMENT` entries linked to that credit sale.
 - **Partial Payments and Overpayments:** Customers can make multiple partial
-  payments over time. Payments are recorded as received, allowing for interest
-  or partial settlements.
-- **Outstanding Debt Analytics:** Outstanding debt balances sum non-voided
-  credit payments per sale, calculating remaining debt accurately across all
-  active tabs.
+  payments over time via `CREDIT_PAYMENT` transactions (using `Cash`, `PIX`, or
+  `Other`). Payments are recorded as received, allowing for interest or partial
+  settlements.
 
 ### Reversal and Void Workflow
 

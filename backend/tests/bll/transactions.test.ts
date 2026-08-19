@@ -8,6 +8,7 @@ import {
     IneligibleCreditSaleError,
     IneligibleVoidTargetError,
     InsufficientStockError,
+    InvalidMonetaryValueError,
     ProductInactiveError,
     ProductNotFoundError,
     SalesmanInactiveError,
@@ -273,7 +274,7 @@ describe("Transaction Ledger BLL Handlers", () => {
             productId: "P-001",
             salesmanId: "S-001",
             quantity: 2,
-            totalRevenue: 1000,
+            totalRevenue: 0,
             paymentType: "OnCredit",
         })
 
@@ -290,6 +291,19 @@ describe("Transaction Ledger BLL Handlers", () => {
         expect(paymentTx.linkedTransactionId).toBe(creditSale.id)
         expect(paymentTx.quantityChange).toBe(0)
         expect(paymentTx.totalRevenue).toBe(1000)
+    })
+
+    it("GIVEN non-zero totalRevenue on OnCredit sale WHEN recordSale is called THEN throws InvalidMonetaryValueError", () => {
+        // Arrange & Act & Assert
+        expect(() =>
+            recordSale(db, {
+                productId: "P-001",
+                salesmanId: "S-001",
+                quantity: 1,
+                totalRevenue: 500,
+                paymentType: "OnCredit",
+            }),
+        ).toThrow(InvalidMonetaryValueError)
     })
 
     it("GIVEN a Cash sale WHEN recordCreditPayment is called THEN throws IneligibleCreditSaleError", () => {

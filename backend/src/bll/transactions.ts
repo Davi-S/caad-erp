@@ -85,44 +85,58 @@ export function getTransaction(db: DB, id: string): TransactionRow {
 /**
  * Zod validation schema and command payload for recording a sale transaction.
  */
-export const saleCommandSchema = z.object({
-    productId: z
-        .string()
-        .trim()
-        .refine((val) => val.length >= 1, {
-            message: "Product ID must be provided",
-            params: { errorClass: InvalidAttributeError },
-        }),
-    salesmanId: z
-        .string()
-        .trim()
-        .refine((val) => val.length >= 1, {
-            message: "Salesman ID must be provided",
-            params: { errorClass: InvalidAttributeError },
-        }),
-    quantity: z
-        .number()
-        .refine((val) => Number.isInteger(val), {
-            message: "Quantity must be an integer",
-            params: { errorClass: InvalidQuantityError },
-        })
-        .refine((val) => val > 0, {
-            message: "Quantity must be greater than zero",
-            params: { errorClass: InvalidQuantityError },
-        }),
-    totalRevenue: z
-        .number()
-        .refine((val) => Number.isInteger(val), {
-            message: "Amount must be an integer",
+export const saleCommandSchema = z
+    .object({
+        productId: z
+            .string()
+            .trim()
+            .refine((val) => val.length >= 1, {
+                message: "Product ID must be provided",
+                params: { errorClass: InvalidAttributeError },
+            }),
+        salesmanId: z
+            .string()
+            .trim()
+            .refine((val) => val.length >= 1, {
+                message: "Salesman ID must be provided",
+                params: { errorClass: InvalidAttributeError },
+            }),
+        quantity: z
+            .number()
+            .refine((val) => Number.isInteger(val), {
+                message: "Quantity must be an integer",
+                params: { errorClass: InvalidQuantityError },
+            })
+            .refine((val) => val > 0, {
+                message: "Quantity must be greater than zero",
+                params: { errorClass: InvalidQuantityError },
+            }),
+        totalRevenue: z
+            .number()
+            .refine((val) => Number.isInteger(val), {
+                message: "Amount must be an integer",
+                params: { errorClass: InvalidMonetaryValueError },
+            })
+            .refine((val) => val >= 0, {
+                message: "Amount must be zero or positive",
+                params: { errorClass: InvalidMonetaryValueError },
+            }),
+        paymentType: z.enum(paymentTypeValues),
+        notes: z.string().nullable().optional(),
+    })
+    .refine(
+        (data) => {
+            if (data.paymentType === "OnCredit") {
+                return data.totalRevenue === 0
+            }
+            return true
+        },
+        {
+            message: "Credit sales must have zero initial revenue",
+            path: ["totalRevenue"],
             params: { errorClass: InvalidMonetaryValueError },
-        })
-        .refine((val) => val >= 0, {
-            message: "Amount must be zero or positive",
-            params: { errorClass: InvalidMonetaryValueError },
-        }),
-    paymentType: z.enum(paymentTypeValues),
-    notes: z.string().nullable().optional(),
-})
+        },
+    )
 
 export type SaleCommand = z.infer<typeof saleCommandSchema>
 
