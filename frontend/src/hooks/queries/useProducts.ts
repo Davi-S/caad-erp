@@ -1,13 +1,17 @@
 import type { Products } from "@/types"
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@/api/apiClient"
+import { trpcClient } from "@/utils/trpc"
 
 export const productsQueryOptions = () => ({
     queryKey: ["products"],
     queryFn: async (): Promise<Products> => {
-        const res = await api.GET("/products")
-        if (res.error) throw new Error("Failed to fetch products")
-        return res.data["items"]
+        const list = await trpcClient.products.list.query()
+        return list.map((p) => ({
+            product_id: p.productId,
+            product_name: p.productName,
+            sell_price: p.sellPrice,
+            is_active: p.isActive,
+        }))
     },
 })
 
