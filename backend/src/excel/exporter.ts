@@ -33,16 +33,6 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
 
     // Dashboard
     const dashSheet = workbook.addWorksheet("Dashboard")
-    dashSheet.columns = [
-        { width: 34 },
-        { width: 34 },
-        { width: 22 },
-        { width: 18 },
-        { width: 18 },
-        { width: 18 },
-        { width: 22 },
-        { width: 26 },
-    ]
 
     // Title Banner
     dashSheet.mergeCells("A1:H1")
@@ -281,10 +271,10 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
     // Products
     const prodSheet = workbook.addWorksheet("Products")
     prodSheet.columns = [
-        { header: "ProductID", key: "id", width: 20 },
-        { header: "ProductName", key: "name", width: 30 },
-        { header: "SellPrice", key: "sellPrice", width: 14 },
-        { header: "IsActive", key: "isActive", width: 12 },
+        { header: "ProductID", key: "id" },
+        { header: "ProductName", key: "name" },
+        { header: "SellPrice", key: "sellPrice" },
+        { header: "IsActive", key: "isActive" },
     ]
 
     for (const p of products) {
@@ -299,9 +289,9 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
     // Salesmen
     const salesmanSheet = workbook.addWorksheet("Salesmen")
     salesmanSheet.columns = [
-        { header: "SalesmanID", key: "id", width: 20 },
-        { header: "SalesmanName", key: "name", width: 30 },
-        { header: "IsActive", key: "isActive", width: 12 },
+        { header: "SalesmanID", key: "id" },
+        { header: "SalesmanName", key: "name" },
+        { header: "IsActive", key: "isActive" },
     ]
 
     for (const s of salesmen) {
@@ -315,17 +305,17 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
     // TransactionLog
     const txSheet = workbook.addWorksheet("TransactionLog")
     txSheet.columns = [
-        { header: "TransactionID", key: "id", width: 38 },
-        { header: "TimestampISO", key: "timestampIso", width: 26 },
-        { header: "TransactionType", key: "transactionType", width: 18 },
-        { header: "ProductID", key: "productId", width: 20 },
-        { header: "SalesmanID", key: "salesmanId", width: 20 },
-        { header: "PaymentType", key: "paymentType", width: 14 },
-        { header: "QuantityChange", key: "quantityChange", width: 16 },
-        { header: "TotalRevenue", key: "totalRevenue", width: 16 },
-        { header: "TotalCost", key: "totalCost", width: 16 },
-        { header: "LinkedTransactionID", key: "linkedTransactionId", width: 38 },
-        { header: "Notes", key: "notes", width: 35 },
+        { header: "TransactionID", key: "id" },
+        { header: "TimestampISO", key: "timestampIso" },
+        { header: "TransactionType", key: "transactionType" },
+        { header: "ProductID", key: "productId" },
+        { header: "SalesmanID", key: "salesmanId" },
+        { header: "PaymentType", key: "paymentType" },
+        { header: "QuantityChange", key: "quantityChange" },
+        { header: "TotalRevenue", key: "totalRevenue" },
+        { header: "TotalCost", key: "totalCost" },
+        { header: "LinkedTransactionID", key: "linkedTransactionId" },
+        { header: "Notes", key: "notes" },
     ]
 
     for (const t of transactions) {
@@ -355,6 +345,51 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
         }
     }
 
+    // Auto-fit column widths across all worksheets
+    for (const sheet of [dashSheet, prodSheet, salesmanSheet, txSheet]) {
+        autoFitWorksheetColumns(sheet)
+    }
+
     const buffer = await workbook.xlsx.writeBuffer()
     return Buffer.from(buffer)
+}
+
+/**
+ * Automatically adjusts column widths of a worksheet based on content string lengths.
+ *
+ * @param sheet - Target worksheet.
+ * @param minWidth - Minimum column width floor (default: 14).
+ */
+function autoFitWorksheetColumns(sheet: ExcelJS.Worksheet, minWidth = 14): void {
+    sheet.columns.forEach((column) => {
+        let maxLen = minWidth
+        column.eachCell?.({ includeEmpty: false }, (cell) => {
+            // Ignore merged banner/section title cells so they don't artificially inflate column A
+            if (cell.isMerged && cell.address !== cell.master.address) {
+                return
+            }
+            if (cell.isMerged) {
+                return
+            }
+
+            let text = ""
+            if (cell.value !== null && cell.value !== undefined) {
+                if (typeof cell.value === "object") {
+                    if ("formula" in cell.value && cell.value.formula) {
+                        text = String(cell.value.formula)
+                    } else if ("result" in cell.value && cell.value.result) {
+                        text = String(cell.value.result)
+                    }
+                } else {
+                    text = String(cell.value)
+                }
+            }
+
+            if (text.length > maxLen) {
+                maxLen = text.length
+            }
+        })
+
+        column.width = Math.max(minWidth, maxLen + 4)
+    })
 }
