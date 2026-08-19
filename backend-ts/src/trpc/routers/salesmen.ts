@@ -26,7 +26,7 @@ export const salesmenRouter = router({
      * Retrieves a single salesman record by identifier.
      */
     get: publicProcedure.input(getSalesmanSchema).query(({ ctx, input }) => {
-        return getSalesman(ctx.db, input.salesmanId)
+        return getSalesman(ctx.db, input.id)
     }),
 
     /**
@@ -42,11 +42,11 @@ export const salesmenRouter = router({
     update: publicProcedure
         .input(
             z.object({
-                salesmanId: z.string().trim().min(1, "Salesman ID is required"),
+                id: z.string().trim().min(1, "Salesman ID is required"),
                 data: updateSalesmanSchema,
             }),
         )
         .mutation(({ ctx, input }) => {
-            return updateSalesman(ctx.db, input.salesmanId, input.data)
+            return updateSalesman(ctx.db, input.id, input.data)
         }),
 })

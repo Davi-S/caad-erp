@@ -23,11 +23,11 @@ export function listSalesmen(db: DB): SalesmanRow[] {
  * Fetches a single salesman record by its unique identifier.
  *
  * @param db - Active Drizzle database instance.
- * @param salesmanId - Unique identifier used to locate the salesman.
+ * @param id - Unique identifier used to locate the salesman.
  * @returns The matching {@link SalesmanRow}, or `undefined` if missing.
  */
-export function getSalesman(db: DB, salesmanId: string): SalesmanRow | undefined {
-    return db.select().from(salesmen).where(eq(salesmen.salesmanId, salesmanId)).get()
+export function getSalesman(db: DB, id: string): SalesmanRow | undefined {
+    return db.select().from(salesmen).where(eq(salesmen.id, id)).get()
 }
 
 /**
@@ -45,29 +45,24 @@ export function appendSalesman(db: DB, record: SalesmanRow): SalesmanRow {
  * Updates selected fields for an existing salesman record.
  *
  * @param db - Active Drizzle database instance.
- * @param salesmanId - Identifier of the salesman to update.
+ * @param id - Identifier of the salesman to update.
  * @param fieldValues - Partial object containing field replacements to apply.
  * @returns The updated {@link SalesmanRow} record.
  * @throws {@link Error} If the salesman ID is not found or if `fieldValues` is empty.
  */
 export function updateSalesman(
     db: DB,
-    salesmanId: string,
-    fieldValues: Partial<Omit<SalesmanRow, "salesmanId">>,
+    id: string,
+    fieldValues: Partial<Omit<SalesmanRow, "id">>,
 ): SalesmanRow {
-    const existing = getSalesman(db, salesmanId)
+    const existing = getSalesman(db, id)
     if (!existing) {
-        throw new Error(`Salesman not found: ${salesmanId}`)
+        throw new Error(`Salesman not found: ${id}`)
     }
 
     if (Object.keys(fieldValues).length === 0) {
-        throw new Error(`At least one field must be provided to update salesman: ${salesmanId}`)
+        throw new Error(`At least one field must be provided to update salesman: ${id}`)
     }
 
-    return db
-        .update(salesmen)
-        .set(fieldValues)
-        .where(eq(salesmen.salesmanId, salesmanId))
-        .returning()
-        .get()
+    return db.update(salesmen).set(fieldValues).where(eq(salesmen.id, id)).returning().get()
 }

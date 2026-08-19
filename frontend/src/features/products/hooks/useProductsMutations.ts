@@ -20,18 +20,7 @@ export function useCreateProduct() {
     return useMutation({
         mutationFn: async (input: ProductCreateRequest) => {
             try {
-                const product = await trpcClient.products.add.mutate({
-                    productId: input.product_id,
-                    productName: input.product_name,
-                    sellPrice: input.sell_price,
-                    isActive: input.is_active,
-                })
-                return {
-                    product_id: product.productId,
-                    product_name: product.productName,
-                    sell_price: product.sellPrice,
-                    is_active: product.isActive,
-                }
+                return await trpcClient.products.add.mutate(input)
             } catch (err) {
                 throw new Error(extractErrorMessage(err, "Falha ao criar produto."))
             }
@@ -46,28 +35,12 @@ export function useUpdateProduct() {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: async ({
-            productId,
-            input,
-        }: {
-            productId: string
-            input: ProductUpdateRequest
-        }) => {
+        mutationFn: async ({ id, input }: { id: string; input: ProductUpdateRequest }) => {
             try {
-                const product = await trpcClient.products.update.mutate({
-                    productId,
-                    data: {
-                        productName: input.product_name,
-                        sellPrice: input.sell_price,
-                        isActive: input.is_active,
-                    },
+                return await trpcClient.products.update.mutate({
+                    id,
+                    data: input,
                 })
-                return {
-                    product_id: product.productId,
-                    product_name: product.productName,
-                    sell_price: product.sellPrice,
-                    is_active: product.isActive,
-                }
             } catch (err) {
                 throw new Error(extractErrorMessage(err, "Falha ao atualizar produto."))
             }

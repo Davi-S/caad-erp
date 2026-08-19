@@ -23,11 +23,11 @@ export function listProducts(db: DB): ProductRow[] {
  * Fetches a single product record by its unique identifier.
  *
  * @param db - Active Drizzle database instance.
- * @param productId - Unique identifier used to locate the product.
+ * @param id - Unique identifier used to locate the product.
  * @returns The matching {@link ProductRow}, or `undefined` if missing.
  */
-export function getProduct(db: DB, productId: string): ProductRow | undefined {
-    return db.select().from(products).where(eq(products.productId, productId)).get()
+export function getProduct(db: DB, id: string): ProductRow | undefined {
+    return db.select().from(products).where(eq(products.id, id)).get()
 }
 
 /**
@@ -45,29 +45,24 @@ export function appendProduct(db: DB, record: ProductRow): ProductRow {
  * Updates selected fields for an existing product record.
  *
  * @param db - Active Drizzle database instance.
- * @param productId - Identifier of the product to update.
+ * @param id - Identifier of the product to update.
  * @param fieldValues - Partial object containing field replacements to apply.
  * @returns The updated {@link ProductRow} record.
  * @throws {@link Error} If the product ID is not found or if `fieldValues` is empty.
  */
 export function updateProduct(
     db: DB,
-    productId: string,
-    fieldValues: Partial<Omit<ProductRow, "productId">>,
+    id: string,
+    fieldValues: Partial<Omit<ProductRow, "id">>,
 ): ProductRow {
-    const existing = getProduct(db, productId)
+    const existing = getProduct(db, id)
     if (!existing) {
-        throw new Error(`Product not found: ${productId}`)
+        throw new Error(`Product not found: ${id}`)
     }
 
     if (Object.keys(fieldValues).length === 0) {
-        throw new Error(`At least one field must be provided to update product: ${productId}`)
+        throw new Error(`At least one field must be provided to update product: ${id}`)
     }
 
-    return db
-        .update(products)
-        .set(fieldValues)
-        .where(eq(products.productId, productId))
-        .returning()
-        .get()
+    return db.update(products).set(fieldValues).where(eq(products.id, id)).returning().get()
 }

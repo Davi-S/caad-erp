@@ -20,7 +20,7 @@ const t = initTRPC.context<Context>().create()
  */
 const domainErrorTranslator = t.middleware(async ({ next }) => {
     const result = await next()
-    if (!result.ok && 'error' in result) {
+    if (!result.ok && "error" in result) {
         const error = result.error as TRPCError
         const cause = error.cause ?? error
 

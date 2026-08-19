@@ -55,7 +55,7 @@ export function WriteOffModal({
         <Modal
             opened={opened}
             onClose={onClose}
-            title={`Dar baixa: ${product?.product_name ?? ""}`}
+            title={`Dar baixa: ${product?.name ?? ""}`}
             centered
             withCloseButton={false}
             closeOnClickOutside={!isSubmitting}

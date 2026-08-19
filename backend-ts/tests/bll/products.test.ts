@@ -4,13 +4,13 @@
 
 import { beforeEach, describe, expect, it } from "vitest"
 import {
+    addProduct,
     DuplicateProductError,
+    getProduct,
     InvalidAttributeError,
     InvalidMonetaryValueError,
-    ProductNotFoundError,
-    addProduct,
-    getProduct,
     listProducts,
+    ProductNotFoundError,
     updateProduct,
 } from "../../src/bll/index.js"
 import type { DB } from "../../src/dal/index.js"
@@ -34,14 +34,14 @@ describe("Products BLL Handlers", () => {
     it("GIVEN registered products WHEN listProducts is called THEN returns all product records", () => {
         // Arrange
         addProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 500,
             isActive: true,
         })
         addProduct(db, {
-            productId: "P-002",
-            productName: "Chips",
+            id: "P-002",
+            name: "Chips",
             sellPrice: 300,
             isActive: false,
         })
@@ -51,15 +51,15 @@ describe("Products BLL Handlers", () => {
 
         // Assert
         expect(result).toHaveLength(2)
-        expect(result[0].productId).toBe("P-001")
-        expect(result[1].productId).toBe("P-002")
+        expect(result[0].id).toBe("P-001")
+        expect(result[1].id).toBe("P-002")
     })
 
     it("GIVEN an existing product WHEN getProduct is called THEN returns the matching product record", () => {
         // Arrange
         addProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 500,
             isActive: true,
         })
@@ -68,8 +68,8 @@ describe("Products BLL Handlers", () => {
         const product = getProduct(db, "P-001")
 
         // Assert
-        expect(product.productId).toBe("P-001")
-        expect(product.productName).toBe("Soda")
+        expect(product.id).toBe("P-001")
+        expect(product.name).toBe("Soda")
         expect(product.sellPrice).toBe(500)
         expect(product.isActive).toBe(true)
     })
@@ -82,8 +82,8 @@ describe("Products BLL Handlers", () => {
     it("GIVEN valid input command WHEN addProduct is called THEN registers and returns the new product", () => {
         // Arrange
         const command = {
-            productId: "P-001",
-            productName: "Chocolate Bar",
+            id: "P-001",
+            name: "Chocolate Bar",
             sellPrice: 250,
             isActive: true,
         }
@@ -92,8 +92,8 @@ describe("Products BLL Handlers", () => {
         const created = addProduct(db, command)
 
         // Assert
-        expect(created.productId).toBe("P-001")
-        expect(created.productName).toBe("Chocolate Bar")
+        expect(created.id).toBe("P-001")
+        expect(created.name).toBe("Chocolate Bar")
         expect(created.sellPrice).toBe(250)
         expect(created.isActive).toBe(true)
         expect(getProduct(db, "P-001")).toEqual(created)
@@ -102,8 +102,8 @@ describe("Products BLL Handlers", () => {
     it("GIVEN empty product ID WHEN addProduct is called THEN throws InvalidAttributeError", () => {
         // Arrange
         const command = {
-            productId: "   ",
-            productName: "Chocolate Bar",
+            id: "   ",
+            name: "Chocolate Bar",
             sellPrice: 250,
             isActive: true,
         }
@@ -115,8 +115,8 @@ describe("Products BLL Handlers", () => {
     it("GIVEN empty product name WHEN addProduct is called THEN throws InvalidAttributeError", () => {
         // Arrange
         const command = {
-            productId: "P-001",
-            productName: "",
+            id: "P-001",
+            name: "",
             sellPrice: 250,
             isActive: true,
         }
@@ -128,8 +128,8 @@ describe("Products BLL Handlers", () => {
     it("GIVEN negative sell price WHEN addProduct is called THEN throws InvalidMonetaryValueError", () => {
         // Arrange
         const command = {
-            productId: "P-001",
-            productName: "Chocolate Bar",
+            id: "P-001",
+            name: "Chocolate Bar",
             sellPrice: -50,
             isActive: true,
         }
@@ -141,8 +141,8 @@ describe("Products BLL Handlers", () => {
     it("GIVEN non-integer sell price WHEN addProduct is called THEN throws InvalidMonetaryValueError", () => {
         // Arrange
         const command = {
-            productId: "P-001",
-            productName: "Chocolate Bar",
+            id: "P-001",
+            name: "Chocolate Bar",
             sellPrice: 12.5,
             isActive: true,
         } as any
@@ -154,8 +154,8 @@ describe("Products BLL Handlers", () => {
     it("GIVEN a duplicate product ID WHEN addProduct is called THEN throws DuplicateProductError", () => {
         // Arrange
         addProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 500,
             isActive: true,
         })
@@ -163,8 +163,8 @@ describe("Products BLL Handlers", () => {
         // Act & Assert
         expect(() =>
             addProduct(db, {
-                productId: "P-001",
-                productName: "Soda Copy",
+                id: "P-001",
+                name: "Soda Copy",
                 sellPrice: 600,
                 isActive: true,
             }),
@@ -174,20 +174,20 @@ describe("Products BLL Handlers", () => {
     it("GIVEN valid update command WHEN updateProduct is called THEN updates product fields in database", () => {
         // Arrange
         addProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 500,
             isActive: true,
         })
 
         // Act
         const updated = updateProduct(db, "P-001", {
-            productName: "Super Soda",
+            name: "Super Soda",
             sellPrice: 550,
         })
 
         // Assert
-        expect(updated.productName).toBe("Super Soda")
+        expect(updated.name).toBe("Super Soda")
         expect(updated.sellPrice).toBe(550)
         expect(updated.isActive).toBe(true)
         expect(getProduct(db, "P-001")).toEqual(updated)
@@ -195,7 +195,7 @@ describe("Products BLL Handlers", () => {
 
     it("GIVEN non-existent product ID WHEN updateProduct is called THEN throws ProductNotFoundError", () => {
         // Arrange & Act & Assert
-        expect(() => updateProduct(db, "P-999", { productName: "Updated Name" })).toThrow(
+        expect(() => updateProduct(db, "P-999", { name: "Updated Name" })).toThrow(
             ProductNotFoundError,
         )
     })
@@ -203,8 +203,8 @@ describe("Products BLL Handlers", () => {
     it("GIVEN negative sell price in update WHEN updateProduct is called THEN throws InvalidMonetaryValueError", () => {
         // Arrange
         addProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 500,
             isActive: true,
         })

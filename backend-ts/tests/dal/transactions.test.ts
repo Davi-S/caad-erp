@@ -16,20 +16,20 @@ describe("Transactions DAL", () => {
         db = createTestDb()
         // Seed foreign key parent entities
         appendProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 550,
             isActive: true,
         })
         appendSalesman(db, {
-            salesmanId: "S-001",
-            salesmanName: "John Doe",
+            id: "S-001",
+            name: "John Doe",
             isActive: true,
         })
     })
 
     const sampleTransaction: TransactionRow = {
-        transactionId: "TX-100",
+        id: "TX-100",
         timestampIso: "2026-08-17T12:00:00.000Z",
         transactionType: "SALE",
         productId: "P-001",
@@ -82,7 +82,7 @@ describe("Transactions DAL", () => {
         it("GIVEN optional fields as null WHEN appendTransaction is called THEN persists null values accurately", () => {
             // Arrange
             const transactionWithNulls: TransactionRow = {
-                transactionId: "TX-101",
+                id: "TX-101",
                 timestampIso: "2026-08-17T12:05:00.000Z",
                 transactionType: "RESTOCK",
                 productId: "P-001",
@@ -103,14 +103,14 @@ describe("Transactions DAL", () => {
             expect(created.linkedTransactionId).toBeNull()
             expect(created.notes).toBeNull()
 
-            const fetched = listTransactions(db).find((t) => t.transactionId === "TX-101")
+            const fetched = listTransactions(db).find((t) => t.id === "TX-101")
             expect(fetched?.paymentType).toBeNull()
         })
 
         it("GIVEN a transaction with linkedTransactionId and valid enums WHEN appendTransaction is called THEN persists all fields accurately", () => {
             // Arrange
             const refundTransaction: TransactionRow = {
-                transactionId: "TX-102",
+                id: "TX-102",
                 timestampIso: "2026-08-17T12:10:00.000Z",
                 transactionType: "VOID",
                 productId: "P-001",
@@ -132,7 +132,7 @@ describe("Transactions DAL", () => {
             expect(created.linkedTransactionId).toBe("TX-100")
         })
 
-        it("GIVEN an existing transactionId WHEN appending a duplicate transaction THEN throws SQLite constraint error", () => {
+        it("GIVEN an existing id WHEN appending a duplicate transaction THEN throws SQLite constraint error", () => {
             // Arrange
             appendTransaction(db, sampleTransaction)
 

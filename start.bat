@@ -9,12 +9,12 @@ echo ===================================================
 echo.
 
 :: 1. Check if first-time setup is needed
-if not exist "backend\.venv\Scripts\python.exe" (
-    echo [INFO] First-time run detected. Starting setup...
-    goto SETUP
-)
 if not exist "node_modules" (
     echo [INFO] Root dependencies missing. Starting setup...
+    goto SETUP
+)
+if not exist "backend-ts\node_modules" (
+    echo [INFO] Backend-TS dependencies missing. Starting setup...
     goto SETUP
 )
 if not exist "frontend\node_modules" (
@@ -30,7 +30,7 @@ goto LAUNCH
 
 :SETUP
 echo.
-echo [1/5] Checking prerequisites (Node.js, Python, uv)...
+echo [1/4] Checking prerequisites (Node.js)...
 
 :: Check Node.js / npm
 where node >nul 2>nul
@@ -40,23 +40,7 @@ if %errorlevel% neq 0 (
     call :REFRESH_PATH
 )
 
-:: Check Python
-where python >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [INFO] Python not found. Auto-installing Python 3.12 via winget...
-    winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements
-    call :REFRESH_PATH
-)
-
-:: Check uv package manager
-where uv >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [INFO] uv not found. Auto-installing uv via winget...
-    winget install astral-sh.uv --accept-source-agreements --accept-package-agreements
-    call :REFRESH_PATH
-)
-
-echo [2/5] Installing root orchestration dependencies...
+echo [2/4] Installing root orchestration dependencies...
 call npm install
 if %errorlevel% neq 0 (
     echo [ERROR] npm install failed!
@@ -64,36 +48,29 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [3/5] Setting up Python backend environment...
-cd backend
-call uv venv
-call uv pip install -e ".[api,test]"
+echo [3/4] Setting up TypeScript backend environment...
+cd backend-ts
+call npm install
+call npm run build
 if %errorlevel% neq 0 (
-    echo [ERROR] Backend environment setup failed!
+    echo [ERROR] Backend-TS build failed!
     cd ..
     pause
     exit /b 1
 )
 cd ..
 
-echo [4/5] Setting up frontend environment...
+echo [4/4] Setting up frontend environment...
 cd frontend
 call npm install
+call npm run build
 if %errorlevel% neq 0 (
-    echo [ERROR] Frontend npm install failed!
+    echo [ERROR] Frontend build failed!
     cd ..
     pause
     exit /b 1
 )
 cd ..
-
-echo [5/5] Building production frontend assets...
-call npm run build:frontend
-if %errorlevel% neq 0 (
-    echo [ERROR] Frontend build failed!
-    pause
-    exit /b 1
-)
 
 echo.
 echo [SUCCESS] Setup complete!
@@ -125,9 +102,7 @@ echo.
 start http://localhost:8000
 
 :: Start unified server
-cd backend
-call uv run caad-erp
-cd ..
+npm start
 
 pause
 goto :EOF

@@ -20,14 +20,7 @@ export function useCheckout() {
     const mutation = useMutation({
         mutationFn: async (salesRequests: SalesRequests) => {
             try {
-                const payload = salesRequests.map((req) => ({
-                    productId: req.product_id,
-                    salesmanId: req.salesman_id,
-                    quantity: req.quantity,
-                    totalRevenue: req.total_revenue,
-                    paymentType: req.payment_type,
-                }))
-                return await trpcClient.transactions.recordBulkSale.mutate(payload)
+                return await trpcClient.transactions.recordBulkSale.mutate(salesRequests)
             } catch (err) {
                 throw new Error(extractErrorMessage(err, "Falha ao registrar a venda."))
             }

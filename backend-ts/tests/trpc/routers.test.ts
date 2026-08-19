@@ -26,15 +26,15 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN valid add payload WHEN products.add is called THEN registers new product", async () => {
             // Arrange & Act
             const product = await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
 
             // Assert
-            expect(product.productId).toBe("P-001")
-            expect(product.productName).toBe("Soda")
+            expect(product.id).toBe("P-001")
+            expect(product.name).toBe("Soda")
 
             const list = await caller.products.list()
             expect(list).toHaveLength(1)
@@ -43,23 +43,23 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN registered product WHEN products.get is called THEN returns matching product record", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
 
             // Act
-            const product = await caller.products.get({ productId: "P-001" })
+            const product = await caller.products.get({ id: "P-001" })
 
             // Assert
-            expect(product.productName).toBe("Soda")
+            expect(product.name).toBe("Soda")
         })
 
         it("GIVEN non-existent product ID WHEN products.get is called THEN throws TRPCError NOT_FOUND", async () => {
             // Arrange, Act & Assert
             try {
-                await caller.products.get({ productId: "P-999" })
+                await caller.products.get({ id: "P-999" })
                 expect.unreachable("Should have thrown TRPCError")
             } catch (err) {
                 expect(err).toBeInstanceOf(TRPCError)
@@ -70,8 +70,8 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN duplicate product ID WHEN products.add is called THEN throws TRPCError CONFLICT", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
@@ -79,8 +79,8 @@ describe("tRPC Service Layer Integration Suite", () => {
             // Act & Assert
             try {
                 await caller.products.add({
-                    productId: "P-001",
-                    productName: "Duplicate Soda",
+                    id: "P-001",
+                    name: "Duplicate Soda",
                     sellPrice: 600,
                     isActive: true,
                 })
@@ -94,15 +94,15 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN valid update payload WHEN products.update is called THEN modifies product fields", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
 
             // Act
             const updated = await caller.products.update({
-                productId: "P-001",
+                id: "P-001",
                 data: { sellPrice: 600 },
             })
 
@@ -123,20 +123,20 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN valid add payload WHEN salesmen.add is called THEN registers new salesman", async () => {
             // Arrange & Act
             const salesman = await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
 
             // Assert
-            expect(salesman.salesmanId).toBe("S-001")
-            expect(salesman.salesmanName).toBe("Alice")
+            expect(salesman.id).toBe("S-001")
+            expect(salesman.name).toBe("Alice")
         })
 
         it("GIVEN non-existent salesman ID WHEN salesmen.get is called THEN throws TRPCError NOT_FOUND", async () => {
             // Arrange, Act & Assert
             try {
-                await caller.salesmen.get({ salesmanId: "S-999" })
+                await caller.salesmen.get({ id: "S-999" })
                 expect.unreachable("Should have thrown TRPCError")
             } catch (err) {
                 expect(err).toBeInstanceOf(TRPCError)
@@ -147,16 +147,16 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN duplicate salesman ID WHEN salesmen.add is called THEN throws TRPCError CONFLICT", async () => {
             // Arrange
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
 
             // Act & Assert
             try {
                 await caller.salesmen.add({
-                    salesmanId: "S-001",
-                    salesmanName: "Duplicate Alice",
+                    id: "S-001",
+                    name: "Duplicate Alice",
                     isActive: true,
                 })
                 expect.unreachable("Should have thrown TRPCError")
@@ -169,19 +169,19 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN valid update payload WHEN salesmen.update is called THEN modifies salesman fields", async () => {
             // Arrange
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
 
             // Act
             const updated = await caller.salesmen.update({
-                salesmanId: "S-001",
-                data: { salesmanName: "Alice Cooper" },
+                id: "S-001",
+                data: { name: "Alice Cooper" },
             })
 
             // Assert
-            expect(updated.salesmanName).toBe("Alice Cooper")
+            expect(updated.name).toBe("Alice Cooper")
         })
     })
 
@@ -189,14 +189,14 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN valid restock and sale workflow WHEN procedures are called THEN processes transaction and updates stock", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
 
@@ -226,14 +226,14 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN sale quantity exceeding stock WHEN transactions.recordSale is called THEN throws TRPCError BAD_REQUEST", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
 
@@ -256,14 +256,14 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN valid cart array WHEN transactions.recordBulkSale is called THEN processes all sales atomically", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
             await caller.transactions.recordRestock({
@@ -300,14 +300,14 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN an OnCredit sale WHEN transactions.recordCreditPayment is called THEN appends linked payment", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
             await caller.transactions.recordRestock({
@@ -326,7 +326,7 @@ describe("tRPC Service Layer Integration Suite", () => {
 
             // Act
             const payment = await caller.transactions.recordCreditPayment({
-                linkedTransactionId: creditSale.transactionId,
+                linkedTransactionId: creditSale.id,
                 salesmanId: "S-001",
                 totalRevenue: 500,
                 paymentType: "Cash",
@@ -334,20 +334,20 @@ describe("tRPC Service Layer Integration Suite", () => {
 
             // Assert
             expect(payment.transactionType).toBe("CREDIT_PAYMENT")
-            expect(payment.linkedTransactionId).toBe(creditSale.transactionId)
+            expect(payment.linkedTransactionId).toBe(creditSale.id)
         })
 
         it("GIVEN a recorded transaction WHEN transactions.recordVoid is called THEN creates reversing entry", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
             const restock = await caller.transactions.recordRestock({
@@ -359,7 +359,7 @@ describe("tRPC Service Layer Integration Suite", () => {
 
             // Act
             const voidTx = await caller.transactions.recordVoid({
-                linkedTransactionId: restock.transactionId,
+                linkedTransactionId: restock.id,
             })
 
             // Assert
@@ -373,14 +373,14 @@ describe("tRPC Service Layer Integration Suite", () => {
         it("GIVEN restock and sale transactions WHEN reports.inventory is called THEN returns accurate stock map", async () => {
             // Arrange
             await caller.products.add({
-                productId: "P-001",
-                productName: "Soda",
+                id: "P-001",
+                name: "Soda",
                 sellPrice: 500,
                 isActive: true,
             })
             await caller.salesmen.add({
-                salesmanId: "S-001",
-                salesmanName: "Alice",
+                id: "S-001",
+                name: "Alice",
                 isActive: true,
             })
             await caller.transactions.recordRestock({

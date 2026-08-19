@@ -27,20 +27,20 @@ describe("Reporting Analytics BLL Handlers", () => {
         db = createTestDb()
         // Seed active products and salesman
         addProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 500,
             isActive: true,
         })
         addProduct(db, {
-            productId: "P-002",
-            productName: "Chips",
+            id: "P-002",
+            name: "Chips",
             sellPrice: 300,
             isActive: true,
         })
         addSalesman(db, {
-            salesmanId: "S-001",
-            salesmanName: "Alice",
+            id: "S-001",
+            name: "Alice",
             isActive: true,
         })
     })
@@ -117,7 +117,7 @@ describe("Reporting Analytics BLL Handlers", () => {
             paymentType: "OnCredit",
         })
         recordCreditPayment(db, {
-            linkedTransactionId: creditSale.transactionId,
+            linkedTransactionId: creditSale.id,
             salesmanId: "S-001",
             totalRevenue: 400,
             paymentType: "Cash",
@@ -128,7 +128,7 @@ describe("Reporting Analytics BLL Handlers", () => {
 
         // Assert
         expect(report.balances).toHaveLength(1)
-        expect(report.balances[0].transactionId).toBe(creditSale.transactionId)
+        expect(report.balances[0].transactionId).toBe(creditSale.id)
         expect(report.balances[0].expectedAmount).toBe(1000)
         expect(report.balances[0].amountPaid).toBe(400)
         expect(report.balances[0].balance).toBe(600) // 1000 - 400 = 600
@@ -151,7 +151,7 @@ describe("Reporting Analytics BLL Handlers", () => {
             paymentType: "OnCredit",
         })
         recordVoid(db, {
-            linkedTransactionId: creditSale.transactionId,
+            linkedTransactionId: creditSale.id,
         })
 
         // Act

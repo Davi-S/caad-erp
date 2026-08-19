@@ -4,12 +4,12 @@
 
 import { beforeEach, describe, expect, it } from "vitest"
 import {
-    DuplicateSalesmanError,
-    InvalidAttributeError,
-    SalesmanNotFoundError,
     addSalesman,
+    DuplicateSalesmanError,
     getSalesman,
+    InvalidAttributeError,
     listSalesmen,
+    SalesmanNotFoundError,
     updateSalesman,
 } from "../../src/bll/index.js"
 import type { DB } from "../../src/dal/index.js"
@@ -33,13 +33,13 @@ describe("Salesmen BLL Handlers", () => {
     it("GIVEN registered salesmen WHEN listSalesmen is called THEN returns all salesman records", () => {
         // Arrange
         addSalesman(db, {
-            salesmanId: "S-001",
-            salesmanName: "Alice",
+            id: "S-001",
+            name: "Alice",
             isActive: true,
         })
         addSalesman(db, {
-            salesmanId: "S-002",
-            salesmanName: "Bob",
+            id: "S-002",
+            name: "Bob",
             isActive: false,
         })
 
@@ -48,15 +48,15 @@ describe("Salesmen BLL Handlers", () => {
 
         // Assert
         expect(result).toHaveLength(2)
-        expect(result[0].salesmanId).toBe("S-001")
-        expect(result[1].salesmanId).toBe("S-002")
+        expect(result[0].id).toBe("S-001")
+        expect(result[1].id).toBe("S-002")
     })
 
     it("GIVEN an existing salesman WHEN getSalesman is called THEN returns the matching salesman record", () => {
         // Arrange
         addSalesman(db, {
-            salesmanId: "S-001",
-            salesmanName: "Alice",
+            id: "S-001",
+            name: "Alice",
             isActive: true,
         })
 
@@ -64,8 +64,8 @@ describe("Salesmen BLL Handlers", () => {
         const salesman = getSalesman(db, "S-001")
 
         // Assert
-        expect(salesman.salesmanId).toBe("S-001")
-        expect(salesman.salesmanName).toBe("Alice")
+        expect(salesman.id).toBe("S-001")
+        expect(salesman.name).toBe("Alice")
         expect(salesman.isActive).toBe(true)
     })
 
@@ -77,8 +77,8 @@ describe("Salesmen BLL Handlers", () => {
     it("GIVEN valid input command WHEN addSalesman is called THEN registers and returns the new salesman", () => {
         // Arrange
         const command = {
-            salesmanId: "S-001",
-            salesmanName: "Charlie",
+            id: "S-001",
+            name: "Charlie",
             isActive: true,
         }
 
@@ -86,8 +86,8 @@ describe("Salesmen BLL Handlers", () => {
         const created = addSalesman(db, command)
 
         // Assert
-        expect(created.salesmanId).toBe("S-001")
-        expect(created.salesmanName).toBe("Charlie")
+        expect(created.id).toBe("S-001")
+        expect(created.name).toBe("Charlie")
         expect(created.isActive).toBe(true)
         expect(getSalesman(db, "S-001")).toEqual(created)
     })
@@ -95,8 +95,8 @@ describe("Salesmen BLL Handlers", () => {
     it("GIVEN empty salesman ID WHEN addSalesman is called THEN throws InvalidAttributeError", () => {
         // Arrange
         const command = {
-            salesmanId: "   ",
-            salesmanName: "Charlie",
+            id: "   ",
+            name: "Charlie",
             isActive: true,
         }
 
@@ -107,8 +107,8 @@ describe("Salesmen BLL Handlers", () => {
     it("GIVEN empty salesman name WHEN addSalesman is called THEN throws InvalidAttributeError", () => {
         // Arrange
         const command = {
-            salesmanId: "S-001",
-            salesmanName: "",
+            id: "S-001",
+            name: "",
             isActive: true,
         }
 
@@ -119,16 +119,16 @@ describe("Salesmen BLL Handlers", () => {
     it("GIVEN a duplicate salesman ID WHEN addSalesman is called THEN throws DuplicateSalesmanError", () => {
         // Arrange
         addSalesman(db, {
-            salesmanId: "S-001",
-            salesmanName: "Alice",
+            id: "S-001",
+            name: "Alice",
             isActive: true,
         })
 
         // Act & Assert
         expect(() =>
             addSalesman(db, {
-                salesmanId: "S-001",
-                salesmanName: "Alice Copy",
+                id: "S-001",
+                name: "Alice Copy",
                 isActive: true,
             }),
         ).toThrow(DuplicateSalesmanError)
@@ -137,26 +137,26 @@ describe("Salesmen BLL Handlers", () => {
     it("GIVEN valid update command WHEN updateSalesman is called THEN updates salesman fields in database", () => {
         // Arrange
         addSalesman(db, {
-            salesmanId: "S-001",
-            salesmanName: "Alice",
+            id: "S-001",
+            name: "Alice",
             isActive: true,
         })
 
         // Act
         const updated = updateSalesman(db, "S-001", {
-            salesmanName: "Alice Smith",
+            name: "Alice Smith",
             isActive: false,
         })
 
         // Assert
-        expect(updated.salesmanName).toBe("Alice Smith")
+        expect(updated.name).toBe("Alice Smith")
         expect(updated.isActive).toBe(false)
         expect(getSalesman(db, "S-001")).toEqual(updated)
     })
 
     it("GIVEN non-existent salesman ID WHEN updateSalesman is called THEN throws SalesmanNotFoundError", () => {
         // Arrange & Act & Assert
-        expect(() => updateSalesman(db, "S-999", { salesmanName: "Updated Name" })).toThrow(
+        expect(() => updateSalesman(db, "S-999", { name: "Updated Name" })).toThrow(
             SalesmanNotFoundError,
         )
     })

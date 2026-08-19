@@ -48,8 +48,8 @@ export function calculateInventory(db: DB): Record<string, number> {
 
     // Ensure products with zero transaction history are initialized to 0
     for (const product of dal.listProducts(db)) {
-        if (!(product.productId in inventory)) {
-            inventory[product.productId] = 0
+        if (!(product.id in inventory)) {
+            inventory[product.id] = 0
         }
     }
 
@@ -116,7 +116,7 @@ export function calculateOutstandingDebts(db: DB): OutstandingDebtsReport {
         if (
             tx.transactionType === "CREDIT_PAYMENT" &&
             tx.linkedTransactionId &&
-            !voidedTxIds.has(tx.transactionId)
+            !voidedTxIds.has(tx.id)
         ) {
             paymentsBySale[tx.linkedTransactionId] =
                 (paymentsBySale[tx.linkedTransactionId] ?? 0) + tx.totalRevenue
@@ -134,7 +134,7 @@ export function calculateOutstandingDebts(db: DB): OutstandingDebtsReport {
         if (entry.paymentType !== "OnCredit") {
             continue
         }
-        if (voidedTxIds.has(entry.transactionId)) {
+        if (voidedTxIds.has(entry.id)) {
             continue
         }
 
@@ -156,7 +156,7 @@ export function calculateOutstandingDebts(db: DB): OutstandingDebtsReport {
             continue
         }
 
-        const amountPaid = paymentsBySale[entry.transactionId] ?? 0
+        const amountPaid = paymentsBySale[entry.id] ?? 0
         const balance = expectedAmount - amountPaid
 
         if (balance <= 0) {
@@ -164,7 +164,7 @@ export function calculateOutstandingDebts(db: DB): OutstandingDebtsReport {
         }
 
         const debtRecord: OutstandingDebt = {
-            transactionId: entry.transactionId,
+            transactionId: entry.id,
             timestampIso: entry.timestampIso,
             productId: entry.productId,
             salesmanId: entry.salesmanId,

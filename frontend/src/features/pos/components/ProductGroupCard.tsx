@@ -28,9 +28,9 @@ export function ProductGroupCard({
     // Standalone product (group with 1 variant)
     if (group.variants.length === 1) {
         const product = group.variants[0].product
-        const available = stock[product.product_id]
+        const available = stock[product.id]
         const soldOut = available !== undefined && available <= 0
-        const quantity = cart[product.product_id] || 0
+        const quantity = cart[product.id] || 0
 
         return (
             <Indicator label={`${quantity}x`} size={18} disabled={quantity === 0} offset={15}>
@@ -39,9 +39,9 @@ export function ProductGroupCard({
                     onClick={() => {
                         if (readOnly) return
                         if (quantity > 0) {
-                            removeItem(product.product_id)
+                            removeItem(product.id)
                         } else {
-                            inc(product.product_id)
+                            inc(product.id)
                         }
                     }}
                     disabled={soldOut}
@@ -56,17 +56,17 @@ export function ProductGroupCard({
                 >
                     <Stack gap={2} align="center">
                         <Text size="xs" fw={600} ta="center" truncate style={{ maxWidth: "100%" }}>
-                            {product.product_name}
+                            {product.name}
                         </Text>
                         <Text
                             size="xs"
                             fw={700}
                             c={soldOut ? "dimmed" : "var(--mantine-primary-color-filled)"}
                         >
-                            {soldOut ? "Esgotado" : brl(product.sell_price)}
+                            {soldOut ? "Esgotado" : brl(product.sellPrice)}
                         </Text>
                         <Text size="10px" c="dimmed">
-                            {soldOut ? "‎ " : (stock[product.product_id] ?? 0) + " disp."}
+                            {soldOut ? "‎ " : (stock[product.id] ?? 0) + " disp."}
                         </Text>
                     </Stack>
                 </Checkbox.Card>
@@ -76,19 +76,19 @@ export function ProductGroupCard({
 
     // Consolidated Product Variation Family (variants.length > 1)
     const totalGroupQuantityInCart = useMemo(
-        () => group.variants.reduce((sum, v) => sum + (cart[v.product.product_id] || 0), 0),
+        () => group.variants.reduce((sum, v) => sum + (cart[v.product.id] || 0), 0),
         [group.variants, cart],
     )
 
     const totalStock = useMemo(
-        () => group.variants.reduce((sum, v) => sum + (stock[v.product.product_id] ?? 0), 0),
+        () => group.variants.reduce((sum, v) => sum + (stock[v.product.id] ?? 0), 0),
         [group.variants, stock],
     )
 
     const allVariantsSoldOut = useMemo(
         () =>
             group.variants.every((v) => {
-                const avail = stock[v.product.product_id]
+                const avail = stock[v.product.id]
                 return avail !== undefined && avail <= 0
             }),
         [group.variants, stock],
@@ -96,7 +96,7 @@ export function ProductGroupCard({
 
     // Calculate price display (single price if identical, or min price)
     const priceDisplay = useMemo(() => {
-        const prices = group.variants.map((v) => v.product.sell_price)
+        const prices = group.variants.map((v) => v.product.sellPrice)
         const minPrice = Math.min(...prices)
         const maxPrice = Math.max(...prices)
         if (minPrice === maxPrice) {
@@ -192,20 +192,20 @@ export function ProductGroupCard({
                         <SimpleGrid cols={useMultiColumn ? 3 : 1} spacing={6}>
                             {group.variants.map((v) => {
                                 const product = v.product
-                                const available = stock[product.product_id] ?? 0
+                                const available = stock[product.id] ?? 0
                                 const soldOut = available <= 0
-                                const qty = cart[product.product_id] || 0
+                                const qty = cart[product.id] || 0
 
                                 return (
                                     <Menu.Item
-                                        key={product.product_id}
+                                        key={product.id}
                                         disabled={soldOut}
                                         onClick={() => {
                                             if (readOnly || soldOut) return
                                             if (qty > 0) {
-                                                removeItem(product.product_id)
+                                                removeItem(product.id)
                                             } else {
-                                                inc(product.product_id)
+                                                inc(product.id)
                                             }
                                         }}
                                         style={{
@@ -242,7 +242,7 @@ export function ProductGroupCard({
                                                     fw={700}
                                                     c="var(--mantine-primary-color-filled)"
                                                 >
-                                                    {brl(product.sell_price)}
+                                                    {brl(product.sellPrice)}
                                                 </Text>
                                             </Group>
                                         </Group>

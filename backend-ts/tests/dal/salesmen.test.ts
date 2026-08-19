@@ -17,8 +17,8 @@ describe("Salesmen DAL", () => {
     })
 
     const sampleSalesman: SalesmanRow = {
-        salesmanId: "S-001",
-        salesmanName: "John Doe",
+        id: "S-001",
+        name: "John Doe",
         isActive: true,
     }
 
@@ -37,8 +37,8 @@ describe("Salesmen DAL", () => {
             // Arrange
             appendSalesman(db, sampleSalesman)
             appendSalesman(db, {
-                salesmanId: "S-002",
-                salesmanName: "Jane Smith",
+                id: "S-002",
+                name: "Jane Smith",
                 isActive: false,
             })
 
@@ -48,12 +48,12 @@ describe("Salesmen DAL", () => {
             // Assert
             expect(records.length).toBe(2)
             expect(records[0]).toEqual(sampleSalesman)
-            expect(records[1].salesmanId).toBe("S-002")
+            expect(records[1].id).toBe("S-002")
         })
     })
 
     describe("getSalesman", () => {
-        it("GIVEN an existing salesmanId WHEN getSalesman is called THEN returns matching SalesmanRow", () => {
+        it("GIVEN an existing id WHEN getSalesman is called THEN returns matching SalesmanRow", () => {
             // Arrange
             appendSalesman(db, sampleSalesman)
 
@@ -64,7 +64,7 @@ describe("Salesmen DAL", () => {
             expect(record).toEqual(sampleSalesman)
         })
 
-        it("GIVEN a non-existent salesmanId WHEN getSalesman is called THEN returns undefined", () => {
+        it("GIVEN a non-existent id WHEN getSalesman is called THEN returns undefined", () => {
             // Arrange (No salesman inserted)
 
             // Act
@@ -91,8 +91,8 @@ describe("Salesmen DAL", () => {
         it("GIVEN a salesman record with isActive false WHEN appendSalesman is called THEN persists boolean isActive accurately", () => {
             // Arrange
             const inactiveSalesman: SalesmanRow = {
-                salesmanId: "S-010",
-                salesmanName: "Bob Vance",
+                id: "S-010",
+                name: "Bob Vance",
                 isActive: false,
             }
 
@@ -105,7 +105,7 @@ describe("Salesmen DAL", () => {
             expect(typeof fetched?.isActive).toBe("boolean")
         })
 
-        it("GIVEN an existing salesmanId WHEN appending a duplicate salesman THEN throws SQLite constraint error", () => {
+        it("GIVEN an existing id WHEN appending a duplicate salesman THEN throws SQLite constraint error", () => {
             // Arrange
             appendSalesman(db, sampleSalesman)
 
@@ -120,10 +120,10 @@ describe("Salesmen DAL", () => {
             appendSalesman(db, sampleSalesman)
 
             // Act
-            const updated = updateSalesman(db, "S-001", { salesmanName: "John H. Doe" })
+            const updated = updateSalesman(db, "S-001", { name: "John H. Doe" })
 
             // Assert
-            expect(updated.salesmanName).toBe("John H. Doe")
+            expect(updated.name).toBe("John H. Doe")
             expect(updated.isActive).toBe(true)
         })
 
@@ -133,20 +133,20 @@ describe("Salesmen DAL", () => {
 
             // Act
             const updated = updateSalesman(db, "S-001", {
-                salesmanName: "John H. Doe",
+                name: "John H. Doe",
                 isActive: false,
             })
 
             // Assert
-            expect(updated.salesmanName).toBe("John H. Doe")
+            expect(updated.name).toBe("John H. Doe")
             expect(updated.isActive).toBe(false)
         })
 
-        it("GIVEN a non-existent salesmanId WHEN updateSalesman is called THEN throws missing salesman error", () => {
+        it("GIVEN a non-existent id WHEN updateSalesman is called THEN throws missing salesman error", () => {
             // Arrange (No salesman inserted)
 
             // Act & Assert
-            expect(() => updateSalesman(db, "S-999", { salesmanName: "Unknown" })).toThrow(
+            expect(() => updateSalesman(db, "S-999", { name: "Unknown" })).toThrow(
                 "Salesman not found: S-999",
             )
         })

@@ -25,7 +25,7 @@ import { groupProducts } from "../utils/productGrouping"
 import { ProductGroupCard } from "./ProductGroupCard"
 
 interface CartScreenProps {
-    salesman: Salesman
+    salesman: Salesman | null
     products: Products
     stock: Stock
     cartState: ReturnType<typeof useCart>
@@ -71,19 +71,19 @@ export function CartScreen({
     // Configure searchable and sortable columns
     const columns = useMemo(
         () => [
-            columnHelper.accessor("product_name", {
+            columnHelper.accessor("name", {
                 id: "name",
                 enableGlobalFilter: true,
             }),
-            columnHelper.accessor("sell_price", {
+            columnHelper.accessor("sellPrice", {
                 id: "price",
                 enableGlobalFilter: false,
             }),
-            columnHelper.accessor((p) => stock[p.product_id] ?? 0, {
+            columnHelper.accessor((p) => stock[p.id] ?? 0, {
                 id: "stock",
                 enableGlobalFilter: false,
             }),
-            columnHelper.accessor((p) => (cart[p.product_id] ? 1 : 0), {
+            columnHelper.accessor((p) => (cart[p.id] ? 1 : 0), {
                 id: "cart",
                 enableGlobalFilter: false,
             }),
@@ -115,7 +115,7 @@ export function CartScreen({
                         Venda em andamento
                     </Text>
                     <Title order={1} size="h5">
-                        Venda de {salesman.salesman_name}
+                        Venda de {salesman?.name ?? ""}
                     </Title>
                 </Stack>
             </Group>
@@ -172,14 +172,14 @@ export function CartScreen({
                                 No carrinho
                             </Text>
                             {cartIterable.map(([productId, quantity], index) => {
-                                const product = products.find((p) => p.product_id === productId)
+                                const product = products.find((p) => p.id === productId)
                                 if (!product) return null
                                 return (
                                     <div key={productId}>
                                         {index > 0 && <Divider variant="dashed" my={4} />}
                                         <Group justify="space-between" wrap="nowrap">
                                             <Text size="sm" style={{ flex: 1 }}>
-                                                {product.product_name}
+                                                {product.name}
                                             </Text>
                                             <ActionIcon.Group>
                                                 <ActionIcon
@@ -207,7 +207,7 @@ export function CartScreen({
                                                 w={72}
                                                 ta="right"
                                             >
-                                                {brl(quantity * product.sell_price)}
+                                                {brl(quantity * product.sellPrice)}
                                             </Text>
                                         </Group>
                                     </div>

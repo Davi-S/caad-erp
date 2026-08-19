@@ -52,7 +52,7 @@ export function listTransactions(db: DB): TransactionRow[] {
  * Zod validation schema and command payload for retrieving a transaction by identifier.
  */
 export const getTransactionSchema = z.object({
-    transactionId: z
+    id: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
@@ -67,17 +67,17 @@ export type GetTransactionCommand = z.infer<typeof getTransactionSchema>
  * Retrieves a single transaction record by identifier.
  *
  * @param db - Active database client instance.
- * @param transactionId - Unique transaction identifier.
+ * @param id - Unique transaction identifier.
  * @returns The matching {@link TransactionRow}.
  * @throws {@link InvalidAttributeError} If transaction ID is empty string.
  * @throws {@link TransactionNotFoundError} If no transaction exists with the given ID.
  */
-export function getTransaction(db: DB, transactionId: string): TransactionRow {
-    validateSchema(getTransactionSchema, { transactionId })
+export function getTransaction(db: DB, id: string): TransactionRow {
+    validateSchema(getTransactionSchema, { id })
     const all = dal.listTransactions(db)
-    const transaction = all.find((tx) => tx.transactionId === transactionId)
+    const transaction = all.find((tx) => tx.id === id)
     if (!transaction) {
-        throw new TransactionNotFoundError(`Unknown transaction id: ${transactionId}`)
+        throw new TransactionNotFoundError(`Unknown transaction id: ${id}`)
     }
     return transaction
 }
@@ -166,7 +166,7 @@ export function recordSale(db: DB, command: SaleCommand): TransactionRow {
     // Build and persist normalized SALE transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(),
+        id: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "SALE",
         productId: validated.productId,
@@ -300,7 +300,7 @@ export function recordRestock(db: DB, command: RestockCommand): TransactionRow {
     // Build and persist normalized RESTOCK transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(),
+        id: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "RESTOCK",
         productId: validated.productId,
@@ -389,7 +389,7 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): TransactionRow
     // Build and persist normalized WRITE_OFF transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(),
+        id: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "WRITE_OFF",
         productId: validated.productId,
@@ -476,14 +476,14 @@ export function recordCreditPayment(db: DB, command: CreditPaymentCommand): Tran
             .filter((tx) => tx.transactionType === "VOID" && tx.linkedTransactionId)
             .map((tx) => tx.linkedTransactionId as string),
     )
-    if (voidedTxIds.has(linkedSale.transactionId)) {
+    if (voidedTxIds.has(linkedSale.id)) {
         throw new IneligibleCreditSaleError("Cannot process credit payment for voided transaction")
     }
 
     // Build and persist normalized CREDIT_PAYMENT transaction record
     const now = new Date()
     const transactionRecord: TransactionRow = {
-        transactionId: generateTransactionId(),
+        id: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "CREDIT_PAYMENT",
         productId: linkedSale.productId,
@@ -539,7 +539,7 @@ export function recordVoid(db: DB, command: VoidCommand): TransactionRow {
     // Build and persist exact reversing VOID transaction record
     const now = new Date()
     const reversalRecord: TransactionRow = {
-        transactionId: generateTransactionId(),
+        id: generateTransactionId(),
         timestampIso: now.toISOString(),
         transactionType: "VOID",
         productId: target.productId,
@@ -548,7 +548,7 @@ export function recordVoid(db: DB, command: VoidCommand): TransactionRow {
         quantityChange: -target.quantityChange,
         totalRevenue: -target.totalRevenue,
         totalCost: -target.totalCost,
-        linkedTransactionId: target.transactionId,
+        linkedTransactionId: target.id,
         notes: validated.notes ?? null,
     }
 

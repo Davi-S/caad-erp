@@ -31,7 +31,7 @@ export function listProducts(db: DB): ProductRow[] {
  * Zod validation schema and command payload for retrieving a product by identifier.
  */
 export const getProductSchema = z.object({
-    productId: z
+    id: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
@@ -46,16 +46,16 @@ export type GetProductCommand = z.infer<typeof getProductSchema>
  * Retrieves a single product record by identifier.
  *
  * @param db - Active database client instance.
- * @param productId - Unique product identifier.
+ * @param id - Unique product identifier.
  * @returns The matching {@link ProductRow}.
  * @throws {@link InvalidAttributeError} If product ID is empty string.
  * @throws {@link ProductNotFoundError} If no product exists with the given ID.
  */
-export function getProduct(db: DB, productId: string): ProductRow {
-    validateSchema(getProductSchema, { productId })
-    const product = dal.getProduct(db, productId)
+export function getProduct(db: DB, id: string): ProductRow {
+    validateSchema(getProductSchema, { id })
+    const product = dal.getProduct(db, id)
     if (!product) {
-        throw new ProductNotFoundError(`Unknown product id: ${productId}`)
+        throw new ProductNotFoundError(`Unknown product id: ${id}`)
     }
     return product
 }
@@ -64,14 +64,14 @@ export function getProduct(db: DB, productId: string): ProductRow {
  * Zod validation schema and command payload for registering a new product.
  */
 export const addProductSchema = z.object({
-    productId: z
+    id: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
             message: "Product ID must be provided",
             params: { errorClass: InvalidAttributeError },
         }),
-    productName: z
+    name: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
@@ -108,9 +108,9 @@ export function addProduct(db: DB, command: AddProductCommand): ProductRow {
     const validated = validateSchema(addProductSchema, command)
 
     // Enforce domain rule checking for duplicate product identifier
-    const existing = dal.getProduct(db, validated.productId)
+    const existing = dal.getProduct(db, validated.id)
     if (existing) {
-        throw new DuplicateProductError(`Product already exists: ${validated.productId}`)
+        throw new DuplicateProductError(`Product already exists: ${validated.id}`)
     }
 
     // Persist new product record in SQLite database
@@ -121,7 +121,7 @@ export function addProduct(db: DB, command: AddProductCommand): ProductRow {
  * Zod validation schema and command payload for updating selected fields of a product.
  */
 export const updateProductSchema = z.object({
-    productName: z
+    name: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
@@ -149,24 +149,20 @@ export type UpdateProductCommand = z.infer<typeof updateProductSchema>
  * Validates update payload and modifies an existing product in the catalog.
  *
  * @param db - Active database client instance.
- * @param productId - Unique identifier of the product to update.
+ * @param id - Unique identifier of the product to update.
  * @param command - Raw update object matching {@link UpdateProductCommand}.
  * @returns The updated and persisted {@link ProductRow}.
  * @throws {@link ProductNotFoundError} If the target product does not exist.
  * @throws {@link InvalidAttributeError} If empty string values are provided.
  * @throws {@link InvalidMonetaryValueError} If sell price is negative.
  */
-export function updateProduct(
-    db: DB,
-    productId: string,
-    command: UpdateProductCommand,
-): ProductRow {
+export function updateProduct(db: DB, id: string, command: UpdateProductCommand): ProductRow {
     // Validate input payload structure using Zod
     const validated = validateSchema(updateProductSchema, command)
 
     // Enforce domain rule ensuring target product exists in catalog
-    getProduct(db, productId)
+    getProduct(db, id)
 
     // Execute SQL update in SQLite database
-    return dal.updateProduct(db, productId, validated)
+    return dal.updateProduct(db, id, validated)
 }

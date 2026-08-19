@@ -29,8 +29,8 @@ export type TransactionType = (typeof transactionTypeValues)[number]
  * Products database table schema.
  */
 export const products = sqliteTable("products", {
-    productId: text("product_id").primaryKey(),
-    productName: text("product_name").notNull(),
+    id: text("product_id").primaryKey(),
+    name: text("product_name").notNull(),
     sellPrice: integer("sell_price").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull(),
 })
@@ -39,8 +39,8 @@ export const products = sqliteTable("products", {
  * Salesmen database table schema.
  */
 export const salesmen = sqliteTable("salesmen", {
-    salesmanId: text("salesman_id").primaryKey(),
-    salesmanName: text("salesman_name").notNull(),
+    id: text("salesman_id").primaryKey(),
+    name: text("salesman_name").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull(),
 })
 
@@ -48,15 +48,17 @@ export const salesmen = sqliteTable("salesmen", {
  * Transaction log database table schema.
  */
 export const transactions = sqliteTable("transactions", {
-    transactionId: text("transaction_id").primaryKey(),
+    id: text("transaction_id").primaryKey(),
     timestampIso: text("timestamp_iso").notNull(),
-    transactionType: text("transaction_type", { enum: transactionTypeValues }).notNull(),
+    transactionType: text("transaction_type", {
+        enum: transactionTypeValues,
+    }).notNull(),
     productId: text("product_id")
         .notNull()
-        .references(() => products.productId),
+        .references(() => products.id),
     salesmanId: text("salesman_id")
         .notNull()
-        .references(() => salesmen.salesmanId),
+        .references(() => salesmen.id),
     paymentType: text("payment_type", { enum: paymentTypeValues }),
     quantityChange: integer("quantity_change").notNull(),
     totalRevenue: integer("total_revenue").notNull(),
@@ -66,8 +68,8 @@ export const transactions = sqliteTable("transactions", {
 })
 
 /**
- * In-memory representation of a row from the `products`, `salesman`, and
- * `transaction` tables.
+ * In-memory representation of a row from the `products`, `salesmen`, and
+ * `transactions` tables.
  */
 export type ProductRow = typeof products.$inferSelect
 export type SalesmanRow = typeof salesmen.$inferSelect

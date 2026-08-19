@@ -20,16 +20,7 @@ export function useCreateSalesman() {
     return useMutation({
         mutationFn: async (input: SalesmanCreateRequest) => {
             try {
-                const salesman = await trpcClient.salesmen.add.mutate({
-                    salesmanId: input.salesman_id,
-                    salesmanName: input.salesman_name,
-                    isActive: input.is_active,
-                })
-                return {
-                    salesman_id: salesman.salesmanId,
-                    salesman_name: salesman.salesmanName,
-                    is_active: salesman.isActive,
-                }
+                return await trpcClient.salesmen.add.mutate(input)
             } catch (err) {
                 throw new Error(extractErrorMessage(err, "Falha ao criar vendedor."))
             }
@@ -44,26 +35,12 @@ export function useUpdateSalesman() {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: async ({
-            salesmanId,
-            input,
-        }: {
-            salesmanId: string
-            input: SalesmanUpdateRequest
-        }) => {
+        mutationFn: async ({ id, input }: { id: string; input: SalesmanUpdateRequest }) => {
             try {
-                const salesman = await trpcClient.salesmen.update.mutate({
-                    salesmanId,
-                    data: {
-                        salesmanName: input.salesman_name,
-                        isActive: input.is_active,
-                    },
+                return await trpcClient.salesmen.update.mutate({
+                    id,
+                    data: input,
                 })
-                return {
-                    salesman_id: salesman.salesmanId,
-                    salesman_name: salesman.salesmanName,
-                    is_active: salesman.isActive,
-                }
             } catch (err) {
                 throw new Error(extractErrorMessage(err, "Falha ao atualizar vendedor."))
             }

@@ -20,13 +20,7 @@ export function useRestock() {
     return useMutation({
         mutationFn: async (input: RestockRequest) => {
             try {
-                return await trpcClient.transactions.recordRestock.mutate({
-                    productId: input.product_id,
-                    salesmanId: input.salesman_id,
-                    quantity: input.quantity,
-                    totalCost: input.total_cost,
-                    notes: input.notes,
-                })
+                return await trpcClient.transactions.recordRestock.mutate(input)
             } catch (err) {
                 throw new Error(extractErrorMessage(err, "Falha ao registrar a reposição."))
             }
@@ -43,12 +37,7 @@ export function useWriteOff() {
     return useMutation({
         mutationFn: async (input: WriteOffRequest) => {
             try {
-                return await trpcClient.transactions.recordWriteOff.mutate({
-                    productId: input.product_id,
-                    salesmanId: input.salesman_id,
-                    quantity: input.quantity,
-                    notes: input.notes,
-                })
+                return await trpcClient.transactions.recordWriteOff.mutate(input)
             } catch (err) {
                 throw new Error(extractErrorMessage(err, "Falha ao registrar a baixa."))
             }

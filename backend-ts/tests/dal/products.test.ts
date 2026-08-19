@@ -17,8 +17,8 @@ describe("Products DAL", () => {
     })
 
     const sampleProduct: ProductRow = {
-        productId: "P-001",
-        productName: "Soda",
+        id: "P-001",
+        name: "Soda",
         sellPrice: 550,
         isActive: true,
     }
@@ -38,8 +38,8 @@ describe("Products DAL", () => {
             // Arrange
             appendProduct(db, sampleProduct)
             appendProduct(db, {
-                productId: "P-002",
-                productName: "Juice",
+                id: "P-002",
+                name: "Juice",
                 sellPrice: 600,
                 isActive: false,
             })
@@ -50,12 +50,12 @@ describe("Products DAL", () => {
             // Assert
             expect(records.length).toBe(2)
             expect(records[0]).toEqual(sampleProduct)
-            expect(records[1].productId).toBe("P-002")
+            expect(records[1].id).toBe("P-002")
         })
     })
 
     describe("getProduct", () => {
-        it("GIVEN an existing productId WHEN getProduct is called THEN returns matching ProductRow", () => {
+        it("GIVEN an existing id WHEN getProduct is called THEN returns matching ProductRow", () => {
             // Arrange
             appendProduct(db, sampleProduct)
 
@@ -66,7 +66,7 @@ describe("Products DAL", () => {
             expect(record).toEqual(sampleProduct)
         })
 
-        it("GIVEN a non-existent productId WHEN getProduct is called THEN returns undefined", () => {
+        it("GIVEN a non-existent id WHEN getProduct is called THEN returns undefined", () => {
             // Arrange (No product inserted)
 
             // Act
@@ -93,8 +93,8 @@ describe("Products DAL", () => {
         it("GIVEN a product record with isActive false WHEN appendProduct is called THEN persists boolean isActive accurately", () => {
             // Arrange
             const inactiveProduct: ProductRow = {
-                productId: "P-010",
-                productName: "Energy Drink",
+                id: "P-010",
+                name: "Energy Drink",
                 sellPrice: 990,
                 isActive: false,
             }
@@ -108,7 +108,7 @@ describe("Products DAL", () => {
             expect(typeof fetched?.isActive).toBe("boolean")
         })
 
-        it("GIVEN an existing productId WHEN appending a duplicate product THEN throws SQLite constraint error", () => {
+        it("GIVEN an existing id WHEN appending a duplicate product THEN throws SQLite constraint error", () => {
             // Arrange
             appendProduct(db, sampleProduct)
 
@@ -123,10 +123,10 @@ describe("Products DAL", () => {
             appendProduct(db, sampleProduct)
 
             // Act
-            const updated = updateProduct(db, "P-001", { productName: "Soda Zero" })
+            const updated = updateProduct(db, "P-001", { name: "Soda Zero" })
 
             // Assert
-            expect(updated.productName).toBe("Soda Zero")
+            expect(updated.name).toBe("Soda Zero")
             expect(updated.sellPrice).toBe(550)
             expect(updated.isActive).toBe(true)
         })
@@ -137,20 +137,20 @@ describe("Products DAL", () => {
 
             // Act
             const updated = updateProduct(db, "P-001", {
-                productName: "Soda Zero",
+                name: "Soda Zero",
                 sellPrice: 625,
             })
 
             // Assert
-            expect(updated.productName).toBe("Soda Zero")
+            expect(updated.name).toBe("Soda Zero")
             expect(updated.sellPrice).toBe(625)
         })
 
-        it("GIVEN a non-existent productId WHEN updateProduct is called THEN throws missing product error", () => {
+        it("GIVEN a non-existent id WHEN updateProduct is called THEN throws missing product error", () => {
             // Arrange (No product inserted)
 
             // Act & Assert
-            expect(() => updateProduct(db, "P-999", { productName: "Unknown" })).toThrow(
+            expect(() => updateProduct(db, "P-999", { name: "Unknown" })).toThrow(
                 "Product not found: P-999",
             )
         })

@@ -26,7 +26,7 @@ export const productsRouter = router({
      * Retrieves a single product record by identifier.
      */
     get: publicProcedure.input(getProductSchema).query(({ ctx, input }) => {
-        return getProduct(ctx.db, input.productId)
+        return getProduct(ctx.db, input.id)
     }),
 
     /**
@@ -42,11 +42,11 @@ export const productsRouter = router({
     update: publicProcedure
         .input(
             z.object({
-                productId: z.string().trim().min(1, "Product ID is required"),
+                id: z.string().trim().min(1, "Product ID is required"),
                 data: updateProductSchema,
             }),
         )
         .mutation(({ ctx, input }) => {
-            return updateProduct(ctx.db, input.productId, input.data)
+            return updateProduct(ctx.db, input.id, input.data)
         }),
 })

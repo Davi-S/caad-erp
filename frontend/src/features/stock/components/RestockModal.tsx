@@ -19,7 +19,7 @@ interface RestockModalProps {
     opened: boolean
     onClose: () => void
     product: Product | null
-    onConfirm: (values: { quantity: number; total_cost: number; notes: string | null }) => void
+    onConfirm: (values: { quantity: number; totalCost: number; notes: string | null }) => void
     isSubmitting: boolean
     error: string | null
 }
@@ -73,7 +73,7 @@ export function RestockModal({
 
         onConfirm({
             quantity: values.quantity,
-            total_cost: Math.round(totalCostInReais * 100),
+            totalCost: Math.round(totalCostInReais * 100),
             notes: values.notes.trim() || null,
         })
     })
@@ -82,7 +82,7 @@ export function RestockModal({
         <Modal
             opened={opened}
             onClose={onClose}
-            title={`Repor estoque: ${product?.product_name ?? ""}`}
+            title={`Repor estoque: ${product?.name ?? ""}`}
             centered
             withCloseButton={false}
             closeOnClickOutside={!isSubmitting}

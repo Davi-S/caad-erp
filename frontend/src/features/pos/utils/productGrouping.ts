@@ -1,9 +1,9 @@
 import type { Product } from "@/types"
 
 export interface ProductVariant {
-    // Extracted variant label (e.g., "P", "M", "350ml") or full product_name if standalone
+    // Extracted variant label (e.g., "P", "M", "350ml") or full name if standalone
     label: string
-    // Raw API Product object containing product_id, sell_price, is_active, etc.
+    // Raw Product object containing id, sellPrice, isActive, etc.
     product: Product
 }
 
@@ -29,7 +29,7 @@ export function groupProducts(products: Product[]): ProductGroup[] {
     const groupMap = new Map<string, ProductGroup>()
 
     for (const product of products) {
-        const name = product.product_name ? product.product_name.trim() : ""
+        const name = product.name ? product.name.trim() : ""
         // Match last occurrence of hyphen surrounded by spaces
         const lastHyphenIndex = name.lastIndexOf(" - ")
 

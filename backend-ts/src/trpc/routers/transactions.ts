@@ -33,7 +33,7 @@ export const transactionsRouter = router({
      * Retrieves a single transaction record by identifier.
      */
     get: publicProcedure.input(getTransactionSchema).query(({ ctx, input }) => {
-        return getTransaction(ctx.db, input.transactionId)
+        return getTransaction(ctx.db, input.id)
     }),
 
     /**

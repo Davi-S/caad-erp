@@ -35,14 +35,14 @@ describe("Transaction Ledger BLL Handlers", () => {
         db = createTestDb()
         // Seed active product and salesman
         addProduct(db, {
-            productId: "P-001",
-            productName: "Soda",
+            id: "P-001",
+            name: "Soda",
             sellPrice: 500,
             isActive: true,
         })
         addSalesman(db, {
-            salesmanId: "S-001",
-            salesmanName: "Alice",
+            id: "S-001",
+            name: "Alice",
             isActive: true,
         })
         // Seed initial stock (10 units via RESTOCK)
@@ -60,7 +60,7 @@ describe("Transaction Ledger BLL Handlers", () => {
         const firstTx = all[0]
 
         // Act
-        const found = getTransaction(db, firstTx.transactionId)
+        const found = getTransaction(db, firstTx.id)
 
         // Assert
         expect(found).toEqual(firstTx)
@@ -108,8 +108,8 @@ describe("Transaction Ledger BLL Handlers", () => {
     it("GIVEN an inactive product WHEN recordSale is called THEN throws ProductInactiveError", () => {
         // Arrange
         addProduct(db, {
-            productId: "P-INACTIVE",
-            productName: "Discontinued Item",
+            id: "P-INACTIVE",
+            name: "Discontinued Item",
             sellPrice: 100,
             isActive: false,
         })
@@ -142,8 +142,8 @@ describe("Transaction Ledger BLL Handlers", () => {
     it("GIVEN an inactive salesman WHEN recordSale is called THEN throws SalesmanInactiveError", () => {
         // Arrange
         addSalesman(db, {
-            salesmanId: "S-INACTIVE",
-            salesmanName: "Fired Employee",
+            id: "S-INACTIVE",
+            name: "Fired Employee",
             isActive: false,
         })
 
@@ -175,8 +175,8 @@ describe("Transaction Ledger BLL Handlers", () => {
     it("GIVEN a valid bulk sale cart WHEN recordBulkSale is called THEN records all sales atomically", () => {
         // Arrange
         addProduct(db, {
-            productId: "P-002",
-            productName: "Chips",
+            id: "P-002",
+            name: "Chips",
             sellPrice: 300,
             isActive: true,
         })
@@ -279,7 +279,7 @@ describe("Transaction Ledger BLL Handlers", () => {
 
         // Act
         const paymentTx = recordCreditPayment(db, {
-            linkedTransactionId: creditSale.transactionId,
+            linkedTransactionId: creditSale.id,
             salesmanId: "S-001",
             totalRevenue: 1000,
             paymentType: "Cash",
@@ -287,7 +287,7 @@ describe("Transaction Ledger BLL Handlers", () => {
 
         // Assert
         expect(paymentTx.transactionType).toBe("CREDIT_PAYMENT")
-        expect(paymentTx.linkedTransactionId).toBe(creditSale.transactionId)
+        expect(paymentTx.linkedTransactionId).toBe(creditSale.id)
         expect(paymentTx.quantityChange).toBe(0)
         expect(paymentTx.totalRevenue).toBe(1000)
     })
@@ -305,7 +305,7 @@ describe("Transaction Ledger BLL Handlers", () => {
         // Act & Assert
         expect(() =>
             recordCreditPayment(db, {
-                linkedTransactionId: cashSale.transactionId,
+                linkedTransactionId: cashSale.id,
                 salesmanId: "S-001",
                 totalRevenue: 1000,
                 paymentType: "Cash",
@@ -325,13 +325,13 @@ describe("Transaction Ledger BLL Handlers", () => {
 
         // Act
         const voidTx = recordVoid(db, {
-            linkedTransactionId: saleTx.transactionId,
+            linkedTransactionId: saleTx.id,
             notes: "Customer returned item",
         })
 
         // Assert
         expect(voidTx.transactionType).toBe("VOID")
-        expect(voidTx.linkedTransactionId).toBe(saleTx.transactionId)
+        expect(voidTx.linkedTransactionId).toBe(saleTx.id)
         expect(voidTx.quantityChange).toBe(-saleTx.quantityChange) // Reverses -2 to +2
         expect(voidTx.totalRevenue).toBe(-saleTx.totalRevenue) // Reverses +1000 to -1000
         expect(calculateInventory(db)["P-001"]).toBe(10) // Restores inventory balance
@@ -347,13 +347,13 @@ describe("Transaction Ledger BLL Handlers", () => {
             paymentType: "Cash",
         })
         const voidTx = recordVoid(db, {
-            linkedTransactionId: saleTx.transactionId,
+            linkedTransactionId: saleTx.id,
         })
 
         // Act & Assert
         expect(() =>
             recordVoid(db, {
-                linkedTransactionId: voidTx.transactionId,
+                linkedTransactionId: voidTx.id,
             }),
         ).toThrow(IneligibleVoidTargetError)
     })

@@ -26,7 +26,7 @@ export function listSalesmen(db: DB): SalesmanRow[] {
  * Zod validation schema and command payload for retrieving a salesman by identifier.
  */
 export const getSalesmanSchema = z.object({
-    salesmanId: z
+    id: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
@@ -41,16 +41,16 @@ export type GetSalesmanCommand = z.infer<typeof getSalesmanSchema>
  * Retrieves a single salesman record by identifier.
  *
  * @param db - Active database client instance.
- * @param salesmanId - Unique salesman identifier.
+ * @param id - Unique salesman identifier.
  * @returns The matching {@link SalesmanRow}.
  * @throws {@link InvalidAttributeError} If salesman ID is empty string.
  * @throws {@link SalesmanNotFoundError} If no salesman exists with the given ID.
  */
-export function getSalesman(db: DB, salesmanId: string): SalesmanRow {
-    validateSchema(getSalesmanSchema, { salesmanId })
-    const salesman = dal.getSalesman(db, salesmanId)
+export function getSalesman(db: DB, id: string): SalesmanRow {
+    validateSchema(getSalesmanSchema, { id })
+    const salesman = dal.getSalesman(db, id)
     if (!salesman) {
-        throw new SalesmanNotFoundError(`Unknown salesman id: ${salesmanId}`)
+        throw new SalesmanNotFoundError(`Unknown salesman id: ${id}`)
     }
     return salesman
 }
@@ -59,14 +59,14 @@ export function getSalesman(db: DB, salesmanId: string): SalesmanRow {
  * Zod validation schema and command payload for registering a new salesman.
  */
 export const addSalesmanSchema = z.object({
-    salesmanId: z
+    id: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
             message: "Salesman ID must be provided",
             params: { errorClass: InvalidAttributeError },
         }),
-    salesmanName: z
+    name: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
@@ -92,9 +92,9 @@ export function addSalesman(db: DB, command: AddSalesmanCommand): SalesmanRow {
     const validated = validateSchema(addSalesmanSchema, command)
 
     // Enforce domain rule checking for duplicate salesman identifier
-    const existing = dal.getSalesman(db, validated.salesmanId)
+    const existing = dal.getSalesman(db, validated.id)
     if (existing) {
-        throw new DuplicateSalesmanError(`Salesman already exists: ${validated.salesmanId}`)
+        throw new DuplicateSalesmanError(`Salesman already exists: ${validated.id}`)
     }
 
     // Persist new salesman record in SQLite database
@@ -105,7 +105,7 @@ export function addSalesman(db: DB, command: AddSalesmanCommand): SalesmanRow {
  * Zod validation schema and command payload for updating selected fields of a salesman.
  */
 export const updateSalesmanSchema = z.object({
-    salesmanName: z
+    name: z
         .string()
         .trim()
         .refine((val) => val.length >= 1, {
@@ -122,23 +122,19 @@ export type UpdateSalesmanCommand = z.infer<typeof updateSalesmanSchema>
  * Validates update payload and modifies an existing salesman in the catalog.
  *
  * @param db - Active database client instance.
- * @param salesmanId - Unique identifier of the salesman to update.
+ * @param id - Unique identifier of the salesman to update.
  * @param command - Raw update object matching {@link UpdateSalesmanCommand}.
  * @returns The updated and persisted {@link SalesmanRow}.
  * @throws {@link SalesmanNotFoundError} If the target salesman does not exist.
  * @throws {@link InvalidAttributeError} If empty string values are provided.
  */
-export function updateSalesman(
-    db: DB,
-    salesmanId: string,
-    command: UpdateSalesmanCommand,
-): SalesmanRow {
+export function updateSalesman(db: DB, id: string, command: UpdateSalesmanCommand): SalesmanRow {
     // Validate input payload structure using Zod
     const validated = validateSchema(updateSalesmanSchema, command)
 
     // Enforce domain rule ensuring target salesman exists in catalog
-    getSalesman(db, salesmanId)
+    getSalesman(db, id)
 
     // Execute SQL update in SQLite database
-    return dal.updateSalesman(db, salesmanId, validated)
+    return dal.updateSalesman(db, id, validated)
 }
