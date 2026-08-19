@@ -5,8 +5,8 @@ import { CustomerCartScreen } from "../components/customer/CustomerCartScreen"
 import { CustomerPaymentScreen } from "../components/customer/CustomerPaymentScreen"
 
 export function CustomerDisplayPage() {
-    const { data: products } = useProducts()
-    const { data: stock } = useStock()
+    const { data: products = [] } = useProducts()
+    const { data: stock = {} } = useStock()
     const { syncedState } = usePOSBroadcast("client")
 
     const cart = syncedState?.cart || {}
@@ -26,7 +26,7 @@ export function CustomerDisplayPage() {
 
     return (
         <CustomerCartScreen
-            products={products.filter((p) => p.is_active)}
+            products={products.filter((p) => p.isActive)}
             stock={stock}
             cart={cart}
             total={total}

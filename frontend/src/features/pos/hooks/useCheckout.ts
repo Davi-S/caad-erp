@@ -1,15 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { SalesRequests } from "@/types"
-import { api } from "@/api/apiClient"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { trpcClient } from "@/utils/trpc"
 
 function extractErrorMessage(error: unknown, fallback: string): string {
     if (
         error &&
         typeof error === "object" &&
-        "detail" in error &&
-        typeof (error as { detail: unknown }).detail === "string"
+        "message" in error &&
+        typeof (error as { message: unknown }).message === "string"
     ) {
-        return (error as { detail: string }).detail
+        return (error as { message: string }).message
     }
     return fallback
 }
@@ -19,13 +19,11 @@ export function useCheckout() {
 
     const mutation = useMutation({
         mutationFn: async (salesRequests: SalesRequests) => {
-            const res = await api.POST("/transactions/bulk-sale", {
-                body: { items: salesRequests },
-            })
-            if (res.error) {
-                throw new Error(extractErrorMessage(res.error, "Falha ao registrar a venda."))
+            try {
+                return await trpcClient.transactions.recordBulkSale.mutate(salesRequests)
+            } catch (err) {
+                throw new Error(extractErrorMessage(err, "Falha ao registrar a venda."))
             }
-            return res.data
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["stock"] })

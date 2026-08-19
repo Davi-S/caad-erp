@@ -21,35 +21,35 @@ import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackLis
 import { useSalesmen } from "@/hooks/queries/useSalesmen"
 import { useCreateSalesman, useUpdateSalesman } from "./hooks/useSalesmenMutations"
 import { SalesmanFormModal } from "./components/SalesmanFormModal"
-import type { Salesman } from "@/types"
+import type { Salesman, SalesmanCreateRequest, SalesmanUpdateRequest } from "@/types"
 
 // Search and sort configurations
 const columnHelper = createColumnHelper<Salesman>()
 
 const SALESMAN_SORT_OPTIONS: SortOption[] = [
-    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "salesman_name", desc: false }] },
-    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "salesman_name", desc: true }] },
+    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "name", desc: false }] },
+    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "name", desc: true }] },
 ]
 
 export function SalesmenManagementPage() {
     const navigate = useNavigate()
     const [showInactive, setShowInactive] = useState(false)
-    const { data: salesmen, isLoading, isError } = useSalesmen()
+    const { data: salesmen = [], isLoading, isError } = useSalesmen()
 
     const activeFilteredSalesmen = useMemo(
-        () => (showInactive ? salesmen : salesmen?.filter((salesman) => salesman.is_active)),
+        () => (showInactive ? salesmen : salesmen.filter((salesman) => salesman.isActive)),
         [salesmen, showInactive],
     )
 
     // Configure searchable and sortable columns
     const columns = useMemo(
         () => [
-            columnHelper.accessor("salesman_name", {
-                id: "salesman_name",
+            columnHelper.accessor("name", {
+                id: "name",
                 enableGlobalFilter: true,
             }),
-            columnHelper.accessor("salesman_id", {
-                id: "salesman_id",
+            columnHelper.accessor("id", {
+                id: "id",
                 enableGlobalFilter: true,
             }),
         ],
@@ -93,22 +93,12 @@ export function SalesmenManagementPage() {
         setModalOpened(true)
     }
 
-    const handleCreate = (values: {
-        salesman_id: string
-        salesman_name: string
-        is_active: boolean
-    }) => {
+    const handleCreate = (values: SalesmanCreateRequest) => {
         createMutation.mutate(values, { onSuccess: () => setModalOpened(false) })
     }
 
-    const handleUpdate = (
-        salesmanId: string,
-        values: { salesman_name: string; is_active: boolean },
-    ) => {
-        updateMutation.mutate(
-            { salesmanId, input: values },
-            { onSuccess: () => setModalOpened(false) },
-        )
+    const handleUpdate = (id: string, values: SalesmanUpdateRequest) => {
+        updateMutation.mutate({ id, input: values }, { onSuccess: () => setModalOpened(false) })
     }
 
     return (
@@ -181,32 +171,32 @@ export function SalesmenManagementPage() {
                         <Stack gap="xs">
                             {processedSalesmen.map((salesman) => (
                                 <Group
-                                    key={salesman.salesman_id}
+                                    key={salesman.id}
                                     justify="space-between"
                                     wrap="nowrap"
                                     p="sm"
                                     style={{
                                         border: "1px solid var(--mantine-color-gray-3)",
                                         borderRadius: "var(--mantine-radius-md)",
-                                        opacity: salesman.is_active ? 1 : 0.6,
+                                        opacity: salesman.isActive ? 1 : 0.6,
                                     }}
                                 >
                                     <Stack gap={2}>
-                                        <Text fw={600}>{salesman.salesman_name}</Text>
+                                        <Text fw={600}>{salesman.name}</Text>
                                         <Text size="xs" c="dimmed" ff="monospace">
-                                            {salesman.salesman_id}
+                                            {salesman.id}
                                         </Text>
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">
                                         <Badge
                                             color={
-                                                salesman.is_active
+                                                salesman.isActive
                                                     ? "var(--mantine-primary-color-filled)"
                                                     : "gray"
                                             }
-                                            variant={salesman.is_active ? "light" : "outline"}
+                                            variant={salesman.isActive ? "light" : "outline"}
                                         >
-                                            {salesman.is_active ? "Ativo" : "Inativo"}
+                                            {salesman.isActive ? "Ativo" : "Inativo"}
                                         </Badge>
                                         <ActionIcon
                                             variant="subtle"

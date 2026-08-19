@@ -7,8 +7,8 @@ interface SalesmanFormModalProps {
     opened: boolean
     onClose: () => void
     salesman: Salesman | null // null = creating
-    onCreate: (values: { salesman_id: string; salesman_name: string; is_active: boolean }) => void
-    onUpdate: (salesmanId: string, values: { salesman_name: string; is_active: boolean }) => void
+    onCreate: (values: { id: string; name: string; isActive: boolean }) => void
+    onUpdate: (salesmanId: string, values: { name?: string; isActive?: boolean }) => void
     isSubmitting: boolean
     error: string | null
 }
@@ -26,14 +26,14 @@ export function SalesmanFormModal({
 
     const form = useForm({
         initialValues: {
-            salesman_id: "",
-            salesman_name: "",
-            is_active: true,
+            id: "",
+            name: "",
+            isActive: true,
         },
         validate: {
-            salesman_id: (value) =>
+            id: (value) =>
                 isEditing || value.trim().length > 0 ? null : "Informe um identificador",
-            salesman_name: (value) => (value.trim().length > 0 ? null : "Informe um nome"),
+            name: (value) => (value.trim().length > 0 ? null : "Informe um nome"),
         },
     })
 
@@ -41,9 +41,9 @@ export function SalesmanFormModal({
     useEffect(() => {
         if (opened) {
             form.setValues({
-                salesman_id: salesman?.salesman_id ?? "",
-                salesman_name: salesman?.salesman_name ?? "",
-                is_active: salesman?.is_active ?? true,
+                id: salesman?.id ?? "",
+                name: salesman?.name ?? "",
+                isActive: salesman?.isActive ?? true,
             })
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,15 +51,15 @@ export function SalesmanFormModal({
 
     const handleSubmit = form.onSubmit((values) => {
         if (isEditing && salesman) {
-            onUpdate(salesman.salesman_id, {
-                salesman_name: values.salesman_name.trim(),
-                is_active: values.is_active,
+            onUpdate(salesman.id, {
+                name: values.name.trim(),
+                isActive: values.isActive,
             })
         } else {
             onCreate({
-                salesman_id: values.salesman_id.trim(),
-                salesman_name: values.salesman_name.trim(),
-                is_active: values.is_active,
+                id: values.id.trim(),
+                name: values.name.trim(),
+                isActive: values.isActive,
             })
         }
     })
@@ -85,20 +85,20 @@ export function SalesmanFormModal({
                                 ? "O identificador não pode ser alterado."
                                 : "Usado como chave única. Não poderá ser alterado depois. Quanto mais detalhado, melhor."
                         }
-                        {...form.getInputProps("salesman_id")}
+                        {...form.getInputProps("id")}
                     />
                     <TextInput
                         label="Nome"
                         placeholder="Nome do vendedor"
                         description={"Aparece nas telas de seleção."}
-                        {...form.getInputProps("salesman_name")}
+                        {...form.getInputProps("name")}
                     />
                     <Switch
                         label="Vendedor ativo"
                         description="Vendedores inativos não aparecem na tela de vendas."
-                        checked={form.values.is_active}
+                        checked={form.values.isActive}
                         onChange={(event) =>
-                            form.setFieldValue("is_active", event.currentTarget.checked)
+                            form.setFieldValue("isActive", event.currentTarget.checked)
                         }
                     />
                     {error && (
