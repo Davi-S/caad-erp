@@ -109,7 +109,7 @@ without producing orphaned records or corrupted reports.
 **Hard-deletes**, physically deleting rows from database tables, are
 intentionally avoided during standard operations. Physically removing a catalog
 row causes historical transaction ledger entries to become orphaned, leading to
-report errors and audit trail corruption. 
+report errors and audit trail corruption.
 
 ### Catalog Price Updates and Credit Tab Operational Caveat
 

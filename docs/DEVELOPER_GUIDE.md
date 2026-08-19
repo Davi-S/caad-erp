@@ -166,13 +166,6 @@ BLL handlers.
   `totalRevenue`, `totalCost`) are stored as integers representing cents (e.g.
   $5.50 = `550`). This avoids floating-point rounding errors during financial
   summations.
-- **Separate Revenue and Cost Columns:** `totalRevenue` tracks gross money
-  received (positive number), while `totalCost` tracks inventory spend (stored
-  as a negative number). Using separate columns keeps financial calculations
-  straightforward:
-  - Gross Revenue: `SUM(total_revenue)`
-  - Total Inventory Cost: `SUM(total_cost)`
-  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
 - **Dynamic Stock Level Calculation:** On-hand inventory stock is derived
   dynamically via `SUM(quantity_change)` across the transaction ledger rather
   than maintaining mutable stock counters.
@@ -203,9 +196,28 @@ revenue, and cost deltas.
 - `CREDIT_PAYMENT`: Captures payment received for an earlier credit sale.
 - `VOID`: Exact reversing entry linked to the target transaction being negated.
 
+For comprehensive operational guides detailing how to run each workflow, see
+[User & System Workflows](./WORKFLOWS.md).
+
 ---
 
 ## Detailed Rationale and System Decisions (Q&A)
+
+### Why store Revenue and Cost in Separate Columns?
+
+Instead of recording a single signed `amount` column, the transaction ledger
+maintains separate `totalRevenue` and `totalCost` columns.
+
+- **Positive Gross Revenue (`totalRevenue`):** Tracks gross money received from
+  customer checkouts or credit tab payments as a positive integer (cents).
+- **Negative Inventory Cost (`totalCost`):** Tracks inventory purchasing spend
+  recorded during restocks as a negative integer (cents).
+- **Simplified Financial Summations:** Keeping revenue and cost in dedicated
+  columns eliminates ambiguous multi-purpose math and makes financial report
+  calculations straightforward:
+  - Gross Revenue: `SUM(total_revenue)`
+  - Total Inventory Cost: `SUM(total_cost)`
+  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
 
 ### Why use UUID v7 for Transaction IDs instead of Auto-Incrementing Integers?
 
@@ -273,4 +285,3 @@ Test cases follow:
 - **Given/When/Then (GWT) Titles:** Test descriptions use GWT titles (e.g.
   `GIVEN an OnCredit sale WHEN recordCreditPayment is called THEN...`) to
   document intent.
-
