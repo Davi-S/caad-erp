@@ -360,26 +360,20 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
  * @param sheet - Target worksheet.
  * @param minWidth - Minimum column width floor (default: 14).
  */
-function autoFitWorksheetColumns(sheet: ExcelJS.Worksheet, minWidth = 14): void {
+function autoFitWorksheetColumns(sheet: ExcelJS.Worksheet, minWidth = 12): void {
     sheet.columns.forEach((column) => {
         let maxLen = minWidth
         column.eachCell?.({ includeEmpty: false }, (cell) => {
             // Ignore merged banner/section title cells so they don't artificially inflate column A
-            if (cell.isMerged && cell.address !== cell.master.address) {
-                return
-            }
             if (cell.isMerged) {
                 return
             }
 
             let text = ""
             if (cell.value !== null && cell.value !== undefined) {
-                if (typeof cell.value === "object") {
-                    if ("formula" in cell.value && cell.value.formula) {
-                        text = String(cell.value.formula)
-                    } else if ("result" in cell.value && cell.value.result) {
-                        text = String(cell.value.result)
-                    }
+                if (typeof cell.value === "object" && "formula" in cell.value) {
+                    const res = (cell.value as { result?: unknown }).result
+                    text = res !== undefined && res !== null ? String(res) : "R$ 999.999,00"
                 } else {
                     text = String(cell.value)
                 }
@@ -390,6 +384,6 @@ function autoFitWorksheetColumns(sheet: ExcelJS.Worksheet, minWidth = 14): void 
             }
         })
 
-        column.width = Math.max(minWidth, maxLen + 4)
+        column.width = Math.max(minWidth, maxLen + 3)
     })
 }
