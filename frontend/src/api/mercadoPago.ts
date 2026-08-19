@@ -29,7 +29,9 @@ export async function checkPaymentStatus(
     const res = await fetch(`/api/payments/pix/${paymentId}`)
     if (!res.ok) {
         const errData = await res.json().catch(() => null)
-        throw new Error(errData?.error || `Falha ao verificar status do pagamento (HTTP ${res.status}).`)
+        throw new Error(
+            errData?.error || `Falha ao verificar status do pagamento (HTTP ${res.status}).`,
+        )
     }
     return res.json()
 }

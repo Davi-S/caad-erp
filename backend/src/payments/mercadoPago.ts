@@ -19,9 +19,7 @@ function getMpClient(): MercadoPagoConfig {
     if (!mpClient) {
         const token = process.env.MERCADO_PAGO_ACCESS_TOKEN
         if (!token) {
-            throw new Error(
-                "MERCADO_PAGO_ACCESS_TOKEN is not set. Add it to `backend/.env`.",
-            )
+            throw new Error("MERCADO_PAGO_ACCESS_TOKEN is not set. Add it to `backend/.env`.")
         }
         mpClient = new MercadoPagoConfig({ accessToken: token })
     }
@@ -123,7 +121,9 @@ async function handleCreatePix(req: IncomingMessage, res: ServerResponse): Promi
         if (err && typeof err === "object") {
             if (err.cause) {
                 if (Array.isArray(err.cause)) {
-                    message = err.cause.map((c: any) => c.description || c.code || JSON.stringify(c)).join("; ")
+                    message = err.cause
+                        .map((c: any) => c.description || c.code || JSON.stringify(c))
+                        .join("; ")
                 } else if (typeof err.cause === "string") {
                     message = err.cause
                 } else {
@@ -143,10 +143,7 @@ async function handleCreatePix(req: IncomingMessage, res: ServerResponse): Promi
  *
  * Returns: `{ status: string }` - e.g. `"approved"`, `"pending"`, `"cancelled"`.
  */
-async function handleGetPixStatus(
-    res: ServerResponse,
-    paymentId: string,
-): Promise<void> {
+async function handleGetPixStatus(res: ServerResponse, paymentId: string): Promise<void> {
     const id = Number(paymentId)
     if (!Number.isInteger(id) || id <= 0) {
         sendError(res, 400, "Invalid payment ID")
