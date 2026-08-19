@@ -22,10 +22,11 @@
         "erasableSyntaxOnly": true,
         "noFallthroughCasesInSwitch": true,
 
-        /* Absolute imports */
+        /* Absolute imports & path aliases */
         "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["src/*"],
+            "@backend/*": ["../backend/*"]
         }
     },
     "include": ["src"]

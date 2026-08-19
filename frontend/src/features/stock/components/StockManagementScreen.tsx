@@ -41,26 +41,26 @@ const STOCK_SORT_OPTIONS: SortOption[] = [
 
 export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManagementScreenProps) {
     const [showInactive, setShowInactive] = useState(false)
-    const { data: products, isLoading, isError } = useProducts()
-    const { data: stock } = useStock()
+    const { data: products = [], isLoading, isError } = useProducts()
+    const { data: stock = {} } = useStock()
 
     const activeFilteredProducts = useMemo(
-        () => (showInactive ? products : products?.filter((product) => product.is_active)),
+        () => (showInactive ? products : products.filter((product) => product.isActive)),
         [products, showInactive],
     )
 
     // Configure searchable and sortable columns
     const columns = useMemo(
         () => [
-            columnHelper.accessor("product_name", {
+            columnHelper.accessor("name", {
                 id: "name",
                 enableGlobalFilter: true,
             }),
-            columnHelper.accessor("product_id", {
+            columnHelper.accessor("id", {
                 id: "code",
                 enableGlobalFilter: true,
             }),
-            columnHelper.accessor((p) => stock?.[p.product_id] ?? 0, {
+            columnHelper.accessor((p) => stock[p.id] ?? 0, {
                 id: "stock",
                 enableGlobalFilter: false,
             }),
@@ -96,16 +96,16 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
 
     const handleConfirmRestock = (values: {
         quantity: number
-        total_cost: number
+        totalCost: number
         notes: string | null
     }) => {
         if (!restockingProduct) return
         restockMutation.mutate(
             {
-                product_id: restockingProduct.product_id,
-                salesman_id: salesman.salesman_id,
+                productId: restockingProduct.id,
+                salesmanId: salesman.id,
                 quantity: values.quantity,
-                total_cost: values.total_cost,
+                totalCost: values.totalCost,
                 notes: values.notes,
             },
             { onSuccess: () => setRestockingProduct(null) },
@@ -116,8 +116,8 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
         if (!writingOffProduct) return
         writeOffMutation.mutate(
             {
-                product_id: writingOffProduct.product_id,
-                salesman_id: salesman.salesman_id,
+                productId: writingOffProduct.id,
+                salesmanId: salesman.id,
                 quantity: values.quantity,
                 notes: values.notes,
             },
@@ -141,7 +141,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                     </Title>
                 </Stack>
                 <Badge variant="light" color="var(--mantine-primary-color-filled)">
-                    {salesman.salesman_name}
+                    {salesman.name}
                 </Badge>
             </Group>
 
@@ -188,24 +188,24 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                     <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
                         <Stack gap="xs">
                             {processedProducts.map((product) => {
-                                const quantity = stock?.[product.product_id] ?? 0
+                                const quantity = stock[product.id] ?? 0
                                 const soldOut = quantity <= 0
 
                                 return (
                                     <Group
-                                        key={product.product_id}
+                                        key={product.id}
                                         justify="space-between"
                                         wrap="nowrap"
                                         p="sm"
                                         style={{
                                             border: "1px solid var(--mantine-color-gray-3)",
                                             borderRadius: "var(--mantine-radius-md)",
-                                            opacity: product.is_active ? 1 : 0.6,
+                                            opacity: product.isActive ? 1 : 0.6,
                                         }}
                                     >
                                         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
                                             <Text fw={600} truncate>
-                                                {product.product_name}
+                                                {product.name}
                                             </Text>
                                             <Badge
                                                 size="sm"
@@ -260,9 +260,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                 opened={writingOffProduct !== null}
                 onClose={() => setWritingOffProduct(null)}
                 product={writingOffProduct}
-                availableQuantity={
-                    writingOffProduct ? (stock?.[writingOffProduct.product_id] ?? 0) : 0
-                }
+                availableQuantity={writingOffProduct ? (stock[writingOffProduct.id] ?? 0) : 0}
                 onConfirm={handleConfirmWriteOff}
                 isSubmitting={writeOffMutation.isPending}
                 error={writeOffMutation.isError ? writeOffMutation.error.message : null}

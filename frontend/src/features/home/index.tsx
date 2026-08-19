@@ -20,7 +20,6 @@ import {
     Monitor,
     ExternalLink,
 } from "lucide-react"
-import { api } from "@/api/apiClient"
 import { ScreenShell } from "@/components/ScreenShell"
 
 interface NavItem {
@@ -59,12 +58,12 @@ export function HomePage() {
     const handleDownloadWorkbook = async () => {
         setIsDownloading(true)
         try {
-            const res = await api.GET("/reports/workbook", { parseAs: "blob" })
-            if (res.error || !res.data) {
-                console.error("Failed to download workbook:", res.error)
+            const res = await fetch("/reports/workbook")
+            if (!res.ok) {
+                console.error("Failed to download workbook:", res.statusText)
                 return
             }
-            const blob = res.data as unknown as Blob
+            const blob = await res.blob()
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement("a")
             a.href = url

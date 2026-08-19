@@ -30,8 +30,8 @@ interface SalesmanSelectScreenProps {
 const columnHelper = createColumnHelper<Salesman>()
 
 const SALESMAN_SORT_OPTIONS: SortOption[] = [
-    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "salesman_name", desc: false }] },
-    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "salesman_name", desc: true }] },
+    { value: "name-asc", label: "Nome (A-Z)", sorting: [{ id: "name", desc: false }] },
+    { value: "name-desc", label: "Nome (Z-A)", sorting: [{ id: "name", desc: true }] },
 ]
 
 // Generic "pick a salesman before continuing" gate screen.
@@ -50,8 +50,8 @@ export function SalesmanSelectScreen({
     // Configure searchable and sortable columns
     const columns = useMemo(
         () => [
-            columnHelper.accessor("salesman_name", {
-                id: "salesman_name",
+            columnHelper.accessor("name", {
+                id: "name",
                 enableGlobalFilter: true,
             }),
         ],
@@ -114,14 +114,14 @@ export function SalesmanSelectScreen({
                             <Stack gap="sm">
                                 {processedSalesmen.map((salesman) => (
                                     <Radio.Card
-                                        key={salesman.salesman_id}
-                                        value={salesman.salesman_id}
+                                        key={salesman.id}
+                                        value={salesman.id}
                                         radius="md"
                                         p="sm"
                                     >
                                         <Group wrap="nowrap">
                                             <Radio.Indicator />
-                                            <Text fw={600}>{salesman.salesman_name}</Text>
+                                            <Text fw={600}>{salesman.name}</Text>
                                         </Group>
                                     </Radio.Card>
                                 ))}

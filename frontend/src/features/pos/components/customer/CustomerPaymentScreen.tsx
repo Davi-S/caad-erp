@@ -28,10 +28,10 @@ export function CustomerPaymentScreen({
 }: CustomerPaymentScreenProps) {
     const confirmed = checkoutStatus === "success"
     const method = paymentDetails?.method || "PIX"
-    const isPix = paymentDetails?.method === "PIX"
-    const pixQrBase64 = isPix ? paymentDetails.qrCodeBase64 || null : null
-    const pixLoading = isPix ? paymentDetails.loading || false : false
-    const pixError = isPix ? paymentDetails.error || null : null
+    const pixQrBase64 =
+        paymentDetails?.method === "PIX" ? (paymentDetails.qrCodeBase64 ?? null) : null
+    const pixLoading = paymentDetails?.method === "PIX" ? (paymentDetails.loading ?? false) : false
+    const pixError = paymentDetails?.method === "PIX" ? (paymentDetails.error ?? null) : null
 
     return (
         <ScreenShell>

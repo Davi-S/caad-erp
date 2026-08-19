@@ -27,7 +27,7 @@ import { usePixPayment } from "../hooks/usePixPayment"
 import type { PaymentDetails } from "../types/broadcast"
 
 interface PaymentScreenProps {
-    salesman: Salesman
+    salesman: Salesman | null
     cartState: ReturnType<typeof useCart>
     checkoutState: ReturnType<typeof useCheckout>
     actions: {
@@ -41,7 +41,10 @@ interface PaymentScreenProps {
 
 const METHOD_OPTIONS = [
     { value: "PIX", label: <MethodLabel icon={<QrCode size={16} />} text="Pix" /> },
-    { value: "Cash", label: <MethodLabel icon={<Banknote size={16} />} text="Dinheiro" /> },
+    {
+        value: "Cash",
+        label: <MethodLabel icon={<Banknote size={16} />} text="Dinheiro" />,
+    },
 ]
 
 export function PaymentScreen({
@@ -70,7 +73,7 @@ export function PaymentScreen({
 
     const pixState = usePixPayment({
         amountInBrl: cartState.total / 100,
-        salesmanName: salesman.salesman_name,
+        salesmanName: salesman?.name ?? "",
         confirmed,
         onPaymentApproved: handleApproved,
     })
@@ -120,7 +123,7 @@ export function PaymentScreen({
                         Recebendo pagamento
                     </Text>
                     <Title order={1} size="h5">
-                        Venda de {salesman.salesman_name}
+                        Venda de {salesman?.name ?? ""}
                     </Title>
                 </Stack>
             </Stack>

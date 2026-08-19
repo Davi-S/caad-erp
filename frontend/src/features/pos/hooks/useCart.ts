@@ -11,8 +11,8 @@ export function useCart() {
     const [cart, setCart] = useState<Record<string, number>>({})
 
     // Derived states used for clear intent and easy of use of other values
-    const total = products.reduce(
-        (sum, item) => sum + (cart[item.product_id] || 0) * item.sell_price,
+    const total = (products ?? []).reduce(
+        (sum, item) => sum + (cart[item.id] || 0) * item.sellPrice,
         0,
     )
     const isEmpty = Object.keys(cart).length === 0
@@ -22,7 +22,7 @@ export function useCart() {
     const inc = (id: string) => {
         setCart((prevCart) => {
             const current = prevCart[id] || 0
-            const available = stock[id]
+            const available = stock?.[id]
             // Prevent adding more than what is available in stock
             if (available !== undefined && current >= available) {
                 return prevCart
