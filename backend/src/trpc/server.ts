@@ -3,8 +3,8 @@
  */
 
 import { createHTTPServer } from "@trpc/server/adapters/standalone"
-import { createDb } from "./dal/index.js"
-import { appRouter, createContext } from "./trpc/index.js"
+import { createDb } from "../dal/index.js"
+import { appRouter, createContext } from "./index.js"
 
 // Initialize SQLite database connection client
 const db = createDb()
