@@ -35,7 +35,6 @@
 import Database from "better-sqlite3"
 import { drizzle } from "drizzle-orm/better-sqlite3"
 import { resolve } from "path"
-import { products, salesmen, transactions } from "../src/dal/schema.js"
 import { schema } from "../src/dal/client.js"
 import * as bll from "../src/bll/index.js"
 
@@ -123,15 +122,35 @@ console.log("\n[2/9] Creating products...")
 
 // Prices in cents (integer)
 bll.addProduct(db, { id: "PROD-AGUA", name: "Água Mineral 500ml", sellPrice: 250, isActive: true })
-bll.addProduct(db, { id: "PROD-REFRI", name: "Refrigerante Lata 350ml", sellPrice: 450, isActive: true })
+bll.addProduct(db, {
+    id: "PROD-REFRI",
+    name: "Refrigerante Lata 350ml",
+    sellPrice: 450,
+    isActive: true,
+})
 bll.addProduct(db, { id: "PROD-SUCO", name: "Suco Natural 300ml", sellPrice: 600, isActive: true })
 bll.addProduct(db, { id: "PROD-CAFE", name: "Café Expresso", sellPrice: 350, isActive: true })
-bll.addProduct(db, { id: "PROD-SANDUBA", name: "Sanduíche Natural", sellPrice: 1200, isActive: true })
+bll.addProduct(db, {
+    id: "PROD-SANDUBA",
+    name: "Sanduíche Natural",
+    sellPrice: 1200,
+    isActive: true,
+})
 bll.addProduct(db, { id: "PROD-BOLO", name: "Fatia de Bolo", sellPrice: 800, isActive: true })
 bll.addProduct(db, { id: "PROD-CHIPS", name: "Chips 45g", sellPrice: 350, isActive: true })
-bll.addProduct(db, { id: "PROD-CHOCOLATE", name: "Chocolate ao Leite 25g", sellPrice: 300, isActive: true })
+bll.addProduct(db, {
+    id: "PROD-CHOCOLATE",
+    name: "Chocolate ao Leite 25g",
+    sellPrice: 300,
+    isActive: true,
+})
 // A product that will be deactivated later
-bll.addProduct(db, { id: "PROD-DISCO", name: "Produto Descontinuado", sellPrice: 500, isActive: true })
+bll.addProduct(db, {
+    id: "PROD-DISCO",
+    name: "Produto Descontinuado",
+    sellPrice: 500,
+    isActive: true,
+})
 
 log("9 products created (8 active catalog + 1 to be deactivated)")
 
@@ -142,20 +161,92 @@ log("9 products created (8 active catalog + 1 to be deactivated)")
 console.log("\n[3/9] Recording initial restocks...")
 
 // Standard paid restocks — each product stocked up
-bll.recordRestock(db, { productId: "PROD-AGUA", salesmanId: "SM-CARLOS", quantity: 120, totalCost: 9600, notes: "Reposição mensal — Fornecedor Aqua" })
-bll.recordRestock(db, { productId: "PROD-REFRI", salesmanId: "SM-CARLOS", quantity: 96, totalCost: 14400, notes: "Reposição mensal — Coca-Cola" })
-bll.recordRestock(db, { productId: "PROD-SUCO", salesmanId: "SM-MARIANA", quantity: 60, totalCost: 18000, notes: "Produção interna" })
-bll.recordRestock(db, { productId: "PROD-CAFE", salesmanId: "SM-MARIANA", quantity: 200, totalCost: 20000, notes: "Grãos tostados — Lote 44" })
-bll.recordRestock(db, { productId: "PROD-SANDUBA", salesmanId: "SM-JOSE", quantity: 40, totalCost: 24000, notes: "Produção diária" })
-bll.recordRestock(db, { productId: "PROD-BOLO", salesmanId: "SM-JOSE", quantity: 30, totalCost: 12000, notes: "Confeitaria local" })
-bll.recordRestock(db, { productId: "PROD-CHIPS", salesmanId: "SM-LUCIA", quantity: 80, totalCost: 10400, notes: "Distribuidor Snacks SA" })
-bll.recordRestock(db, { productId: "PROD-CHOCOLATE", salesmanId: "SM-LUCIA", quantity: 100, totalCost: 12000, notes: "Atacado doces" })
-bll.recordRestock(db, { productId: "PROD-DISCO", salesmanId: "SM-CARLOS", quantity: 20, totalCost: 6000, notes: "Último lote antes de descontinuar" })
+bll.recordRestock(db, {
+    productId: "PROD-AGUA",
+    salesmanId: "SM-CARLOS",
+    quantity: 120,
+    totalCost: 9600,
+    notes: "Reposição mensal — Fornecedor Aqua",
+})
+bll.recordRestock(db, {
+    productId: "PROD-REFRI",
+    salesmanId: "SM-CARLOS",
+    quantity: 96,
+    totalCost: 14400,
+    notes: "Reposição mensal — Coca-Cola",
+})
+bll.recordRestock(db, {
+    productId: "PROD-SUCO",
+    salesmanId: "SM-MARIANA",
+    quantity: 60,
+    totalCost: 18000,
+    notes: "Produção interna",
+})
+bll.recordRestock(db, {
+    productId: "PROD-CAFE",
+    salesmanId: "SM-MARIANA",
+    quantity: 200,
+    totalCost: 20000,
+    notes: "Grãos tostados — Lote 44",
+})
+bll.recordRestock(db, {
+    productId: "PROD-SANDUBA",
+    salesmanId: "SM-JOSE",
+    quantity: 40,
+    totalCost: 24000,
+    notes: "Produção diária",
+})
+bll.recordRestock(db, {
+    productId: "PROD-BOLO",
+    salesmanId: "SM-JOSE",
+    quantity: 30,
+    totalCost: 12000,
+    notes: "Confeitaria local",
+})
+bll.recordRestock(db, {
+    productId: "PROD-CHIPS",
+    salesmanId: "SM-LUCIA",
+    quantity: 80,
+    totalCost: 10400,
+    notes: "Distribuidor Snacks SA",
+})
+bll.recordRestock(db, {
+    productId: "PROD-CHOCOLATE",
+    salesmanId: "SM-LUCIA",
+    quantity: 100,
+    totalCost: 12000,
+    notes: "Atacado doces",
+})
+bll.recordRestock(db, {
+    productId: "PROD-DISCO",
+    salesmanId: "SM-CARLOS",
+    quantity: 20,
+    totalCost: 6000,
+    notes: "Último lote antes de descontinuar",
+})
 
 // Zero-cost restocks (donations / promotional stock) — edge case
-bll.recordRestock(db, { productId: "PROD-AGUA", salesmanId: "SM-ROBERTO", quantity: 24, totalCost: 0, notes: "Doação — Evento corporativo" })
-bll.recordRestock(db, { productId: "PROD-CAFE", salesmanId: "SM-ROBERTO", quantity: 50, totalCost: 0, notes: "Amostra grátis — Fornecedor novo" })
-bll.recordRestock(db, { productId: "PROD-CHIPS", salesmanId: "SM-CARLOS", quantity: 20, totalCost: 0, notes: "Brinde promocional" })
+bll.recordRestock(db, {
+    productId: "PROD-AGUA",
+    salesmanId: "SM-ROBERTO",
+    quantity: 24,
+    totalCost: 0,
+    notes: "Doação — Evento corporativo",
+})
+bll.recordRestock(db, {
+    productId: "PROD-CAFE",
+    salesmanId: "SM-ROBERTO",
+    quantity: 50,
+    totalCost: 0,
+    notes: "Amostra grátis — Fornecedor novo",
+})
+bll.recordRestock(db, {
+    productId: "PROD-CHIPS",
+    salesmanId: "SM-CARLOS",
+    quantity: 20,
+    totalCost: 0,
+    notes: "Brinde promocional",
+})
 
 log("12 restocks recorded (9 paid, 3 zero-cost donations)")
 
@@ -166,26 +257,125 @@ log("12 restocks recorded (9 paid, 3 zero-cost donations)")
 console.log("\n[4/9] Recording cash and PIX sales...")
 
 // Cash sales — single items
-bll.recordSale(db, { productId: "PROD-AGUA", salesmanId: "SM-CARLOS", quantity: 3, totalRevenue: 750, paymentType: "Cash" })
-bll.recordSale(db, { productId: "PROD-REFRI", salesmanId: "SM-MARIANA", quantity: 2, totalRevenue: 900, paymentType: "Cash" })
-bll.recordSale(db, { productId: "PROD-CAFE", salesmanId: "SM-JOSE", quantity: 5, totalRevenue: 1750, paymentType: "Cash" })
-bll.recordSale(db, { productId: "PROD-BOLO", salesmanId: "SM-LUCIA", quantity: 2, totalRevenue: 1600, paymentType: "Cash" })
-bll.recordSale(db, { productId: "PROD-SANDUBA", salesmanId: "SM-ROBERTO", quantity: 3, totalRevenue: 3600, paymentType: "Cash" })
-bll.recordSale(db, { productId: "PROD-CHIPS", salesmanId: "SM-CARLOS", quantity: 6, totalRevenue: 2100, paymentType: "Cash" })
-bll.recordSale(db, { productId: "PROD-CHOCOLATE", salesmanId: "SM-MARIANA", quantity: 4, totalRevenue: 1200, paymentType: "Cash" })
-bll.recordSale(db, { productId: "PROD-SUCO", salesmanId: "SM-JOSE", quantity: 3, totalRevenue: 1800, paymentType: "Cash" })
+bll.recordSale(db, {
+    productId: "PROD-AGUA",
+    salesmanId: "SM-CARLOS",
+    quantity: 3,
+    totalRevenue: 750,
+    paymentType: "Cash",
+})
+bll.recordSale(db, {
+    productId: "PROD-REFRI",
+    salesmanId: "SM-MARIANA",
+    quantity: 2,
+    totalRevenue: 900,
+    paymentType: "Cash",
+})
+bll.recordSale(db, {
+    productId: "PROD-CAFE",
+    salesmanId: "SM-JOSE",
+    quantity: 5,
+    totalRevenue: 1750,
+    paymentType: "Cash",
+})
+bll.recordSale(db, {
+    productId: "PROD-BOLO",
+    salesmanId: "SM-LUCIA",
+    quantity: 2,
+    totalRevenue: 1600,
+    paymentType: "Cash",
+})
+bll.recordSale(db, {
+    productId: "PROD-SANDUBA",
+    salesmanId: "SM-ROBERTO",
+    quantity: 3,
+    totalRevenue: 3600,
+    paymentType: "Cash",
+})
+bll.recordSale(db, {
+    productId: "PROD-CHIPS",
+    salesmanId: "SM-CARLOS",
+    quantity: 6,
+    totalRevenue: 2100,
+    paymentType: "Cash",
+})
+bll.recordSale(db, {
+    productId: "PROD-CHOCOLATE",
+    salesmanId: "SM-MARIANA",
+    quantity: 4,
+    totalRevenue: 1200,
+    paymentType: "Cash",
+})
+bll.recordSale(db, {
+    productId: "PROD-SUCO",
+    salesmanId: "SM-JOSE",
+    quantity: 3,
+    totalRevenue: 1800,
+    paymentType: "Cash",
+})
 
 // PIX sales
-bll.recordSale(db, { productId: "PROD-AGUA", salesmanId: "SM-LUCIA", quantity: 5, totalRevenue: 1250, paymentType: "PIX" })
-bll.recordSale(db, { productId: "PROD-SANDUBA", salesmanId: "SM-ROBERTO", quantity: 2, totalRevenue: 2400, paymentType: "PIX" })
-bll.recordSale(db, { productId: "PROD-REFRI", salesmanId: "SM-CARLOS", quantity: 4, totalRevenue: 1800, paymentType: "PIX" })
-bll.recordSale(db, { productId: "PROD-BOLO", salesmanId: "SM-MARIANA", quantity: 3, totalRevenue: 2400, paymentType: "PIX" })
-bll.recordSale(db, { productId: "PROD-CAFE", salesmanId: "SM-JOSE", quantity: 8, totalRevenue: 2800, paymentType: "PIX" })
+bll.recordSale(db, {
+    productId: "PROD-AGUA",
+    salesmanId: "SM-LUCIA",
+    quantity: 5,
+    totalRevenue: 1250,
+    paymentType: "PIX",
+})
+bll.recordSale(db, {
+    productId: "PROD-SANDUBA",
+    salesmanId: "SM-ROBERTO",
+    quantity: 2,
+    totalRevenue: 2400,
+    paymentType: "PIX",
+})
+bll.recordSale(db, {
+    productId: "PROD-REFRI",
+    salesmanId: "SM-CARLOS",
+    quantity: 4,
+    totalRevenue: 1800,
+    paymentType: "PIX",
+})
+bll.recordSale(db, {
+    productId: "PROD-BOLO",
+    salesmanId: "SM-MARIANA",
+    quantity: 3,
+    totalRevenue: 2400,
+    paymentType: "PIX",
+})
+bll.recordSale(db, {
+    productId: "PROD-CAFE",
+    salesmanId: "SM-JOSE",
+    quantity: 8,
+    totalRevenue: 2800,
+    paymentType: "PIX",
+})
 
 // "Other" payment type
-bll.recordSale(db, { productId: "PROD-SUCO", salesmanId: "SM-LUCIA", quantity: 2, totalRevenue: 1200, paymentType: "Other", notes: "Voucher alimentação" })
-bll.recordSale(db, { productId: "PROD-CHIPS", salesmanId: "SM-ROBERTO", quantity: 5, totalRevenue: 1750, paymentType: "Other", notes: "Desconto em folha" })
-bll.recordSale(db, { productId: "PROD-CHOCOLATE", salesmanId: "SM-CARLOS", quantity: 3, totalRevenue: 900, paymentType: "Other", notes: "Crédito interno" })
+bll.recordSale(db, {
+    productId: "PROD-SUCO",
+    salesmanId: "SM-LUCIA",
+    quantity: 2,
+    totalRevenue: 1200,
+    paymentType: "Other",
+    notes: "Voucher alimentação",
+})
+bll.recordSale(db, {
+    productId: "PROD-CHIPS",
+    salesmanId: "SM-ROBERTO",
+    quantity: 5,
+    totalRevenue: 1750,
+    paymentType: "Other",
+    notes: "Desconto em folha",
+})
+bll.recordSale(db, {
+    productId: "PROD-CHOCOLATE",
+    salesmanId: "SM-CARLOS",
+    quantity: 3,
+    totalRevenue: 900,
+    paymentType: "Other",
+    notes: "Crédito interno",
+})
 
 log("16 cash/PIX/Other sales recorded")
 
@@ -197,36 +387,120 @@ console.log("\n[5/9] Recording bulk cart checkouts...")
 
 // Bulk cart 1 — breakfast combo
 bll.recordBulkSale(db, [
-    { productId: "PROD-CAFE", salesmanId: "SM-CARLOS", quantity: 1, totalRevenue: 350, paymentType: "Cash" },
-    { productId: "PROD-SANDUBA", salesmanId: "SM-CARLOS", quantity: 1, totalRevenue: 1200, paymentType: "Cash" },
-    { productId: "PROD-SUCO", salesmanId: "SM-CARLOS", quantity: 1, totalRevenue: 600, paymentType: "Cash" },
+    {
+        productId: "PROD-CAFE",
+        salesmanId: "SM-CARLOS",
+        quantity: 1,
+        totalRevenue: 350,
+        paymentType: "Cash",
+    },
+    {
+        productId: "PROD-SANDUBA",
+        salesmanId: "SM-CARLOS",
+        quantity: 1,
+        totalRevenue: 1200,
+        paymentType: "Cash",
+    },
+    {
+        productId: "PROD-SUCO",
+        salesmanId: "SM-CARLOS",
+        quantity: 1,
+        totalRevenue: 600,
+        paymentType: "Cash",
+    },
 ])
 
 // Bulk cart 2 — afternoon snacks PIX
 bll.recordBulkSale(db, [
-    { productId: "PROD-CHIPS", salesmanId: "SM-MARIANA", quantity: 2, totalRevenue: 700, paymentType: "PIX" },
-    { productId: "PROD-CHOCOLATE", salesmanId: "SM-MARIANA", quantity: 2, totalRevenue: 600, paymentType: "PIX" },
-    { productId: "PROD-REFRI", salesmanId: "SM-MARIANA", quantity: 1, totalRevenue: 450, paymentType: "PIX" },
+    {
+        productId: "PROD-CHIPS",
+        salesmanId: "SM-MARIANA",
+        quantity: 2,
+        totalRevenue: 700,
+        paymentType: "PIX",
+    },
+    {
+        productId: "PROD-CHOCOLATE",
+        salesmanId: "SM-MARIANA",
+        quantity: 2,
+        totalRevenue: 600,
+        paymentType: "PIX",
+    },
+    {
+        productId: "PROD-REFRI",
+        salesmanId: "SM-MARIANA",
+        quantity: 1,
+        totalRevenue: 450,
+        paymentType: "PIX",
+    },
 ])
 
 // Bulk cart 3 — large lunch order Cash
 bll.recordBulkSale(db, [
-    { productId: "PROD-SANDUBA", salesmanId: "SM-JOSE", quantity: 3, totalRevenue: 3600, paymentType: "Cash" },
-    { productId: "PROD-AGUA", salesmanId: "SM-JOSE", quantity: 3, totalRevenue: 750, paymentType: "Cash" },
-    { productId: "PROD-BOLO", salesmanId: "SM-JOSE", quantity: 2, totalRevenue: 1600, paymentType: "Cash" },
+    {
+        productId: "PROD-SANDUBA",
+        salesmanId: "SM-JOSE",
+        quantity: 3,
+        totalRevenue: 3600,
+        paymentType: "Cash",
+    },
+    {
+        productId: "PROD-AGUA",
+        salesmanId: "SM-JOSE",
+        quantity: 3,
+        totalRevenue: 750,
+        paymentType: "Cash",
+    },
+    {
+        productId: "PROD-BOLO",
+        salesmanId: "SM-JOSE",
+        quantity: 2,
+        totalRevenue: 1600,
+        paymentType: "Cash",
+    },
 ])
 
 // Bulk cart 4 — multiple units same product (edge case)
 bll.recordBulkSale(db, [
-    { productId: "PROD-CAFE", salesmanId: "SM-LUCIA", quantity: 4, totalRevenue: 1400, paymentType: "Cash" },
-    { productId: "PROD-CAFE", salesmanId: "SM-LUCIA", quantity: 2, totalRevenue: 700, paymentType: "Cash" },
+    {
+        productId: "PROD-CAFE",
+        salesmanId: "SM-LUCIA",
+        quantity: 4,
+        totalRevenue: 1400,
+        paymentType: "Cash",
+    },
+    {
+        productId: "PROD-CAFE",
+        salesmanId: "SM-LUCIA",
+        quantity: 2,
+        totalRevenue: 700,
+        paymentType: "Cash",
+    },
 ])
 
 // Bulk cart 5 — mixed PIX
 bll.recordBulkSale(db, [
-    { productId: "PROD-REFRI", salesmanId: "SM-ROBERTO", quantity: 2, totalRevenue: 900, paymentType: "PIX" },
-    { productId: "PROD-SUCO", salesmanId: "SM-ROBERTO", quantity: 2, totalRevenue: 1200, paymentType: "PIX" },
-    { productId: "PROD-CHIPS", salesmanId: "SM-ROBERTO", quantity: 3, totalRevenue: 1050, paymentType: "PIX" },
+    {
+        productId: "PROD-REFRI",
+        salesmanId: "SM-ROBERTO",
+        quantity: 2,
+        totalRevenue: 900,
+        paymentType: "PIX",
+    },
+    {
+        productId: "PROD-SUCO",
+        salesmanId: "SM-ROBERTO",
+        quantity: 2,
+        totalRevenue: 1200,
+        paymentType: "PIX",
+    },
+    {
+        productId: "PROD-CHIPS",
+        salesmanId: "SM-ROBERTO",
+        quantity: 3,
+        totalRevenue: 1050,
+        paymentType: "PIX",
+    },
 ])
 
 log("5 bulk cart checkouts recorded")
@@ -238,33 +512,119 @@ log("5 bulk cart checkouts recorded")
 console.log("\n[6/9] Recording credit sales and payments...")
 
 // Credit sale 1 — fully paid in Cash
-const credit1 = bll.recordSale(db, { productId: "PROD-AGUA", salesmanId: "SM-CARLOS", quantity: 10, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — João" })
-bll.recordCreditPayment(db, { linkedTransactionId: credit1.id, salesmanId: "SM-CARLOS", totalRevenue: 2500, paymentType: "Cash", notes: "Pagamento total" })
+const credit1 = bll.recordSale(db, {
+    productId: "PROD-AGUA",
+    salesmanId: "SM-CARLOS",
+    quantity: 10,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — João",
+})
+bll.recordCreditPayment(db, {
+    linkedTransactionId: credit1.id,
+    salesmanId: "SM-CARLOS",
+    totalRevenue: 2500,
+    paymentType: "Cash",
+    notes: "Pagamento total",
+})
 
 // Credit sale 2 — fully paid in PIX
-const credit2 = bll.recordSale(db, { productId: "PROD-REFRI", salesmanId: "SM-MARIANA", quantity: 6, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Maria" })
-bll.recordCreditPayment(db, { linkedTransactionId: credit2.id, salesmanId: "SM-MARIANA", totalRevenue: 2700, paymentType: "PIX", notes: "QR Code PIX" })
+const credit2 = bll.recordSale(db, {
+    productId: "PROD-REFRI",
+    salesmanId: "SM-MARIANA",
+    quantity: 6,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Maria",
+})
+bll.recordCreditPayment(db, {
+    linkedTransactionId: credit2.id,
+    salesmanId: "SM-MARIANA",
+    totalRevenue: 2700,
+    paymentType: "PIX",
+    notes: "QR Code PIX",
+})
 
 // Credit sale 3 — partially paid (open debt remains)
-const credit3 = bll.recordSale(db, { productId: "PROD-SANDUBA", salesmanId: "SM-JOSE", quantity: 4, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Pedro" })
-bll.recordCreditPayment(db, { linkedTransactionId: credit3.id, salesmanId: "SM-JOSE", totalRevenue: 2400, paymentType: "Cash", notes: "Entrada parcial" })
+const credit3 = bll.recordSale(db, {
+    productId: "PROD-SANDUBA",
+    salesmanId: "SM-JOSE",
+    quantity: 4,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Pedro",
+})
+bll.recordCreditPayment(db, {
+    linkedTransactionId: credit3.id,
+    salesmanId: "SM-JOSE",
+    totalRevenue: 2400,
+    paymentType: "Cash",
+    notes: "Entrada parcial",
+})
 
 // Credit sale 4 — paid by different salesman (edge case)
-const credit4 = bll.recordSale(db, { productId: "PROD-CAFE", salesmanId: "SM-LUCIA", quantity: 10, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Ana" })
-bll.recordCreditPayment(db, { linkedTransactionId: credit4.id, salesmanId: "SM-CARLOS", totalRevenue: 3500, paymentType: "Cash", notes: "Recebido por colega" })
+const credit4 = bll.recordSale(db, {
+    productId: "PROD-CAFE",
+    salesmanId: "SM-LUCIA",
+    quantity: 10,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Ana",
+})
+bll.recordCreditPayment(db, {
+    linkedTransactionId: credit4.id,
+    salesmanId: "SM-CARLOS",
+    totalRevenue: 3500,
+    paymentType: "Cash",
+    notes: "Recebido por colega",
+})
 
 // Credit sale 5 — open tab, no payment recorded
-bll.recordSale(db, { productId: "PROD-BOLO", salesmanId: "SM-ROBERTO", quantity: 5, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Lúcia S." })
+bll.recordSale(db, {
+    productId: "PROD-BOLO",
+    salesmanId: "SM-ROBERTO",
+    quantity: 5,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Lúcia S.",
+})
 
 // Credit sale 6 — open tab, no payment recorded
-bll.recordSale(db, { productId: "PROD-CHIPS", salesmanId: "SM-MARIANA", quantity: 8, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Rafael" })
+bll.recordSale(db, {
+    productId: "PROD-CHIPS",
+    salesmanId: "SM-MARIANA",
+    quantity: 8,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Rafael",
+})
 
 // Credit sale 7 — open tab, no payment recorded
-bll.recordSale(db, { productId: "PROD-SUCO", salesmanId: "SM-CARLOS", quantity: 5, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Beatriz" })
+bll.recordSale(db, {
+    productId: "PROD-SUCO",
+    salesmanId: "SM-CARLOS",
+    quantity: 5,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Beatriz",
+})
 
 // Credit sale 8 — paid with Other payment type
-const credit8 = bll.recordSale(db, { productId: "PROD-CHOCOLATE", salesmanId: "SM-JOSE", quantity: 10, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Fábio" })
-bll.recordCreditPayment(db, { linkedTransactionId: credit8.id, salesmanId: "SM-JOSE", totalRevenue: 3000, paymentType: "Other", notes: "Desconto em folha" })
+const credit8 = bll.recordSale(db, {
+    productId: "PROD-CHOCOLATE",
+    salesmanId: "SM-JOSE",
+    quantity: 10,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Fábio",
+})
+bll.recordCreditPayment(db, {
+    linkedTransactionId: credit8.id,
+    salesmanId: "SM-JOSE",
+    totalRevenue: 3000,
+    paymentType: "Other",
+    notes: "Desconto em folha",
+})
 
 log("8 credit sales (4 resolved, 3 open tabs, 1 partial), 5 credit payments recorded")
 
@@ -274,14 +634,49 @@ log("8 credit sales (4 resolved, 3 open tabs, 1 partial), 5 credit payments reco
 
 console.log("\n[7/9] Recording write-offs...")
 
-bll.recordWriteOff(db, { productId: "PROD-SANDUBA", salesmanId: "SM-CARLOS", quantity: 2, notes: "Vencimento — descarte obrigatório" })
-bll.recordWriteOff(db, { productId: "PROD-SUCO", salesmanId: "SM-MARIANA", quantity: 3, notes: "Queda na geladeira — produto danificado" })
-bll.recordWriteOff(db, { productId: "PROD-BOLO", salesmanId: "SM-JOSE", quantity: 2, notes: "Mofo — descarte" })
-bll.recordWriteOff(db, { productId: "PROD-CHIPS", salesmanId: "SM-LUCIA", quantity: 4, notes: "Pacotes amassados — baixa" })
-bll.recordWriteOff(db, { productId: "PROD-CHOCOLATE", salesmanId: "SM-ROBERTO", quantity: 5, notes: "Derretimento — sem condições de venda" })
+bll.recordWriteOff(db, {
+    productId: "PROD-SANDUBA",
+    salesmanId: "SM-CARLOS",
+    quantity: 2,
+    notes: "Vencimento — descarte obrigatório",
+})
+bll.recordWriteOff(db, {
+    productId: "PROD-SUCO",
+    salesmanId: "SM-MARIANA",
+    quantity: 3,
+    notes: "Queda na geladeira — produto danificado",
+})
+bll.recordWriteOff(db, {
+    productId: "PROD-BOLO",
+    salesmanId: "SM-JOSE",
+    quantity: 2,
+    notes: "Mofo — descarte",
+})
+bll.recordWriteOff(db, {
+    productId: "PROD-CHIPS",
+    salesmanId: "SM-LUCIA",
+    quantity: 4,
+    notes: "Pacotes amassados — baixa",
+})
+bll.recordWriteOff(db, {
+    productId: "PROD-CHOCOLATE",
+    salesmanId: "SM-ROBERTO",
+    quantity: 5,
+    notes: "Derretimento — sem condições de venda",
+})
 // Donation write-off
-bll.recordWriteOff(db, { productId: "PROD-AGUA", salesmanId: "SM-CARLOS", quantity: 12, notes: "Doação para evento beneficente" })
-bll.recordWriteOff(db, { productId: "PROD-REFRI", salesmanId: "SM-MARIANA", quantity: 6, notes: "Doação CRAS" })
+bll.recordWriteOff(db, {
+    productId: "PROD-AGUA",
+    salesmanId: "SM-CARLOS",
+    quantity: 12,
+    notes: "Doação para evento beneficente",
+})
+bll.recordWriteOff(db, {
+    productId: "PROD-REFRI",
+    salesmanId: "SM-MARIANA",
+    quantity: 6,
+    notes: "Doação CRAS",
+})
 
 log("7 write-offs recorded (spoilage, damage, donations)")
 
@@ -292,24 +687,62 @@ log("7 write-offs recorded (spoilage, damage, donations)")
 console.log("\n[8/9] Recording voids (reversals)...")
 
 // Void a cash sale (entry mistake)
-const saleToBulkVoid = bll.recordSale(db, { productId: "PROD-CAFE", salesmanId: "SM-ROBERTO", quantity: 2, totalRevenue: 700, paymentType: "Cash", notes: "Lançamento duplicado — será anulado" })
+const saleToBulkVoid = bll.recordSale(db, {
+    productId: "PROD-CAFE",
+    salesmanId: "SM-ROBERTO",
+    quantity: 2,
+    totalRevenue: 700,
+    paymentType: "Cash",
+    notes: "Lançamento duplicado — será anulado",
+})
 bll.recordVoid(db, { linkedTransactionId: saleToBulkVoid.id, notes: "Venda duplicada por engano" })
 
 // Void a restock (received wrong product)
-const restockToVoid = bll.recordRestock(db, { productId: "PROD-AGUA", salesmanId: "SM-CARLOS", quantity: 24, totalCost: 1920, notes: "Entrega errada — será anulada" })
-bll.recordVoid(db, { linkedTransactionId: restockToVoid.id, notes: "Fornecedor enviou produto errado" })
+const restockToVoid = bll.recordRestock(db, {
+    productId: "PROD-AGUA",
+    salesmanId: "SM-CARLOS",
+    quantity: 24,
+    totalCost: 1920,
+    notes: "Entrega errada — será anulada",
+})
+bll.recordVoid(db, {
+    linkedTransactionId: restockToVoid.id,
+    notes: "Fornecedor enviou produto errado",
+})
 
 // Void a write-off (registered wrong quantity)
-const writeOffToVoid = bll.recordWriteOff(db, { productId: "PROD-CHIPS", salesmanId: "SM-MARIANA", quantity: 10, notes: "Quantidade errada — será anulada" })
+const writeOffToVoid = bll.recordWriteOff(db, {
+    productId: "PROD-CHIPS",
+    salesmanId: "SM-MARIANA",
+    quantity: 10,
+    notes: "Quantidade errada — será anulada",
+})
 bll.recordVoid(db, { linkedTransactionId: writeOffToVoid.id, notes: "Erro de contagem — anulado" })
 
 // Void a credit sale before any payment (edge case — kills the debt)
-const creditToVoid = bll.recordSale(db, { productId: "PROD-REFRI", salesmanId: "SM-LUCIA", quantity: 3, totalRevenue: 0, paymentType: "OnCredit", notes: "Fiado — Carlos (anulado depois)" })
+const creditToVoid = bll.recordSale(db, {
+    productId: "PROD-REFRI",
+    salesmanId: "SM-LUCIA",
+    quantity: 3,
+    totalRevenue: 0,
+    paymentType: "OnCredit",
+    notes: "Fiado — Carlos (anulado depois)",
+})
 bll.recordVoid(db, { linkedTransactionId: creditToVoid.id, notes: "Cliente cancelou pedido" })
 
 // Void a PIX sale (customer returned product)
-const pixSaleToVoid = bll.recordSale(db, { productId: "PROD-BOLO", salesmanId: "SM-JOSE", quantity: 1, totalRevenue: 800, paymentType: "PIX", notes: "Devolução" })
-bll.recordVoid(db, { linkedTransactionId: pixSaleToVoid.id, notes: "Produto devolvido — reembolso PIX" })
+const pixSaleToVoid = bll.recordSale(db, {
+    productId: "PROD-BOLO",
+    salesmanId: "SM-JOSE",
+    quantity: 1,
+    totalRevenue: 800,
+    paymentType: "PIX",
+    notes: "Devolução",
+})
+bll.recordVoid(db, {
+    linkedTransactionId: pixSaleToVoid.id,
+    notes: "Produto devolvido — reembolso PIX",
+})
 
 log("5 voids recorded (sale, restock, write-off, credit sale, PIX sale)")
 
@@ -334,7 +767,13 @@ log("PROD-CAFE renamed to 'Café Expresso Premium'")
 // Deactivate then reactivate a product, then restock it (edge case)
 bll.updateProduct(db, "PROD-REFRI", { isActive: false })
 bll.updateProduct(db, "PROD-REFRI", { isActive: true })
-bll.recordRestock(db, { productId: "PROD-REFRI", salesmanId: "SM-CARLOS", quantity: 48, totalCost: 7200, notes: "Reposição após pausa de estoque" })
+bll.recordRestock(db, {
+    productId: "PROD-REFRI",
+    salesmanId: "SM-CARLOS",
+    quantity: 48,
+    totalCost: 7200,
+    notes: "Reposição após pausa de estoque",
+})
 log("PROD-REFRI deactivated, reactivated, and restocked")
 
 // Deactivate a salesman (soft-delete)
@@ -346,11 +785,23 @@ log("SM-ROBERTO deactivated")
 const inventory = bll.calculateInventory(db)
 const aguaStock = inventory["PROD-AGUA"] ?? 0
 if (aguaStock >= 5) {
-    bll.recordSale(db, { productId: "PROD-AGUA", salesmanId: "SM-CARLOS", quantity: 5, totalRevenue: 1250, paymentType: "Cash", notes: "Venda normal" })
+    bll.recordSale(db, {
+        productId: "PROD-AGUA",
+        salesmanId: "SM-CARLOS",
+        quantity: 5,
+        totalRevenue: 1250,
+        paymentType: "Cash",
+        notes: "Venda normal",
+    })
     const newInventory = bll.calculateInventory(db)
     const remaining = newInventory["PROD-AGUA"] ?? 0
     if (remaining > 0) {
-        bll.recordWriteOff(db, { productId: "PROD-AGUA", salesmanId: "SM-MARIANA", quantity: remaining, notes: "Descarte total — estoque zerado intencionalmente" })
+        bll.recordWriteOff(db, {
+            productId: "PROD-AGUA",
+            salesmanId: "SM-MARIANA",
+            quantity: remaining,
+            notes: "Descarte total — estoque zerado intencionalmente",
+        })
         log(`PROD-AGUA stock zeroed out (write-off of ${remaining} units)`)
     }
 }
@@ -367,8 +818,12 @@ const allTransactions = bll.listTransactions(db)
 const finalInventory = bll.calculateInventory(db)
 const debts = bll.calculateOutstandingDebts(db)
 
-console.log(`  Products:          ${allProducts.length} (${allProducts.filter((p) => p.isActive).length} active)`)
-console.log(`  Salesmen:          ${allSalesmen.length} (${allSalesmen.filter((s) => s.isActive).length} active)`)
+console.log(
+    `  Products:          ${allProducts.length} (${allProducts.filter((p) => p.isActive).length} active)`,
+)
+console.log(
+    `  Salesmen:          ${allSalesmen.length} (${allSalesmen.filter((s) => s.isActive).length} active)`,
+)
 console.log(`  Transactions:      ${allTransactions.length} total`)
 console.log(`  Open credit tabs:  ${debts.length}`)
 console.log(`  Inventory snapshot:`)
