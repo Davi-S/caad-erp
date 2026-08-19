@@ -10,6 +10,8 @@ dist-ssr/
 *.sqlite-journal
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 
 # ── Logs ─────────────────────────────────────────────────
 logs
