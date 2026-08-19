@@ -15,10 +15,12 @@
         "lint": "oxlint --fix",
         "format": "oxfmt",
         "fix": "oxlint --fix && oxfmt",
+        "knip": "knip --fix-type dependencies",
         "build:frontend": "npm --workspace=frontend run build"
     },
     "devDependencies": {
         "concurrently": "^9.1.2",
+        "knip": "^6.32.2",
         "oxfmt": "^0.62.0",
         "oxlint": "^1.71.0"
     }

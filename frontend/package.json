@@ -9,37 +9,17 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "@mantine/carousel": "^9.4.1",
-        "@mantine/charts": "^9.4.1",
-        "@mantine/code-highlight": "^9.4.1",
         "@mantine/core": "^9.4.1",
-        "@mantine/dates": "^9.4.1",
-        "@mantine/dropzone": "^9.4.1",
         "@mantine/form": "^9.4.1",
         "@mantine/hooks": "^9.4.1",
-        "@mantine/modals": "^9.4.1",
-        "@mantine/notifications": "^9.4.1",
-        "@mantine/nprogress": "^9.4.1",
-        "@mantine/spotlight": "^9.4.1",
-        "@mantine/tiptap": "^9.4.1",
         "@tanstack/react-query": "^5.101.2",
         "@tanstack/react-table": "^8.21.3",
-        "@tiptap/extension-link": "^3.28.0",
-        "@tiptap/pm": "^3.28.0",
-        "@tiptap/react": "^3.28.0",
-        "@tiptap/starter-kit": "^3.28.0",
         "@trpc/client": "^11.18.0",
         "@trpc/react-query": "^11.18.0",
-        "caad-erp-backend": "*",
-        "dayjs": "^1.11.21",
-        "embla-carousel": "^8.6.0",
-        "embla-carousel-react": "^8.6.0",
         "lucide-react": "^1.24.0",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
-        "react-qrcode-pix": "^5.0.0",
-        "react-router-dom": "^7.18.1",
-        "recharts": "^3.9.2"
+        "react-router-dom": "^7.18.1"
     },
     "devDependencies": {
         "@babel/core": "^7.29.7",
@@ -54,7 +34,6 @@
         "postcss": "^8.5.19",
         "postcss-preset-mantine": "^1.18.0",
         "postcss-simple-vars": "^7.0.1",
-        "tailwindcss": "^4.3.2",
         "typescript": "^5.9.3",
         "vite": "^8.1.1"
     }
