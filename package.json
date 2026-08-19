@@ -12,15 +12,12 @@
         "dev:frontend": "npm --workspace=frontend run dev -- --host",
         "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
         "test:backend": "npm --workspace=backend run test",
-        "test:frontend": "npm --workspace=frontend run lint",
-        "test": "npm run test:backend && npm run test:frontend",
-        "fix": "oxlint --fix && oxfmt",
-        "fix:frontend": "npm --workspace=frontend run fix",
-        "fix:backend": "npm --workspace=backend run fix",
+        "test": "npm run test:backend && npm run build:frontend",
         "lint": "oxlint",
         "lint:fix": "oxlint --fix",
         "format": "oxfmt",
         "format:check": "oxfmt --check",
+        "fix": "oxlint --fix && oxfmt",
         "build:frontend": "npm --workspace=frontend run build"
     },
     "devDependencies": {
