@@ -5,12 +5,20 @@
   "scripts": {
     "start": "cd backend && uv run caad-erp",
     "dev:backend": "cd backend && uv run caad-erp-api",
+    "dev:backend-ts": "npm --prefix backend-ts run build",
     "dev:frontend": "npm --prefix frontend run dev -- --host",
     "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
     "generate-api": "cd backend && uv run python -c \"import json; from caad_erp.api.app import create_app; print(json.dumps(create_app(skip_lifespan=True).openapi()))\" > ../frontend/src/api/openapi.json && cd ../frontend && npx openapi-typescript ./src/api/openapi.json -o ./src/api/schema.ts",
     "test:backend": "cd backend && uv run pytest",
+    "test:backend-ts": "npm --prefix backend-ts run test",
     "test:frontend": "npm --prefix frontend run lint",
     "test": "npm run test:backend && npm run test:frontend",
+    "fix": "npm run fix:frontend && npm run fix:backend-ts",
+    "fix:frontend": "npm --prefix frontend run format && npm --prefix frontend run lint:fix",
+    "fix:backend-ts": "npm --prefix backend-ts run fix",
+    "lint:backend-ts": "npm --prefix backend-ts run lint",
+    "lint:backend-ts:fix": "npm --prefix backend-ts run lint:fix",
+    "format:backend-ts": "npm --prefix backend-ts run format",
     "build:frontend": "npm --prefix frontend run build"
   },
   "devDependencies": {
