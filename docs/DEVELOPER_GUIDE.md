@@ -94,10 +94,10 @@ The user-editable configuration file is `config.ini`. All runtime code should
 resolve configuration through `caad_erp.settings`.
 
 - `[System]`
-  - `DataFile`: Path to the Excel data file.
-  - `LoungeName`: Human-readable name for the lounge; used for reports and UI
-    titles.
-  - `SchemaVersion`: Used for compatibility checks.
+    - `DataFile`: Path to the Excel data file.
+    - `LoungeName`: Human-readable name for the lounge; used for reports and UI
+      titles.
+    - `SchemaVersion`: Used for compatibility checks.
 
 #### Excel Workbook
 
@@ -107,13 +107,13 @@ through the application. It contains three sheets:
 - **`Dashboard`**: An overview of the data by using several commands and
   formulas on excel
 - **`Products`**: Catalog of all products.
-  - `ProductID`, `ProductName`, `SellPrice`, `IsActive`.
+    - `ProductID`, `ProductName`, `SellPrice`, `IsActive`.
 - **`Salesmen`**: List of users who can record sales.
-  - `SalesmanID`, `SalesmanName`, `IsActive`.
+    - `SalesmanID`, `SalesmanName`, `IsActive`.
 - **`TransactionLog`**: Immutable ledger of every event.
-  - `TransactionID`, `Timestamp`, `TransactionType`, `ProductID`, `SalesmanID`,
-    `PaymentType`, `QuantityChange`, `TotalRevenue`, `TotalCost`,
-    `LinkedTransactionID`, `Notes`.
+    - `TransactionID`, `Timestamp`, `TransactionType`, `ProductID`, `SalesmanID`,
+      `PaymentType`, `QuantityChange`, `TotalRevenue`, `TotalCost`,
+      `LinkedTransactionID`, `Notes`.
 
 ##### Separate Revenue and Cost Columns
 
@@ -405,12 +405,11 @@ so clients can filter or sort however they like.
   the public methods. Private methods (even if not explicited by the "underscore
   notation" should not be exposed.
 - **Feat: Implement Period-End Archive Script**
-  - **Task:** Create the `archive.py` script as defined in the guide.
-  - **Logic:** It will calculate final stock, prune inactive/empty products, and
-    generate `OPEN_STOCK` entries in a new, clean workbook for the next period.
+    - **Task:** Create the `archive.py` script as defined in the guide.
+    - **Logic:** It will calculate final stock, prune inactive/empty products, and
+      generate `OPEN_STOCK` entries in a new, clean workbook for the next period.
 - **Feat: Implement Automatic ID Generation**
-  - **Task:** Make `product_id` and `salesman_id` optional in creation
-    routes/commands, generating a hash/UUID automatically in the BLL.
+    - **Task:** Make `product_id` and `salesman_id` optional in creation
+      routes/commands, generating a hash/UUID automatically in the BLL.
 - Add options to pass id to read-endpoints to read specific information only
 - Add more columns in the product sheet (supplier, etc...)
-

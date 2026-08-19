@@ -1,24 +1,31 @@
 {
-  "name": "caad-erp-monorepo",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "start": "npm --prefix backend run build && node backend/dist/server.js",
-    "dev:backend": "npm --prefix backend run dev",
-    "dev:frontend": "npm --prefix frontend run dev -- --host",
-    "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "test:backend": "npm --prefix backend run test",
-    "test:frontend": "npm --prefix frontend run lint",
-    "test": "npm run test:backend && npm run test:frontend",
-    "fix": "npm run fix:frontend && npm run fix:backend",
-    "fix:frontend": "npm --prefix frontend run format && npm --prefix frontend run lint:fix",
-    "fix:backend": "npm --prefix backend run fix",
-    "lint:backend": "npm --prefix backend run lint",
-    "lint:backend:fix": "npm --prefix backend run lint:fix",
-    "format:backend": "npm --prefix backend run format",
-    "build:frontend": "npm --prefix frontend run build"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.2"
-  }
+    "name": "caad-erp-monorepo",
+    "version": "0.1.0",
+    "private": true,
+    "workspaces": [
+        "backend",
+        "frontend"
+    ],
+    "scripts": {
+        "start": "npm --workspace=backend run build && node backend/dist/server.js",
+        "dev:backend": "npm --workspace=backend run dev",
+        "dev:frontend": "npm --workspace=frontend run dev -- --host",
+        "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "test:backend": "npm --workspace=backend run test",
+        "test:frontend": "npm --workspace=frontend run lint",
+        "test": "npm run test:backend && npm run test:frontend",
+        "fix": "oxlint --fix && oxfmt",
+        "fix:frontend": "npm --workspace=frontend run fix",
+        "fix:backend": "npm --workspace=backend run fix",
+        "lint": "oxlint",
+        "lint:fix": "oxlint --fix",
+        "format": "oxfmt",
+        "format:check": "oxfmt --check",
+        "build:frontend": "npm --workspace=frontend run build"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2",
+        "oxfmt": "^0.62.0",
+        "oxlint": "^1.71.0"
+    }
 }
