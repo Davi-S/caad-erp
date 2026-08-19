@@ -9,14 +9,15 @@
 ## Motivation
 
 When managing inventory, sales, and tab debts, student lounges had to rely on
-over-engineered POS systems or overly simple Excel sheets.
+over-engineered commercial POS systems or fragile spreadsheet setups.
 
-To solve this, I built **CAAD ERP**, a simple inventory and sales management
-system specifically tailored for student lounge operations.
+To solve this, **CAAD ERP** provides a lightweight, highly responsive inventory
+and sales management system specifically tailored for student lounge operations.
 
-The project pairs Python business logic and a modern React web interface with an
-Excel-based "source of truth" so non-technical managers can trust the data and
-analyze it with the tools they already know.
+Built as a **100% end-to-end TypeScript monorepo**, CAAD ERP combines a Node.js
+backend (SQLite + Drizzle ORM + tRPC) with a modern React web interface
+(Mantine + Vite + React Query), delivering sub-millisecond execution speeds and
+complete end-to-end type safety.
 
 ---
 
@@ -27,125 +28,111 @@ analyze it with the tools they already know.
 - **Point of Sale (POS):** Interactive cart and checkout flow, salesman
   selection screen, and payment confirmation (including Mercado Pago PIX QR
   codes).
-- **Customer Display Mode:** Separate customer-facing display view for checkout
-  transparency.
-- **Product Management:** Tools to add, edit, or remove items from the catalog.
-- **Salesmen Management:** Register, update, and toggle active status of
-  salespeople.
+- **Customer Display Mode:** Dedicated customer-facing display view for
+  real-time checkout transparency.
+- **Product Management:** Tools to add, edit, or toggle active status of items
+  in the catalog.
+- **Salesmen Management:** Register, update, and manage salespeople.
 - **Stock Management:** Direct control over inventory levels with restock and
   write-off modal workflows.
 
-### Backend & Core Ledger
+### Backend and Core Ledger
 
-- **Append-only Transaction Ledger:** `TransactionLog` guarantees an auditable,
-  immutable history.
-- **Excel Source of Truth:** OpenPyXL integration using locked Excel workbooks
-  for transparent record-keeping.
-- **FastAPI REST Server:** Headless HTTP API with OpenAPI schema support for
-  local network operation.
+- **Append-only Transaction Ledger:** SQLite-backed immutable transaction log
+  providing a complete, auditable history of all sales, restocks, write-offs,
+  credit payments, and reversals.
+- **Zero-Config Portable Storage:** High-performance in-process SQLite database
+  (`better-sqlite3`) requiring zero database server setup or maintenance.
+- **End-to-End Type Safety:** tRPC presentation layer (`@trpc/server` /
+  `@trpc/client`) providing instant, compile-time autocomplete and type checking
+  from database schema to React components.
+- **Pure Functional Layering:** Clear separation into Data Access Layer (DAL),
+  Business Logic Layer (BLL with colocated Zod validation), and tRPC
+  Presentation Layer.
 
 ---
 
-## Quick Start & Installation
+## Quick Start and Installation
 
 ### Prerequisites
 
-- **Python 3.12+** and [`uv`](https://docs.astral.sh/uv/)
 - **Node.js 18+** and `npm`
+
+---
 
 ### Windows 1-Click Quick Start
 
-If you are running on Windows, you can perform full environment setup and launch the application with a single click:
+If you are running on Windows, perform full environment setup and launch the
+application with a single click:
 
 1. Clone or download the repository.
 2. Double-click `start.bat` in the root folder.
 
-_(On the first run, `start.bat` will automatically check/install missing prerequisites via `winget`, set up the virtual environment, install packages, build frontend assets, and launch the app in your default browser)._
-
-### Windows 1-Click Update
-
-To update CAAD ERP to the latest version while preserving your configuration (`.env`) and data (`master_workbook.xlsx`):
-
-1. Double-click `update.bat` in the root folder.
-
-_(This script backs up your user data and environment files, pulls the latest updates from the `main` branch, updates dependencies, rebuilds frontend assets, and restores your files)._
+_(On the first run, `start.bat` checks for Node.js via `winget`, installs all
+workspace dependencies via `npm install`, builds production frontend assets, and
+launches the application in your default browser)._
 
 ---
 
 ### Manual / Linux Installation
 
-#### 1. Clone & Install Dependencies
+#### 1. Clone and Install Workspace Dependencies
 
 ```bash
 git clone https://github.com/Davi-S/caad-erp.git
 cd caad-erp
 
-# Install root orchestration tools (concurrently)
+# Install and link all npm workspace dependencies (backend and frontend)
 npm install
-
-# Setup backend Python environment
-cd backend
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[api,test]"
-cd ..
-
-# Setup frontend Node environment
-cd frontend
-npm install
-cd ..
 ```
 
 ---
 
-## Development & Running the Application
+## Development and Running the Application
 
-### Production / Unified Single-Process Mode
+### Development Mode (Concurrent Backend and Frontend)
 
-To run the complete application in production or local network mode using a single process:
-
-```bash
-# Build production frontend assets (only on the first run)
-npm run build:frontend
-
-# Start full unified app (http://0.0.0.0:8000)
-npm start
-# or: cd backend && uv run caad-erp
-```
-
-### Development Mode
-
-To run both services concurrently with hot-reloading:
+To launch both the backend tRPC server (Port 8000) and frontend Vite dev server
+(Port 5173) with hot-reloading:
 
 ```bash
-# Launch FastAPI backend (http://0.0.0.0:8000) and Vite frontend (http://0.0.0.0:5173)
 npm run dev
 ```
 
-### Run Services Individually
+### Production / Unified Single-Process Mode
+
+To build and run the full application in production mode:
 
 ```bash
-# Start backend API server only (no static frontend)
+# Build production frontend static bundle
+npm run build:frontend
+
+# Start unified server
+npm start
+```
+
+### Run Workspace Commands Individually
+
+```bash
+# Start backend TypeScript compiler in watch mode
 npm run dev:backend
 
 # Start frontend Vite server only
 npm run dev:frontend
+
+# Run full Vitest backend test suite (89 unit and integration tests)
+npm test
+
+# Lint and format all monorepo files (Oxlint and Oxfmt)
+npm run fix
 ```
 
 ---
 
-## Roadmap & Future Enhancements
+## Contributing and Documentation
 
-- **Log Audit & Void UI:** Web UI capabilities to review transaction logs and
-  void entries directly.
-- **Analytics & Reports Dashboard:** Visual analytics for profit margins, sales
-  summaries, and debt tracking.
+Please check the following documentation resources:
 
----
-
-## Contributing & Documentation
-
-Contributions are welcome! Please check the following resources:
-
-- [Developer Guide](./docs/DEVELOPER_GUIDE.md) - Monorepo architecture, testing
-  workflows, offline API codegen, and system design.
+- [Developer Guide](./docs/DEVELOPER_GUIDE.md)
+- [Backend README](./backend/README.md)
+- [Frontend README](./frontend/README.md)
