@@ -196,9 +196,6 @@ revenue, and cost deltas.
 - `CREDIT_PAYMENT`: Captures payment received for an earlier credit sale.
 - `VOID`: Exact reversing entry linked to the target transaction being negated.
 
-For comprehensive operational guides detailing how to run each workflow, see
-[User & System Workflows](./WORKFLOWS.md).
-
 ---
 
 ## Detailed Rationale and System Decisions (Q&A)
