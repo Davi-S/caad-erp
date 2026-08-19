@@ -5,6 +5,10 @@ system rationale, and development workflows for the CAAD ERP project. It serves
 as the primary technical reference for developers maintaining or extending the
 codebase.
 
+> For complete user-facing and operational guides detailing how all features
+> work (POS checkouts, credit tabs, restocks, write-offs, voids, etc.), refer to
+> the [User and System Workflows Guide](./WORKFLOWS.md).
+
 ---
 
 ## System Overview and Guiding Principles
@@ -48,7 +52,9 @@ caad-erp/
 ├── frontend/           # Frontend Workspace (React 19 + Vite + Mantine + React Query)
 │   ├── src/            # Features (POS, Stock, Salesmen, Home), components, and hooks
 │   └── package.json    # Frontend package definition
-├── docs/               # Technical specifications and developer guide
+├── docs/               # Technical specifications, developer guide, and workflows
+│   ├── DEVELOPER_GUIDE.md # Technical architecture and design rationale
+│   └── WORKFLOWS.md       # Complete user and system operations guide
 ├── package.json        # Root npm Workspaces orchestration and shared scripts
 ├── .oxlintrc.json      # Shared monorepo linting rules
 ├── .oxfmtrc.json      # Shared monorepo code formatting rules
@@ -131,12 +137,12 @@ analytics calculations, and validation logic.
 
 - **Two-Tier Validation Strategy:** Validation is split into two complementary
   phases:
-  - _Stateless Boundary Validation:_ Zod schemas validate structural types,
-    string length, and numeric bounds synchronously before reaching domain
-    handlers.
-  - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
-    rules (such as checking stock availability, active flags, or credit line
-    links).
+    - _Stateless Boundary Validation:_ Zod schemas validate structural types,
+      string length, and numeric bounds synchronously before reaching domain
+      handlers.
+    - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
+      rules (such as checking stock availability, active flags, or credit line
+      links).
 
 ### Presentation Layer (tRPC Routers)
 
@@ -171,9 +177,9 @@ BLL handlers.
   received (positive number), while `totalCost` tracks inventory spend (stored
   as a negative number). Using separate columns keeps financial calculations
   straightforward:
-  - Gross Revenue: `SUM(total_revenue)`
-  - Total Inventory Cost: `SUM(total_cost)`
-  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
+    - Gross Revenue: `SUM(total_revenue)`
+    - Total Inventory Cost: `SUM(total_cost)`
+    - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
 - **Dynamic Stock Level Calculation:** On-hand inventory stock is derived
   dynamically via `SUM(quantity_change)` across the transaction ledger rather
   than maintaining mutable stock counters.
@@ -186,7 +192,7 @@ BLL handlers.
 
 ---
 
-## Core Domain Workflows and Ledger Rules
+## Core Domain Rules and Ledger Principles
 
 ### Append-Only Immutability
 
@@ -194,7 +200,7 @@ Transactions are **never deleted or updated**. Reversals use the **Reversal and
 Re-entry** method by appending a `VOID` transaction that flips quantity,
 revenue, and cost deltas.
 
-### Transaction Types
+### Transaction Types and Ledger Delimiters
 
 - `SALE`: Reduces stock (negative quantity change) and logs revenue.
 - `RESTOCK`: Increases stock (positive quantity change) and records inventory
@@ -203,97 +209,6 @@ revenue, and cost deltas.
   donations).
 - `CREDIT_PAYMENT`: Captures payment received for an earlier credit sale.
 - `VOID`: Exact reversing entry linked to the target transaction being negated.
-
-### Discounts and Custom Price Overrides Workflow
-
-Discounts and custom pricing are handled flexibly during cash, PIX, or other
-immediate-payment checkouts by allowing any `totalRevenue` amount to be
-specified on the `SALE` entry, even if it differs from the product catalog's
-default `sellPrice`. For example, selling a
-$5.50 catalog item at a discounted rate of $4.00 records `totalRevenue = 400` on
-the transaction.
-
-### Inventory Write-Offs, Spoilage, Damage, and Donations Workflow
-
-Items that leave inventory without generating immediate revenue (such as spoiled
-goods, damaged stock, lost inventory, or lounge event donations) are recorded
-via `WRITE_OFF` transactions (`recordWriteOff`).
-
-- **Inventory Effect:** Reduces on-hand stock (`quantityChange` is negative).
-- **Financial Effect:** Both `totalRevenue` and `totalCost` are recorded as `0`.
-- **Audit Traceability:** Optional `notes` explain the business reason (e.g.
-  "Donated to student event", "Expired item", "Damaged in transport").
-
-### Restocks and Inventory Purchasing Workflow
-
-Restocks are logged via `RESTOCK` transactions (`recordRestock`).
-
-- **Inventory Effect:** Increases available stock (`quantityChange` is
-  positive).
-- **Financial Effect:** Records total inventory purchase cost in `totalCost`
-  (stored as a negative integer representing cents). `totalRevenue` is recorded
-  as `0`.
-- **Zero-Cost Restocks (`totalCost = 0`):** Initial purchase cost can be zero
-  (`totalCost = 0`) for donated stock (such as alumni or sponsor donations),
-  vendor promotional samples, or zero-cost inventory adjustments. Zero-cost
-  restocks increase available inventory without incurring cash expense, allowing
-  subsequent sales of donated items to contribute 100% of their revenue directly
-  to net profit.
-
-### Bulk Sales and Atomic Cart Checkout Workflow
-
-Bulk sales capture shopping cart checkouts where a customer purchases multiple
-items in a single transaction. The workflow operates in two phases:
-
-- **Validation Phase:** Validates every sale item in the cart (product
-  existence, active status, salesman active status, positive quantities, stock
-  availability). If any item fails validation, the operation aborts immediately
-  and zero entries are recorded.
-- **Execution Phase:** Appends all sale transactions to the ledger in sequence
-  within a single atomic database context pass.
-
-### Flexible Credit Tab Management Workflow
-
-- **Zero Revenue Enforcement:** Credit sales are validated at the schema
-  boundary to ensure `totalRevenue = 0`. Storing zero revenue at checkout allows
-  to know which type of payment was actually made. Partial payments on sale
-  (followed by other on credit payments) can be recorded as sequential SALE and
-  CREDIT_PAYMENT transactions.
-- **Expected Debt Calculation:** Outstanding debt analytics
-  (`calculateOutstandingDebts`) derive expected debt amounts directly from
-  catalog product prices (`product.sellPrice * quantity`) and subtract all
-  non-voided `CREDIT_PAYMENT` entries linked to that credit sale.
-- **Partial Payments and Overpayments:** Customers can make multiple partial
-  payments over time via `CREDIT_PAYMENT` transactions (using `Cash`, `PIX`, or
-  `Other`). Payments are recorded as received, allowing for interest or partial
-  settlements.
-
-### Error Correction and Voiding Workflow
-
-A `VOID` transaction reverses an entry by negating quantity, revenue, and cost
-deltas while referencing the target transaction ID.
-
-`VOID` entries themselves cannot be voided, preventing infinite reversal loops.
-
-### Product Catalog Price Changes and Historical Ledger Independence Workflow
-
-Updating a product's default catalog `sellPrice` (for example, increasing an
-item's price from $5.00 to $6.00 via `updateProduct`) updates the suggested
-default price for future checkouts and new credit tab calculations.
-
-- **Historical Ledger Immutability:** Existing `SALE` entries in the append-only
-  ledger retain their original `totalRevenue` (e.g. $5.00). Historical revenue,
-  cost, and net profit calculations reflect actual past transactions without
-  being retroactively altered by catalog price updates.
-- **Credit Tab Calculations and Operational Caveat:** Outstanding debt
-  calculations (`calculateOutstandingDebts`) evaluate credit sales using the
-  current catalog `sellPrice` of the product. Developers and lounge managers
-  must exercise care when updating catalog prices: if a credit sale was recorded
-  when a product cost $5.00 and the customer paid $5.00, increasing the catalog
-  `sellPrice` to
-  $6.00 later will cause `calculateOutstandingDebts` to compute expected debt as $6.00
-  and report a pending balance of $1.00 even though the debt was previously
-  satisfied.
 
 ---
 
@@ -351,25 +266,6 @@ filtering.
 - **Client Flexibility:** Returning the full dataset allows frontend UI screens
   to filter active items for checkout screens while showing full management
   lists (with active status toggles) on administrative screens.
-
----
-
-## Frontend Feature Architecture and Customer Display
-
-The frontend UI is organized into feature modules:
-
-- **Point of Sale (POS):** Checkout screen featuring salesman selection, cart
-  management, payment method selection (Cash, Credit, PIX, Other), and Mercado
-  Pago PIX QR code integration.
-- **Customer Display Mode (`/display`):** Dedicated customer-facing display view
-  that mirrors active POS checkouts in real time, providing customer
-  transparency.
-- **Product Management:** Modal interfaces to register new products, update
-  prices, or toggle active catalog status.
-- **Salespeople Management:** Interface to manage salespeople and their active
-  status.
-- **Stock Management:** Inventory control view with modal workflows for restocks
-  and write-offs.
 
 ---
 
