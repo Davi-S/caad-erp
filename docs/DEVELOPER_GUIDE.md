@@ -137,12 +137,12 @@ analytics calculations, and validation logic.
 
 - **Two-Tier Validation Strategy:** Validation is split into two complementary
   phases:
-    - _Stateless Boundary Validation:_ Zod schemas validate structural types,
-      string length, and numeric bounds synchronously before reaching domain
-      handlers.
-    - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
-      rules (such as checking stock availability, active flags, or credit line
-      links).
+  - _Stateless Boundary Validation:_ Zod schemas validate structural types,
+    string length, and numeric bounds synchronously before reaching domain
+    handlers.
+  - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
+    rules (such as checking stock availability, active flags, or credit line
+    links).
 
 ### Presentation Layer (tRPC Routers)
 
@@ -177,9 +177,9 @@ BLL handlers.
   received (positive number), while `totalCost` tracks inventory spend (stored
   as a negative number). Using separate columns keeps financial calculations
   straightforward:
-    - Gross Revenue: `SUM(total_revenue)`
-    - Total Inventory Cost: `SUM(total_cost)`
-    - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
+  - Gross Revenue: `SUM(total_revenue)`
+  - Total Inventory Cost: `SUM(total_cost)`
+  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
 - **Dynamic Stock Level Calculation:** On-hand inventory stock is derived
   dynamically via `SUM(quantity_change)` across the transaction ledger rather
   than maintaining mutable stock counters.
@@ -271,18 +271,6 @@ filtering.
 
 ## Testing and Quality Assurance
 
-### Vitest Integration and Unit Test Hierarchy
-
-All backend layers are tested using Vitest against isolated in-memory SQLite
-databases (`:memory:`):
-
-- **Data Access Tests (`backend/tests/dal/`):** Verify schema mapping, query
-  execution, and database constraints.
-- **Business Logic Tests (`backend/tests/bll/`):** Verify domain workflows,
-  validation rules, stock limits, credit tracking, and void reversals.
-- **Service Layer Tests (`backend/tests/trpc/`):** Verify procedure routing,
-  input parsing, and error status code translations.
-
 ### Test Structure Standards
 
 Test cases follow:
@@ -293,8 +281,3 @@ Test cases follow:
   `GIVEN an OnCredit sale WHEN recordCreditPayment is called THEN...`) to
   document intent.
 
-### Unified Monorepo Tooling (Oxc)
-
-The project uses Oxc (`oxlint` and `oxfmt`) configured at the root
-(`.oxlintrc.json` and `.oxfmtrc.json`) to enforce code formatting
-(`tabWidth: 4`, `semi: false`) and lint rules across all workspace packages.
