@@ -199,11 +199,54 @@ revenue, and cost deltas.
 - `SALE`: Reduces stock (negative quantity change) and logs revenue.
 - `RESTOCK`: Increases stock (positive quantity change) and records inventory
   spend (negative total cost).
-- `WRITE_OFF`: Reduces stock without revenue (spoilage, loss, or damage).
+- `WRITE_OFF`: Reduces stock without revenue (spoilage, loss, damage, or
+  donations).
 - `CREDIT_PAYMENT`: Captures payment received for an earlier credit sale.
 - `VOID`: Exact reversing entry linked to the target transaction being negated.
 
-### Flexible Credit Tab Management
+### Discounts and Custom Price Overrides Workflow
+
+Discounts and custom pricing are handled flexibly during cash, PIX, or other
+immediate-payment checkouts by allowing any `totalRevenue` amount to be
+specified on the `SALE` entry, even if it differs from the product catalog's
+default `sellPrice`. For example, selling a
+$5.50 catalog item at a discounted rate of $4.00 records `totalRevenue = 400` on
+the transaction.
+
+### Inventory Write-Offs, Spoilage, Damage, and Donations Workflow
+
+Items that leave inventory without generating immediate revenue (such as spoiled
+goods, damaged stock, lost inventory, or lounge event donations) are recorded
+via `WRITE_OFF` transactions (`recordWriteOff`).
+
+- **Inventory Effect:** Reduces on-hand stock (`quantityChange` is negative).
+- **Financial Effect:** Both `totalRevenue` and `totalCost` are recorded as `0`.
+- **Audit Traceability:** Optional `notes` explain the business reason (e.g.
+  "Donated to student event", "Expired item", "Damaged in transport").
+
+### Restocks and Inventory Purchasing Workflow
+
+Restocks are logged via `RESTOCK` transactions (`recordRestock`).
+
+- **Inventory Effect:** Increases available stock (`quantityChange` is
+  positive).
+- **Financial Effect:** Records total inventory purchase cost in `totalCost`
+  (stored as a negative integer representing cents). `totalRevenue` is recorded
+  as `0`.
+
+### Bulk Sales and Atomic Cart Checkout Workflow
+
+Bulk sales capture shopping cart checkouts where a customer purchases multiple
+items in a single transaction. The workflow operates in two phases:
+
+- **Validation Phase:** Validates every sale item in the cart (product
+  existence, active status, salesman active status, positive quantities, stock
+  availability). If any item fails validation, the operation aborts immediately
+  and zero entries are recorded.
+- **Execution Phase:** Appends all sale transactions to the ledger in sequence
+  within a single atomic database context pass.
+
+### Flexible Credit Tab Management Workflow
 
 - **Zero Revenue Enforcement:** Credit sales are validated at the schema
   boundary to ensure `totalRevenue = 0`. Storing zero revenue at checkout allows
@@ -219,7 +262,7 @@ revenue, and cost deltas.
   `Other`). Payments are recorded as received, allowing for interest or partial
   settlements.
 
-### Error Correction and Voiding Credit Payments
+### Error Correction and Voiding Workflow
 
 A `VOID` transaction reverses an entry by negating quantity, revenue, and cost
 deltas while referencing the target transaction ID.
