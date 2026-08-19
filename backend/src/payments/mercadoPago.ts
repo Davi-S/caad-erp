@@ -104,7 +104,7 @@ async function handleCreatePix(req: IncomingMessage, res: ServerResponse): Promi
                 description: description.trim(),
                 payment_method_id: "pix",
                 payer: {
-                    email: "cliente@caad.erp",
+                    email: "cliente@caad.com.br",
                 },
             },
         })
@@ -118,8 +118,21 @@ async function handleCreatePix(req: IncomingMessage, res: ServerResponse): Promi
         }
 
         sendJson(res, 200, { id: paymentId, qr_code_base64: qrCodeBase64 })
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Erro interno ao criar pagamento PIX"
+    } catch (err: any) {
+        let message = "Erro interno ao criar pagamento PIX"
+        if (err && typeof err === "object") {
+            if (err.cause) {
+                if (Array.isArray(err.cause)) {
+                    message = err.cause.map((c: any) => c.description || c.code || JSON.stringify(c)).join("; ")
+                } else if (typeof err.cause === "string") {
+                    message = err.cause
+                } else {
+                    message = JSON.stringify(err.cause)
+                }
+            } else if (err.message) {
+                message = err.message
+            }
+        }
         console.error("[payments] POST /api/payments/pix failed:", message)
         sendError(res, 502, message)
     }

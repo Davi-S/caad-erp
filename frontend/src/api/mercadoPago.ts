@@ -17,7 +17,8 @@ export async function createPixPayment(
         body: JSON.stringify({ transactionAmount, description }),
     })
     if (!res.ok) {
-        throw new Error("Falha ao gerar QR Code PIX.")
+        const errData = await res.json().catch(() => null)
+        throw new Error(errData?.error || `Falha ao gerar QR Code PIX (HTTP ${res.status}).`)
     }
     return res.json()
 }
@@ -27,7 +28,8 @@ export async function checkPaymentStatus(
 ): Promise<PaymentStatusResponse> {
     const res = await fetch(`/api/payments/pix/${paymentId}`)
     if (!res.ok) {
-        throw new Error("Falha ao verificar status do pagamento.")
+        const errData = await res.json().catch(() => null)
+        throw new Error(errData?.error || `Falha ao verificar status do pagamento (HTTP ${res.status}).`)
     }
     return res.json()
 }
