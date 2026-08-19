@@ -19,8 +19,11 @@ import {
     FileSpreadsheet,
     Monitor,
     ExternalLink,
+    Upload,
 } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
+import { trpcClient } from "@/utils/trpc"
+import { ImportWorkbookModal } from "./components/ImportWorkbookModal"
 
 interface NavItem {
     to: string
@@ -54,20 +57,25 @@ const MANAGEMENT_ITEMS: NavItem[] = [
 export function HomePage() {
     const navigate = useNavigate()
     const [isDownloading, setIsDownloading] = useState(false)
+    const [importModalOpened, setImportModalOpened] = useState(false)
 
     const handleDownloadWorkbook = async () => {
         setIsDownloading(true)
         try {
-            const res = await fetch("/reports/workbook")
-            if (!res.ok) {
-                console.error("Failed to download workbook:", res.statusText)
-                return
+            const data = await trpcClient.reports.exportWorkbook.query()
+            const binaryStr = window.atob(data.base64)
+            const len = binaryStr.length
+            const bytes = new Uint8Array(len)
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryStr.charCodeAt(i)
             }
-            const blob = await res.blob()
+            const blob = new Blob([bytes], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            })
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement("a")
             a.href = url
-            a.download = "workbook.xlsx"
+            a.download = data.filename || "caad_erp_workbook.xlsx"
             document.body.appendChild(a)
             a.click()
             a.remove()
@@ -85,8 +93,16 @@ export function HomePage() {
 
     return (
         <ScreenShell>
-            <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto" offsetScrollbars>
-                <Stack justify="center" gap="xl" py="lg" style={{ minHeight: "100%" }}>
+            <ImportWorkbookModal
+                opened={importModalOpened}
+                onClose={() => setImportModalOpened(false)}
+            />
+            <ScrollArea
+                style={{ flex: 1, minHeight: 0, width: "100%" }}
+                type="auto"
+                offsetScrollbars
+            >
+                <Stack gap="xl" py="lg" style={{ width: "100%" }}>
                     {/* Header */}
                     <Group justify="space-between" align="center">
                         <Stack gap={4}>
@@ -103,15 +119,25 @@ export function HomePage() {
                                 O que vamos fazer?
                             </Title>
                         </Stack>
-                        <Button
-                            variant="light"
-                            size="xs"
-                            leftSection={<FileSpreadsheet size={16} />}
-                            loading={isDownloading}
-                            onClick={handleDownloadWorkbook}
-                        >
-                            Baixar Planilha
-                        </Button>
+                        <Group gap="xs">
+                            <Button
+                                variant="light"
+                                size="xs"
+                                leftSection={<Upload size={16} />}
+                                onClick={() => setImportModalOpened(true)}
+                            >
+                                Importar Planilha
+                            </Button>
+                            <Button
+                                variant="light"
+                                size="xs"
+                                leftSection={<FileSpreadsheet size={16} />}
+                                loading={isDownloading}
+                                onClick={handleDownloadWorkbook}
+                            >
+                                Baixar Planilha
+                            </Button>
+                        </Group>
                     </Group>
 
                     {/* POS: the primary operational tool, visually distinct from the rest */}
