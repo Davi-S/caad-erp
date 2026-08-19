@@ -1,8 +1,8 @@
 # Developer Guide
 
-This guide captures the architecture, high-level design decisions, system
-rationale, and development workflows for the CAAD ERP project. It serves as the
-primary technical reference for developers maintaining or extending the
+This guide captures the internal architecture decisions, design principles,
+system rationale, and development workflows for the CAAD ERP project. It serves
+as the primary technical reference for developers maintaining or extending the
 codebase.
 
 ---
@@ -16,10 +16,10 @@ salespeople, inventory levels, credit tab tracking, and financial analytics.
 The system is built around several core architectural principles:
 
 - **Immutability and Auditability:** All financial and stock events are recorded
-  in an append-only ledger. Data is never deleted or overwritten in place,
-  guaranteeing a complete audit trail.
-- **End-to-End Type Safety:** Strict static typing spans from database tables up
-  through domain models and tRPC service procedures directly into React UI
+  in an append-only transaction ledger. Data is never deleted or overwritten in
+  place, guaranteeing a complete audit trail.
+- **End-to-End Type Safety:** Strict static typing spans from database tables
+  (Drizzle ORM) through service contracts (tRPC) directly into React UI
   components and hooks without manual code generation.
 - **Zero-Configuration Local Deployment:** The application runs embedded without
   external database processes, making installation, backups, and local network
@@ -68,24 +68,15 @@ an external database server like PostgreSQL or MySQL.
   database daemon, user permissions, or port configurations required).
 - **Single-File Portability:** All application state is stored in a single
   portable file (`caad_erp.db`), simplifying backups and migration.
-- **In-Process Performance:** Queries execute in-process with zero network
-  socket latency, providing sub-millisecond execution speeds that exceed the
-  requirements of local POS checkouts.
 
 ### Explicit Schema Design (Drizzle ORM)
 
 Drizzle ORM provides lightweight, type-safe SQL query generation without runtime
 abstraction overhead.
 
-- **Boolean Type Mapping:** SQLite lacks a native boolean column type and stores
-  flags as integers (`1` or `0`). Drizzle handles two-way conversion
-  automatically between TypeScript booleans and SQLite integers.
 - **Explicit Constraints over Fallbacks:** Non-null columns are declared without
   implicit default fallbacks. Creation functions require callers to explicitly
   supply all attributes, preventing silent data fallbacks.
-- **Constrained Union Enums:** Transaction types and payment methods are
-  declared as strict database string enums, enforcing valid domain values at
-  compile time.
 
 ### End-to-End Contract Typing (tRPC)
 
@@ -117,7 +108,7 @@ Query.
 
 ## Layered System Architecture
 
-The backend follows a strict 3-layer architecture:
+The backend follows a 3-layer architecture:
 
 ```mermaid
 graph TD
@@ -146,10 +137,6 @@ analytics calculations, and validation logic.
   - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
     rules (such as checking stock availability, active flags, or credit line
     links).
-- **Colocated Schemas and Handlers:** Validation schemas and command payload
-  types are colocated directly alongside their handler functions (`products.ts`,
-  `salesmen.ts`, `transactions.ts`), keeping workflow definitions concise and
-  self-contained.
 
 ### Presentation Layer (tRPC Routers)
 
@@ -160,38 +147,69 @@ BLL handlers.
 
 ---
 
+## Data Model and Column Representation Conventions
+
+### Relational Tables
+
+- **`products` Table:** Stores catalog items with `product_id` (text primary
+  key), `product_name`, `sell_price` (integer cents), and `is_active` (boolean
+  flag).
+- **`salesmen` Table:** Stores sales staff with `salesman_id` (text primary
+  key), `salesman_name`, and `is_active` (boolean flag).
+- **`transactions` Table:** Append-only ledger recording `transaction_id`,
+  `timestamp_iso`, `transaction_type`, `product_id`, `salesman_id`,
+  `payment_type`, `quantity_change`, `total_revenue`, `total_cost`,
+  `linked_transaction_id`, and `notes`.
+
+### Data Representation Conventions
+
+- **Monetary Values as Integer Cents:** All monetary fields (`sellPrice`,
+  `totalRevenue`, `totalCost`) are stored as integers representing cents (e.g.
+  $5.50 = `550`). This avoids floating-point rounding errors during financial
+  summations.
+- **Separate Revenue and Cost Columns:** `totalRevenue` tracks gross money
+  received (positive number), while `totalCost` tracks inventory spend (stored
+  as a negative number). Using separate columns keeps financial calculations
+  straightforward:
+  - Gross Revenue: `SUM(total_revenue)`
+  - Total Inventory Cost: `SUM(total_cost)`
+  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
+- **Dynamic Stock Level Calculation:** On-hand inventory stock is derived
+  dynamically via `SUM(quantity_change)` across the transaction ledger rather
+  than maintaining mutable stock counters.
+- **Catalog Sell Price Purpose:** `sellPrice` in the product catalog is a
+  suggested default price for UI convenience and debt calculation. The actual
+  money collected for any transaction is captured explicitly in `totalRevenue`.
+- **Foreign Keys and Reversal Links:** `productId` and `salesmanId` enforce
+  relational consistency. `linkedTransactionId` connects credit payments back to
+  their original sale and connects void entries to the transaction they reverse.
+
+---
+
 ## Core Domain Workflows and Ledger Rules
 
-### Append-Only Transaction Ledger
+### Append-Only Immutability
 
-All inventory movements and financial events are recorded in an append-only
-`transactions` table.
+Transactions are **never deleted or updated**. Reversals use the **Reversal and
+Re-entry** method by appending a `VOID` transaction that flips quantity,
+revenue, and cost deltas.
 
-- **Transaction Types:**
-  - `SALE`: Decreases stock and records gross revenue.
-  - `RESTOCK`: Increases stock and records inventory spend.
-  - `WRITE_OFF`: Decreases stock without revenue (spoilage, loss, or damage).
-  - `CREDIT_PAYMENT`: Records money collected toward a prior credit sale.
-  - `VOID`: Exact reversing entry referencing a negated transaction.
+### Transaction Types
 
-### Stock Availability Enforcement
-
-Sales and write-offs strictly enforce inventory availability. The business logic
-calculates dynamic stock balances by summing quantity changes across the
-transaction ledger, rejecting any operation where requested items exceed on-hand
-inventory. Bulk checkouts validate aggregate cart quantities across all line
-items atomically before recording entries.
+- `SALE`: Reduces stock (negative quantity change) and logs revenue.
+- `RESTOCK`: Increases stock (positive quantity change) and records inventory
+  spend (negative total cost).
+- `WRITE_OFF`: Reduces stock without revenue (spoilage, loss, or damage).
+- `CREDIT_PAYMENT`: Captures payment received for an earlier credit sale.
+- `VOID`: Exact reversing entry linked to the target transaction being negated.
 
 ### Flexible Credit Tab Management
 
-Sales recorded on credit (`paymentType = "OnCredit"`) strictly enforce zero
-initial revenue (`totalRevenue = 0`). This design guarantees that cash-basis
-revenue calculations (`calculateTotalRevenue`) never double-count revenue when
-customer payments are collected later.
-
 - **Zero Revenue Enforcement:** Credit sales are validated at the schema
-  boundary to ensure `totalRevenue = 0`. Storing zero revenue at checkout
-  prevents inflating total revenue before cash is physically received.
+  boundary to ensure `totalRevenue = 0`. Storing zero revenue at checkout allows
+  to know which type of payment was actually made. Partial payments on sale
+  (followed by other on credit payments) can be recorded as sequential SALE and
+  CREDIT_PAYMENT transactions.
 - **Expected Debt Calculation:** Outstanding debt analytics
   (`calculateOutstandingDebts`) derive expected debt amounts directly from
   catalog product prices (`product.sellPrice * quantity`) and subtract all
@@ -201,13 +219,12 @@ customer payments are collected later.
   `Other`). Payments are recorded as received, allowing for interest or partial
   settlements.
 
-### Reversal and Void Workflow
+### Error Correction and Voiding Credit Payments
 
-To correct errors without altering history, the system uses a
-reversal-and-re-entry approach. A `VOID` transaction reverses a prior entry by
-negating quantity, revenue, and cost deltas while referencing the target entry
-ID. Voids automatically restore inventory levels or unpaid credit debt. To
-prevent infinite loops, `VOID` entries themselves cannot be voided.
+A `VOID` transaction reverses an entry by negating quantity, revenue, and cost
+deltas while referencing the target transaction ID.
+
+`VOID` entries themselves cannot be voided, preventing infinite reversal loops.
 
 ### Chronological UUID v7 Identifiers
 
@@ -218,9 +235,51 @@ concurrent checkouts.
 
 ---
 
+## Detailed Rationale and System Decisions (Q&A)
+
+### Why Hard-Code PaymentType as an Enum?
+
+The list of payment types (`Cash`, `OnCredit`, `PIX`, `Other`) is hard-coded as
+a TypeScript enum rather than stored in a user-editable configuration table.
+
+- **Business Criticality:** `"OnCredit"` is a fundamental business rule that
+  triggers specific debt calculation workflows rather than mere display data.
+- **User Error Prevention:** Hard-coding the enum prevents accidental deletion
+  or renaming of critical credit payment values, ensuring the credit tab
+  tracking system remains 100% reliable.
+
+### Soft-Delete vs Hard-Delete Rationale
+
+To "remove" an item (product or salesman), the system performs a **soft-delete**
+by toggling `isActive = false` in the database table.
+
+- **The Hard-Delete Disaster (Avoided):** If a product row were permanently
+  deleted from the database, all historical transaction records referencing that
+  `product_id` would become orphaned. Running historical financial or sales
+  reports would fail or return corrupted data.
+- **The Soft-Delete Solution:** Setting `isActive = false` hides the product
+  from active sales and inventory selection views while preserving its
+  historical record. Past reports can still look up the product name and
+  accurately compute historical revenue and profit.
+
+### Unfiltered Catalog Queries Rationale
+
+The business logic helpers (`listProducts`, `listSalesmen`) and tRPC procedures
+return the full catalog dataset (including inactive items) without server-side
+filtering.
+
+- **Low Data Volume:** Product and salesman catalogs stay relatively small
+  (dozens to low hundreds of items), so server-side active filtering adds API
+  complexity without measurable performance benefit.
+- **Client Flexibility:** Returning the full dataset allows frontend UI screens
+  to filter active items for checkout screens while showing full management
+  lists (with active status toggles) on administrative screens.
+
+---
+
 ## Frontend Feature Architecture and Customer Display
 
-The frontend UI is organized into intuitive feature modules:
+The frontend UI is organized into feature modules:
 
 - **Point of Sale (POS):** Checkout screen featuring salesman selection, cart
   management, payment method selection (Cash, Credit, PIX, Other), and Mercado
@@ -253,8 +312,13 @@ databases (`:memory:`):
 
 ### Test Structure Standards
 
-Test cases follow the Arrange-Act-Assert (AAA) pattern with explicit phase
-comments and Given/When/Then descriptive titles to maintain test clarity.
+Test cases follow:
+
+- **Arrange-Act-Assert (AAA) Pattern:** Test bodies are divided by phase
+  comments (`// Arrange`, `// Act`, `// Assert`) for readability.
+- **Given/When/Then (GWT) Titles:** Test descriptions use GWT titles (e.g.
+  `GIVEN an OnCredit sale WHEN recordCreditPayment is called THEN...`) to
+  document intent.
 
 ### Unified Monorepo Tooling (Oxc)
 
