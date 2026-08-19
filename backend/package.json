@@ -6,7 +6,9 @@
     "scripts": {
         "build": "tsc",
         "dev": "tsx watch src/trpc/server.ts",
-        "test": "vitest run"
+        "test": "vitest run",
+        "db:init": "tsx scripts/db-init.ts",
+        "db:seed": "tsx scripts/db-seed.ts"
     },
     "dependencies": {
         "@trpc/server": "^11.18.0",
