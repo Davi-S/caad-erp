@@ -36,7 +36,7 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
     dashSheet.columns = [
         { width: 34 },
         { width: 34 },
-        { width: 75 },
+        { width: 22 },
         { width: 18 },
         { width: 18 },
         { width: 18 },
@@ -58,14 +58,14 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
     dashSheet.getRow(1).height = 36
 
     // Financial and general KPIs
-    dashSheet.mergeCells("A3:C3")
+    dashSheet.mergeCells("A3:B3")
     const sec1Header = dashSheet.getCell("A3")
     sec1Header.value = "Indicadores Financeiros Gerais"
     sec1Header.font = { bold: true, size: 11 }
     sec1Header.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5E7EB" } }
 
     const kpiHeaders = dashSheet.getRow(4)
-    kpiHeaders.values = ["Métrica / Indicador", "Valor Calculado", "Detalhes"]
+    kpiHeaders.values = ["Métrica / Indicador", "Valor Calculado"]
     kpiHeaders.font = { bold: true }
     kpiHeaders.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } }
 
@@ -76,49 +76,41 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
             label: "Receita Bruta Realizada",
             formula: "SUM(TransactionLog!H:H)",
             isCurrency: true,
-            detail: "Soma das receitas acumuladas de todas as vendas e recebimentos pagos",
         },
         {
             label: "Custos de Estoque Realizados",
             formula: "SUM(TransactionLog!I:I)",
             isCurrency: true,
-            detail: "Soma dos custos incorridos com aquisição e reposição de produtos em estoque",
         },
         {
             label: "Lucro Líquido Realizado",
             formula: "B5+B6",
             isCurrency: true,
-            detail: "Diferença entre a Receita Bruta acumulada e os Custos de Estoque realizados",
         },
         {
             label: "Receita Potencial Futura (Estoque)",
             formula: products.length > 0 ? `SUM(H23:H${prodEndRow})` : "0",
             isCurrency: true,
-            detail: "Valor a ser arrecadado quando 100% do estoque atual for vendido pelo preço de tabela",
         },
         {
             label: "Lucro Projetado Total",
             formula: "B7+B8",
             isCurrency: true,
-            detail: "Estimativa do lucro acumulado final (Lucro Líquido Realizado + Receita Potencial Futura)",
         },
         {
             label: "Vendas Realizadas",
             formula: 'COUNTIF(TransactionLog!C:C, "SALE")',
             isCurrency: false,
-            detail: "Quantidade total de operações de venda concluídas no PDV",
         },
         {
             label: "Reposições de Estoque",
             formula: 'COUNTIF(TransactionLog!C:C, "RESTOCK")',
             isCurrency: false,
-            detail: "Quantidade de lançamentos de entrada de mercadorias no estoque",
         },
         {
             label: "Baixas / Perdas",
             formula: 'COUNTIF(TransactionLog!C:C, "WRITE_OFF")',
             isCurrency: false,
-            detail: "Quantidade de lançamentos de saída por perdas, descarte ou consumo próprio",
         },
     ]
 
@@ -130,9 +122,6 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
         valCell.value = { formula: kpi.formula }
         valCell.numFmt = kpi.isCurrency ? BRL_CURRENCY_FORMAT : INTEGER_FORMAT
         valCell.font = { bold: idx === 2 || idx === 4 }
-        const detailCell = r.getCell(3)
-        detailCell.value = kpi.detail
-        detailCell.font = { italic: true, size: 9, color: { argb: "FF6B7280" } }
     })
 
     // Resumo por forma de pagamento
