@@ -103,13 +103,6 @@ link backend handlers to the React frontend.
 The frontend uses React 19, Vite, Mantine UI components, and TanStack React
 Query.
 
-- **Server-State Synchronization:** React Query manages caching, automatic
-  refetching, and cache invalidation for catalog data and inventory balances
-  upon mutation.
-- **Component Ergonomics:** Mantine provides responsive layout controls,
-  accessible modal forms, theme support, and notification systems designed for
-  touch or desktop POS screens.
-
 ---
 
 ## Layered System Architecture
