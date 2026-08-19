@@ -1,0 +1,17 @@
+{
+    "$schema": "https://unpkg.com/knip@5/schemas/knip.json",
+    "ignoreDependencies": [
+        "vite",
+        "@vitejs/plugin-react",
+        "@rolldown/plugin-babel",
+        "@tailwindcss/vite"
+    ],
+    "workspaces": {
+        "backend": {
+            "entry": ["src/trpc/server.ts!"]
+        },
+        "frontend": {
+            "vite": true
+        }
+    }
+}
