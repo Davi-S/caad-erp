@@ -14,7 +14,7 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            "/api-mp": {
+            "/api/payments": {
                 target: "http://localhost:8000",
                 changeOrigin: true,
             },
