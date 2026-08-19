@@ -1,8 +1,8 @@
 /**
  * Database initializer script.
  *
- * Creates a fresh SQLite database file at the given path (default: caad_erp.db)
- * with the full application schema applied and zero data rows.
+ * Replaces any existing SQLite database at the given path (default: caad_erp.db)
+ * with a fresh file containing the full application schema and zero data rows.
  *
  * Usage:
  *   npx tsx scripts/db-init.ts [path/to/db.sqlite]
@@ -10,9 +10,15 @@
 
 import Database from "better-sqlite3"
 import { resolve } from "path"
+import { rmSync } from "fs"
 
 const dbPath = process.argv[2] ?? "caad_erp.db"
 const resolvedPath = resolve(dbPath)
+
+// Remove existing database and WAL sidecar files if present
+for (const suffix of ["", "-shm", "-wal"]) {
+    rmSync(resolvedPath + suffix, { force: true })
+}
 
 console.log(`Initializing empty database at: ${resolvedPath}`)
 
@@ -50,6 +56,7 @@ db.exec(`
     );
 `)
 
+db.pragma("wal_checkpoint(TRUNCATE)")
 db.close()
 
 console.log("Done. Schema applied, no data inserted.")
