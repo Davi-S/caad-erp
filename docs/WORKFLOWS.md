@@ -84,16 +84,32 @@ transaction. A void entry references the target transaction ID and negates its
 quantity, revenue, and cost deltas. To prevent infinite loops, void entries
 themselves cannot be voided.
 
-### Product and Salesman Management (Soft-Deletes)
+### Product and Salesman Management
 
-Catalog items and salespeople can be created, updated, or deactivated. Removing
-a product or salesman performs a soft-delete by setting `isActive = false`.
-Soft-deleted entities vanish from active POS selection screens but remain intact
-in the database so historical transaction reports continue to display correct
-names and financial totals.
+Catalog items and salespeople can be registered, updated, or deactivated through
+their respective management views. Creating new products requires specifying a
+product name and default selling price, while new salespeople require specifying
+a name.
 
-To manage entities, use the Product or Salesman screens to add new entries or
-toggle active status.
+### Soft-Deletes vs. Hard-Deletes
+
+Data removal in CAAD ERP distinguishes between soft-deletes (deactivation) and
+hard-deletes (physical database row deletion) to preserve historical financial
+integrity.
+
+When a product or salesman is "deleted" in the management interface, the system
+performs a **soft-delete** by setting `isActive = false`. Soft-deleted items
+immediately vanish from active Point-of-Sale checkouts, inventory restock forms,
+and selection menus so new transactions cannot be recorded against them.
+However, their rows remain safely stored in the database. This guarantees that
+past transaction ledger records referencing those products or salespeople can
+still resolve names, historical prices, and profit calculations accurately
+without producing orphaned records or corrupted reports.
+
+**Hard-deletes**, physically deleting rows from database tables, are
+intentionally avoided during standard operations. Physically removing a catalog
+row causes historical transaction ledger entries to become orphaned, leading to
+report errors and audit trail corruption. 
 
 ### Catalog Price Updates and Credit Tab Operational Caveat
 
