@@ -22,8 +22,8 @@ import {
     Upload,
 } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
-import { trpcClient } from "@/utils/trpc"
 import { ImportWorkbookModal } from "./components/ImportWorkbookModal"
+import { useExportWorkbook } from "./hooks/useWorkbookActions"
 
 interface NavItem {
     to: string
@@ -56,34 +56,14 @@ const MANAGEMENT_ITEMS: NavItem[] = [
 
 export function HomePage() {
     const navigate = useNavigate()
-    const [isDownloading, setIsDownloading] = useState(false)
+    const { exportWorkbook, isExporting } = useExportWorkbook()
     const [importModalOpened, setImportModalOpened] = useState(false)
 
     const handleDownloadWorkbook = async () => {
-        setIsDownloading(true)
         try {
-            const data = await trpcClient.reports.exportWorkbook.query()
-            const binaryStr = window.atob(data.base64)
-            const len = binaryStr.length
-            const bytes = new Uint8Array(len)
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryStr.charCodeAt(i)
-            }
-            const blob = new Blob([bytes], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            })
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = data.filename || "caad_erp_workbook.xlsx"
-            document.body.appendChild(a)
-            a.click()
-            a.remove()
-            window.URL.revokeObjectURL(url)
-        } catch (error) {
-            console.error("Failed to download workbook:", error)
-        } finally {
-            setIsDownloading(false)
+            await exportWorkbook()
+        } catch {
+            // Error logged by hook
         }
     }
 
@@ -132,7 +112,7 @@ export function HomePage() {
                                 variant="light"
                                 size="xs"
                                 leftSection={<FileSpreadsheet size={16} />}
-                                loading={isDownloading}
+                                loading={isExporting}
                                 onClick={handleDownloadWorkbook}
                             >
                                 Baixar Planilha
