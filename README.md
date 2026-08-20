@@ -134,5 +134,4 @@ npm run fix
 Please check the following documentation resources:
 
 - [Developer Guide](./docs/DEVELOPER_GUIDE.md)
-- [Backend README](./backend/README.md)
-- [Frontend README](./frontend/README.md)
+- [Workflows](./docs/WORKFLOWS.md)
