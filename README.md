@@ -36,8 +36,9 @@ and sales management system specifically tailored for student lounge operations.
 - **Append-only Transaction Ledger:** SQLite-backed immutable transaction log
   providing a complete, auditable history of all sales, restocks, write-offs,
   credit payments, and reversals.
-- **Excel Support:** Can import and export the data to an Excel file for easily
-  auditing using known software. This is ideal for non-technical users.
+- **Excel Support:** non-technical managers do not need to learn SQL or rely on
+  an admin dashboard. They can open the Excel workbook directly using software
+  they already know to audit everything.
 
 ---
 
