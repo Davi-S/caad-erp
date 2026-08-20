@@ -25,7 +25,6 @@ export function createAppServer(activeDb?: DB) {
     const database = activeDb ?? drizzle(new Database("caad_erp.db"), { schema })
 
     const trpcHandler = createHTTPHandler({
-        basePath: "/trpc/",
         middleware: (_req, res, next) => {
             res.setHeader("Access-Control-Allow-Origin", "*")
             res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")

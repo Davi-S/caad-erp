@@ -365,7 +365,6 @@ describe("Transaction Ledger BLL Handlers", () => {
         ).toThrow(IneligibleCreditSaleError)
     })
 
-
     it("GIVEN a target transaction WHEN recordVoid is called THEN creates exact reversing VOID entry", () => {
         // Arrange
         const saleTx = recordSale(db, {
@@ -476,4 +475,3 @@ describe("Transaction Ledger BLL Handlers", () => {
         ).toThrow(SalesmanInactiveError)
     })
 })
-

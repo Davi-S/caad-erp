@@ -185,7 +185,6 @@ describe("Reporting Analytics BLL Handlers", () => {
             paymentType: "OnCredit",
         })
 
-
         const report = calculateOutstandingDebts(db)
         expect(report.balances.find((b) => b.transactionId === creditSale.id)).toBeUndefined()
     })
@@ -255,5 +254,3 @@ describe("Reporting Analytics BLL Handlers", () => {
         expect(report.balances.find((b) => b.transactionId === "T-ORPHAN")).toBeUndefined()
     })
 })
-
-

@@ -40,13 +40,18 @@ function createMockReqRes(
         end(data?: string) {
             if (data) this.body += data
         },
-    } as unknown as ServerResponse & { statusCode: number; headers: Record<string, string>; body: string }
+    } as unknown as ServerResponse & {
+        statusCode: number
+        headers: Record<string, string>
+        body: string
+    }
 
     const triggerReq = async () => {
         if (emitErrorOnRead) {
             req.emit("error", new Error("Read stream failure"))
         } else if (bodyPayload !== undefined) {
-            const dataStr = typeof bodyPayload === "string" ? bodyPayload : JSON.stringify(bodyPayload)
+            const dataStr =
+                typeof bodyPayload === "string" ? bodyPayload : JSON.stringify(bodyPayload)
             req.emit("data", Buffer.from(dataStr))
             req.emit("end")
         } else {
@@ -114,7 +119,11 @@ describe("Mercado Pago Payment Route Handler", () => {
         })
 
         it("returns 400 when request body contains invalid JSON", async () => {
-            const { req, res, triggerReq } = createMockReqRes("POST", "/api/payments/pix", "invalid { json")
+            const { req, res, triggerReq } = createMockReqRes(
+                "POST",
+                "/api/payments/pix",
+                "invalid { json",
+            )
             const routePromise = handlePaymentsRoute(req, res)
             await triggerReq()
             await routePromise
@@ -124,7 +133,12 @@ describe("Mercado Pago Payment Route Handler", () => {
         })
 
         it("returns 400 when stream reading emits an error", async () => {
-            const { req, res, triggerReq } = createMockReqRes("POST", "/api/payments/pix", undefined, true)
+            const { req, res, triggerReq } = createMockReqRes(
+                "POST",
+                "/api/payments/pix",
+                undefined,
+                true,
+            )
             const routePromise = handlePaymentsRoute(req, res)
             await triggerReq()
             await routePromise

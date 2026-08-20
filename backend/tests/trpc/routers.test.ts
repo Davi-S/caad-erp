@@ -468,13 +468,15 @@ describe("tRPC Service Layer Integration Suite", () => {
             const single = await caller.transactions.get({ id: restock.id })
             expect(single.id).toBe(restock.id)
 
-            await expect(caller.transactions.get({ id: "TX-NON-EXISTENT" })).rejects.toThrow(TRPCError)
+            await expect(caller.transactions.get({ id: "TX-NON-EXISTENT" })).rejects.toThrow(
+                TRPCError,
+            )
         })
 
         it("GIVEN invalid procedure input WHEN procedure is called THEN domainErrorTranslator executes cause fallback", async () => {
-            await expect(caller.products.add({ id: "", name: "Invalid", sellPrice: 10, isActive: true })).rejects.toThrow(TRPCError)
+            await expect(
+                caller.products.add({ id: "", name: "Invalid", sellPrice: 10, isActive: true }),
+            ).rejects.toThrow(TRPCError)
         })
     })
 })
-
-

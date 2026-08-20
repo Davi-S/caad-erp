@@ -52,7 +52,7 @@ describe("tRPC and Payments HTTP Server (server.ts)", () => {
     })
 
     it("handles CORS OPTIONS preflight request for tRPC endpoints", async () => {
-        const res = await fetch(`http://localhost:${port}/trpc/products.list`, {
+        const res = await fetch(`http://localhost:${port}/products.list`, {
             method: "OPTIONS",
         })
         expect(res.status).toBe(200)
@@ -74,7 +74,7 @@ describe("tRPC and Payments HTTP Server (server.ts)", () => {
     })
 
     it("dispatches non-payment routes to tRPC handler", async () => {
-        const res = await fetch(`http://localhost:${port}/trpc/products.list`)
+        const res = await fetch(`http://localhost:${port}/products.list`)
         expect(res.status).toBe(200)
         const data = await res.json()
         expect(data).toHaveProperty("result")

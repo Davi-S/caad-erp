@@ -12,4 +12,3 @@ describe("BLL Validator", () => {
         expect(() => validateSchema(schema, { name: 123 })).toThrow(InvalidAttributeError)
     })
 })
-
