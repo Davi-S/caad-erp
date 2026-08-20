@@ -4,7 +4,7 @@
 > student lounges.
 
 ![Web UI Home Page](./frontend/images/caad-erp-frontend-home-page.png)
-![Excel Dashboard Sheet](./backend/images/2026-07-26-044619_hyprshot.png)
+![Excel Dashboard Sheet](./backend/images/dashboard.png)
 
 ## Motivation
 
