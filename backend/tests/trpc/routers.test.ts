@@ -403,5 +403,78 @@ describe("tRPC Service Layer Integration Suite", () => {
             // Assert
             expect(inventory["P-001"]).toBe(6)
         })
+
+        it("GIVEN active database WHEN reports.exportWorkbook and importWorkbook are called THEN exports and imports base64 workbook", async () => {
+            await caller.products.add({
+                id: "P-001",
+                name: "Soda",
+                sellPrice: 500,
+                isActive: true,
+            })
+            await caller.salesmen.add({
+                id: "S-001",
+                name: "Alice",
+                isActive: true,
+            })
+
+            const exported = await caller.reports.exportWorkbook()
+            expect(exported.filename).toBe("master_workbook.xlsx")
+            expect(typeof exported.base64).toBe("string")
+
+            // Test plain base64 import
+            const res1 = await caller.reports.importWorkbook({ base64: exported.base64 })
+            expect(res1.success).toBe(true)
+            expect(res1.count.productsCount).toBe(1)
+
+            // Test data URL prefix base64 import
+            const res2 = await caller.reports.importWorkbook({
+                base64: `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${exported.base64}`,
+            })
+            expect(res2.success).toBe(true)
+            expect(res2.count.productsCount).toBe(1)
+        })
+    })
+
+    describe("Transactions Router Additional Procedures", () => {
+        it("GIVEN recorded transactions WHEN list, get, and recordWriteOff are called THEN processes as expected", async () => {
+            await caller.products.add({
+                id: "P-001",
+                name: "Soda",
+                sellPrice: 500,
+                isActive: true,
+            })
+            await caller.salesmen.add({
+                id: "S-001",
+                name: "Alice",
+                isActive: true,
+            })
+            const restock = await caller.transactions.recordRestock({
+                productId: "P-001",
+                salesmanId: "S-001",
+                quantity: 10,
+                totalCost: 3000,
+            })
+
+            const writeOff = await caller.transactions.recordWriteOff({
+                productId: "P-001",
+                salesmanId: "S-001",
+                quantity: 2,
+            })
+            expect(writeOff.transactionType).toBe("WRITE_OFF")
+
+            const list = await caller.transactions.list()
+            expect(list.length).toBeGreaterThanOrEqual(2)
+
+            const single = await caller.transactions.get({ id: restock.id })
+            expect(single.id).toBe(restock.id)
+
+            await expect(caller.transactions.get({ id: "TX-NON-EXISTENT" })).rejects.toThrow(TRPCError)
+        })
+
+        it("GIVEN invalid procedure input WHEN procedure is called THEN domainErrorTranslator executes cause fallback", async () => {
+            await expect(caller.products.add({ id: "", name: "Invalid", sellPrice: 10, isActive: true })).rejects.toThrow(TRPCError)
+        })
     })
 })
+
+
