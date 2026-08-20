@@ -14,10 +14,6 @@ over-engineered commercial POS systems or fragile spreadsheet setups.
 To solve this, **CAAD ERP** provides a lightweight, highly responsive inventory
 and sales management system specifically tailored for student lounge operations.
 
-Built as a **100% end-to-end TypeScript monorepo**, CAAD ERP combines a Node.js
-backend (SQLite + Drizzle ORM + tRPC) with a modern React web interface
-(Mantine + Vite + React Query).
-
 ---
 
 ## Key Features
@@ -41,9 +37,7 @@ backend (SQLite + Drizzle ORM + tRPC) with a modern React web interface
   providing a complete, auditable history of all sales, restocks, write-offs,
   credit payments, and reversals.
 - **Excel Support:** Can import and export the data to an Excel file for easily
-  auditing using known software.
-- **Zero-Config Portable Storage:** High-performance in-process SQLite database
-  (`better-sqlite3`) requiring zero database server setup or maintenance.
+  auditing using known software. This is ideal for non-technical users.
 
 ---
 
