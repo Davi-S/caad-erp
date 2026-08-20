@@ -360,7 +360,7 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
  * @param sheet - Target worksheet.
  * @param minWidth - Minimum column width floor (default: 14).
  */
-function autoFitWorksheetColumns(sheet: ExcelJS.Worksheet, minWidth = 12): void {
+export function autoFitWorksheetColumns(sheet: ExcelJS.Worksheet, minWidth = 12): void {
     sheet.columns.forEach((column) => {
         let maxLen = minWidth
         column.eachCell?.({ includeEmpty: false }, (cell) => {

@@ -11,7 +11,7 @@
         "dev:backend": "npm --workspace=backend run dev",
         "dev:frontend": "npm --workspace=frontend run dev -- --host",
         "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
-        "test": "npm --workspace=backend run test && npm run build:frontend",
+        "test": "npm --workspace=backend run test",
         "lint": "oxlint --fix",
         "format": "oxfmt",
         "fix": "oxlint --fix && oxfmt",

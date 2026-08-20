@@ -3,6 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest"
+import { sql } from "drizzle-orm"
 import {
     addProduct,
     addSalesman,
@@ -18,6 +19,7 @@ import {
     recordWriteOff,
 } from "../../src/bll/index.js"
 import type { DB } from "../../src/dal/index.js"
+import * as dal from "../../src/dal/index.js"
 import { createTestDb } from "./setup.js"
 
 describe("Reporting Analytics BLL Handlers", () => {
@@ -161,4 +163,97 @@ describe("Reporting Analytics BLL Handlers", () => {
         expect(report.balances).toHaveLength(0)
         expect(report.totalOutstanding).toBe(0)
     })
+
+    it("GIVEN credit sale of product with zero sell price WHEN calculateOutstandingDebts is called THEN ignores zero expectedAmount sale", () => {
+        addProduct(db, {
+            id: "P-FREE",
+            name: "Free Sample",
+            sellPrice: 0,
+            isActive: true,
+        })
+        recordRestock(db, {
+            productId: "P-FREE",
+            salesmanId: "S-001",
+            quantity: 10,
+            totalCost: 0,
+        })
+        const creditSale = recordSale(db, {
+            productId: "P-FREE",
+            salesmanId: "S-001",
+            quantity: 5,
+            totalRevenue: 0,
+            paymentType: "OnCredit",
+        })
+
+
+        const report = calculateOutstandingDebts(db)
+        expect(report.balances.find((b) => b.transactionId === creditSale.id)).toBeUndefined()
+    })
+
+    it("GIVEN fully paid credit sale WHEN calculateOutstandingDebts is called THEN excludes sale with balance <= 0", () => {
+        recordRestock(db, {
+            productId: "P-001",
+            salesmanId: "S-001",
+            quantity: 10,
+            totalCost: 3000,
+        })
+        const creditSale = recordSale(db, {
+            productId: "P-001",
+            salesmanId: "S-001",
+            quantity: 1,
+            totalRevenue: 0,
+            paymentType: "OnCredit",
+        })
+        recordCreditPayment(db, {
+            linkedTransactionId: creditSale.id,
+            salesmanId: "S-001",
+            totalRevenue: 500, // Fully pays expectedAmount of 500
+            paymentType: "Cash",
+        })
+
+        const report = calculateOutstandingDebts(db)
+        expect(report.balances.find((b) => b.transactionId === creditSale.id)).toBeUndefined()
+    })
+
+    it("GIVEN cash sale transaction WHEN calculateOutstandingDebts is called THEN ignores non-credit sales", () => {
+        recordRestock(db, {
+            productId: "P-001",
+            salesmanId: "S-001",
+            quantity: 5,
+            totalCost: 1500,
+        })
+        const cashSale = recordSale(db, {
+            productId: "P-001",
+            salesmanId: "S-001",
+            quantity: 1,
+            totalRevenue: 500,
+            paymentType: "Cash",
+        })
+
+        const report = calculateOutstandingDebts(db)
+        expect(report.balances.find((b) => b.transactionId === cashSale.id)).toBeUndefined()
+    })
+
+    it("GIVEN credit sale referencing missing product WHEN calculateOutstandingDebts is called THEN handles product lookup exception gracefully", () => {
+        db.run(sql`PRAGMA foreign_keys = OFF`)
+        dal.appendTransaction(db, {
+            id: "T-ORPHAN",
+            timestampIso: new Date().toISOString(),
+            transactionType: "SALE",
+            productId: "P-NONEXISTENT",
+            salesmanId: "S-001",
+            paymentType: "OnCredit",
+            quantityChange: -1,
+            totalRevenue: 0,
+            totalCost: 0,
+            linkedTransactionId: null,
+            notes: null,
+        })
+        db.run(sql`PRAGMA foreign_keys = ON`)
+
+        const report = calculateOutstandingDebts(db)
+        expect(report.balances.find((b) => b.transactionId === "T-ORPHAN")).toBeUndefined()
+    })
 })
+
+

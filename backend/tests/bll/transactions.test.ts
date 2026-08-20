@@ -327,6 +327,45 @@ describe("Transaction Ledger BLL Handlers", () => {
         ).toThrow(IneligibleCreditSaleError)
     })
 
+    it("GIVEN non-SALE transaction WHEN recordCreditPayment is called THEN throws IneligibleCreditSaleError", () => {
+        const restockTx = recordRestock(db, {
+            productId: "P-001",
+            salesmanId: "S-001",
+            quantity: 5,
+            totalCost: 1500,
+        })
+        expect(() =>
+            recordCreditPayment(db, {
+                linkedTransactionId: restockTx.id,
+                salesmanId: "S-001",
+                totalRevenue: 500,
+                paymentType: "Cash",
+            }),
+        ).toThrow(IneligibleCreditSaleError)
+    })
+
+    it("GIVEN voided sale transaction WHEN recordCreditPayment is called THEN throws IneligibleCreditSaleError", () => {
+        const creditSale = recordSale(db, {
+            productId: "P-001",
+            salesmanId: "S-001",
+            quantity: 2,
+            totalRevenue: 0,
+            paymentType: "OnCredit",
+        })
+        recordVoid(db, {
+            linkedTransactionId: creditSale.id,
+        })
+        expect(() =>
+            recordCreditPayment(db, {
+                linkedTransactionId: creditSale.id,
+                salesmanId: "S-001",
+                totalRevenue: 500,
+                paymentType: "Cash",
+            }),
+        ).toThrow(IneligibleCreditSaleError)
+    })
+
+
     it("GIVEN a target transaction WHEN recordVoid is called THEN creates exact reversing VOID entry", () => {
         // Arrange
         const saleTx = recordSale(db, {
@@ -371,4 +410,70 @@ describe("Transaction Ledger BLL Handlers", () => {
             }),
         ).toThrow(IneligibleVoidTargetError)
     })
+
+    it("GIVEN inactive product WHEN recordRestock is called THEN throws ProductInactiveError", () => {
+        addProduct(db, { id: "P-INACTIVE", name: "Old Item", sellPrice: 500, isActive: false })
+        expect(() =>
+            recordRestock(db, {
+                productId: "P-INACTIVE",
+                salesmanId: "S-001",
+                quantity: 5,
+                totalCost: 1000,
+            }),
+        ).toThrow(ProductInactiveError)
+    })
+
+    it("GIVEN inactive salesman WHEN recordRestock is called THEN throws SalesmanInactiveError", () => {
+        addSalesman(db, { id: "S-INACTIVE", name: "Bob", isActive: false })
+        expect(() =>
+            recordRestock(db, {
+                productId: "P-001",
+                salesmanId: "S-INACTIVE",
+                quantity: 5,
+                totalCost: 1000,
+            }),
+        ).toThrow(SalesmanInactiveError)
+    })
+
+    it("GIVEN inactive product WHEN recordWriteOff is called THEN throws ProductInactiveError", () => {
+        addProduct(db, { id: "P-INACTIVE", name: "Old Item", sellPrice: 500, isActive: false })
+        expect(() =>
+            recordWriteOff(db, {
+                productId: "P-INACTIVE",
+                salesmanId: "S-001",
+                quantity: 1,
+            }),
+        ).toThrow(ProductInactiveError)
+    })
+
+    it("GIVEN inactive salesman WHEN recordWriteOff is called THEN throws SalesmanInactiveError", () => {
+        addSalesman(db, { id: "S-INACTIVE", name: "Bob", isActive: false })
+        expect(() =>
+            recordWriteOff(db, {
+                productId: "P-001",
+                salesmanId: "S-INACTIVE",
+                quantity: 1,
+            }),
+        ).toThrow(SalesmanInactiveError)
+    })
+
+    it("GIVEN inactive salesman WHEN recordCreditPayment is called THEN throws SalesmanInactiveError", () => {
+        addSalesman(db, { id: "S-INACTIVE", name: "Bob", isActive: false })
+        const creditSale = recordSale(db, {
+            productId: "P-001",
+            salesmanId: "S-001",
+            quantity: 2,
+            totalRevenue: 0,
+            paymentType: "OnCredit",
+        })
+        expect(() =>
+            recordCreditPayment(db, {
+                linkedTransactionId: creditSale.id,
+                salesmanId: "S-INACTIVE",
+                totalRevenue: 500,
+                paymentType: "Cash",
+            }),
+        ).toThrow(SalesmanInactiveError)
+    })
 })
+

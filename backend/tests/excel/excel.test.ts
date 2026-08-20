@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest"
 import ExcelJS from "exceljs"
 import { createTestDb } from "../bll/setup.js"
 import * as dal from "../../src/dal/index.js"
-import { exportWorkbook } from "../../src/excel/exporter.js"
+import { autoFitWorksheetColumns, exportWorkbook } from "../../src/excel/exporter.js"
 import { importWorkbook } from "../../src/excel/importer.js"
 
 describe("Excel Exporter (exportWorkbook)", () => {
@@ -214,4 +214,80 @@ describe("Excel Importer (importWorkbook)", () => {
         expect(importedTx.notes).toBeNull()
         expect(importedTx.totalCost).toBe(-5000)
     })
+
+    it("handles formula cell with populated result in exporter column width calculation", async () => {
+        const wb = new ExcelJS.Workbook()
+        const sheet = wb.addWorksheet("TestSheet")
+        sheet.columns = [{ header: "Col1", key: "c1" }]
+        sheet.addRow([])
+        sheet.getCell("A2").value = { formula: "SUM(B1:B2)", result: "R$ 1.500,00" }
+
+        autoFitWorksheetColumns(sheet)
+        expect(sheet.getColumn(1).width).toBeGreaterThan(12)
+    })
+
+    it("skips invalid rows and parses boolean/null cell values correctly during import", async () => {
+        const wb = new ExcelJS.Workbook()
+
+        // Products sheet with valid row (boolean cell), string "true" cell, boolean false cell, invalid empty row, and row missing name
+        const pSheet = wb.addWorksheet("Products")
+        pSheet.addRow(["ID", "Name", "Sell Price", "Is Active"])
+        pSheet.addRow(["P10", "Prod 10", 10.5, true]) // boolean true cell
+        pSheet.addRow(["P11", "Prod 11", 5.0, "true"]) // string "true" cell
+        pSheet.addRow(["P12", "Prod 12", 2.0, false]) // boolean false cell
+        pSheet.addRow(["", "No ID", 5.0, "true"]) // missing ID -> skipped
+        pSheet.addRow(["P13", "", 5.0, "true"]) // missing Name -> skipped
+
+        // Salesmen sheet with valid row, missing ID row, missing Name row
+        const sSheet = wb.addWorksheet("Salesmen")
+        sSheet.addRow(["ID", "Name", "Is Active"])
+        sSheet.addRow(["S10", "Salesman 10", true]) // boolean true cell
+        sSheet.addRow(["", "No ID", "true"]) // missing ID -> skipped
+        sSheet.addRow(["S11", "", "true"]) // missing Name -> skipped
+
+        // TransactionLog sheet with valid row and incomplete rows
+        const tSheet = wb.addWorksheet("TransactionLog")
+        tSheet.addRow([
+            "ID",
+            "Timestamp",
+            "Type",
+            "Product ID",
+            "Salesman ID",
+            "Payment Type",
+            "Quantity Change",
+            "Total Revenue",
+            "Total Cost",
+            "Linked Tx ID",
+            "Notes",
+        ])
+        tSheet.addRow([
+            "T10",
+            "2026-08-19T10:00:00.000Z",
+            "SALE",
+            "P10",
+            "S10",
+            "Cash",
+            -1,
+            10.5,
+            0,
+            null, // null cell value
+            undefined, // undefined cell value
+        ])
+        tSheet.addRow(["T11", "", "SALE", "P10", "S10"]) // missing timestamp -> skipped
+
+        const buffer = (await wb.xlsx.writeBuffer()) as Buffer
+        const targetDb = createTestDb()
+
+        const res = await importWorkbook(targetDb, buffer)
+        expect(res.productsCount).toBe(3)
+        expect(res.salesmenCount).toBe(1)
+        expect(res.transactionsCount).toBe(1)
+
+        const prods = dal.listProducts(targetDb)
+        expect(prods.find((p) => p.id === "P10")?.isActive).toBe(true)
+        expect(prods.find((p) => p.id === "P11")?.isActive).toBe(true)
+        expect(prods.find((p) => p.id === "P12")?.isActive).toBe(false)
+    })
 })
+
+
