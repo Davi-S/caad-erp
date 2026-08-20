@@ -3,12 +3,14 @@
  * on port 8000.
  *
  * Routes:
- *   ALL  /trpc/*               - tRPC batch handler
+ *   ALL  /*                   - tRPC batch handler
  *   POST /api/payments/pix     - Mercado Pago PIX QR code creation
  *   GET  /api/payments/pix/:id - Mercado Pago payment status poll
  */
 
-import "dotenv/config"
+import dotenv from "dotenv"
+import path from "path"
+import { fileURLToPath } from "url"
 import { createHTTPHandler } from "@trpc/server/adapters/standalone"
 import http from "http"
 import Database from "better-sqlite3"
@@ -18,11 +20,22 @@ import { schema } from "../dal/index.js"
 import { appRouter, createContext } from "./index.js"
 import { handlePaymentsRoute } from "../payments/mercadoPago.js"
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Load .env relative to backend module location, falling back to CWD .env
+const envPath = path.resolve(__dirname, "../../.env")
+dotenv.config({ path: envPath })
+dotenv.config()
+
+// Default SQLite database file path relative to backend root directory
+export const defaultDbPath = process.env.DB_PATH || path.resolve(__dirname, "../../caad_erp.db")
+
 /**
  * Creates an HTTP server routing between tRPC and REST payment handlers.
  */
 export function createAppServer(activeDb?: DB) {
-    const database = activeDb ?? drizzle(new Database("caad_erp.db"), { schema })
+    const database = activeDb ?? drizzle(new Database(defaultDbPath), { schema })
 
     const trpcHandler = createHTTPHandler({
         middleware: (_req, res, next) => {
@@ -45,6 +58,23 @@ export function createAppServer(activeDb?: DB) {
             res.setHeader("Access-Control-Allow-Headers", "content-type")
             res.statusCode = 200
             res.end()
+            return
+        }
+
+        // Root API status endpoint
+        if (req.method === "GET" && (url === "/" || url === "")) {
+            res.setHeader("Access-Control-Allow-Origin", "*")
+            res.writeHead(200, { "Content-Type": "application/json" })
+            res.end(
+                JSON.stringify({
+                    name: "CAAD ERP API Server",
+                    status: "online",
+                    endpoints: {
+                        trpc: "http://localhost:8000",
+                        payments: "http://localhost:8000/api/payments/pix",
+                    },
+                }),
+            )
             return
         }
 
@@ -91,7 +121,7 @@ export function shutdownServer(
 /**
  * Instantiates SQLite database connection and starts standalone server listener.
  */
-export function startStandaloneServer(dbPath: string = "caad_erp.db", port: number = 8000) {
+export function startStandaloneServer(dbPath: string = defaultDbPath, port: number = 8000) {
     const sqlite = new Database(dbPath)
     sqlite.pragma("journal_mode = WAL")
     sqlite.pragma("foreign_keys = ON")

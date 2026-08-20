@@ -7,7 +7,9 @@
         "frontend"
     ],
     "scripts": {
-        "start": "npm --workspace=backend run build && node backend/dist/trpc/server.js",
+        "start:backend": "npm --workspace=backend run build && npm --workspace=backend run start",
+        "start:frontend": "npm run build:frontend && npm --workspace=frontend run preview -- --host",
+        "start": "concurrently -k -n backend,frontend -c blue,magenta \"npm run start:backend\" \"npm run start:frontend\"",
         "dev:backend": "npm --workspace=backend run dev",
         "dev:frontend": "npm --workspace=frontend run dev -- --host",
         "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",

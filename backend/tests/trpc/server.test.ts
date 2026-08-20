@@ -42,6 +42,14 @@ describe("tRPC and Payments HTTP Server (server.ts)", () => {
         })
     })
 
+    it("returns API status JSON on root GET / request", async () => {
+        const res = await fetch(`http://localhost:${port}/`)
+        expect(res.status).toBe(200)
+        const data = await res.json()
+        expect(data.status).toBe("online")
+        expect(data.name).toBe("CAAD ERP API Server")
+    })
+
     it("handles CORS OPTIONS preflight request for payment endpoints", async () => {
         const res = await fetch(`http://localhost:${port}/api/payments/pix`, {
             method: "OPTIONS",
