@@ -60,20 +60,6 @@ complete end-to-end type safety.
 
 ---
 
-### Windows 1-Click Quick Start
-
-If you are running on Windows, perform full environment setup and launch the
-application with a single click:
-
-1. Clone or download the repository.
-2. Double-click `start.bat` in the root folder.
-
-_(On the first run, `start.bat` checks for Node.js via `winget`, installs all
-workspace dependencies via `npm install`, builds production frontend assets, and
-launches the application in your default browser)._
-
----
-
 ### Manual / Linux Installation
 
 #### 1. Clone and Install Workspace Dependencies
