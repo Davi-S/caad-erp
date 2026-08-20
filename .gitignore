@@ -4,6 +4,7 @@ dist/
 dist-ssr/
 *.tsbuildinfo
 *.local
+coverage
 
 # ── Database & Data ──────────────────────────────────────
 *.sqlite
