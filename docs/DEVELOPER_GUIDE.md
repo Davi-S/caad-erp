@@ -62,6 +62,31 @@ caad-erp/
 
 ---
 
+## Running the application in Development Mode
+
+To launch both the backend tRPC server (Port 8000) and frontend Vite dev server
+(Port 5173) with hot-reloading:
+
+```bash
+npm run dev
+```
+
+## Run Workspace Commands Individually
+
+```bash
+# Start backend TypeScript compiler in watch mode
+npm run dev:backend
+
+# Start frontend Vite server only
+npm run dev:frontend
+
+# Run full Vitest backend test suite (89 unit and integration tests)
+npm test
+
+# Lint and format all monorepo files (Oxlint and Oxfmt)
+npm run fix
+```
+
 ## Architectural Rationale and High-Level Decisions
 
 ### Embedded Relational Database (SQLite + `better-sqlite3`)
@@ -129,12 +154,12 @@ analytics calculations, and validation logic.
 
 - **Two-Tier Validation Strategy:** Validation is split into two complementary
   phases:
-    - _Stateless Boundary Validation:_ Zod schemas validate structural types,
-      string length, and numeric bounds synchronously before reaching domain
-      handlers.
-    - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
-      rules (such as checking stock availability, active flags, or credit line
-      links).
+  - _Stateless Boundary Validation:_ Zod schemas validate structural types,
+    string length, and numeric bounds synchronously before reaching domain
+    handlers.
+  - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
+    rules (such as checking stock availability, active flags, or credit line
+    links).
 
 ### Presentation Layer (tRPC Routers)
 
@@ -211,9 +236,9 @@ maintains separate `totalRevenue` and `totalCost` columns.
 - **Simplified Financial Summations:** Keeping revenue and cost in dedicated
   columns eliminates ambiguous multi-purpose math and makes financial report
   calculations straightforward:
-    - Gross Revenue: `SUM(total_revenue)`
-    - Total Inventory Cost: `SUM(total_cost)`
-    - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
+  - Gross Revenue: `SUM(total_revenue)`
+  - Total Inventory Cost: `SUM(total_cost)`
+  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
 
 ### Why use UUID v7 for Transaction IDs instead of Auto-Incrementing Integers?
 

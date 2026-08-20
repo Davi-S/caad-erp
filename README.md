@@ -16,8 +16,7 @@ and sales management system specifically tailored for student lounge operations.
 
 Built as a **100% end-to-end TypeScript monorepo**, CAAD ERP combines a Node.js
 backend (SQLite + Drizzle ORM + tRPC) with a modern React web interface
-(Mantine + Vite + React Query), delivering sub-millisecond execution speeds and
-complete end-to-end type safety.
+(Mantine + Vite + React Query).
 
 ---
 
@@ -41,18 +40,14 @@ complete end-to-end type safety.
 - **Append-only Transaction Ledger:** SQLite-backed immutable transaction log
   providing a complete, auditable history of all sales, restocks, write-offs,
   credit payments, and reversals.
+- **Excel Support:** Can import and export the data to an Excel file for easily
+  auditing using known software.
 - **Zero-Config Portable Storage:** High-performance in-process SQLite database
   (`better-sqlite3`) requiring zero database server setup or maintenance.
-- **End-to-End Type Safety:** tRPC presentation layer (`@trpc/server` /
-  `@trpc/client`) providing instant, compile-time autocomplete and type checking
-  from database schema to React components.
-- **Pure Functional Layering:** Clear separation into Data Access Layer (DAL),
-  Business Logic Layer (BLL with colocated Zod validation), and tRPC
-  Presentation Layer.
 
 ---
 
-## Quick Start and Installation
+## Installation and Running the application
 
 ### Prerequisites
 
@@ -60,7 +55,7 @@ complete end-to-end type safety.
 
 ---
 
-### Manual / Linux Installation
+### Manual Installation
 
 #### 1. Clone and Install Workspace Dependencies
 
@@ -74,43 +69,13 @@ npm install
 
 ---
 
-## Development and Running the Application
-
-### Development Mode (Concurrent Backend and Frontend)
-
-To launch both the backend tRPC server (Port 8000) and frontend Vite dev server
-(Port 5173) with hot-reloading:
-
-```bash
-npm run dev
-```
-
-### Production / Unified Single-Process Mode
+### Running the application
 
 To build and run the full application in production mode:
 
 ```bash
-# Build production frontend static bundle
-npm run build:frontend
-
 # Start unified server
-npm start
-```
-
-### Run Workspace Commands Individually
-
-```bash
-# Start backend TypeScript compiler in watch mode
-npm run dev:backend
-
-# Start frontend Vite server only
-npm run dev:frontend
-
-# Run full Vitest backend test suite (89 unit and integration tests)
-npm test
-
-# Lint and format all monorepo files (Oxlint and Oxfmt)
-npm run fix
+npm run start
 ```
 
 ---
