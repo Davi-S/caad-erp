@@ -121,3 +121,4 @@ Please check the following documentation resources:
 
 - [Developer Guide](./docs/DEVELOPER_GUIDE.md)
 - [Workflows](./docs/WORKFLOWS.md)
+- [User Guide](./docs/USER_GUIDE.md)
