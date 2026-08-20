@@ -22,10 +22,12 @@
         "erasableSyntaxOnly": true,
         "noFallthroughCasesInSwitch": true,
 
-        /* Absolute imports */
+        /* Absolute imports & workspace path aliases */
         "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["src/*"],
+            "@backend/*": ["../backend/*"],
+            "caad-erp-backend/*": ["../backend/*"]
         }
     },
     "include": ["src"]

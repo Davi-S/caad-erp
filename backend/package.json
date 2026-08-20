@@ -1,0 +1,30 @@
+{
+    "name": "caad-erp-backend",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx watch src/trpc/server.ts",
+        "start": "node dist/trpc/server.js",
+        "test": "vitest run",
+        "db:init": "tsx scripts/db-init.ts",
+        "db:seed": "tsx scripts/db-seed.ts"
+    },
+    "dependencies": {
+        "@trpc/server": "^11.18.0",
+        "better-sqlite3": "^13.0.3",
+        "dotenv": "^17.4.2",
+        "drizzle-orm": "^0.45.2",
+        "exceljs": "^4.4.0",
+        "mercadopago": "^3.4.0",
+        "uuid": "^14.0.2",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "@types/better-sqlite3": "^7.6.12",
+        "@types/exceljs": "^0.5.3",
+        "@types/node": "^22.20.1",
+        "typescript": "^5.7.3",
+        "vitest": "^3.0.5"
+    }
+}

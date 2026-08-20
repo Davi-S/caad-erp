@@ -9,19 +9,19 @@ import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
 import { usePOSBroadcast } from "./hooks/usePOSBroadcast"
 import type { POSBroadcastState, PaymentDetails } from "./types/broadcast"
-import type { PaymentType, Products } from "@/types"
+import type { PaymentType, Product } from "@/types"
 
 export function POSFlow() {
     // Get the API data from the queries
-    const { data: salesmen } = useSalesmen()
-    const { data: products } = useProducts()
-    const { data: stock } = useStock()
+    const { data: salesmen = [] } = useSalesmen()
+    const { data: products = [] } = useProducts()
+    const { data: stock = {} } = useStock()
 
     // Local routing state for the checkout sequence
     const [screen, setScreen] = useState<"salesmen" | "cart" | "payment">("salesmen")
 
     const [selectedSalesmanId, setSelectedSalesmanId] = useState<string | null>(null)
-    const selectedSalesman = salesmen.find((s) => s.salesman_id === selectedSalesmanId) || null
+    const selectedSalesman = salesmen.find((s) => s.id === selectedSalesmanId) || null
 
     // Hooks
     const cartState = useCart()
@@ -65,7 +65,7 @@ export function POSFlow() {
             // It will always pick a new one. This is why it does not receive a
             // useState like CartScreen.
             <SalesmanSelectScreen
-                salesmen={salesmen.filter((s) => s.is_active)}
+                salesmen={salesmen.filter((s) => s.isActive)}
                 title="Quem está vendendo?"
                 confirmLabel="Começar venda"
                 onNext={(id) => {
@@ -80,7 +80,7 @@ export function POSFlow() {
         return (
             <CartScreen
                 salesman={selectedSalesman}
-                products={products.filter((p) => p.is_active)}
+                products={products.filter((p) => p.isActive)}
                 stock={stock}
                 cartState={cartState}
                 openGroupId={openGroupId}
@@ -102,9 +102,16 @@ export function POSFlow() {
                 onPaymentStateChange={setPaymentDetails}
                 actions={{
                     onConfirm: (method) => {
-                        checkoutState.confirmPayment(
-                            assemblySalesRequest(selectedSalesmanId, method, cartState, products),
-                        )
+                        if (selectedSalesmanId) {
+                            checkoutState.confirmPayment(
+                                assemblySalesRequest(
+                                    selectedSalesmanId,
+                                    method,
+                                    cartState,
+                                    products,
+                                ),
+                            )
+                        }
                     },
                     onNewSale: () => {
                         cartState.clearCart()
@@ -132,16 +139,16 @@ function assemblySalesRequest(
     selectedSalesmanId: string,
     method: PaymentType,
     cartState: ReturnType<typeof useCart>,
-    products: Products,
+    products: Product[],
 ) {
     return cartState.cartIterable.map(([productId, quantity]) => {
-        const productPrice = products.find((p) => p.product_id === productId).sell_price
+        const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
         return {
-            product_id: productId,
-            salesman_id: selectedSalesmanId,
+            productId: productId,
+            salesmanId: selectedSalesmanId,
             quantity: quantity,
-            total_revenue: quantity * productPrice,
-            payment_type: method,
+            totalRevenue: quantity * productPrice,
+            paymentType: method,
             notes: null,
         }
     })

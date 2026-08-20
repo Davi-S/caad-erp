@@ -19,9 +19,11 @@ import {
     FileSpreadsheet,
     Monitor,
     ExternalLink,
+    Upload,
 } from "lucide-react"
-import { api } from "@/api/apiClient"
 import { ScreenShell } from "@/components/ScreenShell"
+import { ImportWorkbookModal } from "./components/ImportWorkbookModal"
+import { useExportWorkbook } from "./hooks/useWorkbookActions"
 
 interface NavItem {
     to: string
@@ -54,29 +56,14 @@ const MANAGEMENT_ITEMS: NavItem[] = [
 
 export function HomePage() {
     const navigate = useNavigate()
-    const [isDownloading, setIsDownloading] = useState(false)
+    const { exportWorkbook, isExporting } = useExportWorkbook()
+    const [importModalOpened, setImportModalOpened] = useState(false)
 
     const handleDownloadWorkbook = async () => {
-        setIsDownloading(true)
         try {
-            const res = await api.GET("/reports/workbook", { parseAs: "blob" })
-            if (res.error || !res.data) {
-                console.error("Failed to download workbook:", res.error)
-                return
-            }
-            const blob = res.data as unknown as Blob
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = "workbook.xlsx"
-            document.body.appendChild(a)
-            a.click()
-            a.remove()
-            window.URL.revokeObjectURL(url)
-        } catch (error) {
-            console.error("Failed to download workbook:", error)
-        } finally {
-            setIsDownloading(false)
+            await exportWorkbook()
+        } catch {
+            // Error logged by hook
         }
     }
 
@@ -86,8 +73,16 @@ export function HomePage() {
 
     return (
         <ScreenShell>
-            <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto" offsetScrollbars>
-                <Stack justify="center" gap="xl" py="lg" style={{ minHeight: "100%" }}>
+            <ImportWorkbookModal
+                opened={importModalOpened}
+                onClose={() => setImportModalOpened(false)}
+            />
+            <ScrollArea
+                style={{ flex: 1, minHeight: 0, width: "100%" }}
+                type="auto"
+                offsetScrollbars
+            >
+                <Stack gap="xl" py="lg" style={{ width: "100%" }}>
                     {/* Header */}
                     <Group justify="space-between" align="center">
                         <Stack gap={4}>
@@ -104,15 +99,25 @@ export function HomePage() {
                                 O que vamos fazer?
                             </Title>
                         </Stack>
-                        <Button
-                            variant="light"
-                            size="xs"
-                            leftSection={<FileSpreadsheet size={16} />}
-                            loading={isDownloading}
-                            onClick={handleDownloadWorkbook}
-                        >
-                            Baixar Planilha
-                        </Button>
+                        <Group gap="xs">
+                            <Button
+                                variant="light"
+                                size="xs"
+                                leftSection={<Upload size={16} />}
+                                onClick={() => setImportModalOpened(true)}
+                            >
+                                Importar Planilha
+                            </Button>
+                            <Button
+                                variant="light"
+                                size="xs"
+                                leftSection={<FileSpreadsheet size={16} />}
+                                loading={isExporting}
+                                onClick={handleDownloadWorkbook}
+                            >
+                                Baixar Planilha
+                            </Button>
+                        </Group>
                     </Group>
 
                     {/* POS: the primary operational tool, visually distinct from the rest */}

@@ -1,19 +1,26 @@
-import type { Schemas } from "../api/apiClient"
+import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server"
+import type { AppRouter } from "@backend/src/trpc/index.js"
 
-export type Product = Schemas["ProductResponse"]
-export type Products = Product[]
-export type ProductCreateRequest = Schemas["ProductCreateRequest"]
-export type ProductUpdateRequest = Schemas["ProductUpdateRequest"]
+export type RouterOutputs = inferRouterOutputs<AppRouter>
+export type RouterInputs = inferRouterInputs<AppRouter>
 
-export type Stock = Record<string, number>
-export type PaymentType = Schemas["PaymentType"]
-export type SaleRequest = Schemas["SaleRequest"]
-export type SalesRequests = SaleRequest[]
-export type BulkSaleRequest = Schemas["BulkSaleRequest"]
-export type RestockRequest = Schemas["RestockRequest"]
-export type WriteOffRequest = Schemas["WriteOffRequest"]
+type NonVoid<T> = Exclude<T, void>
 
-export type Salesman = Schemas["SalesmanResponse"]
-export type Salesmen = Salesman[]
-export type SalesmanCreateRequest = Schemas["SalesmanCreateRequest"]
-export type SalesmanUpdateRequest = Schemas["SalesmanUpdateRequest"]
+// Products
+export type Product = RouterOutputs["products"]["list"][number]
+export type ProductCreateRequest = NonVoid<RouterInputs["products"]["add"]>
+export type ProductUpdateRequest = NonVoid<RouterInputs["products"]["update"]>["data"]
+
+// Salespeople
+export type Salesman = RouterOutputs["salesmen"]["list"][number]
+export type SalesmanCreateRequest = NonVoid<RouterInputs["salesmen"]["add"]>
+export type SalesmanUpdateRequest = NonVoid<RouterInputs["salesmen"]["update"]>["data"]
+
+// Reports
+export type Stock = RouterOutputs["reports"]["inventory"]
+
+// Transactions
+export type PaymentType = NonVoid<RouterInputs["transactions"]["recordSale"]>["paymentType"]
+export type SaleRequest = NonVoid<RouterInputs["transactions"]["recordSale"]>
+export type RestockRequest = NonVoid<RouterInputs["transactions"]["recordRestock"]>
+export type WriteOffRequest = NonVoid<RouterInputs["transactions"]["recordWriteOff"]>

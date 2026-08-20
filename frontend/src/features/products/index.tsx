@@ -23,7 +23,7 @@ import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
 import { useCreateProduct, useUpdateProduct } from "./hooks/useProductsMutations"
 import { ProductFormModal } from "./components/ProductFormModal"
-import type { Product } from "@/types"
+import type { Product, ProductCreateRequest, ProductUpdateRequest } from "@/types"
 
 // Search and sort configurations
 const columnHelper = createColumnHelper<Product>()
@@ -40,30 +40,30 @@ const PRODUCT_SORT_OPTIONS: SortOption[] = [
 export function ProductsManagementPage() {
     const navigate = useNavigate()
     const [showInactive, setShowInactive] = useState(false)
-    const { data: products, isLoading, isError } = useProducts()
-    const { data: stock } = useStock()
+    const { data: products = [], isLoading, isError } = useProducts()
+    const { data: stock = {} } = useStock()
 
     const activeFilteredProducts = useMemo(
-        () => (showInactive ? products : products?.filter((product) => product.is_active)),
+        () => (showInactive ? products : products.filter((product) => product.isActive)),
         [products, showInactive],
     )
 
     // Configure searchable and sortable columns
     const columns = useMemo(
         () => [
-            columnHelper.accessor("product_name", {
+            columnHelper.accessor("name", {
                 id: "name",
                 enableGlobalFilter: true,
             }),
-            columnHelper.accessor("product_id", {
+            columnHelper.accessor("id", {
                 id: "code",
                 enableGlobalFilter: true,
             }),
-            columnHelper.accessor("sell_price", {
+            columnHelper.accessor("sellPrice", {
                 id: "price",
                 enableGlobalFilter: false,
             }),
-            columnHelper.accessor((p) => stock?.[p.product_id] ?? 0, {
+            columnHelper.accessor((p) => stock[p.id] ?? 0, {
                 id: "stock",
                 enableGlobalFilter: false,
             }),
@@ -108,23 +108,12 @@ export function ProductsManagementPage() {
         setModalOpened(true)
     }
 
-    const handleCreate = (values: {
-        product_id: string
-        product_name: string
-        sell_price: number
-        is_active: boolean
-    }) => {
+    const handleCreate = (values: ProductCreateRequest) => {
         createMutation.mutate(values, { onSuccess: () => setModalOpened(false) })
     }
 
-    const handleUpdate = (
-        productId: string,
-        values: { product_name: string; sell_price: number; is_active: boolean },
-    ) => {
-        updateMutation.mutate(
-            { productId, input: values },
-            { onSuccess: () => setModalOpened(false) },
-        )
+    const handleUpdate = (id: string, values: ProductUpdateRequest) => {
+        updateMutation.mutate({ id, input: values }, { onSuccess: () => setModalOpened(false) })
     }
 
     return (
@@ -189,42 +178,42 @@ export function ProductsManagementPage() {
                         <Stack gap="xs">
                             {processedProducts.map((product) => (
                                 <Group
-                                    key={product.product_id}
+                                    key={product.id}
                                     justify="space-between"
                                     wrap="nowrap"
                                     p="sm"
                                     style={{
                                         border: "1px solid var(--mantine-color-gray-3)",
                                         borderRadius: "var(--mantine-radius-md)",
-                                        opacity: product.is_active ? 1 : 0.6,
+                                        opacity: product.isActive ? 1 : 0.6,
                                     }}
                                 >
                                     <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                                         <Text fw={600} truncate>
-                                            {product.product_name}
+                                            {product.name}
                                         </Text>
                                         <Text size="xs" c="dimmed" ff="monospace">
-                                            {product.product_id}
+                                            {product.id}
                                         </Text>
                                     </Stack>
                                     <Stack gap={2} align="flex-end">
                                         <Text fw={600} ff="monospace" size="sm">
-                                            {brl(product.sell_price)}
+                                            {brl(product.sellPrice)}
                                         </Text>
                                         <Text size="xs" c="dimmed">
-                                            {stock?.[product.product_id] ?? 0} em estoque
+                                            {stock[product.id] ?? 0} em estoque
                                         </Text>
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">
                                         <Badge
                                             color={
-                                                product.is_active
+                                                product.isActive
                                                     ? "var(--mantine-primary-color-filled)"
                                                     : "gray"
                                             }
-                                            variant={product.is_active ? "light" : "outline"}
+                                            variant={product.isActive ? "light" : "outline"}
                                         >
-                                            {product.is_active ? "Ativo" : "Inativo"}
+                                            {product.isActive ? "Ativo" : "Inativo"}
                                         </Badge>
                                         <ActionIcon
                                             variant="subtle"

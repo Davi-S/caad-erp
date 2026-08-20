@@ -13,12 +13,12 @@ import {
 import { ShoppingCart } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
-import type { Products, Stock } from "@/types"
+import type { Product, Stock } from "@/types"
 import { groupProducts } from "../../utils/productGrouping"
 import { ProductGroupCard } from "../ProductGroupCard"
 
 interface CustomerCartScreenProps {
-    products: Products
+    products: Product[]
     stock: Stock
     cart: Record<string, number>
     total: number
@@ -39,7 +39,7 @@ export function CustomerCartScreen({
 
     const sortedProducts = useMemo(() => {
         return [...products].sort((a, b) =>
-            (a.product_name || "").localeCompare(b.product_name || "", undefined, {
+            (a.name || "").localeCompare(b.name || "", undefined, {
                 sensitivity: "base",
                 numeric: true,
             }),
@@ -102,7 +102,7 @@ export function CustomerCartScreen({
                                 No carrinho
                             </Text>
                             {cartEntries.map(([productId, quantity], index) => {
-                                const product = products.find((p) => p.product_id === productId)
+                                const product = products.find((p) => p.id === productId)
                                 if (!product) return null
 
                                 return (
@@ -110,7 +110,7 @@ export function CustomerCartScreen({
                                         {index > 0 && <Divider variant="dashed" my={4} />}
                                         <Group justify="space-between" wrap="nowrap">
                                             <Text size="sm" style={{ flex: 1 }}>
-                                                {product.product_name}
+                                                {product.name}
                                             </Text>
                                             <Text size="sm" c="dimmed" fw={600}>
                                                 {quantity}x
@@ -122,7 +122,7 @@ export function CustomerCartScreen({
                                                 w={72}
                                                 ta="right"
                                             >
-                                                {brl(quantity * product.sell_price)}
+                                                {brl(quantity * product.sellPrice)}
                                             </Text>
                                         </Group>
                                     </div>

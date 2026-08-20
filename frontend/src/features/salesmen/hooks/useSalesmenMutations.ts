@@ -1,15 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@/api/apiClient"
 import type { SalesmanCreateRequest, SalesmanUpdateRequest } from "@/types"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { trpcClient } from "@/utils/trpc"
 
 function extractErrorMessage(error: unknown, fallback: string): string {
     if (
         error &&
         typeof error === "object" &&
-        "detail" in error &&
-        typeof (error as { detail: unknown }).detail === "string"
+        "message" in error &&
+        typeof (error as { message: unknown }).message === "string"
     ) {
-        return (error as { detail: string }).detail
+        return (error as { message: string }).message
     }
     return fallback
 }
@@ -19,10 +19,11 @@ export function useCreateSalesman() {
 
     return useMutation({
         mutationFn: async (input: SalesmanCreateRequest) => {
-            const res = await api.POST("/salesmen", { body: input })
-            if (res.error)
-                throw new Error(extractErrorMessage(res.error, "Falha ao criar vendedor."))
-            return res.data
+            try {
+                return await trpcClient.salesmen.add.mutate(input)
+            } catch (err) {
+                throw new Error(extractErrorMessage(err, "Falha ao criar vendedor."))
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["salesmen"] })
@@ -34,20 +35,15 @@ export function useUpdateSalesman() {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: async ({
-            salesmanId,
-            input,
-        }: {
-            salesmanId: string
-            input: SalesmanUpdateRequest
-        }) => {
-            const res = await api.PATCH("/salesmen/{salesman_id}", {
-                params: { path: { salesman_id: salesmanId } },
-                body: input,
-            })
-            if (res.error)
-                throw new Error(extractErrorMessage(res.error, "Falha ao atualizar vendedor."))
-            return res.data
+        mutationFn: async ({ id, input }: { id: string; input: SalesmanUpdateRequest }) => {
+            try {
+                return await trpcClient.salesmen.update.mutate({
+                    id,
+                    data: input,
+                })
+            } catch (err) {
+                throw new Error(extractErrorMessage(err, "Falha ao atualizar vendedor."))
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["salesmen"] })

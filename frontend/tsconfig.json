@@ -2,7 +2,9 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["src/*"],
+            "@backend/*": ["../backend/*"],
+            "caad-erp-backend/*": ["../backend/*"]
         }
     },
     "files": [],

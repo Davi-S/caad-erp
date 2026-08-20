@@ -1,15 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@/api/apiClient"
 import type { RestockRequest, WriteOffRequest } from "@/types"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { trpcClient } from "@/utils/trpc"
 
 function extractErrorMessage(error: unknown, fallback: string): string {
     if (
         error &&
         typeof error === "object" &&
-        "detail" in error &&
-        typeof (error as { detail: unknown }).detail === "string"
+        "message" in error &&
+        typeof (error as { message: unknown }).message === "string"
     ) {
-        return (error as { detail: string }).detail
+        return (error as { message: string }).message
     }
     return fallback
 }
@@ -19,10 +19,11 @@ export function useRestock() {
 
     return useMutation({
         mutationFn: async (input: RestockRequest) => {
-            const res = await api.POST("/transactions/restock", { body: input })
-            if (res.error)
-                throw new Error(extractErrorMessage(res.error, "Falha ao registrar a reposição."))
-            return res.data
+            try {
+                return await trpcClient.transactions.recordRestock.mutate(input)
+            } catch (err) {
+                throw new Error(extractErrorMessage(err, "Falha ao registrar a reposição."))
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["stock"] })
@@ -35,10 +36,11 @@ export function useWriteOff() {
 
     return useMutation({
         mutationFn: async (input: WriteOffRequest) => {
-            const res = await api.POST("/transactions/write-off", { body: input })
-            if (res.error)
-                throw new Error(extractErrorMessage(res.error, "Falha ao registrar a baixa."))
-            return res.data
+            try {
+                return await trpcClient.transactions.recordWriteOff.mutate(input)
+            } catch (err) {
+                throw new Error(extractErrorMessage(err, "Falha ao registrar a baixa."))
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["stock"] })

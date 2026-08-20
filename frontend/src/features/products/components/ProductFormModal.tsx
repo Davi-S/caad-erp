@@ -2,21 +2,16 @@ import { useEffect } from "react"
 import { Modal, TextInput, Switch, Button, Stack, Group, Text } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import type { Product } from "@/types"
-import { CurrencyInput } from "@/components/CurrencyInput" // Assuming path
+import { CurrencyInput } from "@/components/CurrencyInput"
 
 interface ProductFormModalProps {
     opened: boolean
     onClose: () => void
     product: Product | null // null = creating
-    onCreate: (values: {
-        product_id: string
-        product_name: string
-        sell_price: number
-        is_active: boolean
-    }) => void
+    onCreate: (values: { id: string; name: string; sellPrice: number; isActive: boolean }) => void
     onUpdate: (
         productId: string,
-        values: { product_name: string; sell_price: number; is_active: boolean },
+        values: { name?: string; sellPrice?: number; isActive?: boolean },
     ) => void
     isSubmitting: boolean
     error: string | null
@@ -35,16 +30,16 @@ export function ProductFormModal({
 
     const form = useForm({
         initialValues: {
-            product_id: "",
-            product_name: "",
-            sell_price: 0,
-            is_active: true,
+            id: "",
+            name: "",
+            sellPrice: 0,
+            isActive: true,
         },
         validate: {
-            product_id: (value) =>
+            id: (value) =>
                 isEditing || value.trim().length > 0 ? null : "Informe um identificador",
-            product_name: (value) => (value.trim().length > 0 ? null : "Informe um nome"),
-            sell_price: (value) => (value >= 0 ? null : "Informe um preço válido"),
+            name: (value) => (value.trim().length > 0 ? null : "Informe um nome"),
+            sellPrice: (value) => (value >= 0 ? null : "Informe um preço válido"),
         },
     })
 
@@ -52,30 +47,30 @@ export function ProductFormModal({
     useEffect(() => {
         if (opened) {
             form.setValues({
-                product_id: product?.product_id ?? "",
-                product_name: product?.product_name ?? "",
-                sell_price: product ? product.sell_price / 100 : 0,
-                is_active: product?.is_active ?? true,
+                id: product?.id ?? "",
+                name: product?.name ?? "",
+                sellPrice: product ? product.sellPrice / 100 : 0,
+                isActive: product?.isActive ?? true,
             })
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [opened, product])
 
     const handleSubmit = form.onSubmit((values) => {
-        const sellPriceInCents = Math.round(values.sell_price * 100)
+        const sellPriceInCents = Math.round(values.sellPrice * 100)
 
         if (isEditing && product) {
-            onUpdate(product.product_id, {
-                product_name: values.product_name.trim(),
-                sell_price: sellPriceInCents,
-                is_active: values.is_active,
+            onUpdate(product.id, {
+                name: values.name.trim(),
+                sellPrice: sellPriceInCents,
+                isActive: values.isActive,
             })
         } else {
             onCreate({
-                product_id: values.product_id.trim(),
-                product_name: values.product_name.trim(),
-                sell_price: sellPriceInCents,
-                is_active: values.is_active,
+                id: values.id.trim(),
+                name: values.name.trim(),
+                sellPrice: sellPriceInCents,
+                isActive: values.isActive,
             })
         }
     })
@@ -101,7 +96,7 @@ export function ProductFormModal({
                                 ? "O identificador não pode ser alterado."
                                 : "Usado como chave única. Não poderá ser alterado depois. Quanto mais detalhado, melhor."
                         }
-                        {...form.getInputProps("product_id")}
+                        {...form.getInputProps("id")}
                     />
                     <TextInput
                         label="Nome"
@@ -109,19 +104,19 @@ export function ProductFormModal({
                         description={
                             'Aparece na tela de vendas. Use " - " para separar variações do mesmo produto.'
                         }
-                        {...form.getInputProps("product_name")}
+                        {...form.getInputProps("name")}
                     />
                     <CurrencyInput
                         label="Preço de venda"
                         placeholder="R$ 0,00"
-                        {...form.getInputProps("sell_price")}
+                        {...form.getInputProps("sellPrice")}
                     />
                     <Switch
                         label="Produto ativo"
                         description="Produtos inativos não aparecem na tela de vendas."
-                        checked={form.values.is_active}
+                        checked={form.values.isActive}
                         onChange={(event) =>
-                            form.setFieldValue("is_active", event.currentTarget.checked)
+                            form.setFieldValue("isActive", event.currentTarget.checked)
                         }
                     />
                     {error && (
