@@ -47,7 +47,7 @@ const METHOD_OPTIONS = [
     },
 ]
 
-const AUTO_NEW_SALE_TIMEOUT_MS = 5000
+const AUTO_NEW_SALE_TIMEOUT_MS = 60000
 
 export function PaymentScreen({
     salesman,
