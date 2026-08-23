@@ -47,6 +47,8 @@ const METHOD_OPTIONS = [
     },
 ]
 
+const AUTO_NEW_SALE_TIMEOUT_MS = 5000
+
 export function PaymentScreen({
     salesman,
     cartState,
@@ -66,6 +68,16 @@ export function PaymentScreen({
     useEffect(() => {
         resetCheckout()
     }, [resetCheckout])
+
+    useEffect(() => {
+        if (!confirmed) return
+
+        const timer = setTimeout(() => {
+            onNewSale()
+        }, AUTO_NEW_SALE_TIMEOUT_MS)
+
+        return () => clearTimeout(timer)
+    }, [confirmed, onNewSale])
 
     const handleApproved = useCallback(() => {
         onConfirm("PIX")

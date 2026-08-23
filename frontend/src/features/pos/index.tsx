@@ -115,6 +115,7 @@ export function POSFlow() {
                     },
                     onNewSale: () => {
                         cartState.clearCart()
+                        checkoutState.resetCheckout()
                         setPaymentDetails(null)
                         setScreen("cart")
                     },
@@ -124,6 +125,7 @@ export function POSFlow() {
                     },
                     onCancel: () => {
                         cartState.clearCart()
+                        checkoutState.resetCheckout()
                         setPaymentDetails(null)
                         setScreen("salesmen")
                     },
