@@ -80,13 +80,15 @@ export function PaymentScreen({
     }, [confirmed, onNewSale])
 
     const handleApproved = useCallback(() => {
-        onConfirm("PIX")
-    }, [onConfirm])
+        if (!isLocked) {
+            onConfirm("PIX")
+        }
+    }, [onConfirm, isLocked])
 
     const pixState = usePixPayment({
         amountInBrl: cartState.total / 100,
         salesmanName: salesman?.name ?? "",
-        confirmed,
+        confirmed: isLocked,
         onPaymentApproved: handleApproved,
     })
 
@@ -350,18 +352,24 @@ export function PaymentScreen({
             {/* Footer */}
             <Stack mx="auto" w="100%">
                 {!confirmed ? (
-                    method === "Cash" ? (
-                        <Button size="lg" onClick={() => onConfirm(method)} loading={confirming}>
+                    <Stack gap="xs" w="100%">
+                        <Button
+                            size="lg"
+                            onClick={() => onConfirm(method)}
+                            loading={confirming}
+                            disabled={isLocked}
+                        >
                             Já recebi o pagamento
                         </Button>
-                    ) : (
-                        <Group justify="center" p="xs">
-                            <Loader size="sm" color="blue" />
-                            <Text size="sm" c="dimmed" fw={500}>
-                                Aguardando confirmação do banco...
-                            </Text>
-                        </Group>
-                    )
+                        {method === "PIX" && !pixState.error && (
+                            <Group justify="center" gap="xs">
+                                <Loader size="xs" color="blue" />
+                                <Text size="xs" c="dimmed" fw={500}>
+                                    Aguardando confirmação automática do banco...
+                                </Text>
+                            </Group>
+                        )}
+                    </Stack>
                 ) : (
                     <Button size="lg" color="green" onClick={onNewSale}>
                         Nova venda
