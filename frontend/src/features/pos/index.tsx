@@ -42,7 +42,7 @@ export function POSFlow() {
             checkoutStatus: checkoutState.status,
             checkoutError: checkoutState.error,
             subtotal: cartState.subtotal,
-            discountAmount: cartState.discountAmount,
+            discount: cartState.discount,
             total: cartState.total,
             openGroupId,
         }
@@ -50,7 +50,7 @@ export function POSFlow() {
         screen,
         cartState.cart,
         cartState.subtotal,
-        cartState.discountAmount,
+        cartState.discount,
         cartState.total,
         selectedSalesman,
         paymentDetails,
@@ -109,12 +109,7 @@ export function POSFlow() {
                 actions={{
                     onConfirm: (method) => {
                         checkoutState.confirmPayment(
-                            assemblySalesRequest(
-                                selectedSalesmanId,
-                                method,
-                                cartState,
-                                products,
-                            ),
+                            assemblySalesRequest(selectedSalesmanId, method, cartState, products),
                         )
                     },
                     onNewSale: () => {
@@ -155,7 +150,7 @@ function assemblySalesRequest(
         }
     })
 
-    const distributedDiscounts = distributeDiscount(lineItems, cartState.discountAmount)
+    const distributedDiscounts = distributeDiscount(lineItems, cartState.discount)
 
     return cartState.cartIterable.map(([productId, quantity]) => {
         const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
@@ -164,8 +159,8 @@ function assemblySalesRequest(
         const itemRevenue = itemSubtotal - itemDiscount
 
         let notes: string | null = null
-        if (cartState.discountAmount > 0) {
-            notes = `Desconto global de ${brl(cartState.discountAmount)} aplicado (Desc. proporcional do item: ${brl(itemDiscount)})`
+        if (cartState.discount > 0) {
+            notes = `Desconto global de ${brl(cartState.discount)} aplicado (Desc. proporcional do item: ${brl(itemDiscount)})`
         }
 
         return {

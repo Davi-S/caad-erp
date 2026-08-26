@@ -23,7 +23,7 @@ interface CustomerCartScreenProps {
     cart: Record<string, number>
     total: number
     subtotal?: number
-    discountAmount?: number
+    discount?: number
     openGroupId?: string | null
 }
 
@@ -35,7 +35,7 @@ export function CustomerCartScreen({
     cart,
     total,
     subtotal,
-    discountAmount,
+    discount,
     openGroupId,
 }: CustomerCartScreenProps) {
     const cartEntries = Object.entries(cart)
@@ -140,14 +140,14 @@ export function CustomerCartScreen({
             {/* Footer */}
             <Stack gap="xs">
                 <Divider />
-                {discountAmount && discountAmount > 0 ? (
+                {discount && discount > 0 ? (
                     <Stack gap={2}>
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">
                                 Subtotal
                             </Text>
                             <Text size="sm" ff="monospace">
-                                {brl(subtotal || total + discountAmount)}
+                                {brl(subtotal || total + discount)}
                             </Text>
                         </Group>
                         <Group justify="space-between">
@@ -155,7 +155,7 @@ export function CustomerCartScreen({
                                 Desconto
                             </Text>
                             <Text size="sm" fw={600} c="green.7" ff="monospace">
-                                -{brl(discountAmount)}
+                                -{brl(discount)}
                             </Text>
                         </Group>
                         <Divider variant="dashed" my={2} />

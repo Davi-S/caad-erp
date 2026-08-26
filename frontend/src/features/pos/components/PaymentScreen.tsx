@@ -192,10 +192,10 @@ export function PaymentScreen({
                                 {brl(cartState.total)}
                             </Text>
 
-                            {cartState.discountAmount > 0 && (
+                            {cartState.discount > 0 && (
                                 <Badge variant="light" color="green" size="sm">
                                     Subtotal: {brl(cartState.subtotal)} • Desconto: -
-                                    {brl(cartState.discountAmount)}
+                                    {brl(cartState.discount)}
                                 </Badge>
                             )}
 
