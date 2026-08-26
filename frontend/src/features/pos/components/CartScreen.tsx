@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import {
     ActionIcon,
     Button,
@@ -12,7 +12,7 @@ import {
     ThemeIcon,
     Title,
 } from "@mantine/core"
-import { Plus, Minus, ArrowLeft, ShoppingCart } from "lucide-react"
+import { Plus, Minus, ArrowLeft, ShoppingCart, Tag, Pencil, X } from "lucide-react"
 import { createColumnHelper } from "@tanstack/react-table"
 import { ScreenShell } from "@/components/ScreenShell"
 import { ListControls } from "@/components/ListControls"
@@ -23,6 +23,7 @@ import { useCart } from "../hooks/useCart"
 
 import { groupProducts } from "../utils/productGrouping"
 import { ProductGroupCard } from "./ProductGroupCard"
+import { DiscountModal } from "./DiscountModal"
 
 interface CartScreenProps {
     salesman: Salesman | null
@@ -65,7 +66,20 @@ export function CartScreen({
     onOpenGroupIdChange,
     actions,
 }: CartScreenProps) {
-    const { cart, cartIterable, total, isEmpty, inc, dec, removeItem } = cartState
+    const [discountModalOpened, setDiscountModalOpened] = useState(false)
+    const {
+        cart,
+        cartIterable,
+        subtotal,
+        discount,
+        total,
+        isEmpty,
+        inc,
+        dec,
+        setDiscount,
+        clearDiscount,
+        removeItem,
+    } = cartState
     const { onBack, onNext } = actions
 
     // Configure searchable and sortable columns
@@ -221,16 +235,87 @@ export function CartScreen({
             {/* Footer */}
             <Stack gap="xs">
                 <Divider />
-                <Group justify="space-between">
-                    <Text fw={600}>Total</Text>
-                    <Text fw={700} size="lg" ff="monospace">
-                        {brl(total)}
-                    </Text>
-                </Group>
-                <Button size="lg" disabled={total === 0} onClick={onNext}>
+                {discount > 0 ? (
+                    <Stack gap={4}>
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">
+                                Subtotal
+                            </Text>
+                            <Text size="sm" ff="monospace">
+                                {brl(subtotal)}
+                            </Text>
+                        </Group>
+                        <Group justify="space-between" align="center">
+                            <Group gap={6} align="center">
+                                <Text size="sm" c="green.7" fw={500}>
+                                    Desconto
+                                </Text>
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="xs"
+                                    onClick={() => setDiscountModalOpened(true)}
+                                    title="Editar desconto"
+                                >
+                                    <Pencil size={12} />
+                                </ActionIcon>
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="red"
+                                    size="xs"
+                                    onClick={clearDiscount}
+                                    title="Remover desconto"
+                                >
+                                    <X size={12} />
+                                </ActionIcon>
+                            </Group>
+                            <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                -{brl(discount)}
+                            </Text>
+                        </Group>
+                        <Divider variant="dashed" my={2} />
+                        <Group justify="space-between">
+                            <Text fw={600}>Total</Text>
+                            <Text fw={700} size="lg" ff="monospace">
+                                {brl(total)}
+                            </Text>
+                        </Group>
+                    </Stack>
+                ) : (
+                    <Stack gap="xs">
+                        <Group justify="space-between" align="center">
+                            <Button
+                                variant="subtle"
+                                size="compact-xs"
+                                leftSection={<Tag size={13} />}
+                                onClick={() => setDiscountModalOpened(true)}
+                                disabled={isEmpty}
+                            >
+                                Adicionar desconto
+                            </Button>
+                            <Group gap="xs">
+                                <Text fw={600}>Total</Text>
+                                <Text fw={700} size="lg" ff="monospace">
+                                    {brl(total)}
+                                </Text>
+                            </Group>
+                        </Group>
+                    </Stack>
+                )}
+
+                <Button size="lg" disabled={isEmpty || total < 0} onClick={onNext}>
                     Prosseguir para o pagamento
                 </Button>
             </Stack>
+
+            <DiscountModal
+                opened={discountModalOpened}
+                onClose={() => setDiscountModalOpened(false)}
+                subtotal={subtotal}
+                currentDiscount={discount}
+                onApply={setDiscount}
+                onRemove={clearDiscount}
+            />
         </ScreenShell>
     )
 }
