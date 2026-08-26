@@ -141,15 +141,34 @@ function assemblySalesRequest(
     cartState: ReturnType<typeof useCart>,
     products: Product[],
 ) {
+    const lineItems = cartState.cartIterable.map(([productId, quantity]) => {
+        const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
+        return {
+            productId,
+            subtotal: quantity * productPrice,
+        }
+    })
+
+    const distributedDiscounts = distributeDiscount(lineItems, cartState.discountAmount)
+
     return cartState.cartIterable.map(([productId, quantity]) => {
         const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
+        const itemSubtotal = quantity * productPrice
+        const itemDiscount = distributedDiscounts[productId] || 0
+        const itemRevenue = itemSubtotal - itemDiscount
+
+        let notes: string | null = null
+        if (cartState.discountAmount > 0) {
+            notes = `Desconto global de ${brl(cartState.discountAmount)} aplicado (Desc. proporcional do item: ${brl(itemDiscount)})`
+        }
+
         return {
             productId: productId,
             salesmanId: selectedSalesmanId,
             quantity: quantity,
-            totalRevenue: quantity * productPrice,
+            totalRevenue: method === "OnCredit" ? 0 : itemRevenue,
             paymentType: method,
-            notes: null,
+            notes,
         }
     })
 }
