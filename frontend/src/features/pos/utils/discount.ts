@@ -1,53 +1,36 @@
-export type DiscountType = "percent" | "fixed"
-
-export interface GlobalDiscount {
-    type: DiscountType
-    value: number // percent: 1 to 100, fixed: integer cents (>= 0)
-}
-
 export interface LineItemForDiscount {
     productId: string
     subtotal: number // in cents
 }
 
 /**
- * Calculates the total discount in integer cents based on subtotal and discount config.
+ * Distributes a global discount in cents across line items using the Cumulative
+ * Running Balance method (Largest Remainder Method).
  *
- * @param subtotalCents - Gross subtotal before discounts, in integer cents.
- * @param discount - Global discount configuration or null.
- * @returns Total discount amount in integer cents.
- */
-export function calculateDiscountAmount(
-    subtotalCents: number,
-    discount: GlobalDiscount | null,
-): number {
-    if (!discount || subtotalCents <= 0) return 0
-    if (discount.type === "percent") {
-        const clampedPercent = Math.min(100, Math.max(0, discount.value))
-        return Math.min(subtotalCents, Math.round(subtotalCents * (clampedPercent / 100)))
-    }
-    return Math.min(subtotalCents, Math.max(0, Math.round(discount.value)))
-}
-
-/**
- * Distributes a global discount across line items using the Cumulative Running Balance method
- * (Largest Remainder Method). Guarantees that SUM(distributedDiscounts) === totalDiscountCents
- * with zero cent rounding drift.
+ * Guarantees that SUM(distributedDiscounts) === totalDiscountCents with 0 cent drift.
  *
  * @param items - List of items with their respective subtotals in cents.
- * @param totalDiscountCents - Total discount to allocate across items, in cents.
+ * @param totalDiscount - Total discount to allocate across items, in cents.
  * @returns Mapping of productId to allocated discount amount in cents.
+ * @throws {RangeError} If totalDiscountCents is negative or exceeds total subtotal.
  */
 export function distributeDiscount(
     items: LineItemForDiscount[],
-    totalDiscountCents: number,
+    totalDiscount: number,
 ): Record<string, number> {
+    if (totalDiscount < 0) {
+        throw new RangeError("Total discount cannot be negative")
+    }
+
     const totalSubtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
-    if (totalSubtotal <= 0 || totalDiscountCents <= 0) {
+    if (totalDiscount > totalSubtotal) {
+        throw new RangeError("Total discount cannot exceed total subtotal")
+    }
+
+    if (totalSubtotal === 0 || totalDiscount === 0) {
         return Object.fromEntries(items.map((i) => [i.productId, 0]))
     }
 
-    const effectiveTotalDiscount = Math.min(totalSubtotal, totalDiscountCents)
     const discountMap: Record<string, number> = {}
     let cumulativeSubtotal = 0
     let allocatedDiscountSoFar = 0
@@ -58,8 +41,8 @@ export function distributeDiscount(
 
         const cumulativeTarget =
             i === items.length - 1
-                ? effectiveTotalDiscount
-                : Math.round((cumulativeSubtotal / totalSubtotal) * effectiveTotalDiscount)
+                ? totalDiscount
+                : Math.round((cumulativeSubtotal / totalSubtotal) * totalDiscount)
 
         const itemDiscount = cumulativeTarget - allocatedDiscountSoFar
         discountMap[item.productId] = itemDiscount
