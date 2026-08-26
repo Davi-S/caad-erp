@@ -8,6 +8,8 @@ import { useSalesmen } from "@/hooks/queries/useSalesmen"
 import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
 import { usePOSBroadcast } from "./hooks/usePOSBroadcast"
+import { distributeDiscount } from "./utils/discount"
+import { brl } from "@/helpers"
 import type { POSBroadcastState, PaymentDetails } from "./types/broadcast"
 import type { PaymentType, Product } from "@/types"
 
@@ -39,12 +41,16 @@ export function POSFlow() {
             paymentDetails,
             checkoutStatus: checkoutState.status,
             checkoutError: checkoutState.error,
+            subtotal: cartState.subtotal,
+            discountAmount: cartState.discountAmount,
             total: cartState.total,
             openGroupId,
         }
     }, [
         screen,
         cartState.cart,
+        cartState.subtotal,
+        cartState.discountAmount,
         cartState.total,
         selectedSalesman,
         paymentDetails,
