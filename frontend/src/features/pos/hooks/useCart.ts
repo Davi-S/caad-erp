@@ -16,9 +16,9 @@ export function useCart() {
         (sum, item) => sum + (cart[item.id] || 0) * item.sellPrice,
         0,
     )
+    const isEmpty = Object.keys(cart).length === 0
     const total = subtotal - discount
 
-    const isEmpty = Object.keys(cart).length === 0
     const cartIterable = Object.entries(cart)
 
     // Actions
@@ -30,12 +30,14 @@ export function useCart() {
             if (available !== undefined && current >= available) {
                 return prevCart
             }
+            setDiscountState(0)
             return { ...prevCart, [id]: current + 1 }
         })
     }
     const dec = (id: string) => {
         setCart((prevCart) => {
             const current = prevCart[id]
+            setDiscountState(0)
             if (current <= 1) {
                 const { [id]: _, ...restOfCart } = prevCart
                 return restOfCart
@@ -56,6 +58,7 @@ export function useCart() {
     const removeItem = (id: string) => {
         setCart((prevCart) => {
             const { [id]: _, ...restOfCart } = prevCart
+            setDiscountState(0)
             return restOfCart
         })
     }
