@@ -21,7 +21,7 @@ interface DraftState {
 
 function getInitialDraft(currentDiscount: number, lastApplied: DraftState | null): DraftState {
     if (currentDiscount > 0) {
-        return lastApplied ?? { type: "fixed", value: currentDiscount / 100 }
+        return lastApplied ?? { type: "fixed", value: currentDiscount }
     }
     return { type: "percent", value: "" }
 }
@@ -50,7 +50,7 @@ export function DiscountModal({
     const discountCents =
         draft.type === "percent"
             ? Math.round(subtotal * (Math.min(100, Math.max(0, num)) / 100))
-            : Math.round(num * 100)
+            : num
 
     const isValid =
         num > 0 &&

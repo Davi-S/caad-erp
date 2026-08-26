@@ -65,15 +65,15 @@ export function RestockModal({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [opened, product])
 
-    const estimatedTotalCents = Math.round(form.values.quantity * form.values.unit_cost * 100)
+    const estimatedTotalCents = form.values.quantity * form.values.unit_cost
 
     const handleSubmit = form.onSubmit((values) => {
-        const totalCostInReais =
+        const totalCostInCents =
             values.cost_mode === "unit" ? values.quantity * values.unit_cost : values.total_cost
 
         onConfirm({
             quantity: values.quantity,
-            totalCost: Math.round(totalCostInReais * 100),
+            totalCost: totalCostInCents,
             notes: values.notes.trim() || null,
         })
     })
