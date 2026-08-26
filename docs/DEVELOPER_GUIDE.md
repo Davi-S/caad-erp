@@ -50,6 +50,7 @@ caad-erp/
 │   └── tests/          # Vitest suite (DAL, BLL, tRPC integration tests)
 ├── frontend/           # Frontend Workspace (React 19 + Vite + Mantine + React Query)
 │   ├── src/            # Features (POS, Stock, Salesmen, Home), components, and hooks
+│   ├── tests/          # Vitest suite (Discount calculation & allocation tests)
 │   └── package.json    # Frontend package definition
 ├── docs/               # Technical specifications, developer guide, and workflows
 │   ├── DEVELOPER_GUIDE.md # Technical architecture and design rationale
@@ -80,7 +81,7 @@ npm run dev:backend
 # Start frontend Vite server only
 npm run dev:frontend
 
-# Run full Vitest backend test suite (89 unit and integration tests)
+# Run full Vitest test suite across backend and frontend (143+ unit and integration tests)
 npm test
 
 # Lint and format all monorepo files (Oxlint and Oxfmt)
@@ -154,12 +155,12 @@ analytics calculations, and validation logic.
 
 - **Two-Tier Validation Strategy:** Validation is split into two complementary
   phases:
-    - _Stateless Boundary Validation:_ Zod schemas validate structural types,
-      string length, and numeric bounds synchronously before reaching domain
-      handlers.
-    - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
-      rules (such as checking stock availability, active flags, or credit line
-      links).
+  - _Stateless Boundary Validation:_ Zod schemas validate structural types,
+    string length, and numeric bounds synchronously before reaching domain
+    handlers.
+  - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
+    rules (such as checking stock availability, active flags, or credit line
+    links).
 
 ### Presentation Layer (tRPC Routers)
 
@@ -187,9 +188,11 @@ BLL handlers.
 ### Data Representation Conventions
 
 - **Monetary Values as Integer Cents:** All monetary fields (`sellPrice`,
-  `totalRevenue`, `totalCost`) are stored as integers representing cents (e.g.
-  $5.50 = `550`). This avoids floating-point rounding errors during financial
-  summations.
+  `totalRevenue`, `totalCost`, `discount`) across the backend database, tRPC
+  contracts, frontend state hooks (`useCart`), and form components
+  (`CurrencyInput`) are strictly represented and passed as integer cents (e.g.
+  R$ 5,50 = `550`). This eliminates floating-point rounding errors and removes
+  float division/multiplication (`/ 100` / `* 100`) throughout the codebase.
 - **Dynamic Stock Level Calculation:** On-hand inventory stock is derived
   dynamically via `SUM(quantity_change)` across the transaction ledger rather
   than maintaining mutable stock counters.
@@ -236,9 +239,9 @@ maintains separate `totalRevenue` and `totalCost` columns.
 - **Simplified Financial Summations:** Keeping revenue and cost in dedicated
   columns eliminates ambiguous multi-purpose math and makes financial report
   calculations straightforward:
-    - Gross Revenue: `SUM(total_revenue)`
-    - Total Inventory Cost: `SUM(total_cost)`
-    - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
+  - Gross Revenue: `SUM(total_revenue)`
+  - Total Inventory Cost: `SUM(total_cost)`
+  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
 
 ### Why use UUID v7 for Transaction IDs instead of Auto-Incrementing Integers?
 
@@ -292,6 +295,32 @@ filtering.
 - **Client Flexibility:** Returning the full dataset allows frontend UI screens
   to filter active items for checkout screens while showing full management
   lists (with active status toggles) on administrative screens.
+
+### How are Global Order-Level Discounts Handled and Distributed?
+
+The POS cart allows cashiers to apply global order-level discounts (entered via
+percentage or fixed amount in the UI, stored strictly as integer cents in the
+cart hook).
+
+Because the underlying ledger records one `SALE` transaction row per distinct
+product, order-level discounts are distributed proportionally across individual
+line items prior to dispatching the checkout mutation:
+
+- **Proportional Allocation (Cumulative Running Balance Algorithm):** Discounts
+  are distributed across items proportional to each item's gross subtotal using
+  cumulative targets:
+  $$\text{targetCumulative}_k = \text{round}\left( \frac{\text{cumulativeSubtotal}_k}{\text{totalSubtotal}} \times \text{totalDiscount} \right)$$
+  $$\text{itemDiscount}_k = \text{targetCumulative}_k - \text{targetCumulative}_{k-1}$$
+  This mathematically guarantees that the exact sum of line item discounts
+  equals the total global discount
+  ($\sum \text{itemDiscount}_k \equiv \text{totalDiscount}$) with **zero cent
+  rounding drift**.
+- **Automated Ledger Audit Trail:** Each discounted `SALE` transaction record
+  generates an audit note in its `notes` column:
+- **Cart Modification Auto-Reset Invariant:** To guarantee financial safety and
+  prevent accidental over-discounting or percentage drift when items are added
+  or removed, any cart item mutation (`inc`, `dec`, `removeItem`, `clearCart`)
+  automatically resets the active discount to zero.
 
 ---
 
