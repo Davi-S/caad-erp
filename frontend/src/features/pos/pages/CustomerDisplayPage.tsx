@@ -11,6 +11,8 @@ export function CustomerDisplayPage() {
 
     const cart = syncedState?.cart || {}
     const total = syncedState?.total || 0
+    const subtotal = syncedState?.subtotal || 0
+    const discount = syncedState?.discount || 0
     const activeScreen = syncedState?.screen || "cart"
     const paymentDetails = syncedState?.paymentDetails || null
 
@@ -18,6 +20,8 @@ export function CustomerDisplayPage() {
         return (
             <CustomerPaymentScreen
                 total={total}
+                subtotal={subtotal}
+                discount={discount}
                 paymentDetails={paymentDetails}
                 checkoutStatus={syncedState?.checkoutStatus || "idle"}
             />
@@ -30,6 +34,8 @@ export function CustomerDisplayPage() {
             stock={stock}
             cart={cart}
             total={total}
+            subtotal={subtotal}
+            discount={discount}
             openGroupId={syncedState?.openGroupId || null}
         />
     )

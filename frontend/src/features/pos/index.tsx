@@ -8,6 +8,8 @@ import { useSalesmen } from "@/hooks/queries/useSalesmen"
 import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
 import { usePOSBroadcast } from "./hooks/usePOSBroadcast"
+import { distributeDiscount } from "./utils/discount"
+import { brl } from "@/helpers"
 import type { POSBroadcastState, PaymentDetails } from "./types/broadcast"
 import type { PaymentType, Product } from "@/types"
 
@@ -39,12 +41,16 @@ export function POSFlow() {
             paymentDetails,
             checkoutStatus: checkoutState.status,
             checkoutError: checkoutState.error,
+            subtotal: cartState.subtotal,
+            discount: cartState.discount,
             total: cartState.total,
             openGroupId,
         }
     }, [
         screen,
         cartState.cart,
+        cartState.subtotal,
+        cartState.discount,
         cartState.total,
         selectedSalesman,
         paymentDetails,
@@ -102,16 +108,9 @@ export function POSFlow() {
                 onPaymentStateChange={setPaymentDetails}
                 actions={{
                     onConfirm: (method) => {
-                        if (selectedSalesmanId) {
-                            checkoutState.confirmPayment(
-                                assemblySalesRequest(
-                                    selectedSalesmanId,
-                                    method,
-                                    cartState,
-                                    products,
-                                ),
-                            )
-                        }
+                        checkoutState.confirmPayment(
+                            assemblySalesRequest(selectedSalesmanId, method, cartState, products),
+                        )
                     },
                     onNewSale: () => {
                         cartState.clearCart()
@@ -143,15 +142,34 @@ function assemblySalesRequest(
     cartState: ReturnType<typeof useCart>,
     products: Product[],
 ) {
+    const lineItems = cartState.cartIterable.map(([productId, quantity]) => {
+        const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
+        return {
+            productId,
+            subtotal: quantity * productPrice,
+        }
+    })
+
+    const distributedDiscounts = distributeDiscount(lineItems, cartState.discount)
+
     return cartState.cartIterable.map(([productId, quantity]) => {
         const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
+        const itemSubtotal = quantity * productPrice
+        const itemDiscount = distributedDiscounts[productId] || 0
+        const itemRevenue = itemSubtotal - itemDiscount
+
+        let notes: string | null = null
+        if (cartState.discount > 0) {
+            notes = `Desconto global de ${brl(cartState.discount)} aplicado (Desc. proporcional do item: ${brl(itemDiscount)})`
+        }
+
         return {
             productId: productId,
             salesmanId: selectedSalesmanId,
             quantity: quantity,
-            totalRevenue: quantity * productPrice,
+            totalRevenue: method === "OnCredit" ? 0 : itemRevenue,
             paymentType: method,
-            notes: null,
+            notes,
         }
     })
 }

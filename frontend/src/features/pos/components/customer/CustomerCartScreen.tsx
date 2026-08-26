@@ -22,6 +22,8 @@ interface CustomerCartScreenProps {
     stock: Stock
     cart: Record<string, number>
     total: number
+    subtotal?: number
+    discount?: number
     openGroupId?: string | null
 }
 
@@ -32,6 +34,8 @@ export function CustomerCartScreen({
     stock,
     cart,
     total,
+    subtotal,
+    discount,
     openGroupId,
 }: CustomerCartScreenProps) {
     const cartEntries = Object.entries(cart)
@@ -136,12 +140,40 @@ export function CustomerCartScreen({
             {/* Footer */}
             <Stack gap="xs">
                 <Divider />
-                <Group justify="space-between">
-                    <Text fw={600}>Total</Text>
-                    <Text fw={700} size="lg" ff="monospace">
-                        {brl(total)}
-                    </Text>
-                </Group>
+                {discount && discount > 0 ? (
+                    <Stack gap={2}>
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">
+                                Subtotal
+                            </Text>
+                            <Text size="sm" ff="monospace">
+                                {brl(subtotal || total + discount)}
+                            </Text>
+                        </Group>
+                        <Group justify="space-between">
+                            <Text size="sm" c="green.7" fw={500}>
+                                Desconto
+                            </Text>
+                            <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                -{brl(discount)}
+                            </Text>
+                        </Group>
+                        <Divider variant="dashed" my={2} />
+                        <Group justify="space-between">
+                            <Text fw={600}>Total</Text>
+                            <Text fw={700} size="lg" ff="monospace">
+                                {brl(total)}
+                            </Text>
+                        </Group>
+                    </Stack>
+                ) : (
+                    <Group justify="space-between">
+                        <Text fw={600}>Total</Text>
+                        <Text fw={700} size="lg" ff="monospace">
+                            {brl(total)}
+                        </Text>
+                    </Group>
+                )}
             </Stack>
         </ScreenShell>
     )

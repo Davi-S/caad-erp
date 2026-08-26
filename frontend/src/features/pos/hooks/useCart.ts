@@ -9,13 +9,16 @@ export function useCart() {
 
     // Core state. Single source of truth. Simplest representation of the cart
     const [cart, setCart] = useState<Record<string, number>>({})
+    const [discount, setDiscountState] = useState<number>(0)
 
     // Derived states used for clear intent and easy of use of other values
-    const total = (products ?? []).reduce(
+    const subtotal = (products ?? []).reduce(
         (sum, item) => sum + (cart[item.id] || 0) * item.sellPrice,
         0,
     )
     const isEmpty = Object.keys(cart).length === 0
+    const total = subtotal - discount
+
     const cartIterable = Object.entries(cart)
 
     // Actions
@@ -27,12 +30,14 @@ export function useCart() {
             if (available !== undefined && current >= available) {
                 return prevCart
             }
+            setDiscountState(0)
             return { ...prevCart, [id]: current + 1 }
         })
     }
     const dec = (id: string) => {
         setCart((prevCart) => {
             const current = prevCart[id]
+            setDiscountState(0)
             if (current <= 1) {
                 const { [id]: _, ...restOfCart } = prevCart
                 return restOfCart
@@ -40,12 +45,20 @@ export function useCart() {
             return { ...prevCart, [id]: current - 1 }
         })
     }
+    const setDiscount = (value: number) => {
+        setDiscountState(Math.min(subtotal, Math.max(0, value)))
+    }
     const clearCart = () => {
         setCart({})
+        setDiscountState(0)
+    }
+    const clearDiscount = () => {
+        setDiscountState(0)
     }
     const removeItem = (id: string) => {
         setCart((prevCart) => {
             const { [id]: _, ...restOfCart } = prevCart
+            setDiscountState(0)
             return restOfCart
         })
     }
@@ -53,10 +66,14 @@ export function useCart() {
     return {
         cart,
         cartIterable,
+        subtotal,
+        discount,
         total,
         isEmpty,
         inc,
         dec,
+        setDiscount,
+        clearDiscount,
         clearCart,
         removeItem,
     }

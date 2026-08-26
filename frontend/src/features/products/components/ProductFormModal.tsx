@@ -49,7 +49,7 @@ export function ProductFormModal({
             form.setValues({
                 id: product?.id ?? "",
                 name: product?.name ?? "",
-                sellPrice: product ? product.sellPrice / 100 : 0,
+                sellPrice: product ? product.sellPrice : 0,
                 isActive: product?.isActive ?? true,
             })
         }
@@ -57,19 +57,17 @@ export function ProductFormModal({
     }, [opened, product])
 
     const handleSubmit = form.onSubmit((values) => {
-        const sellPriceInCents = Math.round(values.sellPrice * 100)
-
         if (isEditing && product) {
             onUpdate(product.id, {
                 name: values.name.trim(),
-                sellPrice: sellPriceInCents,
+                sellPrice: values.sellPrice,
                 isActive: values.isActive,
             })
         } else {
             onCreate({
                 id: values.id.trim(),
                 name: values.name.trim(),
-                sellPrice: sellPriceInCents,
+                sellPrice: values.sellPrice,
                 isActive: values.isActive,
             })
         }

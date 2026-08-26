@@ -20,6 +20,8 @@ export interface POSBroadcastState {
     paymentDetails: PaymentDetails | null
     checkoutStatus: "idle" | "pending" | "success" | "error"
     checkoutError: string | null
+    subtotal: number
+    discount: number
     total: number
     openGroupId?: string | null
 }
@@ -31,6 +33,8 @@ export const EMPTY_POS_STATE: POSBroadcastState = {
     paymentDetails: null,
     checkoutStatus: "idle",
     checkoutError: null,
+    subtotal: 0,
+    discount: 0,
     total: 0,
     openGroupId: null,
 }

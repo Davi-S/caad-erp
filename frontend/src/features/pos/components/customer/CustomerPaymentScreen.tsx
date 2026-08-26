@@ -17,12 +17,16 @@ import type { PaymentDetails } from "../../types/broadcast"
 
 interface CustomerPaymentScreenProps {
     total: number
+    subtotal?: number
+    discount?: number
     paymentDetails: PaymentDetails | null
     checkoutStatus: "idle" | "pending" | "success" | "error"
 }
 
 export function CustomerPaymentScreen({
     total,
+    subtotal,
+    discount,
     paymentDetails,
     checkoutStatus,
 }: CustomerPaymentScreenProps) {
@@ -101,6 +105,13 @@ export function CustomerPaymentScreen({
                             >
                                 {brl(total)}
                             </Text>
+
+                            {discount && discount > 0 ? (
+                                <Badge variant="light" color="green" size="sm">
+                                    Subtotal: {brl(subtotal || total + discount)} • Economia:{" "}
+                                    {brl(discount)}
+                                </Badge>
+                            ) : null}
 
                             <Badge
                                 variant="light"
