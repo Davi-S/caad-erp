@@ -47,10 +47,7 @@ export function DiscountModal({
     }, [opened, currentDiscount, lastApplied])
 
     const num = typeof draft.value === "number" ? draft.value : parseFloat(draft.value) || 0
-    const discountCents =
-        draft.type === "percent"
-            ? Math.round(subtotal * (Math.min(100, Math.max(0, num)) / 100))
-            : num
+    const discountCents = draft.type === "percent" ? Math.round(subtotal * (num / 100)) : num
 
     const isValid =
         num > 0 &&
@@ -106,8 +103,7 @@ export function DiscountModal({
                         <NumberInput
                             label="Porcentagem de desconto"
                             placeholder="Digite a % (ex: 15)"
-                            min={1}
-                            max={100}
+                            clampBehavior="none"
                             suffix="%"
                             value={draft.value}
                             onChange={(val) =>
