@@ -20,8 +20,9 @@ interface DraftState {
 }
 
 function getInitialDraft(currentDiscount: number, lastApplied: DraftState | null): DraftState {
-    if (currentDiscount > 0 && lastApplied) return lastApplied
-    if (currentDiscount > 0) return { type: "fixed", value: currentDiscount / 100 }
+    if (currentDiscount > 0) {
+        return lastApplied ?? { type: "fixed", value: currentDiscount / 100 }
+    }
     return { type: "percent", value: "" }
 }
 
