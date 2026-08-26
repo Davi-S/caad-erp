@@ -102,16 +102,14 @@ export function POSFlow() {
                 onPaymentStateChange={setPaymentDetails}
                 actions={{
                     onConfirm: (method) => {
-                        if (selectedSalesmanId) {
-                            checkoutState.confirmPayment(
-                                assemblySalesRequest(
-                                    selectedSalesmanId,
-                                    method,
-                                    cartState,
-                                    products,
-                                ),
-                            )
-                        }
+                        checkoutState.confirmPayment(
+                            assemblySalesRequest(
+                                selectedSalesmanId,
+                                method,
+                                cartState,
+                                products,
+                            ),
+                        )
                     },
                     onNewSale: () => {
                         cartState.clearCart()
