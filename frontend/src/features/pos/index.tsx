@@ -76,6 +76,8 @@ export function POSFlow() {
                 confirmLabel="Começar venda"
                 onNext={(id) => {
                     setSelectedSalesmanId(id)
+                    // Clear cart notes after changing the salesman
+                    cartState.clearNotes()
                     setScreen("cart")
                 }}
             />
@@ -114,6 +116,7 @@ export function POSFlow() {
                     },
                     onNewSale: () => {
                         cartState.clearCart()
+                        cartState.clearNotes()
                         checkoutState.resetCheckout()
                         setPaymentDetails(null)
                         setScreen("cart")
@@ -124,6 +127,7 @@ export function POSFlow() {
                     },
                     onCancel: () => {
                         cartState.clearCart()
+                        cartState.clearNotes()
                         checkoutState.resetCheckout()
                         setPaymentDetails(null)
                         setScreen("salesmen")
@@ -172,4 +176,21 @@ function assemblySalesRequest(
             notes,
         }
     })
+}
+
+export function formatSaleNotes(
+    manualNotes: string,
+    discountCents: number,
+    itemDiscountCents: number,
+): string | null {
+    const manual = manualNotes.trim()
+    let discountNote: string | null = null
+    if (discountCents > 0) {
+        discountNote = `Desconto global de ${brl(discountCents)} aplicado (Desc. proporcional do item: ${brl(itemDiscountCents)})`
+    }
+
+    if (manual && discountNote) {
+        return `${manual} • ${discountNote}`
+    }
+    return manual || discountNote || null
 }
