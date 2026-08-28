@@ -18,10 +18,10 @@ describe("formatSaleNotes", () => {
         )
     })
 
-    it("GIVEN both manual note and discount WHEN formatSaleNotes is called THEN returns combined note with bullet separator", () => {
+    it("GIVEN both manual note and discount WHEN formatSaleNotes is called THEN returns combined note with pipe separator", () => {
         const result = formatSaleNotes("Venda de evento", 1000, 500)
         expect(result).toBe(
-            `Venda de evento • Desconto global de ${brl(1000)} aplicado (Desc. proporcional do item: ${brl(500)})`,
+            `Desconto global de ${brl(1000)} aplicado (Desc. proporcional do item: ${brl(500)}) | Venda de evento`,
         )
     })
 
@@ -56,7 +56,7 @@ describe("assemblySalesRequest", () => {
             quantity: 2,
             totalRevenue: 900, // 1000 - 100
             paymentType: "PIX",
-            notes: `Venda teste retroativa • Desconto global de ${brl(200)} aplicado (Desc. proporcional do item: ${brl(100)})`,
+            notes: `Desconto global de ${brl(200)} aplicado (Desc. proporcional do item: ${brl(100)}) | Venda teste retroativa`,
         })
         expect(requests[1]).toEqual({
             productId: "P2",
@@ -64,7 +64,7 @@ describe("assemblySalesRequest", () => {
             quantity: 1,
             totalRevenue: 900, // 1000 - 100
             paymentType: "PIX",
-            notes: `Venda teste retroativa • Desconto global de ${brl(200)} aplicado (Desc. proporcional do item: ${brl(100)})`,
+            notes: `Desconto global de ${brl(200)} aplicado (Desc. proporcional do item: ${brl(100)}) | Venda teste retroativa`,
         })
     })
 })
