@@ -215,13 +215,18 @@ export function ProductGroupCard({
                                                     inc(product.id)
                                                 }
                                             }}
+                                            styles={{
+                                                itemLabel: {
+                                                    width: "100%",
+                                                    minWidth: 0,
+                                                },
+                                            }}
                                             style={{
                                                 padding: "6px 8px",
                                                 borderRadius: "var(--mantine-radius-sm)",
                                                 textAlign: "center",
                                                 width: "100%",
                                                 minWidth: 0,
-                                                overflow: "hidden",
                                                 border:
                                                     qty > 0
                                                         ? "1px solid var(--mantine-primary-color-filled)"
@@ -245,7 +250,6 @@ export function ProductGroupCard({
                                                 style={{
                                                     width: "100%",
                                                     minWidth: 0,
-                                                    overflow: "hidden",
                                                 }}
                                             >
                                                 <Text
@@ -253,14 +257,7 @@ export function ProductGroupCard({
                                                     fw={600}
                                                     ta="center"
                                                     truncate="end"
-                                                    style={{
-                                                        width: "100%",
-                                                        maxWidth: "100%",
-                                                        overflow: "hidden",
-                                                        textOverflow: "ellipsis",
-                                                        whiteSpace: "nowrap",
-                                                        display: "block",
-                                                    }}
+                                                    style={{ width: "100%" }}
                                                 >
                                                     {v.label}
                                                 </Text>
