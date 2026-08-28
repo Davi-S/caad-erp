@@ -141,7 +141,7 @@ export function POSFlow() {
 }
 
 export function assemblySalesRequest(
-    selectedSalesmanId: string | null,
+    selectedSalesmanId: string,
     method: PaymentType,
     cartState: ReturnType<typeof useCart>,
     products: Product[],
