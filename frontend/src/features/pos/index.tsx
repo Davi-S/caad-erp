@@ -187,7 +187,7 @@ export function formatSaleNotes(
     }
 
     if (manual && discountNote) {
-        return `${manual} • ${discountNote}`
+        return `${discountNote} | ${manual}`
     }
     return manual || discountNote || null
 }
