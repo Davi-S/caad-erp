@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { Badge, Checkbox, Group, Indicator, Menu, SimpleGrid, Stack, Text } from "@mantine/core"
+import { Checkbox, Group, Indicator, Menu, SimpleGrid, Stack, Text } from "@mantine/core"
 import { ChevronDown } from "lucide-react"
 import { brl } from "@/helpers"
 import type { ProductGroup } from "../utils/productGrouping"
@@ -197,56 +197,90 @@ export function ProductGroupCard({
                                 const qty = cart[product.id] || 0
 
                                 return (
-                                    <Menu.Item
+                                    <Indicator
                                         key={product.id}
-                                        disabled={soldOut}
-                                        onClick={() => {
-                                            if (readOnly || soldOut) return
-                                            if (qty > 0) {
-                                                removeItem(product.id)
-                                            } else {
-                                                inc(product.id)
-                                            }
-                                        }}
-                                        style={{
-                                            padding: "6px 8px",
-                                            borderRadius: "var(--mantine-radius-sm)",
-                                            border:
-                                                qty > 0
-                                                    ? "1px solid var(--mantine-primary-color-filled)"
-                                                    : "1px solid var(--mantine-color-default-border)",
-                                            backgroundColor:
-                                                qty > 0
-                                                    ? "var(--mantine-primary-color-light)"
-                                                    : undefined,
-                                        }}
+                                        label={`${qty}x`}
+                                        size={18}
+                                        disabled={qty === 0}
+                                        offset={15}
+                                        style={{ width: "100%", minWidth: 0 }}
                                     >
-                                        <Group justify="space-between" align="center" wrap="nowrap">
-                                            <Stack gap={0} style={{ minWidth: 0 }}>
-                                                <Text size="xs" fw={600} truncate>
+                                        <Menu.Item
+                                            disabled={soldOut}
+                                            onClick={() => {
+                                                if (readOnly || soldOut) return
+                                                if (qty > 0) {
+                                                    removeItem(product.id)
+                                                } else {
+                                                    inc(product.id)
+                                                }
+                                            }}
+                                            style={{
+                                                padding: "6px 8px",
+                                                borderRadius: "var(--mantine-radius-sm)",
+                                                textAlign: "center",
+                                                width: "100%",
+                                                minWidth: 0,
+                                                overflow: "hidden",
+                                                border:
+                                                    qty > 0
+                                                        ? "1px solid var(--mantine-primary-color-filled)"
+                                                        : "1px solid var(--mantine-color-default-border)",
+                                                backgroundColor:
+                                                    qty > 0
+                                                        ? "var(--mantine-primary-color-light)"
+                                                        : soldOut
+                                                          ? "var(--mantine-color-gray-1)"
+                                                          : undefined,
+                                                cursor: readOnly
+                                                    ? "default"
+                                                    : soldOut
+                                                      ? "not-allowed"
+                                                      : "pointer",
+                                            }}
+                                        >
+                                            <Stack
+                                                gap={2}
+                                                align="center"
+                                                style={{
+                                                    width: "100%",
+                                                    minWidth: 0,
+                                                    overflow: "hidden",
+                                                }}
+                                            >
+                                                <Text
+                                                    size="xs"
+                                                    fw={600}
+                                                    ta="center"
+                                                    truncate="end"
+                                                    style={{
+                                                        width: "100%",
+                                                        maxWidth: "100%",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                        whiteSpace: "nowrap",
+                                                        display: "block",
+                                                    }}
+                                                >
                                                     {v.label}
                                                 </Text>
-                                                <Text size="10px" c="dimmed">
-                                                    {soldOut ? "Esgotado" : `${available} disp.`}
-                                                </Text>
-                                            </Stack>
-
-                                            <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
-                                                {qty > 0 && (
-                                                    <Badge size="xs" variant="filled">
-                                                        {qty}x
-                                                    </Badge>
-                                                )}
                                                 <Text
                                                     size="xs"
                                                     fw={700}
-                                                    c="var(--mantine-primary-color-filled)"
+                                                    c={
+                                                        soldOut
+                                                            ? "dimmed"
+                                                            : "var(--mantine-primary-color-filled)"
+                                                    }
                                                 >
-                                                    {brl(product.sellPrice)}
+                                                    {soldOut ? "Esgotado" : brl(product.sellPrice)}
                                                 </Text>
-                                            </Group>
-                                        </Group>
-                                    </Menu.Item>
+                                                <Text size="10px" c="dimmed">
+                                                    {soldOut ? "‎ " : `${available} disp.`}
+                                                </Text>
+                                            </Stack>
+                                        </Menu.Item>
+                                    </Indicator>
                                 )
                             })}
                         </SimpleGrid>
