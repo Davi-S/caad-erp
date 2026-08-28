@@ -9,10 +9,11 @@ import {
     SimpleGrid,
     Stack,
     Text,
+    TextInput,
     ThemeIcon,
     Title,
 } from "@mantine/core"
-import { Plus, Minus, ArrowLeft, ShoppingCart, Tag, Pencil, X } from "lucide-react"
+import { Plus, Minus, ArrowLeft, ShoppingCart, Tag, Pencil, X, FileText } from "lucide-react"
 import { createColumnHelper } from "@tanstack/react-table"
 import { ScreenShell } from "@/components/ScreenShell"
 import { ListControls } from "@/components/ListControls"
@@ -73,11 +74,13 @@ export function CartScreen({
         subtotal,
         discount,
         total,
+        notes,
         isEmpty,
         inc,
         dec,
         setDiscount,
         clearDiscount,
+        setNotes,
         removeItem,
     } = cartState
     const { onBack, onNext } = actions
@@ -302,6 +305,14 @@ export function CartScreen({
                         </Group>
                     </Stack>
                 )}
+
+                <TextInput
+                    placeholder="Observações da venda (opcional)"
+                    size="xs"
+                    leftSection={<FileText size={13} />}
+                    value={notes}
+                    onChange={(e) => setNotes(e.currentTarget.value)}
+                />
 
                 <Button size="lg" disabled={isEmpty || total < 0} onClick={onNext}>
                     Prosseguir para o pagamento
