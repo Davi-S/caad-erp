@@ -10,6 +10,7 @@ export function useCart() {
     // Core state. Single source of truth. Simplest representation of the cart
     const [cart, setCart] = useState<Record<string, number>>({})
     const [discount, setDiscountState] = useState<number>(0)
+    const [notes, setNotes] = useState<string>("")
 
     // Derived states used for clear intent and easy of use of other values
     const subtotal = (products ?? []).reduce(
@@ -55,6 +56,9 @@ export function useCart() {
     const clearDiscount = () => {
         setDiscountState(0)
     }
+    const clearNotes = () => {
+        setNotes("")
+    }
     const removeItem = (id: string) => {
         setCart((prevCart) => {
             const { [id]: _, ...restOfCart } = prevCart
@@ -69,12 +73,15 @@ export function useCart() {
         subtotal,
         discount,
         total,
+        notes,
         isEmpty,
         inc,
         dec,
         setDiscount,
         clearDiscount,
         clearCart,
+        setNotes,
+        clearNotes,
         removeItem,
     }
 }
