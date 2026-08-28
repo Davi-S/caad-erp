@@ -155,12 +155,12 @@ analytics calculations, and validation logic.
 
 - **Two-Tier Validation Strategy:** Validation is split into two complementary
   phases:
-  - _Stateless Boundary Validation:_ Zod schemas validate structural types,
-    string length, and numeric bounds synchronously before reaching domain
-    handlers.
-  - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
-    rules (such as checking stock availability, active flags, or credit line
-    links).
+    - _Stateless Boundary Validation:_ Zod schemas validate structural types,
+      string length, and numeric bounds synchronously before reaching domain
+      handlers.
+    - _Stateful Invariant Enforcement:_ Domain handlers enforce database-dependent
+      rules (such as checking stock availability, active flags, or credit line
+      links).
 
 ### Presentation Layer (tRPC Routers)
 
@@ -239,9 +239,9 @@ maintains separate `totalRevenue` and `totalCost` columns.
 - **Simplified Financial Summations:** Keeping revenue and cost in dedicated
   columns eliminates ambiguous multi-purpose math and makes financial report
   calculations straightforward:
-  - Gross Revenue: `SUM(total_revenue)`
-  - Total Inventory Cost: `SUM(total_cost)`
-  - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
+    - Gross Revenue: `SUM(total_revenue)`
+    - Total Inventory Cost: `SUM(total_cost)`
+    - Net Profit: `SUM(total_revenue) + SUM(total_cost)`
 
 ### Why use UUID v7 for Transaction IDs instead of Auto-Incrementing Integers?
 
