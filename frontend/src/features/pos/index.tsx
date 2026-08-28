@@ -162,10 +162,7 @@ function assemblySalesRequest(
         const itemDiscount = distributedDiscounts[productId] || 0
         const itemRevenue = itemSubtotal - itemDiscount
 
-        let notes: string | null = null
-        if (cartState.discount > 0) {
-            notes = `Desconto global de ${brl(cartState.discount)} aplicado (Desc. proporcional do item: ${brl(itemDiscount)})`
-        }
+        const notes = formatSaleNotes(cartState.notes, cartState.discount, itemDiscount)
 
         return {
             productId: productId,
