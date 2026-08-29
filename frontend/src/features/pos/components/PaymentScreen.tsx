@@ -290,8 +290,8 @@ export function PaymentScreen({
                                                 {method === "PIX"
                                                     ? "Pix"
                                                     : method === "Cash"
-                                                        ? "Dinheiro em espécie"
-                                                        : "Outro"}
+                                                      ? "Dinheiro em espécie"
+                                                      : "Outro"}
                                             </Text>
                                         </Stack>
                                     ) : (
@@ -384,7 +384,8 @@ export function PaymentScreen({
                                                 <Stack align="center" justify="center" gap="xs">
                                                     <CreditCard size={32} color="gray" />
                                                     <Text size="sm" c="dimmed" ta="center">
-                                                        "Receba o valor através de outro meio e confirme abaixo."
+                                                        "Receba o valor através de outro meio e
+                                                        confirme abaixo."
                                                     </Text>
                                                 </Stack>
                                             )}

@@ -131,8 +131,8 @@ export function CustomerPaymentScreen({
                                 {method === "PIX"
                                     ? "Pix"
                                     : method === "Cash"
-                                        ? "Dinheiro"
-                                        : "Outro"}
+                                      ? "Dinheiro"
+                                      : "Outro"}
                             </Badge>
 
                             <Paper
