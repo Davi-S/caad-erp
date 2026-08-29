@@ -68,14 +68,14 @@ describe("assemblySalesRequest", () => {
         })
     })
 
-    it("GIVEN cart with 100% discount WHEN assemblySalesRequest is called with Other THEN sets totalRevenue to 0 and paymentType to Other", () => {
+    it("GIVEN cart with 100% discount WHEN assemblySalesRequest is called with PIX THEN sets paymentType to Other for zero-revenue items", () => {
         const cartState = {
             cartIterable: [["P1", 1] as [string, number]],
             discount: 500, // 100% discount
             notes: "Brinde",
         }
 
-        const requests = assemblySalesRequest("S1", "Other", cartState, mockProducts)
+        const requests = assemblySalesRequest("S1", "PIX", cartState, mockProducts)
 
         expect(requests).toHaveLength(1)
         expect(requests[0]).toEqual({
@@ -85,6 +85,41 @@ describe("assemblySalesRequest", () => {
             totalRevenue: 0,
             paymentType: "Other",
             notes: `Desconto global de ${brl(500)} aplicado (Desc. proporcional do item: ${brl(500)}) | Brinde`,
+        })
+    })
+
+    it("GIVEN mixed cart where one item has zero revenue WHEN assemblySalesRequest is called with PIX THEN sets paymentType to Other only for zero-revenue item", () => {
+        const productsWithFree: Product[] = [
+            ...mockProducts,
+            { id: "P3", name: "Brinde Adesivo", sellPrice: 0, isActive: true },
+        ]
+        const cartState = {
+            cartIterable: [
+                ["P1", 1] as [string, number], // 500
+                ["P3", 1] as [string, number], // 0
+            ],
+            discount: 0,
+            notes: "",
+        }
+
+        const requests = assemblySalesRequest("S1", "PIX", cartState, productsWithFree)
+
+        expect(requests).toHaveLength(2)
+        expect(requests[0]).toEqual({
+            productId: "P1",
+            salesmanId: "S1",
+            quantity: 1,
+            totalRevenue: 500,
+            paymentType: "PIX",
+            notes: null,
+        })
+        expect(requests[1]).toEqual({
+            productId: "P3",
+            salesmanId: "S1",
+            quantity: 1,
+            totalRevenue: 0,
+            paymentType: "Other",
+            notes: null,
         })
     })
 
