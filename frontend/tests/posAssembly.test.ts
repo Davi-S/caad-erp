@@ -67,4 +67,64 @@ describe("assemblySalesRequest", () => {
             notes: `Desconto global de ${brl(200)} aplicado (Desc. proporcional do item: ${brl(100)}) | Venda teste retroativa`,
         })
     })
+
+    it("GIVEN cart with 100% discount WHEN assemblySalesRequest is called with Other THEN sets totalRevenue to 0 and paymentType to Other", () => {
+        const cartState = {
+            cartIterable: [["P1", 1] as [string, number]],
+            discount: 500, // 100% discount
+            notes: "Brinde",
+        }
+
+        const requests = assemblySalesRequest("S1", "Other", cartState, mockProducts)
+
+        expect(requests).toHaveLength(1)
+        expect(requests[0]).toEqual({
+            productId: "P1",
+            salesmanId: "S1",
+            quantity: 1,
+            totalRevenue: 0,
+            paymentType: "Other",
+            notes: `Desconto global de ${brl(500)} aplicado (Desc. proporcional do item: ${brl(500)}) | Brinde`,
+        })
+    })
+
+    it("GIVEN cart paid with Other WHEN assemblySalesRequest is called THEN sets paymentType to Other", () => {
+        const cartState = {
+            cartIterable: [["P1", 1] as [string, number]],
+            discount: 0,
+            notes: "",
+        }
+
+        const requests = assemblySalesRequest("S1", "Other", cartState, mockProducts)
+
+        expect(requests).toHaveLength(1)
+        expect(requests[0]).toEqual({
+            productId: "P1",
+            salesmanId: "S1",
+            quantity: 1,
+            totalRevenue: 500,
+            paymentType: "Other",
+            notes: null,
+        })
+    })
+
+    it("GIVEN OnCredit sale WHEN assemblySalesRequest is called THEN preserves OnCredit paymentType and 0 revenue", () => {
+        const cartState = {
+            cartIterable: [["P1", 1] as [string, number]],
+            discount: 0,
+            notes: "Fiado",
+        }
+
+        const requests = assemblySalesRequest("S1", "OnCredit", cartState, mockProducts)
+
+        expect(requests).toHaveLength(1)
+        expect(requests[0]).toEqual({
+            productId: "P1",
+            salesmanId: "S1",
+            quantity: 1,
+            totalRevenue: 0,
+            paymentType: "OnCredit",
+            notes: "Fiado",
+        })
+    })
 })
