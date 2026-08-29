@@ -164,12 +164,16 @@ export function assemblySalesRequest(
 
         const notes = formatSaleNotes(cartState.notes, cartState.discount, itemDiscount)
 
+        const totalRevenue = method === "OnCredit" ? 0 : itemRevenue
+        const paymentType: PaymentType =
+            method === "OnCredit" ? "OnCredit" : itemRevenue === 0 ? "Other" : method
+
         return {
             productId: productId,
             salesmanId: selectedSalesmanId,
             quantity: quantity,
-            totalRevenue: method === "OnCredit" ? 0 : itemRevenue,
-            paymentType: method,
+            totalRevenue,
+            paymentType,
             notes,
         }
     })
