@@ -6,6 +6,7 @@ import { brl } from "@/helpers"
 interface DiscountModalProps {
     opened: boolean
     onClose: () => void
+    title?: string
     subtotal: number
     currentDiscount: number // in cents
     onApply: (discountInCents: number) => void
@@ -29,6 +30,7 @@ function getInitialDraft(currentDiscount: number, lastApplied: DraftState | null
 export function DiscountModal({
     opened,
     onClose,
+    title = "Desconto no Carrinho",
     subtotal,
     currentDiscount,
     onApply,
@@ -76,7 +78,7 @@ export function DiscountModal({
             onClose={onClose}
             title={
                 <Text fw={600} size="md">
-                    Desconto no Carrinho
+                    {title}
                 </Text>
             }
             centered
