@@ -11,7 +11,7 @@ import { usePOSBroadcast } from "./hooks/usePOSBroadcast"
 import { distributeDiscount } from "./utils/discount"
 import { brl } from "@/helpers"
 import type { POSBroadcastState, PaymentDetails } from "./types/broadcast"
-import type { PaymentType, Product } from "@/types"
+import type { PaymentType } from "@/types"
 
 export function POSFlow() {
     // Get the API data from the queries
@@ -36,20 +36,22 @@ export function POSFlow() {
     const getLatestPOSState = useCallback((): POSBroadcastState => {
         return {
             screen: screen === "payment" ? "payment" : "cart",
-            cart: cartState.cart,
+            items: cartState.items,
             selectedSalesman,
             paymentDetails,
             checkoutStatus: checkoutState.status,
             checkoutError: checkoutState.error,
             subtotal: cartState.subtotal,
+            totalItemDiscount: cartState.totalItemDiscount,
             discount: cartState.discount,
             total: cartState.total,
             openGroupId,
         }
     }, [
         screen,
-        cartState.cart,
+        cartState.items,
         cartState.subtotal,
+        cartState.totalItemDiscount,
         cartState.discount,
         cartState.total,
         selectedSalesman,
@@ -111,7 +113,7 @@ export function POSFlow() {
                 actions={{
                     onConfirm: (method) => {
                         checkoutState.confirmPayment(
-                            assemblySalesRequest(selectedSalesmanId, method, cartState, products),
+                            assemblySalesRequest(selectedSalesmanId, method, cartState),
                         )
                     },
                     onNewSale: () => {
@@ -143,35 +145,42 @@ export function POSFlow() {
 export function assemblySalesRequest(
     selectedSalesmanId: string,
     method: PaymentType,
-    cartState: ReturnType<typeof useCart>,
-    products: Product[],
+    cartState: Pick<ReturnType<typeof useCart>, "itemsList" | "discount" | "notes">,
 ) {
-    const lineItems = cartState.cartIterable.map(([productId, quantity]) => {
-        const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
+    const lineItems = cartState.itemsList.map((item) => {
+        const itemGrossSubtotal = item.quantity * item.unitPrice
+        const itemSpecificDiscount = item.discount || 0
+        const itemNetSubtotal = itemGrossSubtotal - itemSpecificDiscount
         return {
-            productId,
-            subtotal: quantity * productPrice,
+            productId: item.productId,
+            subtotal: itemNetSubtotal,
         }
     })
 
-    const distributedDiscounts = distributeDiscount(lineItems, cartState.discount)
+    const distributedGlobalDiscounts = distributeDiscount(lineItems, cartState.discount)
 
-    return cartState.cartIterable.map(([productId, quantity]) => {
-        const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
-        const itemSubtotal = quantity * productPrice
-        const itemDiscount = distributedDiscounts[productId] || 0
-        const itemRevenue = itemSubtotal - itemDiscount
+    return cartState.itemsList.map((item) => {
+        const itemGrossSubtotal = item.quantity * item.unitPrice
+        const itemSpecificDiscount = item.discount || 0
+        const allocatedGlobalDiscount = distributedGlobalDiscounts[item.productId] || 0
+        const totalDiscountOnItem = itemSpecificDiscount + allocatedGlobalDiscount
+        const itemRevenue = itemGrossSubtotal - totalDiscountOnItem
 
-        const notes = formatSaleNotes(cartState.notes, cartState.discount, itemDiscount)
+        const notes = formatSaleNotes(
+            cartState.notes,
+            cartState.discount,
+            allocatedGlobalDiscount,
+            itemSpecificDiscount,
+        )
 
         const totalRevenue = method === "OnCredit" ? 0 : itemRevenue
         const paymentType: PaymentType =
             method === "OnCredit" ? "OnCredit" : itemRevenue === 0 ? "Other" : method
 
         return {
-            productId: productId,
+            productId: item.productId,
             salesmanId: selectedSalesmanId,
-            quantity: quantity,
+            quantity: item.quantity,
             totalRevenue,
             paymentType,
             notes,
@@ -181,17 +190,26 @@ export function assemblySalesRequest(
 
 export function formatSaleNotes(
     manualNotes: string,
-    discountCents: number,
-    itemDiscountCents: number,
+    globalDiscountCents: number,
+    allocatedGlobalDiscountCents: number,
+    itemDiscountCents: number = 0,
 ): string | null {
-    const manual = manualNotes.trim()
-    let discountNote: string | null = null
-    if (discountCents > 0) {
-        discountNote = `Desconto global de ${brl(discountCents)} aplicado (Desc. proporcional do item: ${brl(itemDiscountCents)})`
+    const parts: string[] = []
+
+    if (itemDiscountCents > 0) {
+        parts.push(`Desconto no item de ${brl(itemDiscountCents)}`)
     }
 
-    if (manual && discountNote) {
-        return `${discountNote} | ${manual}`
+    if (globalDiscountCents > 0) {
+        parts.push(
+            `Desconto global de ${brl(globalDiscountCents)} aplicado (Desc. proporcional do item: ${brl(allocatedGlobalDiscountCents)})`,
+        )
     }
-    return manual || discountNote || null
+
+    const manual = manualNotes.trim()
+    if (manual) {
+        parts.push(manual)
+    }
+
+    return parts.length > 0 ? parts.join(" | ") : null
 }
