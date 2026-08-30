@@ -16,13 +16,15 @@ import { brl } from "@/helpers"
 import type { Product, Stock } from "@/types"
 import { groupProducts } from "../../utils/productGrouping"
 import { ProductGroupCard } from "../ProductGroupCard"
+import type { CartItem } from "../../hooks/useCart"
 
 interface CustomerCartScreenProps {
     products: Product[]
     stock: Stock
-    cart: Record<string, number>
+    items: Record<string, CartItem>
     total: number
     subtotal?: number
+    totalItemDiscount?: number
     discount?: number
     openGroupId?: string | null
 }
@@ -32,14 +34,16 @@ const noop = () => {}
 export function CustomerCartScreen({
     products,
     stock,
-    cart,
+    items,
     total,
     subtotal,
-    discount,
+    totalItemDiscount = 0,
+    discount = 0,
     openGroupId,
 }: CustomerCartScreenProps) {
-    const cartEntries = Object.entries(cart)
-    const isEmpty = cartEntries.length === 0
+    const itemsList = Object.values(items || {})
+    const isEmpty = itemsList.length === 0
+    const totalSavings = totalItemDiscount + discount
 
     const sortedProducts = useMemo(() => {
         return [...products].sort((a, b) =>
@@ -72,7 +76,7 @@ export function CustomerCartScreen({
                                 <ProductGroupCard
                                     key={group.id}
                                     group={group}
-                                    cart={cart}
+                                    cart={items}
                                     stock={stock}
                                     inc={noop}
                                     removeItem={noop}
@@ -105,19 +109,36 @@ export function CustomerCartScreen({
                             >
                                 No carrinho
                             </Text>
-                            {cartEntries.map(([productId, quantity], index) => {
-                                const product = products.find((p) => p.id === productId)
-                                if (!product) return null
+                            {itemsList.map((item, index) => {
+                                const itemGross = item.quantity * item.unitPrice
+                                const itemNet = itemGross - item.discount
 
                                 return (
-                                    <div key={productId}>
+                                    <div key={item.productId}>
                                         {index > 0 && <Divider variant="dashed" my={4} />}
-                                        <Group justify="space-between" wrap="nowrap">
-                                            <Text size="sm" style={{ flex: 1 }}>
-                                                {product.name}
-                                            </Text>
+                                        <Group justify="space-between" wrap="nowrap" align="center">
+                                            <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                                                <Text size="sm" truncate>
+                                                    {item.name}
+                                                </Text>
+                                                {item.discount > 0 && (
+                                                    <Group gap={4} align="center">
+                                                        <Text size="xs" c="green.7" fw={600}>
+                                                            -{brl(item.discount)}
+                                                        </Text>
+                                                        <Text
+                                                            size="xs"
+                                                            c="dimmed"
+                                                            td="line-through"
+                                                            ff="monospace"
+                                                        >
+                                                            {brl(itemGross)}
+                                                        </Text>
+                                                    </Group>
+                                                )}
+                                            </Stack>
                                             <Text size="sm" c="dimmed" fw={600}>
-                                                {quantity}x
+                                                {item.quantity}x
                                             </Text>
                                             <Text
                                                 size="sm"
@@ -125,8 +146,9 @@ export function CustomerCartScreen({
                                                 ff="monospace"
                                                 w={72}
                                                 ta="right"
+                                                c={item.discount > 0 ? "green.7" : undefined}
                                             >
-                                                {brl(quantity * product.sellPrice)}
+                                                {brl(itemNet)}
                                             </Text>
                                         </Group>
                                     </div>
@@ -140,22 +162,22 @@ export function CustomerCartScreen({
             {/* Footer */}
             <Stack gap="xs">
                 <Divider />
-                {discount && discount > 0 ? (
+                {totalSavings > 0 ? (
                     <Stack gap={2}>
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">
                                 Subtotal
                             </Text>
                             <Text size="sm" ff="monospace">
-                                {brl(subtotal || total + discount)}
+                                {brl(subtotal || total + totalSavings)}
                             </Text>
                         </Group>
                         <Group justify="space-between">
                             <Text size="sm" c="green.7" fw={500}>
-                                Desconto
+                                Economia total
                             </Text>
                             <Text size="sm" fw={600} c="green.7" ff="monospace">
-                                -{brl(discount)}
+                                -{brl(totalSavings)}
                             </Text>
                         </Group>
                         <Divider variant="dashed" my={2} />
