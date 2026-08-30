@@ -20,7 +20,7 @@ import { ListControls } from "@/components/ListControls"
 import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
 import { brl } from "@/helpers"
 import type { Salesman, Product, Stock } from "@/types"
-import { useCart } from "../hooks/useCart"
+import { useCart, type CartItem } from "../hooks/useCart"
 
 import { groupProducts } from "../utils/productGrouping"
 import { ProductGroupCard } from "./ProductGroupCard"
@@ -68,16 +68,21 @@ export function CartScreen({
     actions,
 }: CartScreenProps) {
     const [discountModalOpened, setDiscountModalOpened] = useState(false)
+    const [selectedItemForDiscount, setSelectedItemForDiscount] = useState<CartItem | null>(null)
     const {
-        cart,
-        cartIterable,
+        items,
+        itemsList,
         subtotal,
+        totalItemDiscount,
+        netSubtotal,
         discount,
         total,
         notes,
         isEmpty,
         inc,
         dec,
+        setItemDiscount,
+        clearItemDiscount,
         setDiscount,
         clearDiscount,
         setNotes,
@@ -100,12 +105,12 @@ export function CartScreen({
                 id: "stock",
                 enableGlobalFilter: false,
             }),
-            columnHelper.accessor((p) => (cart[p.id] ? 1 : 0), {
+            columnHelper.accessor((p) => (items[p.id] ? 1 : 0), {
                 id: "cart",
                 enableGlobalFilter: false,
             }),
         ],
-        [stock, cart],
+        [stock, items],
     )
 
     const {
@@ -152,7 +157,7 @@ export function CartScreen({
                                     <ProductGroupCard
                                         key={group.id}
                                         group={group}
-                                        cart={cart}
+                                        cart={items}
                                         stock={stock}
                                         inc={inc}
                                         removeItem={removeItem}
@@ -188,44 +193,81 @@ export function CartScreen({
                             >
                                 No carrinho
                             </Text>
-                            {cartIterable.map(([productId, quantity], index) => {
-                                const product = products.find((p) => p.id === productId)
-                                if (!product) return null
+                            {itemsList.map((item, index) => {
+                                const itemGrossSubtotal = item.quantity * item.unitPrice
+                                const itemNetSubtotal = itemGrossSubtotal - item.discount
+
                                 return (
-                                    <div key={productId}>
+                                    <div key={item.productId}>
                                         {index > 0 && <Divider variant="dashed" my={4} />}
-                                        <Group justify="space-between" wrap="nowrap">
-                                            <Text size="sm" style={{ flex: 1 }}>
-                                                {product.name}
-                                            </Text>
-                                            <ActionIcon.Group>
+                                        <Group justify="space-between" wrap="nowrap" align="center">
+                                            <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                                                <Text size="sm" truncate>
+                                                    {item.name}
+                                                </Text>
+                                                {item.discount > 0 && (
+                                                    <Group gap={4} align="center">
+                                                        <Text size="xs" c="green.7" fw={600}>
+                                                            -{brl(item.discount)}
+                                                        </Text>
+                                                        <Text
+                                                            size="xs"
+                                                            c="dimmed"
+                                                            td="line-through"
+                                                            ff="monospace"
+                                                        >
+                                                            {brl(itemGrossSubtotal)}
+                                                        </Text>
+                                                    </Group>
+                                                )}
+                                            </Stack>
+                                            <Group gap="xs" wrap="nowrap" align="center">
                                                 <ActionIcon
-                                                    variant="light"
+                                                    variant="subtle"
+                                                    color={item.discount > 0 ? "green" : "gray"}
                                                     size="sm"
-                                                    onClick={() => dec(productId)}
+                                                    onClick={() => setSelectedItemForDiscount(item)}
+                                                    title={
+                                                        item.discount > 0
+                                                            ? "Editar desconto do item"
+                                                            : "Adicionar desconto no item"
+                                                    }
                                                 >
-                                                    <Minus size={12} />
+                                                    <Tag size={13} />
                                                 </ActionIcon>
-                                                <ActionIcon.GroupSection variant="light" size="sm">
-                                                    {quantity}
-                                                </ActionIcon.GroupSection>
-                                                <ActionIcon
-                                                    variant="light"
+                                                <ActionIcon.Group>
+                                                    <ActionIcon
+                                                        variant="light"
+                                                        size="sm"
+                                                        onClick={() => dec(item.productId)}
+                                                    >
+                                                        <Minus size={12} />
+                                                    </ActionIcon>
+                                                    <ActionIcon.GroupSection
+                                                        variant="light"
+                                                        size="sm"
+                                                    >
+                                                        {item.quantity}
+                                                    </ActionIcon.GroupSection>
+                                                    <ActionIcon
+                                                        variant="light"
+                                                        size="sm"
+                                                        onClick={() => inc(item.productId)}
+                                                    >
+                                                        <Plus size={12} />
+                                                    </ActionIcon>
+                                                </ActionIcon.Group>
+                                                <Text
                                                     size="sm"
-                                                    onClick={() => inc(productId)}
+                                                    fw={600}
+                                                    ff="monospace"
+                                                    w={72}
+                                                    ta="right"
+                                                    c={item.discount > 0 ? "green.7" : undefined}
                                                 >
-                                                    <Plus size={12} />
-                                                </ActionIcon>
-                                            </ActionIcon.Group>
-                                            <Text
-                                                size="sm"
-                                                fw={600}
-                                                ff="monospace"
-                                                w={72}
-                                                ta="right"
-                                            >
-                                                {brl(quantity * product.sellPrice)}
-                                            </Text>
+                                                    {brl(itemNetSubtotal)}
+                                                </Text>
+                                            </Group>
                                         </Group>
                                     </div>
                                 )
@@ -238,7 +280,7 @@ export function CartScreen({
             {/* Footer */}
             <Stack gap="xs">
                 <Divider />
-                {discount > 0 ? (
+                {totalItemDiscount > 0 || discount > 0 ? (
                     <Stack gap={4}>
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">
@@ -248,34 +290,58 @@ export function CartScreen({
                                 {brl(subtotal)}
                             </Text>
                         </Group>
-                        <Group justify="space-between" align="center">
-                            <Group gap={6} align="center">
+                        {totalItemDiscount > 0 && (
+                            <Group justify="space-between">
                                 <Text size="sm" c="green.7" fw={500}>
-                                    Desconto
+                                    Descontos nos itens
                                 </Text>
-                                <ActionIcon
-                                    variant="subtle"
-                                    color="gray"
-                                    size="xs"
-                                    onClick={() => setDiscountModalOpened(true)}
-                                    title="Editar desconto"
-                                >
-                                    <Pencil size={12} />
-                                </ActionIcon>
-                                <ActionIcon
-                                    variant="subtle"
-                                    color="red"
-                                    size="xs"
-                                    onClick={clearDiscount}
-                                    title="Remover desconto"
-                                >
-                                    <X size={12} />
-                                </ActionIcon>
+                                <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                    -{brl(totalItemDiscount)}
+                                </Text>
                             </Group>
-                            <Text size="sm" fw={600} c="green.7" ff="monospace">
-                                -{brl(discount)}
-                            </Text>
-                        </Group>
+                        )}
+                        {discount > 0 ? (
+                            <Group justify="space-between" align="center">
+                                <Group gap={6} align="center">
+                                    <Text size="sm" c="green.7" fw={500}>
+                                        Desconto no carrinho
+                                    </Text>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color="gray"
+                                        size="xs"
+                                        onClick={() => setDiscountModalOpened(true)}
+                                        title="Editar desconto no carrinho"
+                                    >
+                                        <Pencil size={12} />
+                                    </ActionIcon>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color="red"
+                                        size="xs"
+                                        onClick={clearDiscount}
+                                        title="Remover desconto no carrinho"
+                                    >
+                                        <X size={12} />
+                                    </ActionIcon>
+                                </Group>
+                                <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                    -{brl(discount)}
+                                </Text>
+                            </Group>
+                        ) : (
+                            <Group justify="space-between" align="center">
+                                <Button
+                                    variant="subtle"
+                                    size="compact-xs"
+                                    leftSection={<Tag size={13} />}
+                                    onClick={() => setDiscountModalOpened(true)}
+                                    disabled={isEmpty || netSubtotal === 0}
+                                >
+                                    Adicionar desconto no carrinho
+                                </Button>
+                            </Group>
+                        )}
                         <Divider variant="dashed" my={2} />
                         <Group justify="space-between">
                             <Text fw={600}>Total</Text>
@@ -322,11 +388,29 @@ export function CartScreen({
             <DiscountModal
                 opened={discountModalOpened}
                 onClose={() => setDiscountModalOpened(false)}
-                subtotal={subtotal}
+                subtotal={netSubtotal}
                 currentDiscount={discount}
                 onApply={setDiscount}
                 onRemove={clearDiscount}
             />
+
+            {selectedItemForDiscount && (
+                <DiscountModal
+                    opened={!!selectedItemForDiscount}
+                    onClose={() => setSelectedItemForDiscount(null)}
+                    title={`Desconto no Item: ${selectedItemForDiscount.name}`}
+                    subtotal={selectedItemForDiscount.quantity * selectedItemForDiscount.unitPrice}
+                    currentDiscount={selectedItemForDiscount.discount}
+                    onApply={(discountCents) => {
+                        setItemDiscount(selectedItemForDiscount.productId, discountCents)
+                        setSelectedItemForDiscount(null)
+                    }}
+                    onRemove={() => {
+                        clearItemDiscount(selectedItemForDiscount.productId)
+                        setSelectedItemForDiscount(null)
+                    }}
+                />
+            )}
         </ScreenShell>
     )
 }
