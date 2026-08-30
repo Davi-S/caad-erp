@@ -143,47 +143,35 @@ export function POSFlow() {
 }
 
 export function assemblySalesRequest(
-    selectedSalesmanId: string,
+    salesmanId: string,
     method: PaymentType,
-    cartState: Pick<ReturnType<typeof useCart>, "itemsList" | "discount" | "notes">,
+    {
+        itemsList,
+        discount,
+        notes,
+    }: Pick<ReturnType<typeof useCart>, "itemsList" | "discount" | "notes">,
 ) {
-    const lineItems = cartState.itemsList.map((item) => {
-        const itemGrossSubtotal = item.quantity * item.unitPrice
-        const itemSpecificDiscount = item.discount || 0
-        const itemNetSubtotal = itemGrossSubtotal - itemSpecificDiscount
-        return {
+    const globalDiscounts = distributeDiscount(
+        itemsList.map((item) => ({
             productId: item.productId,
-            subtotal: itemNetSubtotal,
-        }
-    })
+            subtotal: item.quantity * item.unitPrice - item.discount,
+        })),
+        discount,
+    )
 
-    const distributedGlobalDiscounts = distributeDiscount(lineItems, cartState.discount)
+    const isCredit = method === "OnCredit"
 
-    return cartState.itemsList.map((item) => {
-        const itemGrossSubtotal = item.quantity * item.unitPrice
-        const itemSpecificDiscount = item.discount || 0
-        const allocatedGlobalDiscount = distributedGlobalDiscounts[item.productId] || 0
-        const totalDiscountOnItem = itemSpecificDiscount + allocatedGlobalDiscount
-        const itemRevenue = itemGrossSubtotal - totalDiscountOnItem
-
-        const notes = formatSaleNotes(
-            cartState.notes,
-            cartState.discount,
-            allocatedGlobalDiscount,
-            itemSpecificDiscount,
-        )
-
-        const totalRevenue = method === "OnCredit" ? 0 : itemRevenue
-        const paymentType: PaymentType =
-            method === "OnCredit" ? "OnCredit" : itemRevenue === 0 ? "Other" : method
+    return itemsList.map((item) => {
+        const globalDisc = globalDiscounts[item.productId] || 0
+        const revenue = item.quantity * item.unitPrice - item.discount - globalDisc
 
         return {
             productId: item.productId,
-            salesmanId: selectedSalesmanId,
+            salesmanId,
             quantity: item.quantity,
-            totalRevenue,
-            paymentType,
-            notes,
+            totalRevenue: isCredit ? 0 : revenue,
+            paymentType: (isCredit ? "OnCredit" : revenue === 0 ? "Other" : method) as PaymentType,
+            notes: formatSaleNotes(notes, discount, globalDisc, item.discount),
         }
     })
 }
