@@ -5,7 +5,6 @@
 import { describe, expect, it } from "vitest"
 import { formatSaleNotes, assemblySalesRequest } from "../src/features/pos/index"
 import { brl } from "@/helpers"
-import type { Product } from "@/types"
 
 describe("formatSaleNotes", () => {
     it("GIVEN only manual notes WHEN formatSaleNotes is called THEN returns trimmed manual note", () => {
@@ -32,22 +31,17 @@ describe("formatSaleNotes", () => {
 })
 
 describe("assemblySalesRequest", () => {
-    const mockProducts: Product[] = [
-        { id: "P1", name: "Refrigerante", sellPrice: 500, isActive: true },
-        { id: "P2", name: "Salgado", sellPrice: 1000, isActive: true },
-    ]
-
     it("GIVEN cart with manual note and discount WHEN assemblySalesRequest is called THEN builds transactions with combined notes", () => {
         const cartState = {
-            cartIterable: [
-                ["P1", 2] as [string, number], // subtotal = 1000 (R$ 10,00)
-                ["P2", 1] as [string, number], // subtotal = 1000 (R$ 10,00)
+            itemsList: [
+                { productId: "P1", name: "Refrigerante", unitPrice: 500, quantity: 2, discount: 0 },
+                { productId: "P2", name: "Salgado", unitPrice: 1000, quantity: 1, discount: 0 },
             ],
             discount: 200, // R$ 2,00 total discount (R$ 1,00 each)
             notes: "Venda teste retroativa",
         }
 
-        const requests = assemblySalesRequest("S1", "PIX", cartState, mockProducts)
+        const requests = assemblySalesRequest("S1", "PIX", cartState)
 
         expect(requests).toHaveLength(2)
         expect(requests[0]).toEqual({
@@ -70,12 +64,14 @@ describe("assemblySalesRequest", () => {
 
     it("GIVEN cart with 100% discount WHEN assemblySalesRequest is called with PIX THEN sets paymentType to Other for zero-revenue items", () => {
         const cartState = {
-            cartIterable: [["P1", 1] as [string, number]],
-            discount: 500, // 100% discount
+            itemsList: [
+                { productId: "P1", name: "Refrigerante", unitPrice: 500, quantity: 1, discount: 0 },
+            ],
+            discount: 500, // 100% global discount
             notes: "Brinde",
         }
 
-        const requests = assemblySalesRequest("S1", "PIX", cartState, mockProducts)
+        const requests = assemblySalesRequest("S1", "PIX", cartState)
 
         expect(requests).toHaveLength(1)
         expect(requests[0]).toEqual({
@@ -89,20 +85,16 @@ describe("assemblySalesRequest", () => {
     })
 
     it("GIVEN mixed cart where one item has zero revenue WHEN assemblySalesRequest is called with PIX THEN sets paymentType to Other only for zero-revenue item", () => {
-        const productsWithFree: Product[] = [
-            ...mockProducts,
-            { id: "P3", name: "Brinde Adesivo", sellPrice: 0, isActive: true },
-        ]
         const cartState = {
-            cartIterable: [
-                ["P1", 1] as [string, number], // 500
-                ["P3", 1] as [string, number], // 0
+            itemsList: [
+                { productId: "P1", name: "Refrigerante", unitPrice: 500, quantity: 1, discount: 0 },
+                { productId: "P3", name: "Brinde Adesivo", unitPrice: 0, quantity: 1, discount: 0 },
             ],
             discount: 0,
             notes: "",
         }
 
-        const requests = assemblySalesRequest("S1", "PIX", cartState, productsWithFree)
+        const requests = assemblySalesRequest("S1", "PIX", cartState)
 
         expect(requests).toHaveLength(2)
         expect(requests[0]).toEqual({
@@ -125,12 +117,14 @@ describe("assemblySalesRequest", () => {
 
     it("GIVEN cart paid with Other WHEN assemblySalesRequest is called THEN sets paymentType to Other", () => {
         const cartState = {
-            cartIterable: [["P1", 1] as [string, number]],
+            itemsList: [
+                { productId: "P1", name: "Refrigerante", unitPrice: 500, quantity: 1, discount: 0 },
+            ],
             discount: 0,
             notes: "",
         }
 
-        const requests = assemblySalesRequest("S1", "Other", cartState, mockProducts)
+        const requests = assemblySalesRequest("S1", "Other", cartState)
 
         expect(requests).toHaveLength(1)
         expect(requests[0]).toEqual({
@@ -145,12 +139,14 @@ describe("assemblySalesRequest", () => {
 
     it("GIVEN OnCredit sale WHEN assemblySalesRequest is called THEN preserves OnCredit paymentType and 0 revenue", () => {
         const cartState = {
-            cartIterable: [["P1", 1] as [string, number]],
+            itemsList: [
+                { productId: "P1", name: "Refrigerante", unitPrice: 500, quantity: 1, discount: 0 },
+            ],
             discount: 0,
             notes: "Fiado",
         }
 
-        const requests = assemblySalesRequest("S1", "OnCredit", cartState, mockProducts)
+        const requests = assemblySalesRequest("S1", "OnCredit", cartState)
 
         expect(requests).toHaveLength(1)
         expect(requests[0]).toEqual({
