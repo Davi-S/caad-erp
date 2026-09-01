@@ -218,8 +218,8 @@ revenue, and cost deltas.
 - `SALE`: Reduces stock (negative quantity change) and logs revenue.
 - `RESTOCK`: Increases stock (positive quantity change) and records inventory
   spend (negative total cost).
-- `WRITE_OFF`: Reduces stock without revenue (spoilage, loss, damage, or
-  donations).
+- `WRITE_OFF`: Reduces stock without revenue. Is used for internal operations
+  (like losses by spoilage, breakage, damage, or shrinkage).
 - `CREDIT_PAYMENT`: Captures payment received for an earlier credit sale.
 - `VOID`: Exact reversing entry linked to the target transaction being negated.
 
@@ -321,6 +321,39 @@ line items prior to dispatching the checkout mutation:
   prevent accidental over-discounting or percentage drift when items are added
   or removed, any cart item mutation (`inc`, `dec`, `removeItem`, `clearCart`)
   automatically resets the active discount to zero.
+
+### Context and Intent: `SALE` vs. `WRITE_OFF` (Zero-Revenue Sales Rationale)
+
+The system intentionally allows zero-revenue `SALE` transactions
+(`totalRevenue = 0`). The architectural boundary between `SALE` and `WRITE_OFF`
+is governed by **Context and Intent** rather than simply whether money entered
+the cash register:
+
+- **`WRITE_OFF` (Internal / Operational Loss):**
+    - Represents non-commercial stock shrinkage: spoilage, breakage, damaged
+      goods, lost inventory, or internal lounge supply allocation.
+    - Enforces mandatory `totalRevenue = 0`, `totalCost = 0`, and
+      `paymentType = null`.
+    - Involves **no customer interaction** or sales transaction context.
+- **`SALE` (Customer-Facing Distribution):**
+    - Represents direct distribution to a student or customer (regular checkouts,
+      partial discounts, 100% promotional discounts, welcome freebies, raffle
+      prizes, or courtesy items).
+    - Supports `totalRevenue >= 0`.
+    - **Preserves Demand & Velocity KPIs:** Distributing promotional items via the
+      POS logs sales velocity and consumer demand accurately, rather than falsely
+      distorting reporting into operational waste or inventory loss.
+    - **Flat Ledger Support:** Because the append-only ledger logs one row per
+      distinct product item, allowing `totalRevenue = 0` enables per-item
+      promotional discounts and gifts-with-purchase (e.g. _\"Buy 6 Monsters, get a
+      free Pin\"_ where the pin row is recorded with `totalRevenue = 0` inside a
+      paid checkout).
+    - **Payment Method Semantics (`Other` Convention):** By convention, every sale
+      line item with `totalRevenue = 0` is assigned `paymentType = "Other"`. In
+      mixed baskets, the frontend dispatches paid items with the selected method
+      (e.g. `PIX`, `Cash`) and zero-revenue items with `"Other"`. This is managed
+      as a frontend assembly convention rather than a strict backend database
+      constraint.
 
 ---
 

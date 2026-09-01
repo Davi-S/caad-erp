@@ -9,10 +9,12 @@ export function CustomerDisplayPage() {
     const { data: stock = {} } = useStock()
     const { syncedState } = usePOSBroadcast("client")
 
-    const cart = syncedState?.cart || {}
+    const items = syncedState?.items || {}
     const total = syncedState?.total || 0
     const subtotal = syncedState?.subtotal || 0
+    const totalItemDiscount = syncedState?.totalItemDiscount || 0
     const discount = syncedState?.discount || 0
+    const totalDiscount = totalItemDiscount + discount
     const activeScreen = syncedState?.screen || "cart"
     const paymentDetails = syncedState?.paymentDetails || null
 
@@ -21,7 +23,7 @@ export function CustomerDisplayPage() {
             <CustomerPaymentScreen
                 total={total}
                 subtotal={subtotal}
-                discount={discount}
+                discount={totalDiscount}
                 paymentDetails={paymentDetails}
                 checkoutStatus={syncedState?.checkoutStatus || "idle"}
             />
@@ -32,9 +34,10 @@ export function CustomerDisplayPage() {
         <CustomerCartScreen
             products={products.filter((p) => p.isActive)}
             stock={stock}
-            cart={cart}
+            items={items}
             total={total}
             subtotal={subtotal}
+            totalItemDiscount={totalItemDiscount}
             discount={discount}
             openGroupId={syncedState?.openGroupId || null}
         />

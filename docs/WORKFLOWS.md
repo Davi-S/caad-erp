@@ -15,12 +15,26 @@ Cash, PIX QR code, or other payment methods. Recording a sale appends a `SALE`
 entry to the transaction ledger, immediately deducting the sold quantity from
 on-hand stock and logging the collected gross revenue.
 
-### Discounts and Custom Price Overrides
+### Discounts, Promotional Items, and Zero-Revenue Sales
 
-Lounge operators can offer discounts or custom prices during immediate-payment
-checkouts without altering default catalog prices. The system accepts custom
-revenue values during checkout, recording the exact amount collected on the
-transaction record.
+Lounge operators can offer discounts, promotional items, or custom prices during
+immediate-payment checkouts without altering default catalog prices. The system
+accepts custom revenue values and discounts during checkout, recording the exact
+amount collected on the transaction record.
+
+Zero-revenue `SALE` transactions (`totalRevenue = 0`) are officially supported
+for customer-facing distributions, such as:
+
+- **100% Promotional Discounts:** Promotional giveaways (e.g. _Buy 6 Monster
+  drinks, get a free Pin_).
+- **Courtesy Items and Freebies:** Welcome freebies for new students, event
+  giveaways, and raffle prizes.
+
+Recording these distributions as `SALE` transactions ensures that **product
+consumption velocity and student demand** are accurately captured in metrics,
+rather than misrepresenting promotional distributions as operational losses.
+
+---
 
 ## Credit Tabs and Debt Management
 
@@ -66,12 +80,17 @@ samples, can be restocked with zero cost (`totalCost = 0`). Zero-cost restocks
 increase available inventory without incurring lounge expense, allowing 100% of
 future sales revenue from donated items to flow into net profit.
 
-### Inventory Write-Offs (Spoilage, Damage, Loss, and Event Donations)
+### Inventory Write-Offs (Spoilage, Breakage, Damage, and Shrinkage)
 
-Stock that leaves inventory without generating revenue, such as expired items,
-damaged goods, lost stock, or items donated to student event, is recorded using
-`WRITE_OFF` transactions. Write-offs reduce on-hand inventory while setting both
-revenue and cost to zero.
+Stock that leaves inventory due to **internal operational loss**—such as expired
+items, broken or damaged goods, lost stock, or supply shrinkage—is recorded
+using `WRITE_OFF` transactions. Write-offs reduce on-hand inventory while
+setting both revenue and cost to zero.
+
+Write-offs are strictly for back-office losses without customer interaction. Any
+stock distributed to students or customers (such as freebies, raffle prizes, or
+event promotions) must be processed through the Point of Sale as a `SALE`
+transaction with zero revenue rather than a write-off.
 
 ---
 

@@ -90,17 +90,31 @@ specific situations. Keep notes concise; one clear sentence is sufficient.
 
 Notes are extremely recommended for:
 
-- All `WRITE_OFF` transactions: explain the reason (expired, damaged, lost,
-  donated to event).
+- All `WRITE_OFF` transactions: explain the operational loss reason (expired,
+  damaged, breakage, shrinkage).
+- Promotional, courtesy, or zero-revenue `SALE` transactions: document the
+  promotion, event, or recipient reason (e.g. _Brinde de calouros_, _Sorteio de
+  rifa_, _Promoção compre 6 ganhe 1_).
 - Zero-cost `RESTOCK` entries: identify the source (alumni donation, event
   sponsorship, vendor sample).
 - `VOID` corrections: describe what went wrong in the original transaction.
 
-### Making Sales
+### Making Sales and Promotional Giveaways
 
 Always select the correct salesman before processing a checkout. Sales are
 attributed to the selected salesman and cannot be reassigned without voiding the
 entire transaction.
+
+#### Handling 100% Discounts, Freebies, and Courtesy Items:
+
+- When distributing items to students or customers for free (welcome gifts,
+  raffle prizes, courtesy snacks, or promotional giveaways), **always record
+  them through the POS as a `SALE`**, never as a `WRITE_OFF`. This ensures that
+  customer demand and stock velocity are properly tracked.
+- Add the distributed items to the cart, apply a 100% discount (or item-specific
+  promotional discount), and add a concise note explaining the reason.
+- By convention, every zero-revenue item is logged with the `Other` payment
+  method, and 100% free baskets will use `Other` at checkout.
 
 ### Restocking
 
@@ -113,6 +127,10 @@ show 100% profit margin, which distorts reports if the cost was real.
 Record write-offs as soon as spoilage, damage, or loss is discovered. Delayed
 write-offs cause stock levels to appear higher than reality, which may lead to
 overselling items that are not actually available.
+
+Remember: `WRITE_OFF` is strictly for **internal, back-office operational
+losses** without customer interaction. Never use `WRITE_OFF` for customer
+giveaways, event distributions, or freebies.
 
 ### Reversing Mistakes (Void)
 

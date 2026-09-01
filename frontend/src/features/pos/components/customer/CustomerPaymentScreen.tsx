@@ -10,7 +10,7 @@ import {
     ThemeIcon,
     Title,
 } from "@mantine/core"
-import { AlertTriangle, Banknote, Check, QrCode } from "lucide-react"
+import { AlertTriangle, Banknote, Check, QrCode, CreditCard } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
 import type { PaymentDetails } from "../../types/broadcast"
@@ -108,7 +108,7 @@ export function CustomerPaymentScreen({
 
                             {discount && discount > 0 ? (
                                 <Badge variant="light" color="green" size="sm">
-                                    Subtotal: {brl(subtotal || total + discount)} • Economia:{" "}
+                                    Subtotal: {brl(subtotal ?? total + discount)} • Economia:{" "}
                                     {brl(discount)}
                                 </Badge>
                             ) : null}
@@ -118,10 +118,21 @@ export function CustomerPaymentScreen({
                                 color={confirmed ? "green" : "gray"}
                                 size="sm"
                                 leftSection={
-                                    method === "PIX" ? <QrCode size={12} /> : <Banknote size={12} />
+                                    method === "PIX" ? (
+                                        <QrCode size={12} />
+                                    ) : method === "Cash" ? (
+                                        <Banknote size={12} />
+                                    ) : (
+                                        <CreditCard size={12} />
+                                    )
                                 }
                             >
-                                Forma de pagamento: {method === "PIX" ? "Pix" : "Dinheiro"}
+                                Forma de pagamento:{" "}
+                                {method === "PIX"
+                                    ? "Pix"
+                                    : method === "Cash"
+                                      ? "Dinheiro"
+                                      : "Outro"}
                             </Badge>
 
                             <Paper
@@ -248,6 +259,15 @@ export function CustomerPaymentScreen({
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Entregue o valor em espécie para o
                                                         atendente.
+                                                    </Text>
+                                                </Stack>
+                                            )}
+
+                                            {method === "Other" && (
+                                                <Stack align="center" justify="center" gap="xs">
+                                                    <CreditCard size={32} color="gray" />
+                                                    <Text size="sm" c="dimmed" ta="center">
+                                                        Aguarde a confirmação do atendente.
                                                     </Text>
                                                 </Stack>
                                             )}

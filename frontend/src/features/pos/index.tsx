@@ -11,7 +11,7 @@ import { usePOSBroadcast } from "./hooks/usePOSBroadcast"
 import { distributeDiscount } from "./utils/discount"
 import { brl } from "@/helpers"
 import type { POSBroadcastState, PaymentDetails } from "./types/broadcast"
-import type { PaymentType, Product } from "@/types"
+import type { PaymentType } from "@/types"
 
 export function POSFlow() {
     // Get the API data from the queries
@@ -23,7 +23,7 @@ export function POSFlow() {
     const [screen, setScreen] = useState<"salesmen" | "cart" | "payment">("salesmen")
 
     const [selectedSalesmanId, setSelectedSalesmanId] = useState<string | null>(null)
-    const selectedSalesman = salesmen.find((s) => s.id === selectedSalesmanId) || null
+    const selectedSalesman = salesmen.find((s) => s.id === selectedSalesmanId) ?? null
 
     // Hooks
     const cartState = useCart()
@@ -36,20 +36,22 @@ export function POSFlow() {
     const getLatestPOSState = useCallback((): POSBroadcastState => {
         return {
             screen: screen === "payment" ? "payment" : "cart",
-            cart: cartState.cart,
+            items: cartState.items,
             selectedSalesman,
             paymentDetails,
             checkoutStatus: checkoutState.status,
             checkoutError: checkoutState.error,
             subtotal: cartState.subtotal,
+            totalItemDiscount: cartState.totalItemDiscount,
             discount: cartState.discount,
             total: cartState.total,
             openGroupId,
         }
     }, [
         screen,
-        cartState.cart,
+        cartState.items,
         cartState.subtotal,
+        cartState.totalItemDiscount,
         cartState.discount,
         cartState.total,
         selectedSalesman,
@@ -111,7 +113,7 @@ export function POSFlow() {
                 actions={{
                     onConfirm: (method) => {
                         checkoutState.confirmPayment(
-                            assemblySalesRequest(selectedSalesmanId, method, cartState, products),
+                            assemblySalesRequest(selectedSalesmanId, method, cartState),
                         )
                     },
                     onNewSale: () => {
@@ -141,53 +143,62 @@ export function POSFlow() {
 }
 
 export function assemblySalesRequest(
-    selectedSalesmanId: string,
+    salesmanId: string,
     method: PaymentType,
-    cartState: ReturnType<typeof useCart>,
-    products: Product[],
+    {
+        itemsList,
+        discount,
+        notes,
+    }: Pick<ReturnType<typeof useCart>, "itemsList" | "discount" | "notes">,
 ) {
-    const lineItems = cartState.cartIterable.map(([productId, quantity]) => {
-        const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
-        return {
-            productId,
-            subtotal: quantity * productPrice,
-        }
-    })
+    const globalDiscounts = distributeDiscount(
+        itemsList.map((item) => ({
+            productId: item.productId,
+            subtotal: item.quantity * item.unitPrice - item.discount,
+        })),
+        discount,
+    )
 
-    const distributedDiscounts = distributeDiscount(lineItems, cartState.discount)
+    const isCredit = method === "OnCredit"
 
-    return cartState.cartIterable.map(([productId, quantity]) => {
-        const productPrice = products.find((p) => p.id === productId)?.sellPrice ?? 0
-        const itemSubtotal = quantity * productPrice
-        const itemDiscount = distributedDiscounts[productId] || 0
-        const itemRevenue = itemSubtotal - itemDiscount
-
-        const notes = formatSaleNotes(cartState.notes, cartState.discount, itemDiscount)
+    return itemsList.map((item) => {
+        const globalDisc = globalDiscounts[item.productId]
+        const revenue = item.quantity * item.unitPrice - item.discount - globalDisc
+        const paymentType: PaymentType = isCredit ? "OnCredit" : revenue === 0 ? "Other" : method
 
         return {
-            productId: productId,
-            salesmanId: selectedSalesmanId,
-            quantity: quantity,
-            totalRevenue: method === "OnCredit" ? 0 : itemRevenue,
-            paymentType: method,
-            notes,
+            productId: item.productId,
+            salesmanId,
+            quantity: item.quantity,
+            totalRevenue: isCredit ? 0 : revenue,
+            paymentType,
+            notes: formatSaleNotes(notes, discount, globalDisc, item.discount),
         }
     })
 }
 
 export function formatSaleNotes(
     manualNotes: string,
-    discountCents: number,
-    itemDiscountCents: number,
+    globalDiscountCents: number,
+    allocatedGlobalDiscountCents: number,
+    itemDiscountCents: number = 0,
 ): string | null {
-    const manual = manualNotes.trim()
-    let discountNote: string | null = null
-    if (discountCents > 0) {
-        discountNote = `Desconto global de ${brl(discountCents)} aplicado (Desc. proporcional do item: ${brl(itemDiscountCents)})`
+    const parts: string[] = []
+
+    if (itemDiscountCents > 0) {
+        parts.push(`Desconto no item de ${brl(itemDiscountCents)}`)
     }
 
-    if (manual && discountNote) {
-        return `${discountNote} | ${manual}`
+    if (globalDiscountCents > 0) {
+        parts.push(
+            `Desconto global de ${brl(globalDiscountCents)} aplicado (Desc. proporcional do item: ${brl(allocatedGlobalDiscountCents)})`,
+        )
     }
-    return manual || discountNote || null
+
+    const manual = manualNotes.trim()
+    if (manual) {
+        parts.push(manual)
+    }
+
+    return parts.length > 0 ? parts.join(" | ") : null
 }

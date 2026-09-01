@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
     ActionIcon,
     Alert,
@@ -15,7 +15,15 @@ import {
     Loader,
     ThemeIcon,
 } from "@mantine/core"
-import { Check, ArrowLeft, AlertTriangle, QrCode, Banknote, RotateCw } from "lucide-react"
+import {
+    Check,
+    ArrowLeft,
+    AlertTriangle,
+    QrCode,
+    Banknote,
+    RotateCw,
+    CreditCard,
+} from "lucide-react"
 import { brl } from "@/helpers"
 import { ScreenShell } from "@/components/ScreenShell"
 import type { PaymentType } from "@/types"
@@ -39,14 +47,6 @@ interface PaymentScreenProps {
     onPaymentStateChange: (details: PaymentDetails) => void
 }
 
-const METHOD_OPTIONS = [
-    { value: "PIX", label: <MethodLabel icon={<QrCode size={16} />} text="Pix" /> },
-    {
-        value: "Cash",
-        label: <MethodLabel icon={<Banknote size={16} />} text="Dinheiro" />,
-    },
-]
-
 const AUTO_NEW_SALE_TIMEOUT_MS = 60000
 
 export function PaymentScreen({
@@ -56,7 +56,10 @@ export function PaymentScreen({
     actions,
     onPaymentStateChange,
 }: PaymentScreenProps) {
-    const [method, setMethod] = useState<PaymentType>("PIX")
+    const isZeroTotal = cartState.total === 0
+    const totalSavings = cartState.totalItemDiscount + cartState.discount
+
+    const [method, setMethod] = useState<PaymentType>(() => (isZeroTotal ? "Other" : "PIX"))
 
     const { status, error, resetCheckout } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
@@ -64,6 +67,33 @@ export function PaymentScreen({
     const confirmed = status === "success"
     const confirming = status === "pending"
     const isLocked = status === "pending" || status === "success"
+
+    useEffect(() => {
+        if (isZeroTotal) {
+            setMethod("Other")
+        }
+    }, [isZeroTotal])
+
+    const methodOptions = useMemo(
+        () => [
+            {
+                value: "PIX",
+                label: <MethodLabel icon={<QrCode size={16} />} text="Pix" />,
+                disabled: isLocked || isZeroTotal,
+            },
+            {
+                value: "Cash",
+                label: <MethodLabel icon={<Banknote size={16} />} text="Dinheiro" />,
+                disabled: isLocked || isZeroTotal,
+            },
+            {
+                value: "Other",
+                label: <MethodLabel icon={<CreditCard size={16} />} text="Outro" />,
+                disabled: isLocked,
+            },
+        ],
+        [isLocked, isZeroTotal],
+    )
 
     useEffect(() => {
         resetCheckout()
@@ -192,15 +222,15 @@ export function PaymentScreen({
                                 {brl(cartState.total)}
                             </Text>
 
-                            {cartState.discount > 0 && (
+                            {totalSavings > 0 && (
                                 <Badge variant="light" color="green" size="sm">
-                                    Subtotal: {brl(cartState.subtotal)} • Desconto: -
-                                    {brl(cartState.discount)}
+                                    Subtotal: {brl(cartState.subtotal)} • Economia: -
+                                    {brl(totalSavings)}
                                 </Badge>
                             )}
 
                             <SegmentedControl
-                                data={METHOD_OPTIONS}
+                                data={methodOptions}
                                 value={method}
                                 onChange={(value) => setMethod(value as PaymentType)}
                                 disabled={isLocked}
@@ -209,7 +239,7 @@ export function PaymentScreen({
                                 styles={{
                                     root: {
                                         display: "grid",
-                                        gridTemplateColumns: `repeat(${METHOD_OPTIONS.length}, 1fr)`,
+                                        gridTemplateColumns: `repeat(${methodOptions.length}, 1fr)`,
                                     },
                                 }}
                             />
@@ -256,7 +286,11 @@ export function PaymentScreen({
                                             </Text>
                                             <Text size="xs" c="dimmed">
                                                 Forma:{" "}
-                                                {method === "PIX" ? "Pix" : "Dinheiro em espécie"}
+                                                {method === "PIX"
+                                                    ? "Pix"
+                                                    : method === "Cash"
+                                                      ? "Dinheiro em espécie"
+                                                      : "Outro"}
                                             </Text>
                                         </Stack>
                                     ) : (
@@ -337,9 +371,22 @@ export function PaymentScreen({
                                             )}
 
                                             {method === "Cash" && (
-                                                <Text size="sm" c="dimmed" ta="center">
-                                                    Receba o valor em espécie e confirme abaixo.
-                                                </Text>
+                                                <Stack align="center" justify="center" gap="xs">
+                                                    <Banknote size={32} color="gray" />
+                                                    <Text size="sm" c="dimmed" ta="center">
+                                                        Receba o valor em espécie e confirme abaixo.
+                                                    </Text>
+                                                </Stack>
+                                            )}
+
+                                            {method === "Other" && (
+                                                <Stack align="center" justify="center" gap="xs">
+                                                    <CreditCard size={32} color="gray" />
+                                                    <Text size="sm" c="dimmed" ta="center">
+                                                        Receba o valor através de outro meio e
+                                                        confirme abaixo.
+                                                    </Text>
+                                                </Stack>
                                             )}
                                         </>
                                     )}
@@ -366,7 +413,7 @@ export function PaymentScreen({
                             loading={confirming}
                             disabled={isLocked}
                         >
-                            Já recebi o pagamento
+                            {isZeroTotal ? "Confirmar sem cobrança" : "Já recebi o pagamento"}
                         </Button>
                         {method === "PIX" && !pixState.error && (
                             <Group justify="center" gap="xs">
