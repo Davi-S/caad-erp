@@ -108,7 +108,7 @@ export function CustomerPaymentScreen({
 
                             {discount && discount > 0 ? (
                                 <Badge variant="light" color="green" size="sm">
-                                    Subtotal: {brl(subtotal || total + discount)} • Economia:{" "}
+                                    Subtotal: {brl(subtotal ?? total + discount)} • Economia:{" "}
                                     {brl(discount)}
                                 </Badge>
                             ) : null}
@@ -267,7 +267,7 @@ export function CustomerPaymentScreen({
                                                 <Stack align="center" justify="center" gap="xs">
                                                     <CreditCard size={32} color="gray" />
                                                     <Text size="sm" c="dimmed" ta="center">
-                                                        "Aguarde a confirmação do atendente."
+                                                        Aguarde a confirmação do atendente.
                                                     </Text>
                                                 </Stack>
                                             )}

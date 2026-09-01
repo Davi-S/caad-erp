@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
     ActionIcon,
     Alert,
@@ -57,10 +57,9 @@ export function PaymentScreen({
     onPaymentStateChange,
 }: PaymentScreenProps) {
     const isZeroTotal = cartState.total === 0
+    const totalSavings = cartState.totalItemDiscount + cartState.discount
 
-    const [method, setMethod] = useState<PaymentType>(() => {
-        return cartState.total === 0 ? "Other" : "PIX"
-    })
+    const [method, setMethod] = useState<PaymentType>(() => (isZeroTotal ? "Other" : "PIX"))
 
     const { status, error, resetCheckout } = checkoutState
     const { onConfirm, onNewSale, onEdit, onCancel } = actions
@@ -223,10 +222,10 @@ export function PaymentScreen({
                                 {brl(cartState.total)}
                             </Text>
 
-                            {cartState.discount > 0 && (
+                            {totalSavings > 0 && (
                                 <Badge variant="light" color="green" size="sm">
-                                    Subtotal: {brl(cartState.subtotal)} • Desconto: -
-                                    {brl(cartState.discount)}
+                                    Subtotal: {brl(cartState.subtotal)} • Economia: -
+                                    {brl(totalSavings)}
                                 </Badge>
                             )}
 
@@ -384,8 +383,8 @@ export function PaymentScreen({
                                                 <Stack align="center" justify="center" gap="xs">
                                                     <CreditCard size={32} color="gray" />
                                                     <Text size="sm" c="dimmed" ta="center">
-                                                        "Receba o valor através de outro meio e
-                                                        confirme abaixo."
+                                                        Receba o valor através de outro meio e
+                                                        confirme abaixo.
                                                     </Text>
                                                 </Stack>
                                             )}
@@ -414,7 +413,7 @@ export function PaymentScreen({
                             loading={confirming}
                             disabled={isLocked}
                         >
-                            Já recebi o pagamento
+                            {isZeroTotal ? "Confirmar sem cobrança" : "Já recebi o pagamento"}
                         </Button>
                         {method === "PIX" && !pixState.error && (
                             <Group justify="center" gap="xs">

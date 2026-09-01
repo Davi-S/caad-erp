@@ -1,4 +1,5 @@
 import type { Salesman, PaymentType } from "@/types"
+import type { CartItem } from "../hooks/useCart"
 
 export interface PixPaymentDetails {
     method: Extract<PaymentType, "PIX">
@@ -15,12 +16,13 @@ export type PaymentDetails = PixPaymentDetails | GenericPaymentDetails
 
 export interface POSBroadcastState {
     screen: "cart" | "payment"
-    cart: Record<string, number>
+    items: Record<string, CartItem>
     selectedSalesman: Salesman | null
     paymentDetails: PaymentDetails | null
     checkoutStatus: "idle" | "pending" | "success" | "error"
     checkoutError: string | null
     subtotal: number
+    totalItemDiscount?: number
     discount: number
     total: number
     openGroupId?: string | null
@@ -28,12 +30,13 @@ export interface POSBroadcastState {
 
 export const EMPTY_POS_STATE: POSBroadcastState = {
     screen: "cart",
-    cart: {},
+    items: {},
     selectedSalesman: null,
     paymentDetails: null,
     checkoutStatus: "idle",
     checkoutError: null,
     subtotal: 0,
+    totalItemDiscount: 0,
     discount: 0,
     total: 0,
     openGroupId: null,
