@@ -65,4 +65,35 @@ describe("groupProducts", () => {
     it("GIVEN empty array WHEN groupProducts is called THEN returns empty array", () => {
         expect(groupProducts([])).toEqual([])
     })
+
+    it("GIVEN products with falsy names or empty whitespace WHEN groupProducts is called THEN falls back to empty strings gracefully", () => {
+        const products: Product[] = [
+            { id: "1", name: "", sellPrice: 100, isActive: true },
+            { id: "2", name: null as unknown as string, sellPrice: 200, isActive: true },
+        ]
+
+        const groups = groupProducts(products)
+
+        expect(groups).toHaveLength(1)
+        expect(groups[0].id).toBe("")
+        expect(groups[0].variants).toHaveLength(2)
+    })
+
+    it("GIVEN products with hyphen but missing base or variant after trim WHEN groupProducts is called THEN retains full name as label and baseName", () => {
+        const products: Product[] = [
+            { id: "1", name: "  - VariantOnly", sellPrice: 100, isActive: true },
+            { id: "2", name: "BaseOnly -  ", sellPrice: 200, isActive: true },
+            { id: "3", name: " - ", sellPrice: 300, isActive: true },
+        ]
+
+        const groups = groupProducts(products)
+
+        expect(groups).toHaveLength(3)
+        expect(groups[0].name).toBe("- VariantOnly")
+        expect(groups[0].variants[0].label).toBe("- VariantOnly")
+        expect(groups[1].name).toBe("BaseOnly -")
+        expect(groups[1].variants[0].label).toBe("BaseOnly -")
+        expect(groups[2].name).toBe("-")
+        expect(groups[2].variants[0].label).toBe("-")
+    })
 })
