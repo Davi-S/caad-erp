@@ -164,13 +164,14 @@ export function assemblySalesRequest(
     return itemsList.map((item) => {
         const globalDisc = globalDiscounts[item.productId]
         const revenue = item.quantity * item.unitPrice - item.discount - globalDisc
+        const paymentType: PaymentType = isCredit ? "OnCredit" : revenue === 0 ? "Other" : method
 
         return {
             productId: item.productId,
             salesmanId,
             quantity: item.quantity,
             totalRevenue: isCredit ? 0 : revenue,
-            paymentType: isCredit ? "OnCredit" : revenue === 0 ? "Other" : method,
+            paymentType,
             notes: formatSaleNotes(notes, discount, globalDisc, item.discount),
         }
     })
