@@ -116,13 +116,28 @@ export function CustomerCartScreen({
                                 return (
                                     <div key={item.productId}>
                                         {index > 0 && <Divider variant="dashed" my={4} />}
-                                        <Group justify="space-between" wrap="nowrap" align="center">
-                                            <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                                        <Group
+                                            justify="space-between"
+                                            wrap="nowrap"
+                                            align="center"
+                                            gap="sm"
+                                        >
+                                            <Group
+                                                gap="xs"
+                                                wrap="nowrap"
+                                                align="center"
+                                                style={{ flex: 1, minWidth: 0 }}
+                                            >
                                                 <Text size="sm" truncate>
                                                     {item.name}
                                                 </Text>
                                                 {item.discount > 0 && (
-                                                    <Group gap={4} align="center">
+                                                    <Group
+                                                        gap={4}
+                                                        wrap="nowrap"
+                                                        align="center"
+                                                        style={{ flexShrink: 0 }}
+                                                    >
                                                         <Text size="xs" c="green.7" fw={600}>
                                                             -{brl(item.discount)}
                                                         </Text>
@@ -136,20 +151,33 @@ export function CustomerCartScreen({
                                                         </Text>
                                                     </Group>
                                                 )}
-                                            </Stack>
-                                            <Text size="sm" c="dimmed" fw={600}>
-                                                {item.quantity}x
-                                            </Text>
-                                            <Text
-                                                size="sm"
-                                                fw={600}
-                                                ff="monospace"
-                                                w={72}
-                                                ta="right"
-                                                c={item.discount > 0 ? "green.7" : undefined}
+                                            </Group>
+                                            <Group
+                                                gap="md"
+                                                wrap="nowrap"
+                                                align="center"
+                                                style={{ flexShrink: 0 }}
                                             >
-                                                {brl(itemNet)}
-                                            </Text>
+                                                <Text
+                                                    size="sm"
+                                                    c="dimmed"
+                                                    fw={600}
+                                                    ta="center"
+                                                    style={{ width: 28 }}
+                                                >
+                                                    {item.quantity}x
+                                                </Text>
+                                                <Text
+                                                    size="sm"
+                                                    fw={600}
+                                                    ff="monospace"
+                                                    ta="right"
+                                                    c={item.discount > 0 ? "green.7" : undefined}
+                                                    style={{ width: 90, whiteSpace: "nowrap" }}
+                                                >
+                                                    {brl(itemNet)}
+                                                </Text>
+                                            </Group>
                                         </Group>
                                     </div>
                                 )
