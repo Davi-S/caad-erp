@@ -35,7 +35,7 @@ export function useCart() {
 
         setItems((prevItems) => {
             const currentItem = prevItems[id]
-            const currentQty = currentItem?.quantity || 0
+            const currentQty = currentItem?.quantity ?? 0
             const available = stock?.[id]
 
             // Prevent adding more than what is available in stock

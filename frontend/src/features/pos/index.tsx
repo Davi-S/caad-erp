@@ -23,7 +23,7 @@ export function POSFlow() {
     const [screen, setScreen] = useState<"salesmen" | "cart" | "payment">("salesmen")
 
     const [selectedSalesmanId, setSelectedSalesmanId] = useState<string | null>(null)
-    const selectedSalesman = salesmen.find((s) => s.id === selectedSalesmanId) || null
+    const selectedSalesman = salesmen.find((s) => s.id === selectedSalesmanId) ?? null
 
     // Hooks
     const cartState = useCart()
@@ -162,7 +162,7 @@ export function assemblySalesRequest(
     const isCredit = method === "OnCredit"
 
     return itemsList.map((item) => {
-        const globalDisc = globalDiscounts[item.productId] || 0
+        const globalDisc = globalDiscounts[item.productId]
         const revenue = item.quantity * item.unitPrice - item.discount - globalDisc
 
         return {
@@ -170,7 +170,7 @@ export function assemblySalesRequest(
             salesmanId,
             quantity: item.quantity,
             totalRevenue: isCredit ? 0 : revenue,
-            paymentType: (isCredit ? "OnCredit" : revenue === 0 ? "Other" : method) as PaymentType,
+            paymentType: isCredit ? "OnCredit" : revenue === 0 ? "Other" : method,
             notes: formatSaleNotes(notes, discount, globalDisc, item.discount),
         }
     })

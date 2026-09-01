@@ -31,7 +31,7 @@ export function ProductGroupCard({
         const product = group.variants[0].product
         const available = stock[product.id]
         const soldOut = available !== undefined && available <= 0
-        const quantity = cart[product.id]?.quantity || 0
+        const quantity = cart[product.id]?.quantity ?? 0
 
         return (
             <Indicator label={`${quantity}x`} size={18} disabled={quantity === 0} offset={15}>
@@ -77,7 +77,7 @@ export function ProductGroupCard({
 
     // Consolidated Product Variation Family (variants.length > 1)
     const totalGroupQuantityInCart = useMemo(
-        () => group.variants.reduce((sum, v) => sum + (cart[v.product.id]?.quantity || 0), 0),
+        () => group.variants.reduce((sum, v) => sum + (cart[v.product.id]?.quantity ?? 0), 0),
         [group.variants, cart],
     )
 
@@ -195,7 +195,7 @@ export function ProductGroupCard({
                                 const product = v.product
                                 const available = stock[product.id] ?? 0
                                 const soldOut = available <= 0
-                                const qty = cart[product.id]?.quantity || 0
+                                const qty = cart[product.id]?.quantity ?? 0
 
                                 return (
                                     <Indicator

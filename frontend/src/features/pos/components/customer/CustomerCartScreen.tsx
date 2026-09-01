@@ -41,13 +41,13 @@ export function CustomerCartScreen({
     discount = 0,
     openGroupId,
 }: CustomerCartScreenProps) {
-    const itemsList = Object.values(items || {})
+    const itemsList = Object.values(items)
     const isEmpty = itemsList.length === 0
     const totalSavings = totalItemDiscount + discount
 
     const sortedProducts = useMemo(() => {
         return [...products].sort((a, b) =>
-            (a.name || "").localeCompare(b.name || "", undefined, {
+            a.name.localeCompare(b.name, undefined, {
                 sensitivity: "base",
                 numeric: true,
             }),
