@@ -17,28 +17,29 @@ export interface ProductGroup {
 }
 
 /**
- * Groups products by base name using the `\s+-\s+` delimiter rule.
+ * Groups products by base name using the configurable delimiter rule (default ` - `).
  * Every product is returned wrapped inside a ProductGroup.
  * Groups with 1 variant represent standalone products.
  * Groups with 2+ variants represent product variation families.
  *
  * @param products Array of raw Product objects from the API or search/sort filters
+ * @param delimiter Delimiter string used to split base name from variant label
  * @returns Array of unified ProductGroup objects
  */
-export function groupProducts(products: Product[]): ProductGroup[] {
+export function groupProducts(products: Product[], delimiter = " - "): ProductGroup[] {
     const groupMap = new Map<string, ProductGroup>()
 
     for (const product of products) {
         const name = product.name ? product.name.trim() : ""
-        // Match last occurrence of hyphen surrounded by spaces
-        const lastHyphenIndex = name.lastIndexOf(" - ")
+        // Match last occurrence of delimiter
+        const lastDelimiterIndex = delimiter ? name.lastIndexOf(delimiter) : -1
 
         let baseName = name
         let variantLabel = name
 
-        if (lastHyphenIndex !== -1) {
-            const parsedBase = name.slice(0, lastHyphenIndex).trim()
-            const parsedVariant = name.slice(lastHyphenIndex + 3).trim()
+        if (lastDelimiterIndex !== -1) {
+            const parsedBase = name.slice(0, lastDelimiterIndex).trim()
+            const parsedVariant = name.slice(lastDelimiterIndex + delimiter.length).trim()
             if (parsedBase && parsedVariant) {
                 baseName = parsedBase
                 variantLabel = parsedVariant

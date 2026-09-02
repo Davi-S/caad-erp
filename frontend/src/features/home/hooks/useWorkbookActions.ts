@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { trpcClient } from "@/utils/trpc"
+import { useAppConfig } from "@/config"
 
 export interface ImportWorkbookResult {
     productsCount: number
@@ -16,6 +17,7 @@ export interface ImportWorkbookResult {
  * Custom hook for exporting and downloading the Excel workbook.
  */
 export function useExportWorkbook() {
+    const { config } = useAppConfig()
     const [isExporting, setIsExporting] = useState(false)
 
     const exportWorkbook = async () => {
@@ -34,7 +36,7 @@ export function useExportWorkbook() {
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement("a")
             a.href = url
-            a.download = data.filename || "caad_erp_workbook.xlsx"
+            a.download = config.excelDefaultFilename || data.filename || "caad_erp_workbook.xlsx"
             document.body.appendChild(a)
             a.click()
             a.remove()

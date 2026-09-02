@@ -31,6 +31,7 @@ import type { Salesman } from "@/types"
 import { useCart } from "../hooks/useCart"
 import { useCheckout } from "../hooks/useCheckout"
 import { usePixPayment } from "../hooks/usePixPayment"
+import { useAppConfig } from "@/config"
 
 import type { PaymentDetails } from "../types/broadcast"
 
@@ -47,8 +48,6 @@ interface PaymentScreenProps {
     onPaymentStateChange: (details: PaymentDetails) => void
 }
 
-const AUTO_NEW_SALE_TIMEOUT_MS = 60000
-
 export function PaymentScreen({
     salesman,
     cartState,
@@ -56,6 +55,7 @@ export function PaymentScreen({
     actions,
     onPaymentStateChange,
 }: PaymentScreenProps) {
+    const { config } = useAppConfig()
     const isZeroTotal = cartState.total === 0
     const totalSavings = cartState.totalItemDiscount + cartState.discount
 
@@ -100,14 +100,14 @@ export function PaymentScreen({
     }, [resetCheckout])
 
     useEffect(() => {
-        if (!confirmed) return
+        if (!confirmed || config.autoStartNewSaleTimeoutMs <= 0) return
 
         const timer = setTimeout(() => {
             onNewSale()
-        }, AUTO_NEW_SALE_TIMEOUT_MS)
+        }, config.autoStartNewSaleTimeoutMs)
 
         return () => clearTimeout(timer)
-    }, [confirmed, onNewSale])
+    }, [confirmed, onNewSale, config.autoStartNewSaleTimeoutMs])
 
     const handleApproved = useCallback(() => {
         if (!isLocked) {

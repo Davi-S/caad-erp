@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { createPixPayment, checkPaymentStatus } from "@/api/mercadoPago"
+import { useAppConfig, formatPixDescription } from "@/config"
 
 interface UsePixPaymentParams {
     amountInBrl: number
@@ -14,6 +15,7 @@ export function usePixPayment({
     confirmed,
     onPaymentApproved,
 }: UsePixPaymentParams) {
+    const { config } = useAppConfig()
     const [paymentId, setPaymentId] = useState<number | string | null>(null)
     const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
@@ -27,7 +29,10 @@ export function usePixPayment({
         async (isRetry = false) => {
             if (amountInBrl <= 0) return
 
-            const currentParamsKey = `${amountInBrl}_${salesmanName}`
+            const description = formatPixDescription(config.pixDescriptionTemplate, {
+                salesmanName,
+            })
+            const currentParamsKey = `${amountInBrl}_${salesmanName}_${description}`
 
             if (
                 !isRetry &&
@@ -41,7 +46,7 @@ export function usePixPayment({
             setLoading(true)
             setError(null)
             try {
-                const data = await createPixPayment(amountInBrl, `Venda - ${salesmanName}`)
+                const data = await createPixPayment(amountInBrl, description)
                 setPaymentId(data.id)
                 setQrCodeBase64(data.qr_code_base64)
             } catch (err: unknown) {
@@ -54,7 +59,7 @@ export function usePixPayment({
                 isFetchingRef.current = false
             }
         },
-        [amountInBrl, salesmanName],
+        [amountInBrl, salesmanName, config.pixDescriptionTemplate],
     )
 
     // Auto-generate PIX payment on mount or amount change

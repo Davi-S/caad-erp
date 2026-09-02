@@ -11,6 +11,7 @@ import { productsQueryOptions } from "@/hooks/queries/useProducts"
 import { stockQueryOptions } from "@/hooks/queries/useStock"
 import { GlobalError } from "@/components/GlobalError"
 import { MantineProvider } from "@mantine/core"
+import { AppConfigProvider } from "@/config"
 import { SalesmenManagementPage } from "@/features/salesmen"
 import { ProductsManagementPage } from "@/features/products"
 import { StockFlow } from "@/features/stock"
@@ -88,12 +89,14 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
-        <trpc.Provider client={trpcClient} queryClient={queryClient}>
-            <QueryClientProvider client={queryClient}>
-                <MantineProvider>
-                    <RouterProvider router={router} />
-                </MantineProvider>
-            </QueryClientProvider>
-        </trpc.Provider>
+        <AppConfigProvider>
+            <trpc.Provider client={trpcClient} queryClient={queryClient}>
+                <QueryClientProvider client={queryClient}>
+                    <MantineProvider>
+                        <RouterProvider router={router} />
+                    </MantineProvider>
+                </QueryClientProvider>
+            </trpc.Provider>
+        </AppConfigProvider>
     </StrictMode>,
 )

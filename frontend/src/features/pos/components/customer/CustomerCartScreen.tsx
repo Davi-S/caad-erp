@@ -13,6 +13,7 @@ import {
 import { ShoppingCart } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { brl } from "@/helpers"
+import { useAppConfig } from "@/config"
 import type { Product, Stock } from "@/types"
 import { groupProducts } from "../../utils/productGrouping"
 import { ProductGroupCard } from "../ProductGroupCard"
@@ -54,7 +55,12 @@ export function CustomerCartScreen({
         )
     }, [products])
 
-    const groupedProducts = useMemo(() => groupProducts(sortedProducts), [sortedProducts])
+    const { config } = useAppConfig()
+
+    const groupedProducts = useMemo(
+        () => groupProducts(sortedProducts, config.productGroupingDelimiter),
+        [sortedProducts, config.productGroupingDelimiter],
+    )
 
     return (
         <ScreenShell>

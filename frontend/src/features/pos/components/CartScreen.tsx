@@ -21,6 +21,7 @@ import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackLis
 import { brl } from "@/helpers"
 import type { Salesman, Product, Stock } from "@/types"
 import { useCart, type CartItem } from "../hooks/useCart"
+import { useAppConfig } from "@/config"
 
 import { groupProducts } from "../utils/productGrouping"
 import { ProductGroupCard } from "./ProductGroupCard"
@@ -123,7 +124,12 @@ export function CartScreen({
         sortOptions: PRODUCT_SORT_OPTIONS,
     })
 
-    const groupedProducts = useMemo(() => groupProducts(processedProducts), [processedProducts])
+    const { config } = useAppConfig()
+
+    const groupedProducts = useMemo(
+        () => groupProducts(processedProducts, config.productGroupingDelimiter),
+        [processedProducts, config.productGroupingDelimiter],
+    )
 
     return (
         <ScreenShell>
