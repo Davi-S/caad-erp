@@ -1,0 +1,6 @@
+{
+    "autoStartNewSaleTimeoutMs": 60000,
+    "productGroupingDelimiter": " - ",
+    "pixDescriptionTemplate": "Venda - {salesmanName}",
+    "excelDefaultFilename": "caad_erp_workbook.xlsx"
+}
