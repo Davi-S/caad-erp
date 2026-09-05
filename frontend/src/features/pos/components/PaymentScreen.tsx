@@ -4,9 +4,9 @@ import {
     Alert,
     Badge,
     Button,
+    Card,
     Center,
     Group,
-    Paper,
     SegmentedControl,
     Stack,
     Text,
@@ -190,9 +190,7 @@ export function PaymentScreen({
                     mx="auto"
                     w="100%"
                 >
-                    <Paper
-                        withBorder
-                        shadow="sm"
+                    <Card
                         radius="md"
                         p="lg"
                         style={{
@@ -200,7 +198,8 @@ export function PaymentScreen({
                             flexDirection: "column",
                             flex: 1,
                             minHeight: 0,
-                            borderColor: confirmed ? "var(--mantine-color-green-5)" : undefined,
+                            border: `1px solid ${confirmed ? "var(--mantine-color-green-5)" : "var(--mantine-color-default-border)"}`,
+                            backgroundColor: "transparent",
                         }}
                     >
                         <Stack align="center" gap="xs" style={{ flex: 1, minHeight: 0 }}>
@@ -244,19 +243,15 @@ export function PaymentScreen({
                                 }}
                             />
 
-                            <Paper
-                                withBorder
+                            <Card
                                 radius="md"
                                 mt="sm"
                                 w="100%"
                                 style={{
-                                    borderStyle: confirmed ? "solid" : "dashed",
-                                    borderColor: confirmed
-                                        ? "var(--mantine-color-green-3)"
-                                        : undefined,
+                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-3)" : "dashed var(--mantine-color-default-border)"}`,
                                     backgroundColor: confirmed
                                         ? "var(--mantine-color-green-0)"
-                                        : undefined,
+                                        : "transparent",
                                     flex: 1,
                                     minHeight: 0,
                                     position: "relative",
@@ -397,9 +392,9 @@ export function PaymentScreen({
                                         </>
                                     )}
                                 </Center>
-                            </Paper>
-                        </Stack>
-                    </Paper>
+                                </Card>
+                            </Stack>
+                        </Card>
 
                     {error && (
                         <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm">

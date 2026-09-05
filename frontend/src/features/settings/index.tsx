@@ -5,10 +5,10 @@ import {
     Alert,
     Badge,
     Button,
+    Card,
     FileButton,
     Group,
     NumberInput,
-    Paper,
     ScrollArea,
     Stack,
     Text,
@@ -164,7 +164,14 @@ export function SettingsPage() {
                     )}
 
                     {/* Section 1: POS & Operations */}
-                    <Paper withBorder shadow="xs" radius="md" p="md">
+                    <Card
+                        radius="md"
+                        p="md"
+                        style={{
+                            border: "1px solid var(--mantine-color-default-border)",
+                            backgroundColor: "transparent",
+                        }}
+                    >
                         <Stack gap="sm">
                             <Text fw={600} size="sm">
                                 Ponto de Venda (PDV)
@@ -190,10 +197,17 @@ export function SettingsPage() {
                                 placeholder=" - "
                             />
                         </Stack>
-                    </Paper>
+                    </Card>
 
                     {/* Section 2: Payments / PIX */}
-                    <Paper withBorder shadow="xs" radius="md" p="md">
+                    <Card
+                        radius="md"
+                        p="md"
+                        style={{
+                            border: "1px solid var(--mantine-color-default-border)",
+                            backgroundColor: "transparent",
+                        }}
+                    >
                         <Stack gap="sm">
                             <Text fw={600} size="sm">
                                 Pagamentos (PIX)
@@ -227,10 +241,17 @@ export function SettingsPage() {
                                 </Badge>
                             </Group>
                         </Stack>
-                    </Paper>
+                    </Card>
 
                     {/* Section 3: Reports & Excel */}
-                    <Paper withBorder shadow="xs" radius="md" p="md">
+                    <Card
+                        radius="md"
+                        p="md"
+                        style={{
+                            border: "1px solid var(--mantine-color-default-border)",
+                            backgroundColor: "transparent",
+                        }}
+                    >
                         <Stack gap="sm">
                             <Text fw={600} size="sm">
                                 Relatórios e Planilhas
@@ -244,10 +265,17 @@ export function SettingsPage() {
                                 placeholder="caad_erp_workbook.xlsx"
                             />
                         </Stack>
-                    </Paper>
+                    </Card>
 
                     {/* Section 4: Backup & Migration */}
-                    <Paper withBorder shadow="xs" radius="md" p="md">
+                    <Card
+                        radius="md"
+                        p="md"
+                        style={{
+                            border: "1px solid var(--mantine-color-default-border)",
+                            backgroundColor: "transparent",
+                        }}
+                    >
                         <Stack gap="sm">
                             <Text fw={600} size="sm">
                                 Backup e Migração de Configurações
@@ -295,7 +323,7 @@ export function SettingsPage() {
                                 </Button>
                             </Group>
                         </Stack>
-                    </Paper>
+                    </Card>
 
                     {/* Bottom Actions */}
                     <Group justify="flex-end" gap="xs" mt="xs">

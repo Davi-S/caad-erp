@@ -2,9 +2,9 @@ import {
     Alert,
     Badge,
     Box,
+    Card,
     Center,
     Loader,
-    Paper,
     Stack,
     Text,
     ThemeIcon,
@@ -74,9 +74,7 @@ export function CustomerPaymentScreen({
                     mx="auto"
                     w="100%"
                 >
-                    <Paper
-                        withBorder
-                        shadow="sm"
+                    <Card
                         radius="md"
                         p="lg"
                         style={{
@@ -84,7 +82,8 @@ export function CustomerPaymentScreen({
                             flexDirection: "column",
                             flex: 1,
                             minHeight: 0,
-                            borderColor: confirmed ? "var(--mantine-color-green-5)" : undefined,
+                            border: `1px solid ${confirmed ? "var(--mantine-color-green-5)" : "var(--mantine-color-default-border)"}`,
+                            backgroundColor: "transparent",
                         }}
                     >
                         <Stack align="center" gap="xs" style={{ flex: 1, minHeight: 0 }}>
@@ -135,19 +134,15 @@ export function CustomerPaymentScreen({
                                       : "Outro"}
                             </Badge>
 
-                            <Paper
-                                withBorder
+                            <Card
                                 radius="md"
                                 mt="sm"
                                 w="100%"
                                 style={{
-                                    borderStyle: confirmed ? "solid" : "dashed",
-                                    borderColor: confirmed
-                                        ? "var(--mantine-color-green-3)"
-                                        : undefined,
+                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-3)" : "dashed var(--mantine-color-default-border)"}`,
                                     backgroundColor: confirmed
                                         ? "var(--mantine-color-green-0)"
-                                        : undefined,
+                                        : "transparent",
                                     flex: 1,
                                     minHeight: 0,
                                     position: "relative",
@@ -280,11 +275,11 @@ export function CustomerPaymentScreen({
                                         </>
                                     )}
                                 </Center>
-                            </Paper>
-                        </Stack>
-                    </Paper>
-                </Stack>
-            </Box>
+                                </Card>
+                            </Stack>
+                        </Card>
+                    </Stack>
+                </Box>
         </ScreenShell>
     )
 }
