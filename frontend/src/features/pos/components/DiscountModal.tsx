@@ -131,7 +131,7 @@ export function DiscountModal({
                         p="xs"
                         style={{
                             backgroundColor: "var(--mantine-color-gray-0)",
-                            borderRadius: 6,
+                            borderRadius: "var(--mantine-radius-sm)",
                         }}
                     >
                         <Group justify="space-between">
@@ -154,7 +154,7 @@ export function DiscountModal({
                             justify="space-between"
                             mt={4}
                             pt={4}
-                            style={{ borderTop: "1px dashed var(--mantine-color-gray-3)" }}
+                            style={{ borderTop: "1px dashed var(--mantine-color-default-border)" }}
                         >
                             <Text size="xs" fw={700}>
                                 Total com desconto:

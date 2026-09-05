@@ -160,7 +160,7 @@ export function ProductsManagementPage() {
                                     wrap="nowrap"
                                     p="sm"
                                     style={{
-                                        border: "1px solid var(--mantine-color-gray-3)",
+                                        border: "1px solid var(--mantine-color-default-border)",
                                         borderRadius: "var(--mantine-radius-md)",
                                         opacity: product.isActive ? 1 : 0.6,
                                     }}

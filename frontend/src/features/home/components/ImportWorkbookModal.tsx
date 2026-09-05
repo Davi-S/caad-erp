@@ -101,7 +101,7 @@ export function ImportWorkbookModal({ opened, onClose }: ImportWorkbookModalProp
                         justify="center"
                         p="md"
                         style={{
-                            border: "2px dashed var(--mantine-color-gray-3)",
+                            border: "2px dashed var(--mantine-color-default-border)",
                             borderRadius: "var(--mantine-radius-md)",
                         }}
                     >
