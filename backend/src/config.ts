@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename)
 
 export const BackendConfigSchema = z.object({
     mercadoPagoAccessToken: z.string().optional(),
-    mercadoPagoPayerEmail: z.string().default("cliente@caad.com.br"),
+    mercadoPagoPayerEmail: z.string().default("example@gmail.com"),
 })
 export type BackendConfig = z.infer<typeof BackendConfigSchema>
 

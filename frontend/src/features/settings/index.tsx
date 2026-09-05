@@ -86,7 +86,7 @@ export function SettingsPage() {
         try {
             await updateBackendConfig.mutateAsync({
                 mercadoPagoAccessToken: backendToken || undefined,
-                mercadoPagoPayerEmail: backendEmail || "cliente@caad.com.br",
+                mercadoPagoPayerEmail: backendEmail || "example@gmail.com",
             })
             setSuccessMessage("Configurações salvas com sucesso!")
         } catch (err: any) {
@@ -256,7 +256,7 @@ export function SettingsPage() {
                                 description="O email usado como padrão na criação do QR Code PIX."
                                 value={backendEmail}
                                 onChange={(e) => setBackendEmail(e.currentTarget.value)}
-                                placeholder="cliente@caad.com.br"
+                                placeholder="example@gmail.com"
                             />
 
                             <TextInput
