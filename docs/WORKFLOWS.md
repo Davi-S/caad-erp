@@ -11,9 +11,24 @@ financial and inventory rules, and practical guidance for operating the system.
 ### Standard Immediate Payment Checkout
 
 Immediate sales cover transactions where payment is collected at checkout via
-Cash, PIX QR code, or other payment methods. Recording a sale appends a `SALE`
-entry to the transaction ledger, immediately deducting the sold quantity from
-on-hand stock and logging the collected gross revenue.
+**Cash**, **PIX QR code**, or **Other** payment methods. Recording a sale
+appends a `SALE` entry to the transaction ledger, immediately deducting the sold
+quantity from on-hand stock and logging the collected gross revenue.
+
+The **Other** payment method is a general-purpose option for any payment channel
+that does not fit Cash or PIX (e.g. debit/credit card readers, bank transfer, or
+alternative digital wallets). It behaves identically to Cash at the system
+level: the cashier collects the payment and manually confirms receipt before the
+sale is finalized.
+
+#### PIX Payment Flow and Manual Confirmation
+
+When PIX is selected, the system generates a QR code via the Mercado Pago
+integration and waits for automatic bank confirmation (webhook). If automatic
+confirmation does not arrive within the configured timeout, the payment panel
+remains active and the cashier can **manually confirm** that the payment was
+received outside the automatic channel. This fallback prevents the checkout from
+being indefinitely blocked by slow or failed connection.
 
 ### Discounts, Promotional Items, and Zero-Revenue Sales
 
@@ -82,10 +97,10 @@ future sales revenue from donated items to flow into net profit.
 
 ### Inventory Write-Offs (Spoilage, Breakage, Damage, and Shrinkage)
 
-Stock that leaves inventory due to **internal operational loss**—such as expired
-items, broken or damaged goods, lost stock, or supply shrinkage—is recorded
-using `WRITE_OFF` transactions. Write-offs reduce on-hand inventory while
-setting both revenue and cost to zero.
+Stock that leaves inventory due to **internal operational loss**, such as
+expired items, broken or damaged goods, lost stock, or supply shrinkage, is
+recorded using `WRITE_OFF` transactions. Write-offs reduce on-hand inventory
+while setting both revenue and cost to zero.
 
 Write-offs are strictly for back-office losses without customer interaction. Any
 stock distributed to students or customers (such as freebies, raffle prizes, or

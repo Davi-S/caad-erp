@@ -105,6 +105,21 @@ Always select the correct salesman before processing a checkout. Sales are
 attributed to the selected salesman and cannot be reassigned without voiding the
 entire transaction.
 
+#### Choosing a Payment Method
+
+Three payment methods are available at checkout:
+
+- **Cash (Dinheiro):** Collect the amount in physical currency, then confirm
+  receipt using the confirmation button.
+- **PIX:** The system generates a QR code for the customer to scan. Bank
+  confirmation arrives automatically via webhook. If it does not arrive within
+  the configured timeout, a manual confirmation button appears - use it once you
+  have verified the payment was received through another channel (e.g. by
+  checking the Mercado Pago dashboard or the customer's receipt).
+- **Other (Outro):** A general-purpose option for debit/credit cards, bank
+  transfers, or any payment channel outside Cash and PIX. Usually used in
+  On-Credit sales.
+
 #### Handling 100% Discounts, Freebies, and Courtesy Items:
 
 - When distributing items to students or customers for free (welcome gifts,
@@ -141,3 +156,26 @@ safeguards).
 
 `VOID` transactions themselves cannot be voided. Confirm the target transaction
 and all details before submitting a void.
+
+---
+
+## System Settings
+
+The Settings page is accessible from the Home screen under "Configurações".
+
+The settings description are mostly self explanatory.
+
+Misconfigured values (especially the Mercado Pago token) will prevent PIX
+payments from working.
+
+### Backup and Migration
+
+Use the export/import feature to keep multiple cashier stations synchronized or
+to restore preferences after a browser reset.
+
+- **Always export a backup** before changing computers or clearing browser data.
+- **Import restores only frontend preferences** (store name, Excel filename, PIX
+  template). It does **not** restore the Mercado Pago token - that must be
+  re-entered manually on each machine.
+- **Restore Defaults** resets all frontend preferences to factory values. It
+  does not clear the Mercado Pago token stored on the server.
