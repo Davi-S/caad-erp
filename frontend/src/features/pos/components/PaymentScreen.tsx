@@ -142,7 +142,7 @@ export function PaymentScreen({
             {/* Header */}
             <Stack gap="xs">
                 <Group justify="space-between">
-                    <ActionIcon onClick={onEdit} disabled={isLocked} variant="light" size="lg">
+                    <ActionIcon onClick={onEdit} disabled={isLocked} variant="subtle" size="lg">
                         <ArrowLeft />
                     </ActionIcon>
                     <Button
