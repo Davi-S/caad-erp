@@ -56,7 +56,6 @@ export function SettingsPage() {
 
     useEffect(() => {
         if (backendConfig) {
-            setBackendToken(backendConfig.mercadoPagoAccessToken || "")
             setBackendEmail(backendConfig.mercadoPagoPayerEmail || "")
         }
     }, [backendConfig])
@@ -88,6 +87,7 @@ export function SettingsPage() {
                 mercadoPagoAccessToken: backendToken || undefined,
                 mercadoPagoPayerEmail: backendEmail || "example@gmail.com",
             })
+            setBackendToken("")
             setSuccessMessage("Configurações salvas com sucesso!")
         } catch (err: any) {
             setErrorMessage(err.message || "Erro ao salvar configurações do servidor.")
@@ -247,7 +247,7 @@ export function SettingsPage() {
                                 description="O token de acesso para a integração PIX. (Requer reinicialização do backend se o servidor já estiver rodando)"
                                 value={backendToken}
                                 onChange={(e) => setBackendToken(e.currentTarget.value)}
-                                placeholder="APP_USR-..."
+                                placeholder={backendConfig?.hasAccessToken ? "Token configurado (digite para alterar)" : "APP_USR-..."}
                                 type="password"
                             />
 
