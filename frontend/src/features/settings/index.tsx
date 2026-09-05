@@ -109,7 +109,7 @@ export function SettingsPage() {
                 <Group wrap="nowrap">
                     <ActionIcon
                         onClick={() => navigate("/")}
-                        variant="light"
+                        variant="subtle"
                         size="lg"
                         aria-label="Voltar para a página inicial"
                     >

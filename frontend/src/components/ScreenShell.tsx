@@ -1,6 +1,10 @@
-import { Container } from "@mantine/core"
+import { Container, useMantineColorScheme } from "@mantine/core"
+import { useHotkeys } from "@mantine/hooks"
 
 export function ScreenShell({ children }: { children: React.ReactNode }) {
+    const { toggleColorScheme } = useMantineColorScheme()
+
+    useHotkeys([["a", () => toggleColorScheme()]])
 
     return (
         <Container
