@@ -417,7 +417,7 @@ export function PaymentScreen({
                         </Button>
                         {method === "PIX" && !pixState.error && (
                             <Group justify="center" gap="xs">
-                                <Loader size="xs" color="blue" />
+                                <Loader size="xs" />
                                 <Text size="xs" c="dimmed" fw={500}>
                                     Aguardando confirmação automática do banco...
                                 </Text>

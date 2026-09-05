@@ -224,7 +224,7 @@ export function HomePage() {
                         >
                             <Group justify="space-between" wrap="nowrap">
                                 <Group wrap="nowrap">
-                                    <ThemeIcon variant="light" color="blue" size={40} radius="xl">
+                                    <ThemeIcon variant="light" size={40} radius="xl">
                                         <Monitor size={20} />
                                     </ThemeIcon>
                                     <Stack gap={0}>
