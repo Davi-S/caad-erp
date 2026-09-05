@@ -396,8 +396,7 @@ export function PaymentScreen({
                         </Card>
 
                     {error && (
-                        <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm"
-                                fullWidth>
+                        <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm">
                             {error}
                         </Alert>
                     )}
