@@ -16,7 +16,7 @@ import {
     Tag,
     Users,
     ChevronRight,
-    FileSpreadsheet,
+    Download,
     Monitor,
     ExternalLink,
     Upload,
@@ -118,11 +118,11 @@ export function HomePage() {
                             <Button
                                 variant="light"
                                 size="xs"
-                                leftSection={<FileSpreadsheet size={16} />}
+                                leftSection={<Download size={16} />}
                                 loading={isExporting}
                                 onClick={handleDownloadWorkbook}
                             >
-                                Baixar Planilha
+                                Exportar Planilha
                             </Button>
                         </Group>
                     </Group>
