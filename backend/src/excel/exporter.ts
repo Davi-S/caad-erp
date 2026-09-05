@@ -37,7 +37,7 @@ export async function exportWorkbook(db: DB): Promise<Buffer> {
     // Title Banner
     dashSheet.mergeCells("A1:H1")
     const titleCell = dashSheet.getCell("A1")
-    titleCell.value = "CAAD ERP - PAINEL EXECUTIVO E DE ESTOQUE"
+    titleCell.value = "CAAD ERP - PAINEL EXECUTIVO"
     titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } }
     titleCell.fill = {
         type: "pattern",
