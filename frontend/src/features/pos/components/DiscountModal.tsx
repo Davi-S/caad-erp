@@ -61,6 +61,13 @@ export function DiscountModal({
 
     const handleApply = () => {
         if (!isValid) return
+
+        if (discountCents === subtotal) {
+            if (!window.confirm("O desconto aplicado é de 100% (o valor final será R$ 0,00). Tem certeza que deseja continuar?")) {
+                return
+            }
+        }
+
         setLastApplied(draft)
         onApply(discountCents)
         onClose()

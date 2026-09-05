@@ -71,6 +71,12 @@ export function RestockModal({
         const totalCostInCents =
             values.cost_mode === "unit" ? values.quantity * values.unit_cost : values.total_cost
 
+        if (totalCostInCents === 0) {
+            if (!window.confirm("O custo total desta reposição é R$ 0,00. Tem certeza que deseja continuar?")) {
+                return
+            }
+        }
+
         onConfirm({
             quantity: values.quantity,
             totalCost: totalCostInCents,

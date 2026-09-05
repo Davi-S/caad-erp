@@ -59,6 +59,12 @@ export function ProductFormModal({
     }, [opened, product])
 
     const handleSubmit = form.onSubmit((values) => {
+        if (values.sellPrice === 0) {
+            if (!window.confirm("O preço de venda deste produto é R$ 0,00. Tem certeza que deseja continuar?")) {
+                return
+            }
+        }
+
         if (isEditing && product) {
             onUpdate(product.id, {
                 name: values.name.trim(),
