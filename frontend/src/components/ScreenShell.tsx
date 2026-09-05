@@ -15,7 +15,6 @@ export function ScreenShell({ children }: { children: React.ReactNode }) {
             style={{
                 flexDirection: "column",
                 overflow: "hidden",
-                backgroundColor: "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))",
                 paddingTop: "max(var(--mantine-spacing-xl), env(safe-area-inset-top))",
                 paddingBottom: "max(var(--mantine-spacing-xl), env(safe-area-inset-bottom))",
             }}
