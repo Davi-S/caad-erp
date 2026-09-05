@@ -233,7 +233,6 @@ export function PaymentScreen({
                                 value={method}
                                 onChange={(value) => setMethod(value as PaymentType)}
                                 disabled={isLocked}
-                                color="var(--mantine-primary-color-filled)"
                                 mt="sm"
                                 styles={{
                                     root: {
