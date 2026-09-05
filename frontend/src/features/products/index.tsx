@@ -183,11 +183,7 @@ export function ProductsManagementPage() {
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">
                                         <Badge
-                                            color={
-                                                product.isActive
-                                                    ? "var(--mantine-primary-color-filled)"
-                                                    : "gray"
-                                            }
+                                            color={product.isActive ? undefined : "gray"}
                                             variant={product.isActive ? "light" : "outline"}
                                         >
                                             {product.isActive ? "Ativo" : "Inativo"}

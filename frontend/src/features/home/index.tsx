@@ -138,12 +138,7 @@ export function HomePage() {
                     >
                         <Group justify="space-between" wrap="nowrap">
                             <Group wrap="nowrap">
-                                <ThemeIcon
-                                    variant="white"
-                                    color="var(--mantine-primary-color-filled)"
-                                    size={48}
-                                    radius="xl"
-                                >
+                                <ThemeIcon variant="white" size={48} radius="xl">
                                     <ShoppingCart size={24} />
                                 </ThemeIcon>
                                 <Stack gap={0}>
@@ -182,12 +177,7 @@ export function HomePage() {
                             >
                                 <Group justify="space-between" wrap="nowrap">
                                     <Group wrap="nowrap">
-                                        <ThemeIcon
-                                            variant="light"
-                                            color="var(--mantine-primary-color-filled)"
-                                            size={40}
-                                            radius="xl"
-                                        >
+                                        <ThemeIcon variant="light" size={40} radius="xl">
                                             <item.icon size={20} />
                                         </ThemeIcon>
                                         <Stack gap={0}>

@@ -140,9 +140,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                         Estoque
                     </Title>
                 </Stack>
-                <Badge variant="light" color="var(--mantine-primary-color-filled)">
-                    {salesman.name}
-                </Badge>
+                <Badge variant="light">{salesman.name}</Badge>
             </Group>
 
             {/* Middle Section */}
@@ -210,11 +208,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                                             <Badge
                                                 size="sm"
                                                 variant="light"
-                                                color={
-                                                    soldOut
-                                                        ? "red"
-                                                        : "var(--mantine-primary-color-filled)"
-                                                }
+                                                color={soldOut ? "red" : undefined}
                                                 w="fit-content"
                                             >
                                                 {quantity} em estoque
@@ -223,7 +217,6 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                                         <Group gap="xs" wrap="nowrap">
                                             <ActionIcon
                                                 variant="light"
-                                                color="var(--mantine-primary-color-filled)"
                                                 onClick={() => openRestock(product)}
                                                 aria-label="Repor estoque"
                                             >

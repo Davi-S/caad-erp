@@ -166,11 +166,7 @@ export function SalesmenManagementPage() {
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">
                                         <Badge
-                                            color={
-                                                salesman.isActive
-                                                    ? "var(--mantine-primary-color-filled)"
-                                                    : "gray"
-                                            }
+                                            color={salesman.isActive ? undefined : "gray"}
                                             variant={salesman.isActive ? "light" : "outline"}
                                         >
                                             {salesman.isActive ? "Ativo" : "Inativo"}
