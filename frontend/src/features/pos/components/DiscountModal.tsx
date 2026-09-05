@@ -173,7 +173,7 @@ export function DiscountModal({
                     <Group justify={currentDiscount > 0 ? "space-between" : "flex-end"} mt="xs">
                         {currentDiscount > 0 && (
                             <Button
-                                variant="subtle"
+                                variant="light"
                                 color="red"
                                 size="sm"
                                 onClick={handleRemove}

@@ -109,7 +109,7 @@ export function SettingsPage() {
                 <Group wrap="nowrap">
                     <ActionIcon
                         onClick={() => navigate("/")}
-                        variant="subtle"
+                        variant="light"
                         size="lg"
                         aria-label="Voltar para a página inicial"
                     >
@@ -313,7 +313,7 @@ export function SettingsPage() {
                                 </FileButton>
 
                                 <Button
-                                    variant="subtle"
+                                    variant="light"
                                     color="red"
                                     size="xs"
                                     leftSection={<RotateCcw size={14} />}

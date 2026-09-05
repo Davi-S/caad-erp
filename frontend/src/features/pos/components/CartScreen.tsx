@@ -135,7 +135,7 @@ export function CartScreen({
         <ScreenShell>
             {/* Header */}
             <Group wrap="nowrap">
-                <ActionIcon onClick={onBack} variant="subtle" size="lg">
+                <ActionIcon onClick={onBack} variant="light" size="lg">
                     <ArrowLeft />
                 </ActionIcon>
                 <Stack gap={0}>
@@ -249,7 +249,7 @@ export function CartScreen({
                                                 style={{ flexShrink: 0 }}
                                             >
                                                 <ActionIcon
-                                                    variant="subtle"
+                                                    variant="light"
                                                     color={item.discount > 0 ? "green" : "gray"}
                                                     size="sm"
                                                     onClick={() => setSelectedItemForDiscount(item)}
@@ -338,7 +338,7 @@ export function CartScreen({
                                         Desconto no carrinho
                                     </Text>
                                     <ActionIcon
-                                        variant="subtle"
+                                        variant="light"
                                         color="gray"
                                         size="xs"
                                         onClick={() => setDiscountModalOpened(true)}
@@ -347,7 +347,7 @@ export function CartScreen({
                                         <Pencil size={12} />
                                     </ActionIcon>
                                     <ActionIcon
-                                        variant="subtle"
+                                        variant="light"
                                         color="red"
                                         size="xs"
                                         onClick={clearDiscount}
@@ -363,7 +363,7 @@ export function CartScreen({
                         ) : (
                             <Group justify="space-between" align="center">
                                 <Button
-                                    variant="subtle"
+                                    variant="light"
                                     size="compact-xs"
                                     leftSection={<Tag size={13} />}
                                     onClick={() => setDiscountModalOpened(true)}
@@ -385,7 +385,7 @@ export function CartScreen({
                     <Stack gap="xs">
                         <Group justify="space-between" align="center">
                             <Button
-                                variant="subtle"
+                                variant="light"
                                 size="compact-xs"
                                 leftSection={<Tag size={13} />}
                                 onClick={() => setDiscountModalOpened(true)}

@@ -142,13 +142,13 @@ export function PaymentScreen({
             {/* Header */}
             <Stack gap="xs">
                 <Group justify="space-between">
-                    <ActionIcon onClick={onEdit} disabled={isLocked} variant="subtle" size="lg">
+                    <ActionIcon onClick={onEdit} disabled={isLocked} variant="light" size="lg">
                         <ArrowLeft />
                     </ActionIcon>
                     <Button
                         onClick={onCancel}
                         disabled={isLocked}
-                        variant="subtle"
+                        variant="light"
                         color="red"
                         size="compact-sm"
                     >
@@ -396,7 +396,8 @@ export function PaymentScreen({
                         </Card>
 
                     {error && (
-                        <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm">
+                        <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm"
+                                fullWidth>
                             {error}
                         </Alert>
                     )}
