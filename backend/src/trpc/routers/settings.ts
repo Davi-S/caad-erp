@@ -8,7 +8,10 @@ export const settingsRouter = router({
     updateBackendConfig: publicProcedure
         .input(BackendConfigSchema)
         .mutation(({ input }) => {
-            saveBackendConfig(input)
+            const success = saveBackendConfig(input)
+            if (!success) {
+                throw new Error("Failed to write configuration file to disk.")
+            }
             return { success: true }
         }),
 })
