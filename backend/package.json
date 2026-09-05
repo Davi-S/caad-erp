@@ -21,7 +21,6 @@
     },
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.12",
-        "@types/exceljs": "^0.5.3",
         "@types/node": "^22.20.1",
         "typescript": "^5.7.3",
         "vitest": "^3.0.5"
