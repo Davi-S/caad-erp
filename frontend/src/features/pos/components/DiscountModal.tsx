@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Button, Group, Modal, NumberInput, SegmentedControl, Stack, Text } from "@mantine/core"
+import { modals } from "@mantine/modals"
 import { CurrencyInput } from "@/components/CurrencyInput"
 import { brl } from "@/helpers"
 
@@ -59,18 +60,31 @@ export function DiscountModal({
 
     const finalTotal = subtotal - (isValid ? discountCents : 0)
 
+    const performApply = () => {
+        setLastApplied(draft)
+        onApply(discountCents)
+        onClose()
+    }
+
     const handleApply = () => {
         if (!isValid) return
 
         if (discountCents === subtotal) {
-            if (!window.confirm("O desconto aplicado é de 100% (o valor final será R$ 0,00). Tem certeza que deseja continuar?")) {
-                return
-            }
+            modals.openConfirmModal({
+                title: "Atenção",
+                children: (
+                    <Text size="sm">
+                        O desconto aplicado é de 100% (o valor final será R$ 0,00). Tem certeza que deseja continuar?
+                    </Text>
+                ),
+                labels: { confirm: "Sim, continuar", cancel: "Cancelar" },
+                confirmProps: { color: "red" },
+                onConfirm: performApply,
+            })
+            return
         }
 
-        setLastApplied(draft)
-        onApply(discountCents)
-        onClose()
+        performApply()
     }
 
     const handleRemove = () => {

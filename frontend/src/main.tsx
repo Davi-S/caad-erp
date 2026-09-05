@@ -11,6 +11,7 @@ import { productsQueryOptions } from "@/hooks/queries/useProducts"
 import { stockQueryOptions } from "@/hooks/queries/useStock"
 import { GlobalError } from "@/components/GlobalError"
 import { MantineProvider, localStorageColorSchemeManager } from "@mantine/core"
+import { ModalsProvider } from "@mantine/modals"
 import { AppConfigProvider } from "@/config"
 import { SalesmenManagementPage } from "@/features/salesmen"
 import { ProductsManagementPage } from "@/features/products"
@@ -104,7 +105,9 @@ createRoot(document.getElementById("root")!).render(
             <trpc.Provider client={trpcClient} queryClient={queryClient}>
                 <QueryClientProvider client={queryClient}>
                     <MantineProvider defaultColorScheme="auto" colorSchemeManager={colorSchemeManager}>
-                        <RouterProvider router={router} />
+                        <ModalsProvider>
+                            <RouterProvider router={router} />
+                        </ModalsProvider>
                     </MantineProvider>
                 </QueryClientProvider>
             </trpc.Provider>
