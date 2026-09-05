@@ -12,6 +12,7 @@
         "@mantine/core": "^9.4.1",
         "@mantine/form": "^9.4.1",
         "@mantine/hooks": "^9.4.1",
+        "@mantine/modals": "^9.6.0",
         "@tanstack/react-query": "^5.101.2",
         "@tanstack/react-table": "^8.21.3",
         "@trpc/client": "^11.18.0",

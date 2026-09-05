@@ -10,6 +10,7 @@ import {
     Text,
     Divider,
 } from "@mantine/core"
+import { modals } from "@mantine/modals"
 import { useForm } from "@mantine/form"
 import { brl } from "@/helpers"
 import type { Product } from "@/types"
@@ -67,15 +68,34 @@ export function RestockModal({
 
     const estimatedTotalCents = form.values.quantity * form.values.unit_cost
 
+    const performSubmit = (quantity: number, totalCost: number, notes: string) => {
+        onConfirm({
+            quantity,
+            totalCost,
+            notes: notes.trim() || null,
+        })
+    }
+
     const handleSubmit = form.onSubmit((values) => {
         const totalCostInCents =
             values.cost_mode === "unit" ? values.quantity * values.unit_cost : values.total_cost
 
-        onConfirm({
-            quantity: values.quantity,
-            totalCost: totalCostInCents,
-            notes: values.notes.trim() || null,
-        })
+        if (totalCostInCents === 0) {
+            modals.openConfirmModal({
+                title: "Atenção",
+                children: (
+                    <Text size="sm">
+                        O custo total desta reposição é R$ 0,00. Tem certeza que deseja continuar?
+                    </Text>
+                ),
+                labels: { confirm: "Sim, continuar", cancel: "Cancelar" },
+                confirmProps: { color: "red" },
+                onConfirm: () => performSubmit(values.quantity, totalCostInCents, values.notes),
+            })
+            return
+        }
+
+        performSubmit(values.quantity, totalCostInCents, values.notes)
     })
 
     return (

@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { Modal, TextInput, Switch, Button, Stack, Group, Text } from "@mantine/core"
+import { modals } from "@mantine/modals"
 import { useForm } from "@mantine/form"
 import type { Product } from "@/types"
 import { CurrencyInput } from "@/components/CurrencyInput"
@@ -58,7 +59,7 @@ export function ProductFormModal({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [opened, product])
 
-    const handleSubmit = form.onSubmit((values) => {
+    const performSubmit = (values: typeof form.values) => {
         if (isEditing && product) {
             onUpdate(product.id, {
                 name: values.name.trim(),
@@ -73,6 +74,25 @@ export function ProductFormModal({
                 isActive: values.isActive,
             })
         }
+    }
+
+    const handleSubmit = form.onSubmit((values) => {
+        if (values.sellPrice === 0) {
+            modals.openConfirmModal({
+                title: "Atenção",
+                children: (
+                    <Text size="sm">
+                        O preço de venda deste produto é R$ 0,00. Tem certeza que deseja continuar?
+                    </Text>
+                ),
+                labels: { confirm: "Sim, continuar", cancel: "Cancelar" },
+                confirmProps: { color: "red" },
+                onConfirm: () => performSubmit(values),
+            })
+            return
+        }
+
+        performSubmit(values)
     })
 
     return (
