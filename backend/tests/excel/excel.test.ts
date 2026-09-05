@@ -58,7 +58,7 @@ describe("Excel Exporter (exportWorkbook)", () => {
         // Dashboard Sheet Assertions
         const dashSheet = workbook.getWorksheet("Dashboard")
         expect(dashSheet).toBeDefined()
-        expect(dashSheet?.getCell("A1").value).toBe("CAAD ERP - PAINEL EXECUTIVO E DE ESTOQUE")
+        expect(dashSheet?.getCell("A1").value).toBe("CAAD ERP - PAINEL EXECUTIVO")
 
         // Formula assertions
         const revCell = dashSheet?.getCell("B5")

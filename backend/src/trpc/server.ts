@@ -8,7 +8,7 @@
  *   GET  /api/payments/pix/:id - Mercado Pago payment status poll
  */
 
-import dotenv from "dotenv"
+
 import path from "path"
 import { fileURLToPath } from "url"
 import { createHTTPHandler } from "@trpc/server/adapters/standalone"
@@ -22,11 +22,6 @@ import { handlePaymentsRoute } from "../payments/mercadoPago.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-// Load .env relative to backend module location, falling back to CWD .env
-const envPath = path.resolve(__dirname, "../../.env")
-dotenv.config({ path: envPath })
-dotenv.config()
 
 // Default SQLite database file path relative to backend root directory
 export const defaultDbPath = process.env.DB_PATH || path.resolve(__dirname, "../../caad_erp.db")

@@ -34,4 +34,4 @@ lerna-debug.log*
 *.sw?
 
 # ── Environment ──────────────────────────────────────────
-.env
+caad_erp.conf.json

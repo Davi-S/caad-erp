@@ -7,6 +7,7 @@ import { productsRouter } from "./products.js"
 import { reportsRouter } from "./reports.js"
 import { salesmenRouter } from "./salesmen.js"
 import { transactionsRouter } from "./transactions.js"
+import { settingsRouter } from "./settings.js"
 
 /**
  * Primary combined tRPC app router instance.
@@ -16,6 +17,7 @@ export const appRouter = router({
     salesmen: salesmenRouter,
     transactions: transactionsRouter,
     reports: reportsRouter,
+    settings: settingsRouter,
 })
 
 /**

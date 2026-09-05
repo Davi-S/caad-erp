@@ -1,12 +1,14 @@
 /**
  * Mercado Pago PIX payment REST handler.
  *
- * The Mercado Pago access token is read from the MERCADO_PAGO_ACCESS_TOKEN
- * environment variable, which must be set in backend/.env before running.
+ * The Mercado Pago access token is read from the backend configuration
+ * file (caad_erp.conf.json).
  */
 
 import { MercadoPagoConfig, Payment } from "mercadopago"
 import type { IncomingMessage, ServerResponse } from "http"
+
+import { getBackendConfig } from "../config.js"
 
 /** Lazily-constructed Mercado Pago client (initialized on first request). */
 let mpClient: MercadoPagoConfig | null = null
@@ -17,9 +19,9 @@ let mpClient: MercadoPagoConfig | null = null
  */
 function getMpClient(): MercadoPagoConfig {
     if (!mpClient) {
-        const token = process.env.MERCADO_PAGO_ACCESS_TOKEN
+        const token = getBackendConfig().mercadoPagoAccessToken
         if (!token) {
-            throw new Error("MERCADO_PAGO_ACCESS_TOKEN is not set. Add it to `backend/.env`.")
+            throw new Error("MERCADO_PAGO_ACCESS_TOKEN is not configured in the settings.")
         }
         mpClient = new MercadoPagoConfig({ accessToken: token })
     }
@@ -102,7 +104,7 @@ async function handleCreatePix(req: IncomingMessage, res: ServerResponse): Promi
                 description: description.trim(),
                 payment_method_id: "pix",
                 payer: {
-                    email: "cliente@caad.com.br",
+                    email: getBackendConfig().mercadoPagoPayerEmail,
                 },
             },
         })
