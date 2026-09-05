@@ -275,7 +275,11 @@ export function PaymentScreen({
                                             >
                                                 <Check size={32} />
                                             </ThemeIcon>
-                                            <Text fw={700} size="md" c="var(--mantine-color-green-text)">
+                                            <Text
+                                                fw={700}
+                                                size="md"
+                                                c="var(--mantine-color-green-text)"
+                                            >
                                                 Pagamento recebido com sucesso!
                                             </Text>
                                             <Text size="xs" c="dimmed">
@@ -391,9 +395,9 @@ export function PaymentScreen({
                                         </>
                                     )}
                                 </Center>
-                                </Card>
-                            </Stack>
-                        </Card>
+                            </Card>
+                        </Stack>
+                    </Card>
 
                     {error && (
                         <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm">

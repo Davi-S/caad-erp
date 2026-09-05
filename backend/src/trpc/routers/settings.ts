@@ -11,22 +11,25 @@ export const settingsRouter = router({
         }
     }),
     updateBackendConfig: publicProcedure
-        .input(z.object({
-            mercadoPagoAccessToken: z.string().optional(),
-            mercadoPagoPayerEmail: z.string().default("example@gmail.com"),
-        }))
+        .input(
+            z.object({
+                mercadoPagoAccessToken: z.string().optional(),
+                mercadoPagoPayerEmail: z.string().default("example@gmail.com"),
+            }),
+        )
         .mutation(({ input }) => {
             const current = getBackendConfig()
-            
-            const tokenToSave = input.mercadoPagoAccessToken !== undefined 
-                ? input.mercadoPagoAccessToken 
-                : current.mercadoPagoAccessToken
+
+            const tokenToSave =
+                input.mercadoPagoAccessToken !== undefined
+                    ? input.mercadoPagoAccessToken
+                    : current.mercadoPagoAccessToken
 
             const success = saveBackendConfig({
                 mercadoPagoAccessToken: tokenToSave,
                 mercadoPagoPayerEmail: input.mercadoPagoPayerEmail,
             })
-            
+
             if (!success) {
                 throw new Error("Failed to write configuration file to disk.")
             }

@@ -8,7 +8,6 @@
  *   GET  /api/payments/pix/:id - Mercado Pago payment status poll
  */
 
-
 import path from "path"
 import { fileURLToPath } from "url"
 import { createHTTPHandler } from "@trpc/server/adapters/standalone"

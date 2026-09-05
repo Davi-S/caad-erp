@@ -1,5 +1,6 @@
 {
     "name": "caad-erp-frontend",
+    "version": "0.3.0-alpha",
     "private": true,
     "type": "module",
     "scripts": {
@@ -25,7 +26,6 @@
     "devDependencies": {
         "@babel/core": "^7.29.7",
         "@rolldown/plugin-babel": "^0.2.3",
-        "@testing-library/jest-dom": "^7.0.1",
         "@testing-library/react": "^16.3.3",
         "@types/babel__core": "^7.20.5",
         "@types/node": "^24.13.2",

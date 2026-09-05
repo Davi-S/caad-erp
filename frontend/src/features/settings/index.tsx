@@ -247,7 +247,11 @@ export function SettingsPage() {
                                 description="O token de acesso para a integração PIX. (Requer reinicialização do backend se o servidor já estiver rodando)"
                                 value={backendToken}
                                 onChange={(e) => setBackendToken(e.currentTarget.value)}
-                                placeholder={backendConfig?.hasAccessToken ? "Token configurado (digite para alterar)" : "APP_USR-..."}
+                                placeholder={
+                                    backendConfig?.hasAccessToken
+                                        ? "Token configurado (digite para alterar)"
+                                        : "APP_USR-..."
+                                }
                                 type="password"
                                 autoComplete="new-password"
                                 data-lpignore="true"

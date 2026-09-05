@@ -21,8 +21,10 @@ and sales management system specifically tailored for student lounge operations.
 ### Web Application (Frontend)
 
 - **Point of Sale (POS):** Interactive cart and checkout flow, salesman
-  selection screen, and payment confirmation (including Mercado Pago PIX QR
-  codes).
+  selection screen, and payment confirmation via Cash, PIX QR code (Mercado
+  Pago), or Other payment methods.
+- **Discounts:** Apply percentage or fixed-amount discounts to an entire cart or
+  specific items.
 - **Customer Display Mode:** Dedicated customer-facing display view for
   real-time checkout transparency.
 - **Product Management:** Tools to add, edit, or toggle active status of items
@@ -30,13 +32,16 @@ and sales management system specifically tailored for student lounge operations.
 - **Salesmen Management:** Register, update, and manage salespeople.
 - **Stock Management:** Direct control over inventory levels with restock and
   write-off modal workflows.
+- **System Settings:** UI-driven configuration.
+- **Dark Mode:** Full light/dark/system color scheme support, persisted per
+  browser. You will need to find out the key to change it ;) good luck.
 
 ### Backend and Core Ledger
 
 - **Append-only Transaction Ledger:** SQLite-backed immutable transaction log
   providing a complete, auditable history of all sales, restocks, write-offs,
   credit payments, and reversals.
-- **Excel Support:** non-technical managers do not need to learn SQL or rely on
+- **Excel Support:** Non-technical managers do not need to learn SQL or rely on
   an admin dashboard. They can open the Excel workbook directly using software
   they already know to audit everything.
 
