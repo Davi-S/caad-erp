@@ -4,9 +4,9 @@ import {
     Alert,
     Badge,
     Button,
+    Card,
     Center,
     Group,
-    Paper,
     SegmentedControl,
     Stack,
     Text,
@@ -140,15 +140,15 @@ export function PaymentScreen({
     return (
         <ScreenShell>
             {/* Header */}
-            <Stack gap={4}>
+            <Stack gap="xs">
                 <Group justify="space-between">
-                    <ActionIcon onClick={onEdit} disabled={isLocked} variant="subtle" size="lg">
+                    <ActionIcon onClick={onEdit} disabled={isLocked} variant="light" size="lg">
                         <ArrowLeft />
                     </ActionIcon>
                     <Button
                         onClick={onCancel}
                         disabled={isLocked}
-                        variant="subtle"
+                        variant="light"
                         color="red"
                         size="compact-sm"
                     >
@@ -190,9 +190,7 @@ export function PaymentScreen({
                     mx="auto"
                     w="100%"
                 >
-                    <Paper
-                        withBorder
-                        shadow="sm"
+                    <Card
                         radius="md"
                         p="lg"
                         style={{
@@ -200,7 +198,8 @@ export function PaymentScreen({
                             flexDirection: "column",
                             flex: 1,
                             minHeight: 0,
-                            borderColor: confirmed ? "var(--mantine-color-green-5)" : undefined,
+                            border: `1px solid ${confirmed ? "var(--mantine-color-green-outline)" : "var(--mantine-color-default-border)"}`,
+                            backgroundColor: "transparent",
                         }}
                     >
                         <Stack align="center" gap="xs" style={{ flex: 1, minHeight: 0 }}>
@@ -234,7 +233,6 @@ export function PaymentScreen({
                                 value={method}
                                 onChange={(value) => setMethod(value as PaymentType)}
                                 disabled={isLocked}
-                                color="var(--mantine-primary-color-filled)"
                                 mt="sm"
                                 styles={{
                                     root: {
@@ -244,19 +242,15 @@ export function PaymentScreen({
                                 }}
                             />
 
-                            <Paper
-                                withBorder
+                            <Card
                                 radius="md"
                                 mt="sm"
                                 w="100%"
                                 style={{
-                                    borderStyle: confirmed ? "solid" : "dashed",
-                                    borderColor: confirmed
-                                        ? "var(--mantine-color-green-3)"
-                                        : undefined,
+                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-outline)" : "dashed var(--mantine-color-default-border)"}`,
                                     backgroundColor: confirmed
-                                        ? "var(--mantine-color-green-0)"
-                                        : undefined,
+                                        ? "var(--mantine-color-green-light)"
+                                        : "transparent",
                                     flex: 1,
                                     minHeight: 0,
                                     position: "relative",
@@ -281,7 +275,7 @@ export function PaymentScreen({
                                             >
                                                 <Check size={32} />
                                             </ThemeIcon>
-                                            <Text fw={700} size="md" c="green.8">
+                                            <Text fw={700} size="md" c="var(--mantine-color-green-text)">
                                                 Pagamento recebido com sucesso!
                                             </Text>
                                             <Text size="xs" c="dimmed">
@@ -372,7 +366,10 @@ export function PaymentScreen({
 
                                             {method === "Cash" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <Banknote size={32} color="gray" />
+                                                    <Banknote
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Receba o valor em espécie e confirme abaixo.
                                                     </Text>
@@ -381,7 +378,10 @@ export function PaymentScreen({
 
                                             {method === "Other" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <CreditCard size={32} color="gray" />
+                                                    <CreditCard
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Receba o valor através de outro meio e
                                                         confirme abaixo.
@@ -391,12 +391,13 @@ export function PaymentScreen({
                                         </>
                                     )}
                                 </Center>
-                            </Paper>
-                        </Stack>
-                    </Paper>
+                                </Card>
+                            </Stack>
+                        </Card>
 
                     {error && (
-                        <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm">
+                        <Alert color="red" icon={<AlertTriangle size={16} />} w="100%" mt="sm"
+                                fullWidth>
                             {error}
                         </Alert>
                     )}
@@ -417,7 +418,7 @@ export function PaymentScreen({
                         </Button>
                         {method === "PIX" && !pixState.error && (
                             <Group justify="center" gap="xs">
-                                <Loader size="xs" color="blue" />
+                                <Loader size="xs" />
                                 <Text size="xs" c="dimmed" fw={500}>
                                     Aguardando confirmação automática do banco...
                                 </Text>
@@ -436,7 +437,7 @@ export function PaymentScreen({
 
 function MethodLabel({ icon, text }: { icon: React.ReactNode; text: string }) {
     return (
-        <Stack gap={2} align="center" py={4}>
+        <Stack gap="xs" align="center" py="xs">
             {icon}
             <Text size="10px" fw={600} tt="uppercase">
                 {text}

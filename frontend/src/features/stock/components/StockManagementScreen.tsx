@@ -3,6 +3,7 @@ import {
     ActionIcon,
     Alert,
     Badge,
+    Card,
     Center,
     Group,
     ScrollArea,
@@ -140,9 +141,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                         Estoque
                     </Title>
                 </Stack>
-                <Badge variant="light" color="var(--mantine-primary-color-filled)">
-                    {salesman.name}
-                </Badge>
+                <Badge variant="light">{salesman.name}</Badge>
             </Group>
 
             {/* Middle Section */}
@@ -172,7 +171,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                 ) : !processedProducts || processedProducts.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
-                            <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                            <ThemeIcon variant="default" size={40} radius="xl">
                                 <Package size={20} />
                             </ThemeIcon>
                             <Text c="dimmed" size="sm" ta="center">
@@ -192,54 +191,50 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                                 const soldOut = quantity <= 0
 
                                 return (
-                                    <Group
+                                    <Card
                                         key={product.id}
-                                        justify="space-between"
-                                        wrap="nowrap"
+                                        radius="md"
                                         p="sm"
                                         style={{
-                                            border: "1px solid var(--mantine-color-gray-3)",
-                                            borderRadius: "var(--mantine-radius-md)",
+                                            border: "1px solid var(--mantine-color-default-border)",
+                                            background: "transparent",
                                             opacity: product.isActive ? 1 : 0.6,
                                         }}
                                     >
-                                        <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                                            <Text fw={600} truncate>
-                                                {product.name}
-                                            </Text>
-                                            <Badge
-                                                size="sm"
-                                                variant="light"
-                                                color={
-                                                    soldOut
-                                                        ? "red"
-                                                        : "var(--mantine-primary-color-filled)"
-                                                }
-                                                w="fit-content"
-                                            >
-                                                {quantity} em estoque
-                                            </Badge>
-                                        </Stack>
-                                        <Group gap="xs" wrap="nowrap">
-                                            <ActionIcon
-                                                variant="light"
-                                                color="var(--mantine-primary-color-filled)"
-                                                onClick={() => openRestock(product)}
-                                                aria-label="Repor estoque"
-                                            >
-                                                <PackagePlus size={16} />
-                                            </ActionIcon>
-                                            <ActionIcon
-                                                variant="light"
-                                                color="red"
-                                                onClick={() => openWriteOff(product)}
-                                                disabled={soldOut}
-                                                aria-label="Dar baixa"
-                                            >
-                                                <PackageMinus size={16} />
-                                            </ActionIcon>
+                                        <Group justify="space-between" wrap="nowrap">
+                                            <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                                                <Text fw={600} truncate>
+                                                    {product.name}
+                                                </Text>
+                                                <Badge
+                                                    size="sm"
+                                                    variant="light"
+                                                    color={soldOut ? "red" : undefined}
+                                                    w="fit-content"
+                                                >
+                                                    {quantity} em estoque
+                                                </Badge>
+                                            </Stack>
+                                            <Group gap="xs" wrap="nowrap">
+                                                <ActionIcon
+                                                    variant="light"
+                                                    onClick={() => openRestock(product)}
+                                                    aria-label="Repor estoque"
+                                                >
+                                                    <PackagePlus size={16} />
+                                                </ActionIcon>
+                                                <ActionIcon
+                                                    variant="light"
+                                                    color="red"
+                                                    onClick={() => openWriteOff(product)}
+                                                    disabled={soldOut}
+                                                    aria-label="Dar baixa"
+                                                >
+                                                    <PackageMinus size={16} />
+                                                </ActionIcon>
+                                            </Group>
                                         </Group>
-                                    </Group>
+                                    </Card>
                                 )
                             })}
                         </Stack>

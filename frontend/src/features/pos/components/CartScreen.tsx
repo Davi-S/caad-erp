@@ -135,7 +135,7 @@ export function CartScreen({
         <ScreenShell>
             {/* Header */}
             <Group wrap="nowrap">
-                <ActionIcon onClick={onBack} variant="subtle" size="lg">
+                <ActionIcon onClick={onBack} variant="light" size="lg">
                     <ArrowLeft />
                 </ActionIcon>
                 <Stack gap={0}>
@@ -149,7 +149,7 @@ export function CartScreen({
             </Group>
 
             {/* Middle Section */}
-            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
+            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px="xs">
                 <Stack gap="lg">
                     <Stack gap="sm">
                         <ListControls {...controlsProps} searchPlaceholder="Buscar produto..." />
@@ -180,7 +180,7 @@ export function CartScreen({
                     {isEmpty ? (
                         <Center py="xl">
                             <Stack align="center" gap="xs">
-                                <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                                <ThemeIcon variant="default" size={40} radius="xl">
                                     <ShoppingCart size={20} />
                                 </ThemeIcon>
                                 <Text c="dimmed" size="sm" ta="center">
@@ -189,7 +189,7 @@ export function CartScreen({
                             </Stack>
                         </Center>
                     ) : (
-                        <Stack gap={4}>
+                        <Stack gap="xs">
                             <Text
                                 size="xs"
                                 fw={600}
@@ -205,7 +205,7 @@ export function CartScreen({
 
                                 return (
                                     <div key={item.productId}>
-                                        {index > 0 && <Divider variant="dashed" my={4} />}
+                                        {index > 0 && <Divider variant="dashed" my="xs" />}
                                         <Group
                                             justify="space-between"
                                             wrap="nowrap"
@@ -223,12 +223,12 @@ export function CartScreen({
                                                 </Text>
                                                 {item.discount > 0 && (
                                                     <Group
-                                                        gap={10}
+                                                        gap="md"
                                                         wrap="nowrap"
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
                                                     >
-                                                        <Text size="xs" c="green.7" fw={600}>
+                                                        <Text size="xs" c="var(--mantine-color-green-text)" fw={600}>
                                                             -{brl(item.discount)}
                                                         </Text>
                                                         <Text
@@ -249,7 +249,7 @@ export function CartScreen({
                                                 style={{ flexShrink: 0 }}
                                             >
                                                 <ActionIcon
-                                                    variant="subtle"
+                                                    variant="light"
                                                     color={item.discount > 0 ? "green" : "gray"}
                                                     size="sm"
                                                     onClick={() => setSelectedItemForDiscount(item)}
@@ -312,7 +312,7 @@ export function CartScreen({
             <Stack gap="xs">
                 <Divider />
                 {totalItemDiscount > 0 || discount > 0 ? (
-                    <Stack gap={4}>
+                    <Stack gap="xs">
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">
                                 Subtotal
@@ -323,22 +323,22 @@ export function CartScreen({
                         </Group>
                         {totalItemDiscount > 0 && (
                             <Group justify="space-between">
-                                <Text size="sm" c="green.7" fw={500}>
+                                <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                     Descontos nos itens
                                 </Text>
-                                <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                     -{brl(totalItemDiscount)}
                                 </Text>
                             </Group>
                         )}
                         {discount > 0 ? (
                             <Group justify="space-between" align="center">
-                                <Group gap={6} align="center">
-                                    <Text size="sm" c="green.7" fw={500}>
+                                <Group gap="sm" align="center">
+                                    <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                         Desconto no carrinho
                                     </Text>
                                     <ActionIcon
-                                        variant="subtle"
+                                        variant="light"
                                         color="gray"
                                         size="xs"
                                         onClick={() => setDiscountModalOpened(true)}
@@ -347,7 +347,7 @@ export function CartScreen({
                                         <Pencil size={12} />
                                     </ActionIcon>
                                     <ActionIcon
-                                        variant="subtle"
+                                        variant="light"
                                         color="red"
                                         size="xs"
                                         onClick={clearDiscount}
@@ -356,14 +356,14 @@ export function CartScreen({
                                         <X size={12} />
                                     </ActionIcon>
                                 </Group>
-                                <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                     -{brl(discount)}
                                 </Text>
                             </Group>
                         ) : (
                             <Group justify="space-between" align="center">
                                 <Button
-                                    variant="subtle"
+                                    variant="light"
                                     size="compact-xs"
                                     leftSection={<Tag size={13} />}
                                     onClick={() => setDiscountModalOpened(true)}
@@ -373,7 +373,7 @@ export function CartScreen({
                                 </Button>
                             </Group>
                         )}
-                        <Divider variant="dashed" my={2} />
+                        <Divider variant="dashed" my="xs" />
                         <Group justify="space-between">
                             <Text fw={600}>Total</Text>
                             <Text fw={700} size="lg" ff="monospace">
@@ -385,7 +385,7 @@ export function CartScreen({
                     <Stack gap="xs">
                         <Group justify="space-between" align="center">
                             <Button
-                                variant="subtle"
+                                variant="light"
                                 size="compact-xs"
                                 leftSection={<Tag size={13} />}
                                 onClick={() => setDiscountModalOpened(true)}

@@ -20,6 +20,7 @@ import "@mantine/core/styles.css"
 
 const queryClient = new QueryClient()
 
+
 const router = createBrowserRouter([
     {
         path: "/",

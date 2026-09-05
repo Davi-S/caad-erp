@@ -4,6 +4,7 @@ import {
     ActionIcon,
     Alert,
     Badge,
+    Card,
     Center,
     Group,
     ScrollArea,
@@ -131,7 +132,7 @@ export function SalesmenManagementPage() {
                 ) : !processedSalesmen || processedSalesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
-                            <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                            <ThemeIcon variant="default" size={40} radius="xl">
                                 <Users size={20} />
                             </ThemeIcon>
                             <Text c="dimmed" size="sm" ta="center">
@@ -147,42 +148,36 @@ export function SalesmenManagementPage() {
                     <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
                         <Stack gap="xs">
                             {processedSalesmen.map((salesman) => (
-                                <Group
+                                <Card
                                     key={salesman.id}
-                                    justify="space-between"
-                                    wrap="nowrap"
+                                    radius="md"
                                     p="sm"
                                     style={{
-                                        border: "1px solid var(--mantine-color-gray-3)",
-                                        borderRadius: "var(--mantine-radius-md)",
+                                        border: "1px solid var(--mantine-color-default-border)",
+                                        background: "transparent",
                                         opacity: salesman.isActive ? 1 : 0.6,
                                     }}
                                 >
-                                    <Stack gap={2}>
-                                        <Text fw={600}>{salesman.name}</Text>
-                                        <Text size="xs" c="dimmed" ff="monospace">
-                                            {salesman.id}
-                                        </Text>
-                                    </Stack>
-                                    <Group gap="xs" wrap="nowrap">
-                                        <Badge
-                                            color={
-                                                salesman.isActive
-                                                    ? "var(--mantine-primary-color-filled)"
-                                                    : "gray"
-                                            }
-                                            variant={salesman.isActive ? "light" : "outline"}
-                                        >
-                                            {salesman.isActive ? "Ativo" : "Inativo"}
-                                        </Badge>
-                                        <ActionIcon
-                                            variant="subtle"
-                                            onClick={() => openEditModal(salesman)}
-                                        >
-                                            <Pencil size={16} />
-                                        </ActionIcon>
+                                    <Group justify="space-between" wrap="nowrap">
+                                        <Stack gap="xs">
+                                            <Text fw={600}>{salesman.name}</Text>
+                                            <Text size="xs" c="dimmed" ff="monospace">
+                                                {salesman.id}
+                                            </Text>
+                                        </Stack>
+                                        <Group gap="xs" wrap="nowrap">
+                                            <Badge variant={salesman.isActive ? "light" : "default"}>
+                                                {salesman.isActive ? "Ativo" : "Inativo"}
+                                            </Badge>
+                                            <ActionIcon
+                                                variant="subtle"
+                                                onClick={() => openEditModal(salesman)}
+                                            >
+                                                <Pencil size={16} />
+                                            </ActionIcon>
+                                        </Group>
                                     </Group>
-                                </Group>
+                                </Card>
                             ))}
                         </Stack>
                     </ScrollArea>

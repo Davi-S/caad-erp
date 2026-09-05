@@ -74,7 +74,7 @@ export function CustomerCartScreen({
             </Group>
 
             {/* Middle Section */}
-            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
+            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px="xs">
                 <Stack gap="lg">
                     <Stack gap="sm">
                         <SimpleGrid cols={3} spacing="sm">
@@ -96,7 +96,7 @@ export function CustomerCartScreen({
                     {isEmpty ? (
                         <Center py="xl">
                             <Stack align="center" gap="xs">
-                                <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                                <ThemeIcon variant="default" size={40} radius="xl">
                                     <ShoppingCart size={20} />
                                 </ThemeIcon>
                                 <Text c="dimmed" size="sm" ta="center">
@@ -105,7 +105,7 @@ export function CustomerCartScreen({
                             </Stack>
                         </Center>
                     ) : (
-                        <Stack gap={4}>
+                        <Stack gap="xs">
                             <Text
                                 size="xs"
                                 fw={600}
@@ -121,7 +121,7 @@ export function CustomerCartScreen({
 
                                 return (
                                     <div key={item.productId}>
-                                        {index > 0 && <Divider variant="dashed" my={4} />}
+                                        {index > 0 && <Divider variant="dashed" my="xs" />}
                                         <Group
                                             justify="space-between"
                                             wrap="nowrap"
@@ -139,12 +139,12 @@ export function CustomerCartScreen({
                                                 </Text>
                                                 {item.discount > 0 && (
                                                     <Group
-                                                        gap={4}
+                                                        gap="xs"
                                                         wrap="nowrap"
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
                                                     >
-                                                        <Text size="xs" c="green.7" fw={600}>
+                                                        <Text size="xs" c="var(--mantine-color-green-text)" fw={600}>
                                                             -{brl(item.discount)}
                                                         </Text>
                                                         <Text
@@ -197,7 +197,7 @@ export function CustomerCartScreen({
             <Stack gap="xs">
                 <Divider />
                 {totalSavings > 0 ? (
-                    <Stack gap={2}>
+                    <Stack gap="xs">
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">
                                 Subtotal
@@ -207,14 +207,14 @@ export function CustomerCartScreen({
                             </Text>
                         </Group>
                         <Group justify="space-between">
-                            <Text size="sm" c="green.7" fw={500}>
+                            <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                 Economia total
                             </Text>
-                            <Text size="sm" fw={600} c="green.7" ff="monospace">
+                            <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                 -{brl(totalSavings)}
                             </Text>
                         </Group>
-                        <Divider variant="dashed" my={2} />
+                        <Divider variant="dashed" my="xs" />
                         <Group justify="space-between">
                             <Text fw={600}>Total</Text>
                             <Text fw={700} size="lg" ff="monospace">

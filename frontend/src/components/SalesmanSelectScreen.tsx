@@ -80,7 +80,7 @@ export function SalesmanSelectScreen({
                 >
                     <ArrowLeft />
                 </ActionIcon>
-                <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
                     <Title order={1} size="h2">
                         {title}
                     </Title>
@@ -94,7 +94,7 @@ export function SalesmanSelectScreen({
                 {salesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
-                            <ThemeIcon variant="light" color="gray" size={48} radius="xl">
+                            <ThemeIcon variant="default" size={48} radius="xl">
                                 <Users size={22} />
                             </ThemeIcon>
                             <Text c="dimmed" ta="center">
@@ -118,6 +118,10 @@ export function SalesmanSelectScreen({
                                         value={salesman.id}
                                         radius="md"
                                         p="sm"
+                                        style={{
+                                            borderColor: "var(--mantine-color-default-border)",
+                                            backgroundColor: "transparent",
+                                        }}
                                     >
                                         <Group wrap="nowrap">
                                             <Radio.Indicator />

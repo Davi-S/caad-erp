@@ -51,11 +51,13 @@ export function ProductGroupCard({
                     style={{
                         position: "relative",
                         textAlign: "center",
-                        backgroundColor: soldOut ? "var(--mantine-color-gray-1)" : undefined,
-                        cursor: readOnly ? "default" : "pointer",
+                        backgroundColor: soldOut ? "var(--mantine-color-default-hover)" : undefined,
+                        opacity: soldOut ? 0.5 : undefined,
+                        borderColor: "var(--mantine-color-default-border)",
+                                                cursor: readOnly ? "default" : "pointer",
                     }}
                 >
-                    <Stack gap={2} align="center">
+                    <Stack gap="xs" align="center">
                         <Text size="xs" fw={600} ta="center" truncate style={{ maxWidth: "100%" }}>
                             {product.name}
                         </Text>
@@ -136,14 +138,16 @@ export function ProductGroupCard({
                             position: "relative",
                             textAlign: "center",
                             cursor: allVariantsSoldOut ? "not-allowed" : "pointer",
+                            opacity: allVariantsSoldOut ? 0.5 : undefined,
                             backgroundColor: allVariantsSoldOut
-                                ? "var(--mantine-color-gray-1)"
+                                ? "var(--mantine-color-default-hover)"
                                 : undefined,
+                            borderColor: "var(--mantine-color-default-border)",
                         }}
                     >
-                        <Stack gap={2} align="center">
+                        <Stack gap="xs" align="center">
                             <Group
-                                gap={3}
+                                gap="xs"
                                 justify="center"
                                 wrap="nowrap"
                                 style={{ maxWidth: "100%", overflow: "hidden" }}
@@ -179,7 +183,7 @@ export function ProductGroupCard({
 
                 <Menu.Dropdown p="xs">
                     <Menu.Label
-                        pb={6}
+                        pb="xs"
                         style={{
                             position: "sticky",
                             top: 0,
@@ -236,8 +240,9 @@ export function ProductGroupCard({
                                                     qty > 0
                                                         ? "var(--mantine-primary-color-light)"
                                                         : soldOut
-                                                          ? "var(--mantine-color-gray-1)"
+                                                          ? "var(--mantine-color-default-hover)"
                                                           : undefined,
+                                                opacity: soldOut ? 0.5 : undefined,
                                                 cursor: readOnly
                                                     ? "default"
                                                     : soldOut
@@ -246,7 +251,7 @@ export function ProductGroupCard({
                                             }}
                                         >
                                             <Stack
-                                                gap={2}
+                                                gap="xs"
                                                 align="center"
                                                 style={{
                                                     width: "100%",

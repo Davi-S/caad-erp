@@ -2,9 +2,9 @@ import {
     Alert,
     Badge,
     Box,
+    Card,
     Center,
     Loader,
-    Paper,
     Stack,
     Text,
     ThemeIcon,
@@ -74,9 +74,7 @@ export function CustomerPaymentScreen({
                     mx="auto"
                     w="100%"
                 >
-                    <Paper
-                        withBorder
-                        shadow="sm"
+                    <Card
                         radius="md"
                         p="lg"
                         style={{
@@ -84,7 +82,8 @@ export function CustomerPaymentScreen({
                             flexDirection: "column",
                             flex: 1,
                             minHeight: 0,
-                            borderColor: confirmed ? "var(--mantine-color-green-5)" : undefined,
+                            border: `1px solid ${confirmed ? "var(--mantine-color-green-outline)" : "var(--mantine-color-default-border)"}`,
+                            backgroundColor: "transparent",
                         }}
                     >
                         <Stack align="center" gap="xs" style={{ flex: 1, minHeight: 0 }}>
@@ -135,19 +134,15 @@ export function CustomerPaymentScreen({
                                       : "Outro"}
                             </Badge>
 
-                            <Paper
-                                withBorder
+                            <Card
                                 radius="md"
                                 mt="sm"
                                 w="100%"
                                 style={{
-                                    borderStyle: confirmed ? "solid" : "dashed",
-                                    borderColor: confirmed
-                                        ? "var(--mantine-color-green-3)"
-                                        : undefined,
+                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-outline)" : "dashed var(--mantine-color-default-border)"}`,
                                     backgroundColor: confirmed
-                                        ? "var(--mantine-color-green-0)"
-                                        : undefined,
+                                        ? "var(--mantine-color-green-light)"
+                                        : "transparent",
                                     flex: 1,
                                     minHeight: 0,
                                     position: "relative",
@@ -172,7 +167,7 @@ export function CustomerPaymentScreen({
                                             >
                                                 <Check size={36} />
                                             </ThemeIcon>
-                                            <Text fw={700} size="lg" c="green.8">
+                                            <Text fw={700} size="lg" c="var(--mantine-color-green-text)">
                                                 Pagamento Aprovado!
                                             </Text>
                                             <Text size="sm" c="dimmed">
@@ -255,7 +250,10 @@ export function CustomerPaymentScreen({
 
                                             {method === "Cash" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <Banknote size={32} color="gray" />
+                                                    <Banknote
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Entregue o valor em espécie para o
                                                         atendente.
@@ -265,7 +263,10 @@ export function CustomerPaymentScreen({
 
                                             {method === "Other" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <CreditCard size={32} color="gray" />
+                                                    <CreditCard
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Aguarde a confirmação do atendente.
                                                     </Text>
@@ -274,11 +275,11 @@ export function CustomerPaymentScreen({
                                         </>
                                     )}
                                 </Center>
-                            </Paper>
-                        </Stack>
-                    </Paper>
-                </Stack>
-            </Box>
+                                </Card>
+                            </Stack>
+                        </Card>
+                    </Stack>
+                </Box>
         </ScreenShell>
     )
 }

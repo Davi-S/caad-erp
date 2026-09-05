@@ -127,11 +127,11 @@ export function DiscountModal({
                     )}
 
                     <Stack
-                        gap={2}
+                        gap="xs"
                         p="xs"
                         style={{
-                            backgroundColor: "var(--mantine-color-gray-0)",
-                            borderRadius: 6,
+                            backgroundColor: "var(--mantine-color-default-hover)",
+                            borderRadius: "var(--mantine-radius-sm)",
                         }}
                     >
                         <Group justify="space-between">
@@ -146,15 +146,15 @@ export function DiscountModal({
                             <Text size="xs" c="dimmed">
                                 Desconto:
                             </Text>
-                            <Text size="xs" fw={600} c="green.7" ff="monospace">
+                            <Text size="xs" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                 -{brl(isValid ? discountCents : 0)}
                             </Text>
                         </Group>
                         <Group
                             justify="space-between"
-                            mt={4}
-                            pt={4}
-                            style={{ borderTop: "1px dashed var(--mantine-color-gray-3)" }}
+                            mt="xs"
+                            pt="xs"
+                            style={{ borderTop: "1px dashed var(--mantine-color-default-border)" }}
                         >
                             <Text size="xs" fw={700}>
                                 Total com desconto:
@@ -173,7 +173,7 @@ export function DiscountModal({
                     <Group justify={currentDiscount > 0 ? "space-between" : "flex-end"} mt="xs">
                         {currentDiscount > 0 && (
                             <Button
-                                variant="subtle"
+                                variant="light"
                                 color="red"
                                 size="sm"
                                 onClick={handleRemove}

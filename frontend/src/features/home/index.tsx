@@ -92,7 +92,7 @@ export function HomePage() {
                 <Stack gap="xl" py="lg" style={{ width: "100%" }}>
                     {/* Header */}
                     <Group justify="space-between" align="center">
-                        <Stack gap={4}>
+                        <Stack gap="xs">
                             <Text
                                 size="xs"
                                 fw={600}
@@ -138,24 +138,19 @@ export function HomePage() {
                     >
                         <Group justify="space-between" wrap="nowrap">
                             <Group wrap="nowrap">
-                                <ThemeIcon
-                                    variant="white"
-                                    color="var(--mantine-primary-color-filled)"
-                                    size={48}
-                                    radius="xl"
-                                >
+                                <ThemeIcon variant="white" size={48} radius="xl">
                                     <ShoppingCart size={24} />
                                 </ThemeIcon>
                                 <Stack gap={0}>
-                                    <Text fw={700} size="lg" c="white">
+                                    <Text fw={700} size="lg" c="var(--mantine-primary-color-contrast)">
                                         Ponto de Venda
                                     </Text>
-                                    <Text size="sm" c="white" style={{ opacity: 0.85 }}>
+                                    <Text size="sm" c="var(--mantine-primary-color-contrast)" style={{ opacity: 0.85 }}>
                                         Iniciar uma nova venda
                                     </Text>
                                 </Stack>
                             </Group>
-                            <ChevronRight color="white" />
+                            <ChevronRight color="var(--mantine-primary-color-contrast)" />
                         </Group>
                     </UnstyledButton>
 
@@ -176,18 +171,13 @@ export function HomePage() {
                                 onClick={() => navigate(item.to)}
                                 p="sm"
                                 style={{
-                                    border: "1px solid var(--mantine-color-gray-3)",
+                                    border: "1px solid var(--mantine-color-default-border)",
                                     borderRadius: "var(--mantine-radius-md)",
                                 }}
                             >
                                 <Group justify="space-between" wrap="nowrap">
                                     <Group wrap="nowrap">
-                                        <ThemeIcon
-                                            variant="light"
-                                            color="var(--mantine-primary-color-filled)"
-                                            size={40}
-                                            radius="xl"
-                                        >
+                                        <ThemeIcon variant="light" size={40} radius="xl">
                                             <item.icon size={20} />
                                         </ThemeIcon>
                                         <Stack gap={0}>
@@ -197,7 +187,7 @@ export function HomePage() {
                                             </Text>
                                         </Stack>
                                     </Group>
-                                    <ChevronRight size={18} color="var(--mantine-color-gray-5)" />
+                                    <ChevronRight size={18} color="var(--mantine-color-dimmed)" />
                                 </Group>
                             </UnstyledButton>
                         ))}
@@ -218,13 +208,13 @@ export function HomePage() {
                             onClick={handleOpenCustomerDisplay}
                             p="sm"
                             style={{
-                                border: "1px solid var(--mantine-color-gray-3)",
+                                border: "1px solid var(--mantine-color-default-border)",
                                 borderRadius: "var(--mantine-radius-md)",
                             }}
                         >
                             <Group justify="space-between" wrap="nowrap">
                                 <Group wrap="nowrap">
-                                    <ThemeIcon variant="light" color="blue" size={40} radius="xl">
+                                    <ThemeIcon variant="light" size={40} radius="xl">
                                         <Monitor size={20} />
                                     </ThemeIcon>
                                     <Stack gap={0}>
@@ -234,7 +224,7 @@ export function HomePage() {
                                         </Text>
                                     </Stack>
                                 </Group>
-                                <ExternalLink size={18} color="var(--mantine-color-gray-5)" />
+                                <ExternalLink size={18} color="var(--mantine-color-dimmed)" />
                             </Group>
                         </UnstyledButton>
                     </Stack>

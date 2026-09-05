@@ -39,7 +39,7 @@ export function ImportWorkbookModal({ opened, onClose }: ImportWorkbookModalProp
             onClose={handleCloseModal}
             title={
                 <Group gap="xs">
-                    <ThemeIcon variant="light" color="blue" size="md">
+                    <ThemeIcon variant="light" size="md">
                         <Upload size={18} />
                     </ThemeIcon>
                     <Text fw={600}>Importar Planilha Excel</Text>
@@ -82,7 +82,7 @@ export function ImportWorkbookModal({ opened, onClose }: ImportWorkbookModalProp
                         title="Importação concluída com sucesso!"
                         icon={<CheckCircle2 size={18} />}
                     >
-                        <Stack gap={2} mt="xs">
+                        <Stack gap="xs" mt="xs">
                             <Text size="xs">
                                 • <strong>{result.productsCount}</strong> produtos importados
                             </Text>
@@ -101,14 +101,14 @@ export function ImportWorkbookModal({ opened, onClose }: ImportWorkbookModalProp
                         justify="center"
                         p="md"
                         style={{
-                            border: "2px dashed var(--mantine-color-gray-3)",
+                            border: "2px dashed var(--mantine-color-default-border)",
                             borderRadius: "var(--mantine-radius-md)",
                         }}
                     >
                         <Stack align="center" gap="xs">
-                            <FileSpreadsheet size={36} color="var(--mantine-color-gray-5)" />
+                            <FileSpreadsheet size={36} color="var(--mantine-color-dimmed)" />
                             {file ? (
-                                <Text fw={600} size="sm" c="blue">
+                                <Text fw={600} size="sm" c="var(--mantine-primary-color-filled)">
                                     {file.name} ({(file.size / 1024).toFixed(1)} KB)
                                 </Text>
                             ) : (
@@ -137,7 +137,6 @@ export function ImportWorkbookModal({ opened, onClose }: ImportWorkbookModalProp
                     </Button>
                     {!result && (
                         <Button
-                            color="blue"
                             disabled={!file}
                             loading={importMutation.isPending}
                             onClick={handleImport}
