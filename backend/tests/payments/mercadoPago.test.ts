@@ -1,6 +1,6 @@
 import { EventEmitter } from "events"
 import type { IncomingMessage, ServerResponse } from "http"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mock mercadopago SDK module
 const mockPaymentCreate = vi.fn()

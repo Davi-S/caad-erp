@@ -142,10 +142,18 @@ export function HomePage() {
                                     <ShoppingCart size={24} />
                                 </ThemeIcon>
                                 <Stack gap={0}>
-                                    <Text fw={700} size="lg" c="var(--mantine-primary-color-contrast)">
+                                    <Text
+                                        fw={700}
+                                        size="lg"
+                                        c="var(--mantine-primary-color-contrast)"
+                                    >
                                         Ponto de Venda
                                     </Text>
-                                    <Text size="sm" c="var(--mantine-primary-color-contrast)" style={{ opacity: 0.85 }}>
+                                    <Text
+                                        size="sm"
+                                        c="var(--mantine-primary-color-contrast)"
+                                        style={{ opacity: 0.85 }}
+                                    >
                                         Iniciar uma nova venda
                                     </Text>
                                 </Stack>

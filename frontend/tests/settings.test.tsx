@@ -3,10 +3,38 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { MemoryRouter } from "react-router-dom"
 import { MantineProvider } from "@mantine/core"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { SettingsPage } from "../src/features/settings"
 import { AppConfigProvider } from "../src/config/context"
 import { DEFAULT_CONFIG } from "../src/config/defaults"
 import { CONFIG_STORAGE_KEY } from "../src/config/storage"
+
+const mockInvalidate = vi.fn()
+const mockMutateAsync = vi.fn()
+
+vi.mock("../src/utils/trpc", () => ({
+    trpc: {
+        useUtils: () => ({
+            settings: {
+                getBackendConfig: { invalidate: mockInvalidate },
+            },
+        }),
+        settings: {
+            getBackendConfig: {
+                useQuery: () => ({ data: { hasAccessToken: false, mercadoPagoPayerEmail: "" } }),
+            },
+            updateBackendConfig: {
+                useMutation: ({ onSuccess }: { onSuccess?: () => void }) => ({
+                    mutateAsync: async (args: unknown) => {
+                        await mockMutateAsync(args)
+                        onSuccess?.()
+                    },
+                    isPending: false,
+                }),
+            },
+        },
+    },
+}))
 
 function setupLocalStorageMock() {
     let store: Record<string, string> = {}
@@ -31,13 +59,18 @@ function setupLocalStorageMock() {
 }
 
 function renderSettingsPage() {
+    const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
     return render(
         <MemoryRouter>
-            <MantineProvider>
-                <AppConfigProvider>
-                    <SettingsPage />
-                </AppConfigProvider>
-            </MantineProvider>
+            <QueryClientProvider client={queryClient}>
+                <MantineProvider>
+                    <AppConfigProvider>
+                        <SettingsPage />
+                    </AppConfigProvider>
+                </MantineProvider>
+            </QueryClientProvider>
         </MemoryRouter>,
     )
 }

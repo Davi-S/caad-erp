@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { createTestCaller } from "./setup.js"
-import { getBackendConfig, saveBackendConfig } from "../../src/config.js"
+import { saveBackendConfig } from "../../src/config.js"
 
 vi.mock("../../src/config.js", () => {
     let mockStore = {
@@ -47,7 +47,7 @@ describe("Settings Router Procedures", () => {
             expect.objectContaining({
                 mercadoPagoAccessToken: "TOKEN_123",
                 mercadoPagoPayerEmail: "new@test.com",
-            })
+            }),
         )
     })
 
@@ -61,7 +61,7 @@ describe("Settings Router Procedures", () => {
             expect.objectContaining({
                 mercadoPagoAccessToken: "TOKEN_456",
                 mercadoPagoPayerEmail: "new2@test.com",
-            })
+            }),
         )
     })
 

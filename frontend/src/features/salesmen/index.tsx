@@ -166,7 +166,9 @@ export function SalesmenManagementPage() {
                                             </Text>
                                         </Stack>
                                         <Group gap="xs" wrap="nowrap">
-                                            <Badge variant={salesman.isActive ? "light" : "default"}>
+                                            <Badge
+                                                variant={salesman.isActive ? "light" : "default"}
+                                            >
                                                 {salesman.isActive ? "Ativo" : "Inativo"}
                                             </Badge>
                                             <ActionIcon

@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import fs from "fs"
-import path from "path"
 import { getBackendConfig, saveBackendConfig } from "../src/config.js"
 
 vi.mock("fs", () => {
@@ -33,7 +32,7 @@ describe("Backend Config Module", () => {
                 JSON.stringify({
                     mercadoPagoAccessToken: "TEST_TOKEN",
                     mercadoPagoPayerEmail: "test@domain.com",
-                })
+                }),
             )
             const config = getBackendConfig()
             expect(config).toEqual({
@@ -66,7 +65,7 @@ describe("Backend Config Module", () => {
             vi.mocked(fs.writeFileSync).mockImplementation(() => {
                 throw new Error("Disk error")
             })
-            
+
             // hide console.error output during test
             const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
@@ -74,7 +73,7 @@ describe("Backend Config Module", () => {
                 mercadoPagoAccessToken: "TOKEN2",
                 mercadoPagoPayerEmail: "admin@test.com",
             })
-            
+
             expect(success).toBe(false)
             consoleSpy.mockRestore()
         })

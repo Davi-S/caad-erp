@@ -167,7 +167,11 @@ export function CustomerPaymentScreen({
                                             >
                                                 <Check size={36} />
                                             </ThemeIcon>
-                                            <Text fw={700} size="lg" c="var(--mantine-color-green-text)">
+                                            <Text
+                                                fw={700}
+                                                size="lg"
+                                                c="var(--mantine-color-green-text)"
+                                            >
                                                 Pagamento Aprovado!
                                             </Text>
                                             <Text size="sm" c="dimmed">
@@ -275,11 +279,11 @@ export function CustomerPaymentScreen({
                                         </>
                                     )}
                                 </Center>
-                                </Card>
-                            </Stack>
-                        </Card>
-                    </Stack>
-                </Box>
+                            </Card>
+                        </Stack>
+                    </Card>
+                </Stack>
+            </Box>
         </ScreenShell>
     )
 }

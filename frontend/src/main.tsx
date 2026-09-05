@@ -25,7 +25,6 @@ const colorSchemeManager = localStorageColorSchemeManager({
     key: "caad-erp-color-scheme",
 })
 
-
 const router = createBrowserRouter([
     {
         path: "/",
@@ -104,7 +103,10 @@ createRoot(document.getElementById("root")!).render(
         <AppConfigProvider>
             <trpc.Provider client={trpcClient} queryClient={queryClient}>
                 <QueryClientProvider client={queryClient}>
-                    <MantineProvider defaultColorScheme="auto" colorSchemeManager={colorSchemeManager}>
+                    <MantineProvider
+                        defaultColorScheme="auto"
+                        colorSchemeManager={colorSchemeManager}
+                    >
                         <ModalsProvider>
                             <RouterProvider router={router} />
                         </ModalsProvider>

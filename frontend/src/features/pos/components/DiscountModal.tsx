@@ -74,7 +74,8 @@ export function DiscountModal({
                 title: "Atenção",
                 children: (
                     <Text size="sm">
-                        O desconto aplicado é de 100% (o valor final será R$ 0,00). Tem certeza que deseja continuar?
+                        O desconto aplicado é de 100% (o valor final será R$ 0,00). Tem certeza que
+                        deseja continuar?
                     </Text>
                 ),
                 labels: { confirm: "Sim, continuar", cancel: "Cancelar" },
@@ -167,7 +168,12 @@ export function DiscountModal({
                             <Text size="xs" c="dimmed">
                                 Desconto:
                             </Text>
-                            <Text size="xs" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
+                            <Text
+                                size="xs"
+                                fw={600}
+                                c="var(--mantine-color-green-text)"
+                                ff="monospace"
+                            >
                                 -{brl(isValid ? discountCents : 0)}
                             </Text>
                         </Group>

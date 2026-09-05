@@ -228,7 +228,11 @@ export function CartScreen({
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
                                                     >
-                                                        <Text size="xs" c="var(--mantine-color-green-text)" fw={600}>
+                                                        <Text
+                                                            size="xs"
+                                                            c="var(--mantine-color-green-text)"
+                                                            fw={600}
+                                                        >
                                                             -{brl(item.discount)}
                                                         </Text>
                                                         <Text
@@ -326,7 +330,12 @@ export function CartScreen({
                                 <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                     Descontos nos itens
                                 </Text>
-                                <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
+                                <Text
+                                    size="sm"
+                                    fw={600}
+                                    c="var(--mantine-color-green-text)"
+                                    ff="monospace"
+                                >
                                     -{brl(totalItemDiscount)}
                                 </Text>
                             </Group>
@@ -356,7 +365,12 @@ export function CartScreen({
                                         <X size={12} />
                                     </ActionIcon>
                                 </Group>
-                                <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
+                                <Text
+                                    size="sm"
+                                    fw={600}
+                                    c="var(--mantine-color-green-text)"
+                                    ff="monospace"
+                                >
                                     -{brl(discount)}
                                 </Text>
                             </Group>

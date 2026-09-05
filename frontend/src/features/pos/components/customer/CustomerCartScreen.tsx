@@ -144,7 +144,11 @@ export function CustomerCartScreen({
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
                                                     >
-                                                        <Text size="xs" c="var(--mantine-color-green-text)" fw={600}>
+                                                        <Text
+                                                            size="xs"
+                                                            c="var(--mantine-color-green-text)"
+                                                            fw={600}
+                                                        >
                                                             -{brl(item.discount)}
                                                         </Text>
                                                         <Text
@@ -210,7 +214,12 @@ export function CustomerCartScreen({
                             <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                 Economia total
                             </Text>
-                            <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
+                            <Text
+                                size="sm"
+                                fw={600}
+                                c="var(--mantine-color-green-text)"
+                                ff="monospace"
+                            >
                                 -{brl(totalSavings)}
                             </Text>
                         </Group>
