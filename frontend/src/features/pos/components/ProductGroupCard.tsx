@@ -52,6 +52,7 @@ export function ProductGroupCard({
                         position: "relative",
                         textAlign: "center",
                         backgroundColor: soldOut ? "var(--mantine-color-gray-1)" : undefined,
+                        borderColor: "var(--mantine-color-default-border)",
                         cursor: readOnly ? "default" : "pointer",
                     }}
                 >
@@ -139,6 +140,7 @@ export function ProductGroupCard({
                             backgroundColor: allVariantsSoldOut
                                 ? "var(--mantine-color-gray-1)"
                                 : undefined,
+                            borderColor: "var(--mantine-color-default-border)",
                         }}
                     >
                         <Stack gap={2} align="center">

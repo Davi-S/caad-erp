@@ -4,6 +4,7 @@ import {
     ActionIcon,
     Alert,
     Badge,
+    Card,
     Center,
     Group,
     ScrollArea,
@@ -154,45 +155,46 @@ export function ProductsManagementPage() {
                     <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }}>
                         <Stack gap="xs">
                             {processedProducts.map((product) => (
-                                <Group
+                                <Card
                                     key={product.id}
-                                    justify="space-between"
-                                    wrap="nowrap"
+                                    radius="md"
                                     p="sm"
                                     style={{
                                         border: "1px solid var(--mantine-color-default-border)",
-                                        borderRadius: "var(--mantine-radius-md)",
+                                        background: "transparent",
                                         opacity: product.isActive ? 1 : 0.6,
                                     }}
                                 >
-                                    <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                                        <Text fw={600} truncate>
-                                            {product.name}
-                                        </Text>
-                                        <Text size="xs" c="dimmed" ff="monospace">
-                                            {product.id}
-                                        </Text>
-                                    </Stack>
-                                    <Stack gap={2} align="flex-end">
-                                        <Text fw={600} ff="monospace" size="sm">
-                                            {brl(product.sellPrice)}
-                                        </Text>
-                                        <Text size="xs" c="dimmed">
-                                            {stock[product.id] ?? 0} em estoque
-                                        </Text>
-                                    </Stack>
-                                    <Group gap="xs" wrap="nowrap">
-                                        <Badge variant={product.isActive ? "light" : "default"}>
-                                            {product.isActive ? "Ativo" : "Inativo"}
-                                        </Badge>
-                                        <ActionIcon
-                                            variant="subtle"
-                                            onClick={() => openEditModal(product)}
-                                        >
-                                            <Pencil size={16} />
-                                        </ActionIcon>
+                                    <Group justify="space-between" wrap="nowrap">
+                                        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                                            <Text fw={600} truncate>
+                                                {product.name}
+                                            </Text>
+                                            <Text size="xs" c="dimmed" ff="monospace">
+                                                {product.id}
+                                            </Text>
+                                        </Stack>
+                                        <Stack gap={2} align="flex-end">
+                                            <Text fw={600} ff="monospace" size="sm">
+                                                {brl(product.sellPrice)}
+                                            </Text>
+                                            <Text size="xs" c="dimmed">
+                                                {stock[product.id] ?? 0} em estoque
+                                            </Text>
+                                        </Stack>
+                                        <Group gap="xs" wrap="nowrap">
+                                            <Badge variant={product.isActive ? "light" : "default"}>
+                                                {product.isActive ? "Ativo" : "Inativo"}
+                                            </Badge>
+                                            <ActionIcon
+                                                variant="subtle"
+                                                onClick={() => openEditModal(product)}
+                                            >
+                                                <Pencil size={16} />
+                                            </ActionIcon>
+                                        </Group>
                                     </Group>
-                                </Group>
+                                </Card>
                             ))}
                         </Stack>
                     </ScrollArea>

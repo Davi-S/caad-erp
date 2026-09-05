@@ -118,6 +118,10 @@ export function SalesmanSelectScreen({
                                         value={salesman.id}
                                         radius="md"
                                         p="sm"
+                                        style={{
+                                            borderColor: "var(--mantine-color-default-border)",
+                                            backgroundColor: "transparent",
+                                        }}
                                     >
                                         <Group wrap="nowrap">
                                             <Radio.Indicator />
