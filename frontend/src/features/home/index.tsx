@@ -92,7 +92,7 @@ export function HomePage() {
                 <Stack gap="xl" py="lg" style={{ width: "100%" }}>
                     {/* Header */}
                     <Group justify="space-between" align="center">
-                        <Stack gap={4}>
+                        <Stack gap="xs">
                             <Text
                                 size="xs"
                                 fw={600}

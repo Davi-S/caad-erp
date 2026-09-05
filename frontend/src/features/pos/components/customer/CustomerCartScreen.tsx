@@ -74,7 +74,7 @@ export function CustomerCartScreen({
             </Group>
 
             {/* Middle Section */}
-            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
+            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px="xs">
                 <Stack gap="lg">
                     <Stack gap="sm">
                         <SimpleGrid cols={3} spacing="sm">
@@ -105,7 +105,7 @@ export function CustomerCartScreen({
                             </Stack>
                         </Center>
                     ) : (
-                        <Stack gap={4}>
+                        <Stack gap="xs">
                             <Text
                                 size="xs"
                                 fw={600}
@@ -121,7 +121,7 @@ export function CustomerCartScreen({
 
                                 return (
                                     <div key={item.productId}>
-                                        {index > 0 && <Divider variant="dashed" my={4} />}
+                                        {index > 0 && <Divider variant="dashed" my="xs" />}
                                         <Group
                                             justify="space-between"
                                             wrap="nowrap"
@@ -139,7 +139,7 @@ export function CustomerCartScreen({
                                                 </Text>
                                                 {item.discount > 0 && (
                                                     <Group
-                                                        gap={4}
+                                                        gap="xs"
                                                         wrap="nowrap"
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
@@ -197,7 +197,7 @@ export function CustomerCartScreen({
             <Stack gap="xs">
                 <Divider />
                 {totalSavings > 0 ? (
-                    <Stack gap={2}>
+                    <Stack gap="xs">
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">
                                 Subtotal
@@ -214,7 +214,7 @@ export function CustomerCartScreen({
                                 -{brl(totalSavings)}
                             </Text>
                         </Group>
-                        <Divider variant="dashed" my={2} />
+                        <Divider variant="dashed" my="xs" />
                         <Group justify="space-between">
                             <Text fw={600}>Total</Text>
                             <Text fw={700} size="lg" ff="monospace">

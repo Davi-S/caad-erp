@@ -82,7 +82,7 @@ export function ImportWorkbookModal({ opened, onClose }: ImportWorkbookModalProp
                         title="Importação concluída com sucesso!"
                         icon={<CheckCircle2 size={18} />}
                     >
-                        <Stack gap={2} mt="xs">
+                        <Stack gap="xs" mt="xs">
                             <Text size="xs">
                                 • <strong>{result.productsCount}</strong> produtos importados
                             </Text>

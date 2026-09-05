@@ -127,7 +127,7 @@ export function DiscountModal({
                     )}
 
                     <Stack
-                        gap={2}
+                        gap="xs"
                         p="xs"
                         style={{
                             backgroundColor: "var(--mantine-color-gray-0)",
@@ -152,8 +152,8 @@ export function DiscountModal({
                         </Group>
                         <Group
                             justify="space-between"
-                            mt={4}
-                            pt={4}
+                            mt="xs"
+                            pt="xs"
                             style={{ borderTop: "1px dashed var(--mantine-color-default-border)" }}
                         >
                             <Text size="xs" fw={700}>

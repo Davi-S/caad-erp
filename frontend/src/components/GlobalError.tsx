@@ -22,7 +22,7 @@ export function GlobalError() {
                         <AlertTriangle size={24} />
                     </ThemeIcon>
 
-                    <Stack align="center" gap={4}>
+                    <Stack align="center" gap="xs">
                         <Title order={2} size="h4">
                             Algo deu errado
                         </Title>

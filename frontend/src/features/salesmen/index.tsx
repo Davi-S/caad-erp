@@ -159,7 +159,7 @@ export function SalesmenManagementPage() {
                                     }}
                                 >
                                     <Group justify="space-between" wrap="nowrap">
-                                        <Stack gap={2}>
+                                        <Stack gap="xs">
                                             <Text fw={600}>{salesman.name}</Text>
                                             <Text size="xs" c="dimmed" ff="monospace">
                                                 {salesman.id}

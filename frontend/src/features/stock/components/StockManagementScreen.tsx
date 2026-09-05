@@ -202,7 +202,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                                         }}
                                     >
                                         <Group justify="space-between" wrap="nowrap">
-                                            <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                                            <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
                                                 <Text fw={600} truncate>
                                                     {product.name}
                                                 </Text>

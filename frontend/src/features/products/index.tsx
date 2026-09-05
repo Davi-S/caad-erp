@@ -166,7 +166,7 @@ export function ProductsManagementPage() {
                                     }}
                                 >
                                     <Group justify="space-between" wrap="nowrap">
-                                        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                                        <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
                                             <Text fw={600} truncate>
                                                 {product.name}
                                             </Text>
@@ -174,7 +174,7 @@ export function ProductsManagementPage() {
                                                 {product.id}
                                             </Text>
                                         </Stack>
-                                        <Stack gap={2} align="flex-end">
+                                        <Stack gap="xs" align="flex-end">
                                             <Text fw={600} ff="monospace" size="sm">
                                                 {brl(product.sellPrice)}
                                             </Text>

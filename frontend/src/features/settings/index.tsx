@@ -221,7 +221,7 @@ export function SettingsPage() {
                                 placeholder="Venda - {salesmanName}"
                             />
 
-                            <Group gap={6}>
+                            <Group gap="sm">
                                 <Text size="xs" c="dimmed">
                                     Variável disponível:
                                 </Text>

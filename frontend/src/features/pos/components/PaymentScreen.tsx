@@ -140,7 +140,7 @@ export function PaymentScreen({
     return (
         <ScreenShell>
             {/* Header */}
-            <Stack gap={4}>
+            <Stack gap="xs">
                 <Group justify="space-between">
                     <ActionIcon onClick={onEdit} disabled={isLocked} variant="subtle" size="lg">
                         <ArrowLeft />
@@ -437,7 +437,7 @@ export function PaymentScreen({
 
 function MethodLabel({ icon, text }: { icon: React.ReactNode; text: string }) {
     return (
-        <Stack gap={2} align="center" py={4}>
+        <Stack gap="xs" align="center" py="xs">
             {icon}
             <Text size="10px" fw={600} tt="uppercase">
                 {text}

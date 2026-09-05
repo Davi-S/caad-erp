@@ -149,7 +149,7 @@ export function CartScreen({
             </Group>
 
             {/* Middle Section */}
-            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px={6}>
+            <ScrollArea type="scroll" style={{ flex: 1, minHeight: 0 }} py="lg" px="xs">
                 <Stack gap="lg">
                     <Stack gap="sm">
                         <ListControls {...controlsProps} searchPlaceholder="Buscar produto..." />
@@ -189,7 +189,7 @@ export function CartScreen({
                             </Stack>
                         </Center>
                     ) : (
-                        <Stack gap={4}>
+                        <Stack gap="xs">
                             <Text
                                 size="xs"
                                 fw={600}
@@ -205,7 +205,7 @@ export function CartScreen({
 
                                 return (
                                     <div key={item.productId}>
-                                        {index > 0 && <Divider variant="dashed" my={4} />}
+                                        {index > 0 && <Divider variant="dashed" my="xs" />}
                                         <Group
                                             justify="space-between"
                                             wrap="nowrap"
@@ -223,7 +223,7 @@ export function CartScreen({
                                                 </Text>
                                                 {item.discount > 0 && (
                                                     <Group
-                                                        gap={10}
+                                                        gap="md"
                                                         wrap="nowrap"
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
@@ -312,7 +312,7 @@ export function CartScreen({
             <Stack gap="xs">
                 <Divider />
                 {totalItemDiscount > 0 || discount > 0 ? (
-                    <Stack gap={4}>
+                    <Stack gap="xs">
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">
                                 Subtotal
@@ -333,7 +333,7 @@ export function CartScreen({
                         )}
                         {discount > 0 ? (
                             <Group justify="space-between" align="center">
-                                <Group gap={6} align="center">
+                                <Group gap="sm" align="center">
                                     <Text size="sm" c="green.7" fw={500}>
                                         Desconto no carrinho
                                     </Text>
@@ -373,7 +373,7 @@ export function CartScreen({
                                 </Button>
                             </Group>
                         )}
-                        <Divider variant="dashed" my={2} />
+                        <Divider variant="dashed" my="xs" />
                         <Group justify="space-between">
                             <Text fw={600}>Total</Text>
                             <Text fw={700} size="lg" ff="monospace">

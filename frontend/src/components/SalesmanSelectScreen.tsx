@@ -80,7 +80,7 @@ export function SalesmanSelectScreen({
                 >
                     <ArrowLeft />
                 </ActionIcon>
-                <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
                     <Title order={1} size="h2">
                         {title}
                     </Title>
