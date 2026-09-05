@@ -21,9 +21,9 @@ import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackLis
 import { brl } from "@/helpers"
 import { useProducts } from "@/hooks/queries/useProducts"
 import { useStock } from "@/hooks/queries/useStock"
-import { useCreateProduct, useUpdateProduct } from "./hooks/useProductsMutations"
+import { useProductFormManager } from "./hooks/useProductFormManager"
 import { ProductFormModal } from "./components/ProductFormModal"
-import type { Product, ProductCreateRequest, ProductUpdateRequest } from "@/types"
+import type { Product } from "@/types"
 
 // Search and sort configurations
 const columnHelper = createColumnHelper<Product>()
@@ -81,40 +81,17 @@ export function ProductsManagementPage() {
         sortOptions: PRODUCT_SORT_OPTIONS,
     })
 
-    const [modalOpened, setModalOpened] = useState(false)
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-
-    const createMutation = useCreateProduct()
-    const updateMutation = useUpdateProduct()
-
-    const isSubmitting = createMutation.isPending || updateMutation.isPending
-    const submitError = createMutation.isError
-        ? createMutation.error.message
-        : updateMutation.isError
-          ? updateMutation.error.message
-          : null
-
-    const openCreateModal = () => {
-        setEditingProduct(null)
-        createMutation.reset()
-        updateMutation.reset()
-        setModalOpened(true)
-    }
-
-    const openEditModal = (product: Product) => {
-        setEditingProduct(product)
-        createMutation.reset()
-        updateMutation.reset()
-        setModalOpened(true)
-    }
-
-    const handleCreate = (values: ProductCreateRequest) => {
-        createMutation.mutate(values, { onSuccess: () => setModalOpened(false) })
-    }
-
-    const handleUpdate = (id: string, values: ProductUpdateRequest) => {
-        updateMutation.mutate({ id, input: values }, { onSuccess: () => setModalOpened(false) })
-    }
+    const {
+        modalOpened,
+        editingProduct,
+        isSubmitting,
+        submitError,
+        openCreateModal,
+        openEditModal,
+        closeModal,
+        handleCreate,
+        handleUpdate,
+    } = useProductFormManager()
 
     return (
         <ScreenShell>
@@ -231,7 +208,7 @@ export function ProductsManagementPage() {
 
             <ProductFormModal
                 opened={modalOpened}
-                onClose={() => setModalOpened(false)}
+                onClose={closeModal}
                 product={editingProduct}
                 onCreate={handleCreate}
                 onUpdate={handleUpdate}

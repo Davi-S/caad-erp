@@ -19,9 +19,9 @@ import { ScreenShell } from "@/components/ScreenShell"
 import { ListControls } from "@/components/ListControls"
 import { useTanStackListControls, type SortOption } from "@/hooks/useTanStackListControls"
 import { useSalesmen } from "@/hooks/queries/useSalesmen"
-import { useCreateSalesman, useUpdateSalesman } from "./hooks/useSalesmenMutations"
+import { useSalesmanFormManager } from "./hooks/useSalesmanFormManager"
 import { SalesmanFormModal } from "./components/SalesmanFormModal"
-import type { Salesman, SalesmanCreateRequest, SalesmanUpdateRequest } from "@/types"
+import type { Salesman } from "@/types"
 
 // Search and sort configurations
 const columnHelper = createColumnHelper<Salesman>()
@@ -66,40 +66,17 @@ export function SalesmenManagementPage() {
         sortOptions: SALESMAN_SORT_OPTIONS,
     })
 
-    const [modalOpened, setModalOpened] = useState(false)
-    const [editingSalesman, setEditingSalesman] = useState<Salesman | null>(null)
-
-    const createMutation = useCreateSalesman()
-    const updateMutation = useUpdateSalesman()
-
-    const isSubmitting = createMutation.isPending || updateMutation.isPending
-    const submitError = createMutation.isError
-        ? createMutation.error.message
-        : updateMutation.isError
-          ? updateMutation.error.message
-          : null
-
-    const openCreateModal = () => {
-        setEditingSalesman(null)
-        createMutation.reset()
-        updateMutation.reset()
-        setModalOpened(true)
-    }
-
-    const openEditModal = (salesman: Salesman) => {
-        setEditingSalesman(salesman)
-        createMutation.reset()
-        updateMutation.reset()
-        setModalOpened(true)
-    }
-
-    const handleCreate = (values: SalesmanCreateRequest) => {
-        createMutation.mutate(values, { onSuccess: () => setModalOpened(false) })
-    }
-
-    const handleUpdate = (id: string, values: SalesmanUpdateRequest) => {
-        updateMutation.mutate({ id, input: values }, { onSuccess: () => setModalOpened(false) })
-    }
+    const {
+        modalOpened,
+        editingSalesman,
+        isSubmitting,
+        submitError,
+        openCreateModal,
+        openEditModal,
+        closeModal,
+        handleCreate,
+        handleUpdate,
+    } = useSalesmanFormManager()
 
     return (
         <ScreenShell>
@@ -214,7 +191,7 @@ export function SalesmenManagementPage() {
 
             <SalesmanFormModal
                 opened={modalOpened}
-                onClose={() => setModalOpened(false)}
+                onClose={closeModal}
                 salesman={editingSalesman}
                 onCreate={handleCreate}
                 onUpdate={handleUpdate}
