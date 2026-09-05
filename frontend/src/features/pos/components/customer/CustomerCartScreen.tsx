@@ -96,7 +96,7 @@ export function CustomerCartScreen({
                     {isEmpty ? (
                         <Center py="xl">
                             <Stack align="center" gap="xs">
-                                <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                                <ThemeIcon variant="default" size={40} radius="xl">
                                     <ShoppingCart size={20} />
                                 </ThemeIcon>
                                 <Text c="dimmed" size="sm" ta="center">

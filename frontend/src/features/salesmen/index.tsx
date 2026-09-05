@@ -132,7 +132,7 @@ export function SalesmenManagementPage() {
                 ) : !processedSalesmen || processedSalesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
-                            <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                            <ThemeIcon variant="default" size={40} radius="xl">
                                 <Users size={20} />
                             </ThemeIcon>
                             <Text c="dimmed" size="sm" ta="center">

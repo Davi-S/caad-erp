@@ -94,7 +94,7 @@ export function SalesmanSelectScreen({
                 {salesmen.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
-                            <ThemeIcon variant="light" color="gray" size={48} radius="xl">
+                            <ThemeIcon variant="default" size={48} radius="xl">
                                 <Users size={22} />
                             </ThemeIcon>
                             <Text c="dimmed" ta="center">

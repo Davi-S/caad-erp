@@ -171,7 +171,7 @@ export function StockManagementScreen({ salesman, onSwitchSalesman }: StockManag
                 ) : !processedProducts || processedProducts.length === 0 ? (
                     <Center style={{ flex: 1 }}>
                         <Stack align="center" gap="xs">
-                            <ThemeIcon variant="light" color="gray" size={40} radius="xl">
+                            <ThemeIcon variant="default" size={40} radius="xl">
                                 <Package size={20} />
                             </ThemeIcon>
                             <Text c="dimmed" size="sm" ta="center">
