@@ -24,6 +24,7 @@ import {
     parseConfigFile,
     type AppConfig,
 } from "@/config"
+import { trpc } from "@/utils/trpc"
 
 export function SettingsPage() {
     const navigate = useNavigate()
@@ -41,6 +42,25 @@ export function SettingsPage() {
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+    // Backend Config
+    const utils = trpc.useUtils()
+    const { data: backendConfig } = trpc.settings.getBackendConfig.useQuery()
+    const updateBackendConfig = trpc.settings.updateBackendConfig.useMutation({
+        onSuccess: () => {
+            utils.settings.getBackendConfig.invalidate()
+        },
+    })
+
+    const [backendToken, setBackendToken] = useState<string>("")
+    const [backendEmail, setBackendEmail] = useState<string>("")
+
+    useEffect(() => {
+        if (backendConfig) {
+            setBackendToken(backendConfig.mercadoPagoAccessToken || "")
+            setBackendEmail(backendConfig.mercadoPagoPayerEmail || "")
+        }
+    }, [backendConfig])
+
     // Sync draft when config changes
     useEffect(() => {
         setTimeoutSeconds(Math.round(config.autoStartNewSaleTimeoutMs / 1000))
@@ -49,7 +69,7 @@ export function SettingsPage() {
         setExcelFilename(config.excelDefaultFilename)
     }, [config])
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setErrorMessage(null)
         const newTimeoutMs = Math.max(0, Math.floor((timeoutSeconds || 0) * 1000))
         const cleanDelimiter = delimiter
@@ -63,7 +83,16 @@ export function SettingsPage() {
             excelDefaultFilename: cleanExcelFilename,
         })
 
-        setSuccessMessage("Configurações salvas com sucesso!")
+        try {
+            await updateBackendConfig.mutateAsync({
+                mercadoPagoAccessToken: backendToken || undefined,
+                mercadoPagoPayerEmail: backendEmail || "cliente@caad.com.br",
+            })
+            setSuccessMessage("Configurações salvas com sucesso!")
+        } catch (err: any) {
+            setErrorMessage(err.message || "Erro ao salvar configurações do servidor.")
+        }
+
         setTimeout(() => setSuccessMessage(null), 4000)
     }
 
@@ -174,7 +203,7 @@ export function SettingsPage() {
                     >
                         <Stack gap="sm">
                             <Text fw={600} size="sm">
-                                Ponto de Venda (PDV)
+                                Ponto de Venda
                             </Text>
 
                             <NumberInput
@@ -210,8 +239,25 @@ export function SettingsPage() {
                     >
                         <Stack gap="sm">
                             <Text fw={600} size="sm">
-                                Pagamentos (PIX)
+                                Integração de Pagamentos (PIX / Mercado Pago)
                             </Text>
+
+                            <TextInput
+                                label="Mercado Pago Access Token"
+                                description="O token de acesso para a integração PIX. (Requer reinicialização do backend se o servidor já estiver rodando)"
+                                value={backendToken}
+                                onChange={(e) => setBackendToken(e.currentTarget.value)}
+                                placeholder="APP_USR-..."
+                                type="password"
+                            />
+
+                            <TextInput
+                                label="Email do Pagador (Padrão)"
+                                description="O email usado como padrão na criação do QR Code PIX."
+                                value={backendEmail}
+                                onChange={(e) => setBackendEmail(e.currentTarget.value)}
+                                placeholder="cliente@caad.com.br"
+                            />
 
                             <TextInput
                                 label="Modelo de Descrição do PIX"
