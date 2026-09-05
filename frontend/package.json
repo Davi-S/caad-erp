@@ -1,5 +1,6 @@
 {
     "name": "caad-erp-frontend",
+    "version": "0.3.0-alpha",
     "private": true,
     "type": "module",
     "scripts": {
