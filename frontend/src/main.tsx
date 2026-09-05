@@ -15,6 +15,7 @@ import { AppConfigProvider } from "@/config"
 import { SalesmenManagementPage } from "@/features/salesmen"
 import { ProductsManagementPage } from "@/features/products"
 import { StockFlow } from "@/features/stock"
+import { SettingsPage } from "@/features/settings"
 import "@mantine/core/styles.css"
 
 const queryClient = new QueryClient()
@@ -83,6 +84,11 @@ const router = createBrowserRouter([
             ])
             return null
         },
+        errorElement: <GlobalError />,
+    },
+    {
+        path: "/settings",
+        element: <SettingsPage />,
         errorElement: <GlobalError />,
     },
 ])
