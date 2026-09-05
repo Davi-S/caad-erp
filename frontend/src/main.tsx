@@ -10,7 +10,7 @@ import { salesmenQueryOptions } from "@/hooks/queries/useSalesmen"
 import { productsQueryOptions } from "@/hooks/queries/useProducts"
 import { stockQueryOptions } from "@/hooks/queries/useStock"
 import { GlobalError } from "@/components/GlobalError"
-import { MantineProvider, localStorageColorSchemeManager } from "@mantine/core"
+import { MantineProvider } from "@mantine/core"
 import { AppConfigProvider } from "@/config"
 import { SalesmenManagementPage } from "@/features/salesmen"
 import { ProductsManagementPage } from "@/features/products"
@@ -20,9 +20,6 @@ import "@mantine/core/styles.css"
 
 const queryClient = new QueryClient()
 
-const colorSchemeManager = localStorageColorSchemeManager({
-    key: "caad-erp-color-scheme",
-})
 
 const router = createBrowserRouter([
     {
@@ -102,7 +99,7 @@ createRoot(document.getElementById("root")!).render(
         <AppConfigProvider>
             <trpc.Provider client={trpcClient} queryClient={queryClient}>
                 <QueryClientProvider client={queryClient}>
-                    <MantineProvider defaultColorScheme="auto" colorSchemeManager={colorSchemeManager}>
+                    <MantineProvider>
                         <RouterProvider router={router} />
                     </MantineProvider>
                 </QueryClientProvider>
