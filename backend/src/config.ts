@@ -28,7 +28,13 @@ export function getBackendConfig(): BackendConfig {
     }
 }
 
-export function saveBackendConfig(config: BackendConfig): void {
+export function saveBackendConfig(config: BackendConfig): boolean {
     const validConfig = BackendConfigSchema.parse(config)
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(validConfig, null, 4), "utf-8")
+    try {
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(validConfig, null, 4), "utf-8")
+        return true
+    } catch (err) {
+        console.error("Failed to save backend config:", err)
+        return false
+    }
 }
