@@ -255,7 +255,7 @@ export function SettingsPage() {
                             />
 
                             <TextInput
-                                label="Email do Pagador (Padrão)"
+                                label="Email do Pagador"
                                 description="O email usado como padrão na criação do QR Code PIX."
                                 value={backendEmail}
                                 onChange={(e) => setBackendEmail(e.currentTarget.value)}
