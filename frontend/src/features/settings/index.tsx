@@ -249,6 +249,9 @@ export function SettingsPage() {
                                 onChange={(e) => setBackendToken(e.currentTarget.value)}
                                 placeholder={backendConfig?.hasAccessToken ? "Token configurado (digite para alterar)" : "APP_USR-..."}
                                 type="password"
+                                autoComplete="new-password"
+                                data-lpignore="true"
+                                data-1p-ignore="true"
                             />
 
                             <TextInput
