@@ -54,7 +54,6 @@ export function ProductGroupCard({
                         backgroundColor: soldOut ? "var(--mantine-color-default-hover)" : undefined,
                         opacity: soldOut ? 0.5 : undefined,
                         borderColor: "var(--mantine-color-default-border)",
-                        opacity: soldOut ? 0.5 : undefined,
                                                 cursor: readOnly ? "default" : "pointer",
                     }}
                 >
