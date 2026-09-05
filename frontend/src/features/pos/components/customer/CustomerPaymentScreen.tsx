@@ -255,7 +255,10 @@ export function CustomerPaymentScreen({
 
                                             {method === "Cash" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <Banknote size={32} color="gray" />
+                                                    <Banknote
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Entregue o valor em espécie para o
                                                         atendente.
@@ -265,7 +268,10 @@ export function CustomerPaymentScreen({
 
                                             {method === "Other" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <CreditCard size={32} color="gray" />
+                                                    <CreditCard
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Aguarde a confirmação do atendente.
                                                     </Text>

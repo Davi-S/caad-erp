@@ -187,7 +187,7 @@ export function HomePage() {
                                             </Text>
                                         </Stack>
                                     </Group>
-                                    <ChevronRight size={18} color="var(--mantine-color-gray-5)" />
+                                    <ChevronRight size={18} color="var(--mantine-color-dimmed)" />
                                 </Group>
                             </UnstyledButton>
                         ))}
@@ -224,7 +224,7 @@ export function HomePage() {
                                         </Text>
                                     </Stack>
                                 </Group>
-                                <ExternalLink size={18} color="var(--mantine-color-gray-5)" />
+                                <ExternalLink size={18} color="var(--mantine-color-dimmed)" />
                             </Group>
                         </UnstyledButton>
                     </Stack>

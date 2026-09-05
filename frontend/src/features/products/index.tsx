@@ -182,10 +182,7 @@ export function ProductsManagementPage() {
                                         </Text>
                                     </Stack>
                                     <Group gap="xs" wrap="nowrap">
-                                        <Badge
-                                            color={product.isActive ? undefined : "gray"}
-                                            variant={product.isActive ? "light" : "outline"}
-                                        >
+                                        <Badge variant={product.isActive ? "light" : "default"}>
                                             {product.isActive ? "Ativo" : "Inativo"}
                                         </Badge>
                                         <ActionIcon

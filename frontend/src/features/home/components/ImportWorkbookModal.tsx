@@ -106,7 +106,7 @@ export function ImportWorkbookModal({ opened, onClose }: ImportWorkbookModalProp
                         }}
                     >
                         <Stack align="center" gap="xs">
-                            <FileSpreadsheet size={36} color="var(--mantine-color-gray-5)" />
+                            <FileSpreadsheet size={36} color="var(--mantine-color-dimmed)" />
                             {file ? (
                                 <Text fw={600} size="sm" c="var(--mantine-primary-color-filled)">
                                     {file.name} ({(file.size / 1024).toFixed(1)} KB)

@@ -372,7 +372,10 @@ export function PaymentScreen({
 
                                             {method === "Cash" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <Banknote size={32} color="gray" />
+                                                    <Banknote
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Receba o valor em espécie e confirme abaixo.
                                                     </Text>
@@ -381,7 +384,10 @@ export function PaymentScreen({
 
                                             {method === "Other" && (
                                                 <Stack align="center" justify="center" gap="xs">
-                                                    <CreditCard size={32} color="gray" />
+                                                    <CreditCard
+                                                        size={32}
+                                                        color="var(--mantine-color-dimmed)"
+                                                    />
                                                     <Text size="sm" c="dimmed" ta="center">
                                                         Receba o valor através de outro meio e
                                                         confirme abaixo.
