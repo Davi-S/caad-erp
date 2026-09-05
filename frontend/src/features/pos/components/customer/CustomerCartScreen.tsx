@@ -144,7 +144,7 @@ export function CustomerCartScreen({
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
                                                     >
-                                                        <Text size="xs" c="green.7" fw={600}>
+                                                        <Text size="xs" c="var(--mantine-color-green-text)" fw={600}>
                                                             -{brl(item.discount)}
                                                         </Text>
                                                         <Text
@@ -207,10 +207,10 @@ export function CustomerCartScreen({
                             </Text>
                         </Group>
                         <Group justify="space-between">
-                            <Text size="sm" c="green.7" fw={500}>
+                            <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                 Economia total
                             </Text>
-                            <Text size="sm" fw={600} c="green.7" ff="monospace">
+                            <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                 -{brl(totalSavings)}
                             </Text>
                         </Group>

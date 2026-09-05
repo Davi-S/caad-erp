@@ -198,7 +198,7 @@ export function PaymentScreen({
                             flexDirection: "column",
                             flex: 1,
                             minHeight: 0,
-                            border: `1px solid ${confirmed ? "var(--mantine-color-green-5)" : "var(--mantine-color-default-border)"}`,
+                            border: `1px solid ${confirmed ? "var(--mantine-color-green-outline)" : "var(--mantine-color-default-border)"}`,
                             backgroundColor: "transparent",
                         }}
                     >
@@ -248,9 +248,9 @@ export function PaymentScreen({
                                 mt="sm"
                                 w="100%"
                                 style={{
-                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-3)" : "dashed var(--mantine-color-default-border)"}`,
+                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-outline)" : "dashed var(--mantine-color-default-border)"}`,
                                     backgroundColor: confirmed
-                                        ? "var(--mantine-color-green-0)"
+                                        ? "var(--mantine-color-green-light)"
                                         : "transparent",
                                     flex: 1,
                                     minHeight: 0,
@@ -276,7 +276,7 @@ export function PaymentScreen({
                                             >
                                                 <Check size={32} />
                                             </ThemeIcon>
-                                            <Text fw={700} size="md" c="green.8">
+                                            <Text fw={700} size="md" c="var(--mantine-color-green-text)">
                                                 Pagamento recebido com sucesso!
                                             </Text>
                                             <Text size="xs" c="dimmed">

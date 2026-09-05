@@ -228,7 +228,7 @@ export function CartScreen({
                                                         align="center"
                                                         style={{ flexShrink: 0 }}
                                                     >
-                                                        <Text size="xs" c="green.7" fw={600}>
+                                                        <Text size="xs" c="var(--mantine-color-green-text)" fw={600}>
                                                             -{brl(item.discount)}
                                                         </Text>
                                                         <Text
@@ -323,10 +323,10 @@ export function CartScreen({
                         </Group>
                         {totalItemDiscount > 0 && (
                             <Group justify="space-between">
-                                <Text size="sm" c="green.7" fw={500}>
+                                <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                     Descontos nos itens
                                 </Text>
-                                <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                     -{brl(totalItemDiscount)}
                                 </Text>
                             </Group>
@@ -334,7 +334,7 @@ export function CartScreen({
                         {discount > 0 ? (
                             <Group justify="space-between" align="center">
                                 <Group gap="sm" align="center">
-                                    <Text size="sm" c="green.7" fw={500}>
+                                    <Text size="sm" c="var(--mantine-color-green-text)" fw={500}>
                                         Desconto no carrinho
                                     </Text>
                                     <ActionIcon
@@ -356,7 +356,7 @@ export function CartScreen({
                                         <X size={12} />
                                     </ActionIcon>
                                 </Group>
-                                <Text size="sm" fw={600} c="green.7" ff="monospace">
+                                <Text size="sm" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                     -{brl(discount)}
                                 </Text>
                             </Group>

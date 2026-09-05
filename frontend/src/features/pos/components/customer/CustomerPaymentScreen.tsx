@@ -82,7 +82,7 @@ export function CustomerPaymentScreen({
                             flexDirection: "column",
                             flex: 1,
                             minHeight: 0,
-                            border: `1px solid ${confirmed ? "var(--mantine-color-green-5)" : "var(--mantine-color-default-border)"}`,
+                            border: `1px solid ${confirmed ? "var(--mantine-color-green-outline)" : "var(--mantine-color-default-border)"}`,
                             backgroundColor: "transparent",
                         }}
                     >
@@ -139,9 +139,9 @@ export function CustomerPaymentScreen({
                                 mt="sm"
                                 w="100%"
                                 style={{
-                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-3)" : "dashed var(--mantine-color-default-border)"}`,
+                                    border: `1px ${confirmed ? "solid var(--mantine-color-green-outline)" : "dashed var(--mantine-color-default-border)"}`,
                                     backgroundColor: confirmed
-                                        ? "var(--mantine-color-green-0)"
+                                        ? "var(--mantine-color-green-light)"
                                         : "transparent",
                                     flex: 1,
                                     minHeight: 0,
@@ -167,7 +167,7 @@ export function CustomerPaymentScreen({
                                             >
                                                 <Check size={36} />
                                             </ThemeIcon>
-                                            <Text fw={700} size="lg" c="green.8">
+                                            <Text fw={700} size="lg" c="var(--mantine-color-green-text)">
                                                 Pagamento Aprovado!
                                             </Text>
                                             <Text size="sm" c="dimmed">

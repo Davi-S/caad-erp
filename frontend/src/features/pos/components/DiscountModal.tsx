@@ -130,7 +130,7 @@ export function DiscountModal({
                         gap="xs"
                         p="xs"
                         style={{
-                            backgroundColor: "var(--mantine-color-gray-0)",
+                            backgroundColor: "var(--mantine-color-default-hover)",
                             borderRadius: "var(--mantine-radius-sm)",
                         }}
                     >
@@ -146,7 +146,7 @@ export function DiscountModal({
                             <Text size="xs" c="dimmed">
                                 Desconto:
                             </Text>
-                            <Text size="xs" fw={600} c="green.7" ff="monospace">
+                            <Text size="xs" fw={600} c="var(--mantine-color-green-text)" ff="monospace">
                                 -{brl(isValid ? discountCents : 0)}
                             </Text>
                         </Group>
