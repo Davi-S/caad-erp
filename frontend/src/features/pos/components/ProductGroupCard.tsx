@@ -51,9 +51,11 @@ export function ProductGroupCard({
                     style={{
                         position: "relative",
                         textAlign: "center",
-                        backgroundColor: soldOut ? "var(--mantine-color-gray-1)" : undefined,
+                        backgroundColor: soldOut ? "var(--mantine-color-default-hover)" : undefined,
+                        opacity: soldOut ? 0.5 : undefined,
                         borderColor: "var(--mantine-color-default-border)",
-                        cursor: readOnly ? "default" : "pointer",
+                        opacity: soldOut ? 0.5 : undefined,
+                                                cursor: readOnly ? "default" : "pointer",
                     }}
                 >
                     <Stack gap="xs" align="center">
@@ -137,8 +139,9 @@ export function ProductGroupCard({
                             position: "relative",
                             textAlign: "center",
                             cursor: allVariantsSoldOut ? "not-allowed" : "pointer",
+                            opacity: allVariantsSoldOut ? 0.5 : undefined,
                             backgroundColor: allVariantsSoldOut
-                                ? "var(--mantine-color-gray-1)"
+                                ? "var(--mantine-color-default-hover)"
                                 : undefined,
                             borderColor: "var(--mantine-color-default-border)",
                         }}
@@ -238,8 +241,9 @@ export function ProductGroupCard({
                                                     qty > 0
                                                         ? "var(--mantine-primary-color-light)"
                                                         : soldOut
-                                                          ? "var(--mantine-color-gray-1)"
+                                                          ? "var(--mantine-color-default-hover)"
                                                           : undefined,
+                                                opacity: soldOut ? 0.5 : undefined,
                                                 cursor: readOnly
                                                     ? "default"
                                                     : soldOut
