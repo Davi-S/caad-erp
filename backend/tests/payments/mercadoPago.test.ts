@@ -16,6 +16,16 @@ vi.mock("mercadopago", () => {
     }
 })
 
+let mockConfig = {
+    mercadoPagoAccessToken: "TEST_ACCESS_TOKEN",
+    mercadoPagoPayerEmail: "cliente@caad.com.br",
+}
+vi.mock("../../src/config.js", () => {
+    return {
+        getBackendConfig: () => mockConfig,
+    }
+})
+
 import { handlePaymentsRoute } from "../../src/payments/mercadoPago.js"
 
 // Helper to construct mock HTTP request and response
@@ -63,15 +73,9 @@ function createMockReqRes(
 }
 
 describe("Mercado Pago Payment Route Handler", () => {
-    const originalEnv = process.env.MERCADO_PAGO_ACCESS_TOKEN
-
     beforeEach(() => {
         vi.clearAllMocks()
-        process.env.MERCADO_PAGO_ACCESS_TOKEN = "TEST_ACCESS_TOKEN"
-    })
-
-    afterEach(() => {
-        process.env.MERCADO_PAGO_ACCESS_TOKEN = originalEnv
+        mockConfig.mercadoPagoAccessToken = "TEST_ACCESS_TOKEN"
     })
 
     describe("handlePaymentsRoute routing", () => {
@@ -90,7 +94,7 @@ describe("Mercado Pago Payment Route Handler", () => {
 
     describe("POST /api/payments/pix (handleCreatePix)", () => {
         it("throws error if MERCADO_PAGO_ACCESS_TOKEN is not configured", async () => {
-            delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+            mockConfig.mercadoPagoAccessToken = ""
             const { req, res, triggerReq } = createMockReqRes("POST", "/api/payments/pix", {
                 transactionAmount: 10,
                 description: "Test",
@@ -102,7 +106,7 @@ describe("Mercado Pago Payment Route Handler", () => {
 
             expect(res.statusCode).toBe(502)
             expect(JSON.parse(res.body)).toEqual({
-                error: "MERCADO_PAGO_ACCESS_TOKEN is not set. Add it to `backend/.env`.",
+                error: "MERCADO_PAGO_ACCESS_TOKEN is not configured in the settings.",
             })
         })
 
