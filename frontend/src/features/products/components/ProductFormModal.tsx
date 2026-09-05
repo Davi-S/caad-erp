@@ -3,6 +3,7 @@ import { Modal, TextInput, Switch, Button, Stack, Group, Text } from "@mantine/c
 import { useForm } from "@mantine/form"
 import type { Product } from "@/types"
 import { CurrencyInput } from "@/components/CurrencyInput"
+import { useAppConfig } from "@/config"
 
 interface ProductFormModalProps {
     opened: boolean
@@ -26,6 +27,7 @@ export function ProductFormModal({
     isSubmitting,
     error,
 }: ProductFormModalProps) {
+    const { config } = useAppConfig()
     const isEditing = product !== null
 
     const form = useForm({
@@ -100,7 +102,9 @@ export function ProductFormModal({
                         label="Nome"
                         placeholder="Nome do produto"
                         description={
-                            'Aparece na tela de vendas. Use " - " para separar variações do mesmo produto.'
+                            config.productGroupingDelimiter
+                                ? `Aparece na tela de vendas. Use "${config.productGroupingDelimiter}" para separar variações do mesmo produto.`
+                                : "Aparece na tela de vendas."
                         }
                         {...form.getInputProps("name")}
                     />

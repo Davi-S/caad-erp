@@ -20,6 +20,7 @@ import {
     Monitor,
     ExternalLink,
     Upload,
+    Settings,
 } from "lucide-react"
 import { ScreenShell } from "@/components/ScreenShell"
 import { ImportWorkbookModal } from "./components/ImportWorkbookModal"
@@ -51,6 +52,12 @@ const MANAGEMENT_ITEMS: NavItem[] = [
         icon: Users,
         title: "Vendedores",
         description: "Gerenciar a equipe de vendas",
+    },
+    {
+        to: "/settings",
+        icon: Settings,
+        title: "Configurações",
+        description: "Ajustar preferências do sistema",
     },
 ]
 

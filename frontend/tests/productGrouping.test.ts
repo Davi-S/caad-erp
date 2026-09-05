@@ -96,4 +96,32 @@ describe("groupProducts", () => {
         expect(groups[2].name).toBe("-")
         expect(groups[2].variants[0].label).toBe("-")
     })
+
+    it("GIVEN custom delimiter WHEN groupProducts is called with delimiter THEN splits correctly", () => {
+        const products: Product[] = [
+            { id: "1", name: "Adesivo / Pequeno", sellPrice: 200, isActive: true },
+            { id: "2", name: "Adesivo / Grande", sellPrice: 400, isActive: true },
+        ]
+
+        const groups = groupProducts(products, " / ")
+
+        expect(groups).toHaveLength(1)
+        expect(groups[0].name).toBe("Adesivo")
+        expect(groups[0].variants).toHaveLength(2)
+        expect(groups[0].variants[0].label).toBe("Pequeno")
+        expect(groups[0].variants[1].label).toBe("Grande")
+    })
+
+    it("GIVEN empty delimiter WHEN groupProducts is called THEN treats all as standalone", () => {
+        const products: Product[] = [
+            { id: "1", name: "Camisa - P", sellPrice: 4000, isActive: true },
+            { id: "2", name: "Camisa - M", sellPrice: 4000, isActive: true },
+        ]
+
+        const groups = groupProducts(products, "")
+
+        expect(groups).toHaveLength(2)
+        expect(groups[0].name).toBe("Camisa - P")
+        expect(groups[1].name).toBe("Camisa - M")
+    })
 })
