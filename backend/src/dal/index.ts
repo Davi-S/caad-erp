@@ -1,5 +1,0 @@
-export * from "./schema.js"
-export * from "./client.js"
-export * from "./products.js"
-export * from "./salesmen.js"
-export * from "./transactions.js"
