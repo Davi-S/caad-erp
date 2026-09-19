@@ -5,7 +5,7 @@
  * and never updated or deleted.
  */
 
-import { asc, eq, max } from "drizzle-orm"
+import { asc, eq, inArray, max, sql } from "drizzle-orm"
 import { inTransaction, type DB } from "./client.js"
 import {
     documentLines,
@@ -39,22 +39,55 @@ export type NewLedgerDocument = Omit<LedgerDocument, "sequence">
  * entered (`sequence`).
  */
 export function listDocuments(db: DB): LedgerDocument[] {
-    const docs = db.select().from(documents).orderBy(asc(documents.sequence)).all()
-    const allLines = db.select().from(documentLines).orderBy(asc(documentLines.id)).all()
-    const allPayments = db.select().from(payments).orderBy(asc(payments.id)).all()
+    return group(
+        db.select().from(documents).orderBy(asc(documents.sequence)).all(),
+        db.select().from(documentLines).orderBy(asc(documentLines.id)).all(),
+        db.select().from(payments).orderBy(asc(payments.id)).all(),
+    )
+}
 
-    const byId = new Map<string, LedgerDocument>()
-    for (const doc of docs) {
-        byId.set(doc.id, { ...doc, lines: [], payments: [] })
-    }
-    for (const line of allLines) {
-        byId.get(line.documentId)!.lines.push(line)
-    }
-    for (const payment of allPayments) {
-        byId.get(payment.documentId)!.payments.push(payment)
+/**
+ * Reads a document and every document linking to it, directly or through other
+ * linked documents, following `linked_document_id` until no more are found.
+ *
+ * @returns The documents with their lines and payments, in `sequence` order;
+ * empty if the document does not exist.
+ */
+export function listLinkedDocuments(db: DB, id: string): LedgerDocument[] {
+    const ids = db
+        .all<{ id: string }>(
+            sql`WITH RECURSIVE linked(id) AS (
+                    SELECT id FROM documents WHERE id = ${id}
+                    UNION
+                    SELECT d.id FROM documents d JOIN linked l ON d.linked_document_id = l.id
+                )
+                SELECT id FROM linked`,
+        )
+        .map((row) => row.id)
+    if (ids.length === 0) {
+        return []
     }
 
-    return [...byId.values()]
+    return group(
+        db
+            .select()
+            .from(documents)
+            .where(inArray(documents.id, ids))
+            .orderBy(asc(documents.sequence))
+            .all(),
+        db
+            .select()
+            .from(documentLines)
+            .where(inArray(documentLines.documentId, ids))
+            .orderBy(asc(documentLines.id))
+            .all(),
+        db
+            .select()
+            .from(payments)
+            .where(inArray(payments.documentId, ids))
+            .orderBy(asc(payments.id))
+            .all(),
+    )
 }
 
 /**
@@ -118,4 +151,25 @@ export function insertDocument(db: DB, record: NewLedgerDocument): LedgerDocumen
         )
         return { ...stored, lines: storedLines, payments: storedPayments }
     })
+}
+
+/**
+ * Puts lines and payments under their documents, keeping the documents' order.
+ */
+function group(
+    docs: DocumentRow[],
+    lines: DocumentLineRow[],
+    docPayments: PaymentRow[],
+): LedgerDocument[] {
+    const byId = new Map<string, LedgerDocument>()
+    for (const doc of docs) {
+        byId.set(doc.id, { ...doc, lines: [], payments: [] })
+    }
+    for (const line of lines) {
+        byId.get(line.documentId)!.lines.push(line)
+    }
+    for (const payment of docPayments) {
+        byId.get(payment.documentId)!.payments.push(payment)
+    }
+    return [...byId.values()]
 }
