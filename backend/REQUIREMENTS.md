@@ -11,7 +11,13 @@ Data model and business rules for the ledger. Design discussion:
   corrected with `VOID`.
 - **Sign convention.** Positive means the store gains.
 - **Money** is integer cents.
+- **NULL means "does not apply"; 0 means "applies and is zero".** Columns used
+  only by some line types are nullable with no default.
 - **Timestamps** are integer Unix epoch milliseconds (UTC).
+- **IDs only identify; `sequence` orders.** Entry order is `sequence`
+  (1, 2, 3, … assigned on insert, never reused). Business order is
+  `occurred_at`, then `sequence`. Timestamps carry meaning, not order. Lines
+  and payments within a document have no order.
 
 ## Schema
 
@@ -29,6 +35,7 @@ salesmen
 
 documents                                                 one row per business event
   id                  TEXT     PK                         uuid v7
+  sequence            INTEGER  NOT NULL UNIQUE            order of entry, assigned on insert
   type                TEXT     NOT NULL                   SALE | RETURN | CREDIT_PAYMENT | RESTOCK | WRITE_OFF | VOID
   occurred_at         INTEGER  NOT NULL                   when it happened
   recorded_at         INTEGER  NOT NULL                   when it was entered, never backdated
@@ -43,9 +50,9 @@ document_lines                                            goods: what moved
   linked_line_id      TEXT     NULL      FK → document_lines   the line this one reverses
   quantity            INTEGER  NOT NULL                   signed, + into stock
   unit_price          INTEGER  NULL                       SALE only: catalog price snapshot
-  item_discount       INTEGER  NOT NULL DEFAULT 0         SALE only
-  global_discount     INTEGER  NOT NULL DEFAULT 0         SALE only: share of the sale's global discount
-  amount              INTEGER  NOT NULL DEFAULT 0         signed, net sales value
+  item_discount       INTEGER  NULL                       SALE only
+  global_discount     INTEGER  NULL                       SALE only: share of the sale's global discount
+  amount              INTEGER  NULL                       sale-related lines only: signed, net sales value
   cost                INTEGER  NULL                       RESTOCK only: line purchase cost (0 = free)
 
 payments                                                  money: what moved, and how
@@ -66,6 +73,10 @@ payments                                                  money: what moved, and
 | `RESTOCK`        | —            | ≥1: qty +, `cost`                                   | 0..n, −                                                |
 | `WRITE_OFF`      | —            | ≥1: qty −                                           | none                                                   |
 | `VOID`           | any non-VOID | negated lines, `linked_line_id` → target line       | negated payments, `linked_payment_id` → target payment |
+
+Line columns not listed for a type are NULL. Reversal lines (`RETURN`, `VOID`)
+store only `quantity` and, when reversing a sale line, `amount`; price,
+discounts and cost are read from the original line.
 
 ## Real-world situations
 
@@ -113,4 +124,3 @@ payments                                                  money: what moved, and
 | Voiding a sale with returns or credit payments | Rejected; void those first                                   |
 | Voiding the same thing twice                   | Rejected (over-reversal)                                     |
 | Voiding a void                                 | Rejected; enter the original again instead                   |
-
