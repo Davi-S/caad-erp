@@ -7,8 +7,8 @@
  *
  * Drizzle cannot declare `STRICT` tables, so the tables are created from this raw
  * SQL and `schema.ts` mirrors it for typed queries. The database only stores data:
- * it enforces column types, `NOT NULL`, primary keys and foreign keys. Every
- * business rule lives in the BLL.
+ * it enforces column types, `NOT NULL`, primary keys and foreign keys, and
+ * nothing else.
  */
 
 import type Database from "better-sqlite3"
@@ -23,6 +23,27 @@ const SCHEMA_SQL = `
 
     CREATE TABLE salesmen (
         id                  TEXT     NOT NULL PRIMARY KEY,
+        name                TEXT     NOT NULL,
+        is_active           INTEGER  NOT NULL
+    ) STRICT;
+
+    CREATE TABLE product_history (
+        id                  TEXT     NOT NULL PRIMARY KEY,
+        sequence            INTEGER  NOT NULL UNIQUE,
+        product_id          TEXT     NOT NULL REFERENCES products (id),
+        changed_by          TEXT     NOT NULL REFERENCES salesmen (id),
+        recorded_at         INTEGER  NOT NULL,
+        name                TEXT     NOT NULL,
+        sell_price          INTEGER  NOT NULL,
+        is_active           INTEGER  NOT NULL
+    ) STRICT;
+
+    CREATE TABLE salesman_history (
+        id                  TEXT     NOT NULL PRIMARY KEY,
+        sequence            INTEGER  NOT NULL UNIQUE,
+        salesman_id         TEXT     NOT NULL REFERENCES salesmen (id),
+        changed_by          TEXT     NOT NULL REFERENCES salesmen (id),
+        recorded_at         INTEGER  NOT NULL,
         name                TEXT     NOT NULL,
         is_active           INTEGER  NOT NULL
     ) STRICT;
@@ -59,6 +80,8 @@ const SCHEMA_SQL = `
         amount              INTEGER  NOT NULL
     ) STRICT;
 
+    CREATE INDEX idx_product_history_product_id   ON product_history (product_id);
+    CREATE INDEX idx_salesman_history_salesman_id ON salesman_history (salesman_id);
     CREATE INDEX idx_documents_occurred_at        ON documents (occurred_at);
     CREATE INDEX idx_documents_linked_document_id ON documents (linked_document_id);
     CREATE INDEX idx_document_lines_document_id   ON document_lines (document_id);

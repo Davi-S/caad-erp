@@ -1,10 +1,16 @@
 /**
- * Data access for the `salesmen` table.
+ * Data access for the `salesmen` table and its append-only change trail,
+ * `salesman_history`.
+ *
+ * Every write records a snapshot of the row it leaves behind, so the trail cannot
+ * be forgotten by a caller. `changedBy` is stored as given and never interpreted
+ * here: whose ID it is, is for the caller to decide.
  */
 
-import { eq } from "drizzle-orm"
-import type { DB } from "./client.js"
-import { salesmen, type SalesmanRow } from "./schema.js"
+import { asc, eq, max } from "drizzle-orm"
+import { newId } from "../ids.js"
+import { inTransaction, type DB } from "./client.js"
+import { salesmanHistory, salesmen, type SalesmanHistoryRow, type SalesmanRow } from "./schema.js"
 
 /**
  * @returns Every salesman.
@@ -21,23 +27,77 @@ export function getSalesman(db: DB, id: string): SalesmanRow | undefined {
 }
 
 /**
- * Inserts a salesman.
+ * Inserts a salesman and their first snapshot.
  *
+ * @param changedBy - Identifier of the salesman the change is recorded against.
  * @returns The stored row.
  */
-export function insertSalesman(db: DB, record: SalesmanRow): SalesmanRow {
-    return db.insert(salesmen).values(record).returning().get()
+export function insertSalesman(db: DB, record: SalesmanRow, changedBy: string): SalesmanRow {
+    return inTransaction(db, () => {
+        const salesman = db.insert(salesmen).values(record).returning().get()
+        recordSnapshot(db, salesman, changedBy)
+        return salesman
+    })
 }
 
 /**
- * Replaces the given fields of a salesman.
+ * Replaces the given fields of a salesman and records a snapshot of the result.
  *
- * @returns The updated row, or `undefined` if no salesman has the given ID.
+ * @param changedBy - Identifier of the salesman the change is recorded against.
+ * @returns The updated row, or `undefined` if no salesman has the given ID, in
+ * which case nothing is written.
  */
 export function updateSalesman(
     db: DB,
     id: string,
     fields: Partial<Omit<SalesmanRow, "id">>,
+    changedBy: string,
 ): SalesmanRow | undefined {
-    return db.update(salesmen).set(fields).where(eq(salesmen.id, id)).returning().get()
+    return inTransaction(db, () => {
+        const salesman = db
+            .update(salesmen)
+            .set(fields)
+            .where(eq(salesmen.id, id))
+            .returning()
+            .get()
+        if (salesman) {
+            recordSnapshot(db, salesman, changedBy)
+        }
+        return salesman
+    })
+}
+
+/**
+ * @returns Every snapshot of the given salesman, oldest first.
+ */
+export function listSalesmanHistory(db: DB, salesmanId: string): SalesmanHistoryRow[] {
+    return db
+        .select()
+        .from(salesmanHistory)
+        .where(eq(salesmanHistory.salesmanId, salesmanId))
+        .orderBy(asc(salesmanHistory.sequence))
+        .all()
+}
+
+/**
+ * Appends the state a write left the salesman in, with the next `sequence`
+ * number.
+ */
+function recordSnapshot(db: DB, salesman: SalesmanRow, changedBy: string): void {
+    const last = db
+        .select({ value: max(salesmanHistory.sequence) })
+        .from(salesmanHistory)
+        .get()
+
+    db.insert(salesmanHistory)
+        .values({
+            id: newId(),
+            sequence: (last?.value ?? 0) + 1,
+            salesmanId: salesman.id,
+            changedBy,
+            recordedAt: new Date(),
+            name: salesman.name,
+            isActive: salesman.isActive,
+        })
+        .run()
 }

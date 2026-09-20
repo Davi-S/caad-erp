@@ -2,7 +2,7 @@
  * Drizzle mirror of the tables defined in `ddl.ts`, used for typed queries.
  *
  * Must match `ddl.ts` column for column. The value lists below only type the
- * columns in TypeScript; the database does not check them (the BLL does).
+ * columns in TypeScript; the database does not check them.
  */
 
 import { integer, sqliteTable, text, type AnySQLiteColumn } from "drizzle-orm/sqlite-core"
@@ -41,6 +41,41 @@ export const products = sqliteTable("products", {
  */
 export const salesmen = sqliteTable("salesmen", {
     id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    isActive: integer("is_active", { mode: "boolean" }).notNull(),
+})
+
+/**
+ * One snapshot per change to a product, in the state it was left in.
+ */
+export const productHistory = sqliteTable("product_history", {
+    id: text("id").primaryKey(),
+    sequence: integer("sequence").notNull().unique(),
+    productId: text("product_id")
+        .notNull()
+        .references(() => products.id),
+    changedBy: text("changed_by")
+        .notNull()
+        .references(() => salesmen.id),
+    recordedAt: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
+    name: text("name").notNull(),
+    sellPrice: integer("sell_price").notNull(),
+    isActive: integer("is_active", { mode: "boolean" }).notNull(),
+})
+
+/**
+ * One snapshot per change to a salesman, in the state it was left in.
+ */
+export const salesmanHistory = sqliteTable("salesman_history", {
+    id: text("id").primaryKey(),
+    sequence: integer("sequence").notNull().unique(),
+    salesmanId: text("salesman_id")
+        .notNull()
+        .references(() => salesmen.id),
+    changedBy: text("changed_by")
+        .notNull()
+        .references(() => salesmen.id),
+    recordedAt: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
     name: text("name").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull(),
 })
@@ -96,6 +131,8 @@ export const payments = sqliteTable("payments", {
 
 export type ProductRow = typeof products.$inferSelect
 export type SalesmanRow = typeof salesmen.$inferSelect
+export type ProductHistoryRow = typeof productHistory.$inferSelect
+export type SalesmanHistoryRow = typeof salesmanHistory.$inferSelect
 export type DocumentRow = typeof documents.$inferSelect
 export type DocumentLineRow = typeof documentLines.$inferSelect
 export type PaymentRow = typeof payments.$inferSelect
