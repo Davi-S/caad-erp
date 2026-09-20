@@ -22,6 +22,7 @@
  * these as code reading the same context.
  */
 
+import { paymentMethodValues } from "../../dal/index.js"
 import type { DocumentLineRow, DocumentType, NewLedgerDocument } from "../../dal/index.js"
 import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
 import type { LedgerContext } from "./context.js"
@@ -61,6 +62,8 @@ interface PaymentSpec {
 }
 
 interface DocumentSpec {
+    /** How the document's own lines and payments must add up, if at all. */
+    totals: "costEqualsPayments" | null
     /** The salesman who performed it. */
     salesman: Reference
     /** The products its lines move: reversals may touch deactivated ones. */
@@ -81,6 +84,7 @@ interface DocumentSpec {
  */
 const SPECS: Record<DocumentType, DocumentSpec> = {
     SALE: {
+        totals: null,
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
@@ -96,6 +100,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "positive", link: "forbidden" },
     },
     RETURN: {
+        totals: null,
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -111,6 +116,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "negative", link: "optional" },
     },
     CREDIT_PAYMENT: {
+        totals: null,
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -118,6 +124,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 1, sign: "positive", link: "forbidden" },
     },
     RESTOCK: {
+        totals: "costEqualsPayments",
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
@@ -133,6 +140,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "negative", link: "forbidden" },
     },
     WRITE_OFF: {
+        totals: null,
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
@@ -148,6 +156,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: null,
     },
     VOID: {
+        totals: null,
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -182,6 +191,24 @@ export function validateDocument(doc: NewLedgerDocument): void {
 
     checkLines(doc, spec.lines)
     checkPayments(doc, spec.payments)
+    checkTotals(doc, spec.totals)
+}
+
+/**
+ * What goods cost is what was paid for them: a restock's payments cover its lines
+ * exactly, so goods that came in free have no payments.
+ */
+function checkTotals(doc: NewLedgerDocument, totals: DocumentSpec["totals"]): void {
+    if (totals !== "costEqualsPayments") {
+        return
+    }
+    const cost = doc.lines.reduce((sum, line) => sum + (line.cost ?? 0), 0)
+    const paid = -doc.payments.reduce((sum, payment) => sum + payment.amount, 0)
+    if (cost !== paid) {
+        throw new RuleViolationError(
+            `A ${doc.type} must be paid in full: cost ${cost}, paid ${paid}`,
+        )
+    }
 }
 
 /**
@@ -285,6 +312,9 @@ function checkPayments(doc: NewLedgerDocument, spec: PaymentSpec | null): void {
     }
 
     for (const payment of doc.payments) {
+        if (!(paymentMethodValues as readonly string[]).includes(payment.method)) {
+            throw new RuleViolationError(`Unknown payment method: ${payment.method}`)
+        }
         checkNumber("Payment amount", payment.amount, spec.sign)
         checkLink("linked payment", payment.id, payment.linkedPaymentId, spec.link, doc.type)
     }

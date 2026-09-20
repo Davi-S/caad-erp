@@ -8,30 +8,18 @@
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
 import { newId } from "../../ids.js"
 import { validate } from "../validate.js"
+import { documentFields, productIdField, quantityField } from "./fields.js"
 import { post } from "./post.js"
 import { z } from "zod"
 
 /**
- * Input for recording a write-off, in the caller's terms: quantities are how many
- * units left, so they are positive here and stored negative.
- *
- * `occurredAt` defaults to now; it is given when entering something that happened
- * earlier. `notes` defaults to none, like the column it is stored in.
+ * Input for recording a write-off.
  */
 export const writeOffSchema = z.object({
-    salesmanId: z.string().trim().min(1, "Salesman is required"),
-    occurredAt: z.date().optional(),
+    ...documentFields,
     items: z
-        .array(
-            z.object({
-                productId: z.string().trim().min(1, "Product is required"),
-                quantity: z
-                    .int("Quantity must be a whole number")
-                    .positive("Quantity must be greater than zero"),
-            }),
-        )
+        .array(z.object({ productId: productIdField, quantity: quantityField }))
         .min(1, "At least one item is required"),
-    notes: z.string().trim().min(1, "Notes cannot be blank").nullable().default(null),
 })
 
 export type WriteOffCommand = z.input<typeof writeOffSchema>
