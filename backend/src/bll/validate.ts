@@ -1,8 +1,13 @@
 /**
- * Input validation: the first layer of every business operation.
+ * Input validation: the contract with the caller.
  *
- * Checks shape and boundaries only (types, ranges, required fields). Rules that
- * need stored data live with the operation that enforces them.
+ * Checks the shape of a request: types, whole numbers, ranges, required fields,
+ * trimming and defaults. A failure here means the caller sent something wrong, so
+ * the message names the field to fix.
+ *
+ * It speaks the caller's language ("write off 2 units"), while the ledger rules
+ * speak the storage language ("this line's quantity is -2"). Both have an opinion
+ * on a few values; see `ledger/rules.ts`.
  */
 
 import type { z } from "zod"
