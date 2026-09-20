@@ -8,8 +8,6 @@
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
 import { newId } from "../../ids.js"
 import { validate } from "../validate.js"
-import { requireActiveProduct } from "../products.js"
-import { requireActiveSalesman } from "../salesmen.js"
 import { post } from "./post.js"
 import { z } from "zod"
 
@@ -52,11 +50,6 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument
     const input = validate(writeOffSchema, command)
 
     return post(db, () => {
-        requireActiveSalesman(db, input.salesmanId)
-        for (const item of input.items) {
-            requireActiveProduct(db, item.productId)
-        }
-
         const recordedAt = new Date()
         const id = newId()
         const doc: NewLedgerDocument = {

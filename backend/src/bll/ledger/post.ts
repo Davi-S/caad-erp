@@ -8,23 +8,28 @@
 
 import * as dal from "../../dal/index.js"
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
-import { validateDocument } from "./rules.js"
+import { loadContext } from "./context.js"
+import { validateDocument, validateInContext } from "./rules.js"
 
 /**
  * Checks a document and appends it to the ledger.
  *
- * Building and checking happen inside the same transaction as the insert, so the
- * document is checked against exactly the data it lands on.
+ * Building, loading what the document refers to and checking happen inside the
+ * same transaction as the insert, so the document is checked against exactly the
+ * data it lands on.
  *
  * @param db - Active database client.
  * @param build - Produces the document to store.
  * @returns The stored document.
+ * @throws {@link NotFoundError} If it refers to something that does not exist.
+ * @throws {@link InactiveError} If it refers to something inactive.
  * @throws {@link RuleViolationError} If the document breaks a rule.
  */
 export function post(db: DB, build: () => NewLedgerDocument): LedgerDocument {
     return dal.inTransaction(db, () => {
         const doc = build()
         validateDocument(doc)
+        validateInContext(doc, loadContext(db, doc))
         return dal.insertDocument(db, doc)
     })
 }

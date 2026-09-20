@@ -11,18 +11,26 @@
  * minus sign). Input checks do not replace them, and they do not replace input
  * checks: nothing here checks blank text or missing fields.
  *
- * Rules that compare a document with the rest of the ledger need the surrounding
- * documents and live with the commands that use them: that every link resolves to
- * an existing row of the right kind, over-reversal, sale balance, dependencies.
+ * `validateInContext` covers the rules about what a document refers to: its
+ * salesman, the products its lines move, and the document it links to. It takes
+ * those records as data, loaded by `context.ts`, so it stays as pure as the rest.
  * The foreign keys in the database only stop a dangling row from being stored;
  * they are not what produces the error.
+ *
+ * Rules that weigh a document against a whole tree of others (over-reversal, sale
+ * balance, dependencies) are not expressible as a spec entry and will live beside
+ * these as code reading the same context.
  */
 
 import type { DocumentLineRow, DocumentType, NewLedgerDocument } from "../../dal/index.js"
-import { RuleViolationError } from "../errors.js"
+import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
+import type { LedgerContext } from "./context.js"
 
 /** Whether a nullable column must, must not, or may carry a value. */
 type Requirement = "required" | "forbidden" | "optional"
+
+/** What a document needs of a record it names. */
+type Reference = "active" | "exists" | "any"
 
 /** Which values a number may take, on top of always being a whole number. */
 type Sign = "positive" | "negative" | "nonNegative" | "nonPositive" | "nonZero" | "any"
@@ -53,6 +61,10 @@ interface PaymentSpec {
 }
 
 interface DocumentSpec {
+    /** The salesman who performed it. */
+    salesman: Reference
+    /** The products its lines move: reversals may touch deactivated ones. */
+    products: Reference
     /** `linked_document_id`: set exactly for the types that reverse or settle another. */
     linkedDocument: Requirement
     /** `null` when the type has no lines at all. */
@@ -69,6 +81,8 @@ interface DocumentSpec {
  */
 const SPECS: Record<DocumentType, DocumentSpec> = {
     SALE: {
+        salesman: "active",
+        products: "active",
         linkedDocument: "forbidden",
         lines: {
             minimum: 1,
@@ -82,6 +96,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "positive", link: "forbidden" },
     },
     RETURN: {
+        salesman: "active",
+        products: "any",
         linkedDocument: "required",
         lines: {
             minimum: 1,
@@ -95,11 +111,15 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "negative", link: "optional" },
     },
     CREDIT_PAYMENT: {
+        salesman: "active",
+        products: "any",
         linkedDocument: "required",
         lines: null,
         payments: { minimum: 1, sign: "positive", link: "forbidden" },
     },
     RESTOCK: {
+        salesman: "active",
+        products: "active",
         linkedDocument: "forbidden",
         lines: {
             minimum: 1,
@@ -113,6 +133,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "negative", link: "forbidden" },
     },
     WRITE_OFF: {
+        salesman: "active",
+        products: "active",
         linkedDocument: "forbidden",
         lines: {
             minimum: 1,
@@ -126,6 +148,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: null,
     },
     VOID: {
+        salesman: "active",
+        products: "any",
         linkedDocument: "required",
         lines: {
             minimum: 0,
@@ -158,6 +182,53 @@ export function validateDocument(doc: NewLedgerDocument): void {
 
     checkLines(doc, spec.lines)
     checkPayments(doc, spec.payments)
+}
+
+/**
+ * Checks a document against the records it refers to.
+ *
+ * @param doc - Document with its lines and payments, as it will be stored.
+ * @param context - What those references resolved to, from {@link loadContext}.
+ * @throws {@link NotFoundError} If a reference names nothing.
+ * @throws {@link InactiveError} If it names something inactive that must be active.
+ * @throws {@link RuleViolationError} If any other rule is broken.
+ */
+export function validateInContext(doc: NewLedgerDocument, context: LedgerContext): void {
+    const spec = SPECS[doc.type]
+
+    checkSalesman(doc, context, spec.salesman)
+    checkProducts(doc, context, spec.products)
+
+    if (doc.linkedDocumentId && !context.linked.getDocument(doc.linkedDocumentId)) {
+        throw new NotFoundError(`Unknown document: ${doc.linkedDocumentId}`)
+    }
+}
+
+function checkSalesman(doc: NewLedgerDocument, context: LedgerContext, reference: Reference): void {
+    if (reference === "any") {
+        return
+    }
+    if (!context.salesman) {
+        throw new NotFoundError(`Unknown salesman: ${doc.salesmanId}`)
+    }
+    if (reference === "active" && !context.salesman.isActive) {
+        throw new InactiveError(`Salesman '${context.salesman.name}' is inactive`)
+    }
+}
+
+function checkProducts(doc: NewLedgerDocument, context: LedgerContext, reference: Reference): void {
+    if (reference === "any") {
+        return
+    }
+    for (const line of doc.lines) {
+        const product = context.products.get(line.productId)
+        if (!product) {
+            throw new NotFoundError(`Unknown product: ${line.productId}`)
+        }
+        if (reference === "active" && !product.isActive) {
+            throw new InactiveError(`Product '${product.name}' is inactive`)
+        }
+    }
 }
 
 function checkLines(doc: NewLedgerDocument, spec: LineSpec | null): void {
