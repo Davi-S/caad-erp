@@ -23,9 +23,9 @@
  */
 
 import { paymentMethodValues } from "../../dal/index.js"
-import type { DocumentLineRow, DocumentType, NewLedgerDocument } from "../../dal/index.js"
+import type { DocumentType, NewLedgerDocument } from "../../dal/index.js"
 import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
-import type { LedgerContext } from "./context.js"
+import type { DocumentReferences, LedgerContext } from "./context.js"
 
 /** Whether a nullable column must, must not, or may carry a value. */
 type Requirement = "required" | "forbidden" | "optional"
@@ -62,8 +62,8 @@ interface PaymentSpec {
 }
 
 interface DocumentSpec {
-    /** How the document's own lines and payments must add up, if at all. */
-    totals: "costEqualsPayments" | null
+    /** Rules of this type that are code rather than a table entry; see `CHECKS`. */
+    checks: CheckName[]
     /** The salesman who performed it. */
     salesman: Reference
     /** The products its lines move: reversals may touch deactivated ones. */
@@ -84,7 +84,7 @@ interface DocumentSpec {
  */
 const SPECS: Record<DocumentType, DocumentSpec> = {
     SALE: {
-        totals: null,
+        checks: ["discountsWithinGross", "amountMatchesLine"],
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
@@ -94,13 +94,14 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             link: "forbidden",
             unitPrice: { presence: "required", sign: "nonNegative" },
             discounts: { presence: "required", sign: "nonNegative" },
-            amount: { presence: "required", sign: "nonNegative" },
+            // Never below zero, which `discountsWithinGross` says with the reason
+            amount: { presence: "required", sign: "any" },
             cost: { presence: "forbidden", sign: "any" },
         },
         payments: { minimum: 0, sign: "positive", link: "forbidden" },
     },
     RETURN: {
-        totals: null,
+        checks: [],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -116,7 +117,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "negative", link: "optional" },
     },
     CREDIT_PAYMENT: {
-        totals: null,
+        checks: [],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -124,7 +125,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 1, sign: "positive", link: "forbidden" },
     },
     RESTOCK: {
-        totals: "costEqualsPayments",
+        checks: ["costEqualsPayments"],
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
@@ -140,7 +141,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: { minimum: 0, sign: "negative", link: "forbidden" },
     },
     WRITE_OFF: {
-        totals: null,
+        checks: [],
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
@@ -156,7 +157,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: null,
     },
     VOID: {
-        totals: null,
+        checks: [],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -175,6 +176,60 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
 }
 
 /**
+ * The rules that cannot be said in a table entry: each one reads a whole document
+ * and throws if it is wrong. A type applies the ones its spec names.
+ */
+const CHECKS = {
+    /**
+     * What goods cost is what was paid for them: a restock's payments cover its
+     * lines exactly, so goods that came in free have no payments.
+     */
+    costEqualsPayments(doc: NewLedgerDocument): void {
+        const cost = doc.lines.reduce((sum, line) => sum + (line.cost ?? 0), 0)
+        const paid = -doc.payments.reduce((sum, payment) => sum + payment.amount, 0)
+        if (cost !== paid) {
+            throw new RuleViolationError(
+                `A ${doc.type} must be paid in full: cost ${cost}, paid ${paid}`,
+            )
+        }
+    },
+
+    /**
+     * Nothing is sold for less than free: the discounts on a line cannot exceed
+     * what that line is worth at the catalog price.
+     */
+    discountsWithinGross(doc: NewLedgerDocument): void {
+        for (const line of doc.lines) {
+            const gross = Math.abs(line.quantity) * (line.unitPrice ?? 0)
+            const discount = (line.itemDiscount ?? 0) + (line.globalDiscount ?? 0)
+            if (discount > gross) {
+                throw new RuleViolationError(
+                    `Discounts of ${discount} are larger than the ${gross} being sold`,
+                )
+            }
+        }
+    },
+
+    /**
+     * The amount is what was charged: the price times the quantity, less the
+     * discounts.
+     */
+    amountMatchesLine(doc: NewLedgerDocument): void {
+        for (const line of doc.lines) {
+            const gross = Math.abs(line.quantity) * (line.unitPrice ?? 0)
+            const expected = gross - (line.itemDiscount ?? 0) - (line.globalDiscount ?? 0)
+            if (line.amount !== expected) {
+                throw new RuleViolationError(
+                    `Line amount ${line.amount} does not match price and discounts (expected ${expected})`,
+                )
+            }
+        }
+    },
+}
+
+type CheckName = keyof typeof CHECKS
+
+/**
  * Checks a document against the shape of its type.
  *
  * @param doc - Document with its lines and payments, as it will be stored.
@@ -191,23 +246,29 @@ export function validateDocument(doc: NewLedgerDocument): void {
 
     checkLines(doc, spec.lines)
     checkPayments(doc, spec.payments)
-    checkTotals(doc, spec.totals)
+
+    for (const check of spec.checks) {
+        CHECKS[check](doc)
+    }
 }
 
 /**
- * What goods cost is what was paid for them: a restock's payments cover its lines
- * exactly, so goods that came in free have no payments.
+ * Checks what a document is about to refer to, before it is built.
+ *
+ * @param references - The records it will point at.
+ * @param context - What they resolved to, from {@link loadContext}.
+ * @throws {@link NotFoundError} If a reference names nothing.
+ * @throws {@link InactiveError} If it names something inactive that must be active.
  */
-function checkTotals(doc: NewLedgerDocument, totals: DocumentSpec["totals"]): void {
-    if (totals !== "costEqualsPayments") {
-        return
+export function validateReferences(references: DocumentReferences, context: LedgerContext): void {
+    const spec = SPECS[references.type]
+
+    checkSalesman(references.salesmanId, context, spec.salesman)
+    for (const productId of references.productIds) {
+        checkProduct(productId, context, spec.products)
     }
-    const cost = doc.lines.reduce((sum, line) => sum + (line.cost ?? 0), 0)
-    const paid = -doc.payments.reduce((sum, payment) => sum + payment.amount, 0)
-    if (cost !== paid) {
-        throw new RuleViolationError(
-            `A ${doc.type} must be paid in full: cost ${cost}, paid ${paid}`,
-        )
+    if (references.linkedDocumentId && !context.linked.getDocument(references.linkedDocumentId)) {
+        throw new NotFoundError(`Unknown document: ${references.linkedDocumentId}`)
     }
 }
 
@@ -221,40 +282,39 @@ function checkTotals(doc: NewLedgerDocument, totals: DocumentSpec["totals"]): vo
  * @throws {@link RuleViolationError} If any other rule is broken.
  */
 export function validateInContext(doc: NewLedgerDocument, context: LedgerContext): void {
-    const spec = SPECS[doc.type]
-
-    checkSalesman(doc, context, spec.salesman)
-    checkProducts(doc, context, spec.products)
-
-    if (doc.linkedDocumentId && !context.linked.getDocument(doc.linkedDocumentId)) {
-        throw new NotFoundError(`Unknown document: ${doc.linkedDocumentId}`)
-    }
+    validateReferences(
+        {
+            type: doc.type,
+            salesmanId: doc.salesmanId,
+            productIds: doc.lines.map((line) => line.productId),
+            linkedDocumentId: doc.linkedDocumentId,
+        },
+        context,
+    )
 }
 
-function checkSalesman(doc: NewLedgerDocument, context: LedgerContext, reference: Reference): void {
+function checkSalesman(salesmanId: string, context: LedgerContext, reference: Reference): void {
     if (reference === "any") {
         return
     }
     if (!context.salesman) {
-        throw new NotFoundError(`Unknown salesman: ${doc.salesmanId}`)
+        throw new NotFoundError(`Unknown salesman: ${salesmanId}`)
     }
     if (reference === "active" && !context.salesman.isActive) {
         throw new InactiveError(`Salesman '${context.salesman.name}' is inactive`)
     }
 }
 
-function checkProducts(doc: NewLedgerDocument, context: LedgerContext, reference: Reference): void {
+function checkProduct(productId: string, context: LedgerContext, reference: Reference): void {
     if (reference === "any") {
         return
     }
-    for (const line of doc.lines) {
-        const product = context.products.get(line.productId)
-        if (!product) {
-            throw new NotFoundError(`Unknown product: ${line.productId}`)
-        }
-        if (reference === "active" && !product.isActive) {
-            throw new InactiveError(`Product '${product.name}' is inactive`)
-        }
+    const product = context.products.get(productId)
+    if (!product) {
+        throw new NotFoundError(`Unknown product: ${productId}`)
+    }
+    if (reference === "active" && !product.isActive) {
+        throw new InactiveError(`Product '${product.name}' is inactive`)
     }
 }
 
@@ -278,25 +338,6 @@ function checkLines(doc: NewLedgerDocument, spec: LineSpec | null): void {
         checkColumn("global discount", line.globalDiscount, spec.discounts, doc.type)
         checkColumn("amount", line.amount, spec.amount, doc.type)
         checkColumn("cost", line.cost, spec.cost, doc.type)
-
-        checkSaleAmount(line)
-    }
-}
-
-/**
- * On a sale line the amount is what was charged: the price times the quantity,
- * less the discounts.
- */
-function checkSaleAmount(line: DocumentLineRow): void {
-    if (line.unitPrice === null) {
-        return
-    }
-    const gross = Math.abs(line.quantity) * line.unitPrice
-    const expected = gross - (line.itemDiscount ?? 0) - (line.globalDiscount ?? 0)
-    if (line.amount !== expected) {
-        throw new RuleViolationError(
-            `Line amount ${line.amount} does not match price and discounts (expected ${expected})`,
-        )
     }
 }
 

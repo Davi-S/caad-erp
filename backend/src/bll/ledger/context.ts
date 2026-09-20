@@ -1,24 +1,27 @@
 /**
  * What a document refers to, gathered from storage so the rules can be checked
- * against it.
+ * against it, and so builders never touch the database.
  *
- * Loading is mechanical: it follows the IDs the document carries and knows
- * nothing about the rules. Deciding whether what it found is acceptable is
- * `validateInContext`'s job, in `rules.ts`.
+ * Loading is mechanical: it reads the IDs it is given and knows nothing about the
+ * rules. Deciding whether what it found is acceptable is `rules.ts`'s job.
  */
 
 import * as dal from "../../dal/index.js"
-import type {
-    DB,
-    LedgerIndex,
-    NewLedgerDocument,
-    ProductRow,
-    SalesmanRow,
-} from "../../dal/index.js"
+import type { DB, DocumentType, LedgerIndex, ProductRow, SalesmanRow } from "../../dal/index.js"
 
 /**
- * Everything a document points at: the products its lines move, the salesman who
- * performed it, and the documents linked to the one it reverses or settles.
+ * The records a document will point at, named before it is built.
+ */
+export interface DocumentReferences {
+    type: DocumentType
+    salesmanId: string
+    productIds: string[]
+    linkedDocumentId: string | null
+}
+
+/**
+ * Everything those references resolved to: the products, the salesman, and the
+ * linked document with everything linked to it.
  *
  * Missing entries are kept as missing (`undefined`, or absent from the map) so
  * the rules can say which reference is wrong.
@@ -31,15 +34,15 @@ export interface LedgerContext {
 }
 
 /**
- * Reads what the document refers to.
+ * Reads the records a document refers to.
  *
  * @param db - Active database client.
- * @param doc - The document about to be stored.
- * @returns The rows it names, found or not.
+ * @param references - What the document will point at.
+ * @returns The rows named, found or not.
  */
-export function loadContext(db: DB, doc: NewLedgerDocument): LedgerContext {
+export function loadContext(db: DB, references: DocumentReferences): LedgerContext {
     const products = new Map<string, ProductRow>()
-    for (const productId of new Set(doc.lines.map((line) => line.productId))) {
+    for (const productId of new Set(references.productIds)) {
         const product = dal.getProduct(db, productId)
         if (product) {
             products.set(productId, product)
@@ -48,9 +51,9 @@ export function loadContext(db: DB, doc: NewLedgerDocument): LedgerContext {
 
     return {
         products,
-        salesman: dal.getSalesman(db, doc.salesmanId),
-        linked: doc.linkedDocumentId
-            ? dal.LedgerIndex.loadLinkedTo(db, doc.linkedDocumentId)
+        salesman: dal.getSalesman(db, references.salesmanId),
+        linked: references.linkedDocumentId
+            ? dal.LedgerIndex.loadLinkedTo(db, references.linkedDocumentId)
             : new dal.LedgerIndex(),
     }
 }

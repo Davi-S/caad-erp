@@ -12,9 +12,7 @@
 
 import type { DB, DocumentLineRow, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
 import { newId } from "../../ids.js"
-import { RuleViolationError } from "../errors.js"
 import { distribute } from "../money.js"
-import { getProduct } from "../products.js"
 import { validate } from "../validate.js"
 import { documentFields, paymentField, productIdField, quantityField } from "./fields.js"
 import { post } from "./post.js"
@@ -57,40 +55,44 @@ export type SaleCommand = z.input<typeof saleSchema>
  * @throws {@link InvalidInputError} If the input is not valid.
  * @throws {@link NotFoundError} If the salesman or a product does not exist.
  * @throws {@link InactiveError} If the salesman or a product is inactive.
- * @throws {@link RuleViolationError} If a discount is larger than what is being
- * sold, or the document breaks another rule.
+ * @throws {@link RuleViolationError} If the document breaks a rule, such as a
+ * discount larger than what is being sold.
  */
 export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
     const input = validate(saleSchema, command)
 
-    return post(db, () => {
+    const references = {
+        type: "SALE",
+        salesmanId: input.salesmanId,
+        productIds: input.items.map((item) => item.productId),
+        linkedDocumentId: null,
+    } as const
+
+    return post(db, references, (context) => {
         const recordedAt = new Date()
         const id = newId()
 
         // The catalog price of this moment is what the sale is made at
         const priced = input.items.map((item) => {
-            const unitPrice = getProduct(db, item.productId).sellPrice
-            const gross = item.quantity * unitPrice
-            if (item.itemDiscount > gross) {
-                throw new RuleViolationError(
-                    `Item discount ${item.itemDiscount} is larger than the ${gross} being sold`,
-                )
+            const unitPrice = context.products.get(item.productId)!.sellPrice
+            return {
+                ...item,
+                unitPrice,
+                subtotal: item.quantity * unitPrice - item.itemDiscount,
             }
-            return { ...item, unitPrice, subtotal: gross - item.itemDiscount }
         })
 
+        // A discount larger than what is being sold cannot be split; the document
+        // is built with no split at all and the rules reject it
         const total = priced.reduce((sum, item) => sum + item.subtotal, 0)
-        if (input.globalDiscount > total) {
-            throw new RuleViolationError(
-                `Discount ${input.globalDiscount} is larger than the ${total} being sold`,
-            )
-        }
-
-        // Split to the cent, so the parts add up to the discount given
-        const shares = distribute(
-            priced.map((item) => item.subtotal),
-            input.globalDiscount,
-        )
+        const splittable =
+            priced.every((item) => item.subtotal >= 0) && input.globalDiscount <= total
+        const shares = splittable
+            ? distribute(
+                  priced.map((item) => item.subtotal),
+                  input.globalDiscount,
+              )
+            : priced.map(() => input.globalDiscount)
 
         const lines: DocumentLineRow[] = priced.map((item, position) => ({
             id: newId(),

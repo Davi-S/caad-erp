@@ -57,7 +57,14 @@ export type RestockCommand = z.input<typeof restockSchema>
 export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
     const input = validate(restockSchema, command)
 
-    return post(db, () => {
+    const references = {
+        type: "RESTOCK",
+        salesmanId: input.salesmanId,
+        productIds: input.items.map((item) => item.productId),
+        linkedDocumentId: null,
+    } as const
+
+    return post(db, references, () => {
         const recordedAt = new Date()
         const id = newId()
         const doc: NewLedgerDocument = {

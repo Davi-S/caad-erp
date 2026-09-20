@@ -37,7 +37,14 @@ export type WriteOffCommand = z.input<typeof writeOffSchema>
 export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument {
     const input = validate(writeOffSchema, command)
 
-    return post(db, () => {
+    const references = {
+        type: "WRITE_OFF",
+        salesmanId: input.salesmanId,
+        productIds: input.items.map((item) => item.productId),
+        linkedDocumentId: null,
+    } as const
+
+    return post(db, references, () => {
         const recordedAt = new Date()
         const id = newId()
         const doc: NewLedgerDocument = {
