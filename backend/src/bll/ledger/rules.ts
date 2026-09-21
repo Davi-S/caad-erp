@@ -177,8 +177,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: null,
     },
     VOID: {
-        checks: ["reversesSomething"],
-        contextChecks: [],
+        checks: ["happenedWhenRecorded"],
+        contextChecks: ["reversesTargetWhole", "targetIsVoidable"],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -206,11 +206,12 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
  */
 const CHECKS = {
     /**
-     * A correction that corrects nothing is not a correction.
+     * A correction is made now: it does not get a business time of its own, since
+     * what it takes back keeps the original's.
      */
-    reversesSomething(doc: NewLedgerDocument): void {
-        if (doc.lines.length === 0 && doc.payments.length === 0) {
-            throw new RuleViolationError(`A ${doc.type} must reverse at least one line or payment`)
+    happenedWhenRecorded(doc: NewLedgerDocument): void {
+        if (doc.occurredAt.getTime() !== doc.recordedAt.getTime()) {
+            throw new RuleViolationError(`A ${doc.type} happens when it is recorded`)
         }
     },
 
@@ -238,6 +239,53 @@ type CheckName = keyof typeof CHECKS
  * spec names.
  */
 const CONTEXT_CHECKS = {
+    /**
+     * A void takes back the whole document: every line and every payment, each in
+     * full, and each pointing at the row it reverses. Taking back only part of
+     * something is a new business fact, which is what a return is for.
+     */
+    reversesTargetWhole(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+
+        checkMirrors(
+            doc.lines.map((line) => ({ of: line.linkedLineId, by: line.quantity })),
+            target.lines.map((line) => ({ id: line.id, value: line.quantity })),
+            "line",
+            target.id,
+        )
+        checkMirrors(
+            doc.payments.map((payment) => ({ of: payment.linkedPaymentId, by: payment.amount })),
+            target.payments.map((payment) => ({ id: payment.id, value: payment.amount })),
+            "payment",
+            target.id,
+        )
+    },
+
+    /**
+     * What hangs off a document is dealt with first: a document with a live
+     * return or payment on it cannot be voided until that is voided too.
+     *
+     * A document is voided or it is not, so a second void has nothing left to
+     * take back.
+     */
+    targetIsVoidable(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+
+        for (const dependent of context.linked.linkedDocuments(target.id)) {
+            if (dependent.type === "VOID") {
+                throw new RuleViolationError(`${target.id} is already voided`)
+            }
+            const voided = context.linked
+                .linkedDocuments(dependent.id)
+                .some((other) => other.type === "VOID")
+            if (!voided) {
+                throw new RuleViolationError(
+                    `${target.id} has a ${dependent.type} on it; void that first`,
+                )
+            }
+        }
+    },
+
     /**
      * Money settled later moves the same way as the document it settles: into the
      * till for a sale, out of it for a restock or a refund.
@@ -329,6 +377,32 @@ export function validateInContext(doc: NewLedgerDocument, context: LedgerContext
 
     for (const check of SPECS[doc.type].contextChecks) {
         CONTEXT_CHECKS[check](doc, context)
+    }
+}
+
+/**
+ * Every row of the target is taken back exactly once, by its own negation.
+ */
+function checkMirrors(
+    reversals: { of: string | null; by: number }[],
+    originals: { id: string; value: number }[],
+    what: string,
+    targetId: string,
+): void {
+    if (reversals.length !== originals.length) {
+        throw new RuleViolationError(
+            `A void must take back all ${originals.length} ${what}(s) of ${targetId}, not ${reversals.length}`,
+        )
+    }
+
+    for (const original of originals) {
+        const mirrors = reversals.filter((reversal) => reversal.of === original.id)
+        if (mirrors.length !== 1) {
+            throw new RuleViolationError(`${what} ${original.id} must be taken back exactly once`)
+        }
+        if (mirrors[0].by !== -original.value) {
+            throw new RuleViolationError(`${what} ${original.id} must be taken back in full`)
+        }
     }
 }
 

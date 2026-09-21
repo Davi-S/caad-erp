@@ -65,14 +65,14 @@ payments                                                  money: what moved, and
 
 ### Document shapes
 
-| Type        | Links to                  | Lines                                               | Payments                                               |
-| ----------- | ------------------------- | --------------------------------------------------- | ------------------------------------------------------ |
-| `SALE`      | —                         | ≥1: qty −, `unit_price`, discounts, `amount` +      | 0..n, +                                                |
-| `RETURN`    | a SALE                    | ≥1: qty +, `amount` −, `linked_line_id` → sale line | 0..n, − (refunds)                                      |
-| `PAYMENT`   | a SALE, RESTOCK or RETURN | none                                                | ≥1, signed like the target's payments                  |
-| `RESTOCK`   | —                         | ≥1: qty +, `total_cost`                             | 0..n, −                                                |
-| `WRITE_OFF` | —                         | ≥1: qty −                                           | none                                                   |
-| `VOID`      | any non-VOID              | negated lines, `linked_line_id` → target line       | negated payments, `linked_payment_id` → target payment |
+| Type        | Links to                  | Lines                                               | Payments                                                    |
+| ----------- | ------------------------- | --------------------------------------------------- | ----------------------------------------------------------- |
+| `SALE`      | —                         | ≥1: qty −, `unit_price`, discounts, `amount` +      | 0..n, +                                                     |
+| `RETURN`    | a SALE                    | ≥1: qty +, `amount` −, `linked_line_id` → sale line | 0..n, − (refunds)                                           |
+| `PAYMENT`   | a SALE, RESTOCK or RETURN | none                                                | ≥1, signed like the target's payments                       |
+| `RESTOCK`   | —                         | ≥1: qty +, `total_cost`                             | 0..n, −                                                     |
+| `WRITE_OFF` | —                         | ≥1: qty −                                           | none                                                        |
+| `VOID`      | any non-VOID              | every line negated, `linked_line_id` → target line  | every payment negated, `linked_payment_id` → target payment |
 
 Line columns not listed for a type are NULL. Reversal lines (`RETURN`, `VOID`)
 store only `quantity` and, when reversing a sale line, `amount`; price,
@@ -115,13 +115,13 @@ discounts and cost are read from the original line.
 
 ### Corrections
 
-| Situation                                      | How it is recorded                                           |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| Entry made by mistake                          | `VOID` of all its lines and payments                         |
-| One item of a sale was wrong                   | `VOID` of that line only                                     |
-| PIX that never arrived                         | `VOID` of that payment only; the rest becomes a balance owed |
-| Restock with wrong data                        | `VOID` it + new `RESTOCK` with the original `occurred_at`    |
-| Entry recorded late                            | Past `occurred_at`, `recorded_at` = now                      |
-| Voiding a sale with returns or credit payments | Rejected; void those first                                   |
-| Voiding the same thing twice                   | Rejected (over-reversal)                                     |
-| Voiding a void                                 | Rejected; enter the original again instead                   |
+| Situation                                      | How it is recorded                                        |
+| ---------------------------------------------- | --------------------------------------------------------- |
+| Entry made by mistake                          | `VOID` it; a void always takes back the whole document    |
+| One item of a sale was wrong                   | `VOID` the sale and record it again, correctly            |
+| PIX that never arrived                         | `VOID` the sale and record it again with no payment       |
+| Restock with wrong data                        | `VOID` it + new `RESTOCK` with the original `occurred_at` |
+| Entry recorded late                            | Past `occurred_at`, `recorded_at` = now                   |
+| Voiding a sale with returns or credit payments | Rejected; void those first                                |
+| Voiding the same thing twice                   | Rejected: a document is voided or it is not               |
+| Voiding a void                                 | Rejected; enter the original again instead                |
