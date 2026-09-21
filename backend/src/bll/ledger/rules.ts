@@ -109,7 +109,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
     },
     RETURN: {
         checks: [],
-        contextChecks: [],
+        contextChecks: ["targetNotVoided"],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -124,7 +124,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             amount: { presence: "required", sign: "nonPositive" },
             totalCost: { presence: "forbidden", sign: "any" },
         },
-        payments: { minimum: 0, sign: "negative", link: "optional" },
+        // A refund is money moving now, not a payment being taken back
+        payments: { minimum: 0, sign: "negative", link: "forbidden" },
     },
     PAYMENT: {
         checks: [],
@@ -161,7 +162,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         checks: [],
         contextChecks: [],
         salesman: "active",
-        products: "active",
+        // Leftovers of a product that is no longer sold still have to be cleared
+        products: "exists",
         linkedDocument: "forbidden",
         linkedTypes: null,
         lines: {
@@ -478,6 +480,7 @@ function checkLines(doc: NewLedgerDocument, spec: LineSpec | null): void {
     }
 
     for (const line of doc.lines) {
+        checkBelongs("Line", line.id, line.documentId, doc.id)
         checkNumber("Line quantity", line.quantity, spec.quantity)
         checkLink("linked line", line.id, line.linkedLineId, spec.link, doc.type)
 
@@ -506,11 +509,21 @@ function checkPayments(doc: NewLedgerDocument, spec: PaymentSpec | null): void {
     }
 
     for (const payment of doc.payments) {
+        checkBelongs("Payment", payment.id, payment.documentId, doc.id)
         if (!(paymentMethodValues as readonly string[]).includes(payment.method)) {
             throw new RuleViolationError(`Unknown payment method: ${payment.method}`)
         }
         checkNumber("Payment amount", payment.amount, spec.sign)
         checkLink("linked payment", payment.id, payment.linkedPaymentId, spec.link, doc.type)
+    }
+}
+
+/**
+ * A row belongs to the document it is stored under.
+ */
+function checkBelongs(what: string, rowId: string, documentId: string, ownerId: string): void {
+    if (documentId !== ownerId) {
+        throw new RuleViolationError(`${what} ${rowId} belongs to ${documentId}, not ${ownerId}`)
     }
 }
 
