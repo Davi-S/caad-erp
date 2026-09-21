@@ -65,12 +65,16 @@ interface PaymentSpec {
 interface DocumentSpec {
     /** Rules of this type that are code rather than a table entry; see `CHECKS`. */
     checks: CheckName[]
+    /** The same, for rules that need what the document points at; see `CONTEXT_CHECKS`. */
+    contextChecks: ContextCheckName[]
     /** The salesman who performed it. */
     salesman: Reference
     /** The products its lines move: reversals may touch deactivated ones. */
     products: Reference
     /** `linked_document_id`: set exactly for the types that reverse or settle another. */
     linkedDocument: Requirement
+    /** Which types it may link to; `null` when it links to none. */
+    linkedTypes: DocumentType[] | null
     /** `null` when the type has no lines at all. */
     lines: LineSpec | null
     /** `null` when the type has no payments at all. */
@@ -86,9 +90,11 @@ interface DocumentSpec {
 const SPECS: Record<DocumentType, DocumentSpec> = {
     SALE: {
         checks: ["amountMatchesLine"],
+        contextChecks: [],
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
+        linkedTypes: null,
         lines: {
             minimum: 1,
             quantity: "negative",
@@ -103,9 +109,11 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
     },
     RETURN: {
         checks: [],
+        contextChecks: [],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
+        linkedTypes: ["SALE"],
         lines: {
             minimum: 1,
             quantity: "positive",
@@ -118,19 +126,25 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         },
         payments: { minimum: 0, sign: "negative", link: "optional" },
     },
-    CREDIT_PAYMENT: {
+    PAYMENT: {
         checks: [],
+        // Money settled later: its direction follows the document it settles
+        contextChecks: ["paymentsMatchTargetDirection"],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
+        // Anything that moves money can be settled later
+        linkedTypes: ["SALE", "RESTOCK", "RETURN"],
         lines: null,
-        payments: { minimum: 1, sign: "positive", link: "forbidden" },
+        payments: { minimum: 1, sign: "nonZero", link: "forbidden" },
     },
     RESTOCK: {
-        checks: ["costEqualsPayments"],
+        checks: [],
+        contextChecks: [],
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
+        linkedTypes: null,
         lines: {
             minimum: 1,
             quantity: "positive",
@@ -145,9 +159,11 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
     },
     WRITE_OFF: {
         checks: [],
+        contextChecks: [],
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
+        linkedTypes: null,
         lines: {
             minimum: 1,
             quantity: "negative",
@@ -161,10 +177,14 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         payments: null,
     },
     VOID: {
-        checks: [],
+        checks: ["reversesSomething"],
+        contextChecks: [],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
+        // Anything but another void: an unwanted void is undone by recording the
+        // original again
+        linkedTypes: ["SALE", "RETURN", "PAYMENT", "RESTOCK", "WRITE_OFF"],
         lines: {
             minimum: 0,
             quantity: "nonZero",
@@ -186,16 +206,11 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
  */
 const CHECKS = {
     /**
-     * What goods cost is what was paid for them: a restock's payments cover its
-     * lines exactly, so goods that came in free have no payments.
+     * A correction that corrects nothing is not a correction.
      */
-    costEqualsPayments(doc: NewLedgerDocument): void {
-        const cost = doc.lines.reduce((sum, line) => sum + (line.totalCost ?? 0), 0)
-        const paid = -doc.payments.reduce((sum, payment) => sum + payment.amount, 0)
-        if (cost !== paid) {
-            throw new RuleViolationError(
-                `A ${doc.type} must be paid in full: cost ${cost}, paid ${paid}`,
-            )
+    reversesSomething(doc: NewLedgerDocument): void {
+        if (doc.lines.length === 0 && doc.payments.length === 0) {
+            throw new RuleViolationError(`A ${doc.type} must reverse at least one line or payment`)
         }
     },
 
@@ -217,6 +232,29 @@ const CHECKS = {
 }
 
 type CheckName = keyof typeof CHECKS
+
+/**
+ * The rules that need what the document points at. A type applies the ones its
+ * spec names.
+ */
+const CONTEXT_CHECKS = {
+    /**
+     * Money settled later moves the same way as the document it settles: into the
+     * till for a sale, out of it for a restock or a refund.
+     */
+    paymentsMatchTargetDirection(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+        const expected = SPECS[target.type].payments?.sign
+        if (!expected) {
+            throw new RuleViolationError(`A ${target.type} takes no payments`)
+        }
+        for (const payment of doc.payments) {
+            checkNumber(`Payment against a ${target.type}`, payment.amount, expected)
+        }
+    },
+}
+
+type ContextCheckName = keyof typeof CONTEXT_CHECKS
 
 /**
  * Checks a document against the shape of its type.
@@ -256,8 +294,16 @@ export function validateReferences(references: DocumentReferences, context: Ledg
     for (const productId of references.productIds) {
         checkProduct(productId, context, spec.products)
     }
-    if (references.linkedDocumentId && !context.linked.getDocument(references.linkedDocumentId)) {
-        throw new NotFoundError(`Unknown document: ${references.linkedDocumentId}`)
+    if (references.linkedDocumentId) {
+        const target = context.linked.getDocument(references.linkedDocumentId)
+        if (!target) {
+            throw new NotFoundError(`Unknown document: ${references.linkedDocumentId}`)
+        }
+        if (spec.linkedTypes && !spec.linkedTypes.includes(target.type)) {
+            throw new RuleViolationError(
+                `A ${references.type} cannot be linked to a ${target.type}`,
+            )
+        }
     }
 }
 
@@ -280,6 +326,10 @@ export function validateInContext(doc: NewLedgerDocument, context: LedgerContext
         },
         context,
     )
+
+    for (const check of SPECS[doc.type].contextChecks) {
+        CONTEXT_CHECKS[check](doc, context)
+    }
 }
 
 function checkSalesman(salesmanId: string, context: LedgerContext, reference: Reference): void {

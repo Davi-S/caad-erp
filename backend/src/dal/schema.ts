@@ -13,7 +13,7 @@ import { integer, sqliteTable, text, type AnySQLiteColumn } from "drizzle-orm/sq
 export const documentTypeValues = [
     "SALE",
     "RETURN",
-    "CREDIT_PAYMENT",
+    "PAYMENT",
     "RESTOCK",
     "WRITE_OFF",
     "VOID",

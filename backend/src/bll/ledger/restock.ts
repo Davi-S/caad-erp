@@ -22,8 +22,9 @@ import { z } from "zod"
  * Input for recording a restock.
  *
  * `totalCost` is what the line's units cost together, not per unit, and 0 records
- * goods that came in free. The payments must add up to the total cost, so they
- * are left out only when nothing was paid.
+ * goods that came in free. Payments are what was handed over now: none, part or
+ * all of the cost. What is still owed is settled later with a `PAYMENT`, and the
+ * shortfall is reported until then.
  */
 export const restockSchema = z.object({
     ...documentFields,
@@ -51,8 +52,7 @@ export type RestockCommand = z.input<typeof restockSchema>
  * @throws {@link InvalidInputError} If the input is not valid.
  * @throws {@link NotFoundError} If the salesman or a product does not exist.
  * @throws {@link InactiveError} If the salesman or a product is inactive.
- * @throws {@link RuleViolationError} If the payments do not add up to the cost,
- * or the document breaks another rule.
+ * @throws {@link RuleViolationError} If the document breaks a rule.
  */
 export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
     const input = validate(restockSchema, command)
