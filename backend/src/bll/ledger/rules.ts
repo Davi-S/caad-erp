@@ -129,7 +129,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
     PAYMENT: {
         checks: [],
         // Money settled later: its direction follows the document it settles
-        contextChecks: ["paymentsMatchTargetDirection"],
+        contextChecks: ["targetNotVoided", "paymentsMatchTargetDirection"],
         salesman: "active",
         products: "any",
         linkedDocument: "required",
@@ -287,22 +287,57 @@ const CONTEXT_CHECKS = {
     },
 
     /**
+     * Nothing is settled against an entry that never happened.
+     */
+    targetNotVoided(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+        const voided = context.linked
+            .linkedDocuments(target.id)
+            .some((other) => other.type === "VOID")
+        if (voided) {
+            throw new RuleViolationError(`${target.id} is voided`)
+        }
+    },
+
+    /**
      * Money settled later moves the same way as the document it settles: into the
      * till for a sale, out of it for a restock or a refund.
      */
     paymentsMatchTargetDirection(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
-        const expected = SPECS[target.type].payments?.sign
-        if (!expected) {
+        const direction = paymentDirection(target.type)
+        if (direction === 0) {
             throw new RuleViolationError(`A ${target.type} takes no payments`)
         }
         for (const payment of doc.payments) {
-            checkNumber(`Payment against a ${target.type}`, payment.amount, expected)
+            if (Math.sign(payment.amount) !== direction) {
+                throw new RuleViolationError(
+                    `Money settling a ${target.type} moves ${direction > 0 ? "in" : "out"}, not the other way`,
+                )
+            }
         }
     },
 }
 
 type ContextCheckName = keyof typeof CONTEXT_CHECKS
+
+/**
+ * Which way money moves on a document of this type: `1` into the till, `-1` out
+ * of it.
+ *
+ * Read from the same table the rules read, so a command building a payment and
+ * the rule checking it cannot disagree.
+ *
+ * @param type - The type whose money direction is wanted.
+ * @returns The direction, or `0` when the type takes no payments.
+ */
+export function paymentDirection(type: DocumentType): number {
+    const sign = SPECS[type].payments?.sign
+    if (sign === "positive") {
+        return 1
+    }
+    return sign === "negative" ? -1 : 0
+}
 
 /**
  * Checks a document against the shape of its type.
