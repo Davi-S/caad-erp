@@ -40,7 +40,7 @@ documents                                                 one row per business e
   occurred_at         INTEGER  NOT NULL                   when it happened
   recorded_at         INTEGER  NOT NULL                   when it was entered, never backdated
   performed_by        TEXT     NOT NULL  FK → salesmen    who performed it
-  linked_document_id  TEXT     NULL      FK → documents   RETURN → SALE, PAYMENT → SALE/RESTOCK/RETURN, VOID → target
+  linked_document_id  TEXT     NULL      FK → documents   RETURN → SALE, PAYMENT → SALE/RESTOCK/RETURN/WRITE_OFF, VOID → target
   notes               TEXT     NULL
 
 document_lines                                            goods: what moved
@@ -65,14 +65,14 @@ payments                                                  money: what moved, and
 
 ### Document shapes
 
-| Type        | Links to                  | Lines                                               | Payments                                                    |
-| ----------- | ------------------------- | --------------------------------------------------- | ----------------------------------------------------------- |
-| `SALE`      | —                         | ≥1: qty −, `unit_price`, discounts, `amount` +      | 0..n, +                                                     |
-| `RETURN`    | a SALE                    | ≥1: qty +, `amount` −, `linked_line_id` → sale line | 0..n, − (refunds)                                           |
-| `PAYMENT`   | a SALE, RESTOCK or RETURN | none                                                | ≥1, signed like the target's payments                       |
-| `RESTOCK`   | —                         | ≥1: qty +, `total_cost`                             | 0..n, −                                                     |
-| `WRITE_OFF` | —                         | ≥1: qty −                                           | none                                                        |
-| `VOID`      | any non-VOID              | every line negated, `linked_line_id` → target line  | every payment negated, `linked_payment_id` → target payment |
+| Type        | Links to                    | Lines                                               | Payments                                                    |
+| ----------- | --------------------------- | --------------------------------------------------- | ----------------------------------------------------------- |
+| `SALE`      | —                           | ≥1: qty −, `unit_price`, discounts, `amount` +      | 0..n, +                                                     |
+| `RETURN`    | a SALE                      | ≥1: qty +, `amount` −, `linked_line_id` → sale line | 0..n, − (refunds)                                           |
+| `PAYMENT`   | a document that moved money | none                                                | ≥1, signed like the target's payments                       |
+| `RESTOCK`   | —                           | ≥1: qty +, `total_cost`                             | 0..n, −                                                     |
+| `WRITE_OFF` | —                           | ≥1: qty −                                           | 0..n, + (received for the goods)                            |
+| `VOID`      | any non-VOID                | every line negated, `linked_line_id` → target line  | every payment negated, `linked_payment_id` → target payment |
 
 Line columns not listed for a type are NULL. Reversal lines (`RETURN`, `VOID`)
 store only `quantity` and, when reversing a sale line, `amount`; price,
@@ -111,6 +111,7 @@ discounts and cost are read from the original line.
 | Paying a supplier later             | `PAYMENT` → restock; the shortfall is reported until then            |
 | Donation or found units             | `RESTOCK` with `total_cost = 0` and no payments                      |
 | Loss, damage, expiry, missing units | `WRITE_OFF`                                                          |
+| Money received for goods that left  | `WRITE_OFF` with payments, or a `PAYMENT` → write-off later          |
 | Stock count differs from the system | `WRITE_OFF` (fewer) or zero-cost `RESTOCK` (more) for the difference |
 
 ### Corrections

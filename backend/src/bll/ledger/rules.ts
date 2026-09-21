@@ -135,7 +135,7 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
         products: "any",
         linkedDocument: "required",
         // Anything that moves money can be settled later
-        linkedTypes: ["SALE", "RESTOCK", "RETURN"],
+        linkedTypes: ["SALE", "RESTOCK", "RETURN", "WRITE_OFF"],
         lines: null,
         payments: { minimum: 1, sign: "nonZero", link: "forbidden" },
     },
@@ -176,7 +176,9 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             amount: { presence: "forbidden", sign: "any" },
             totalCost: { presence: "forbidden", sign: "any" },
         },
-        payments: null,
+        // Goods can leave for something: a supplier taking back what spoiled, an
+        // insurer paying for what was damaged, a customer paying for what they broke
+        payments: { minimum: 0, sign: "positive", link: "forbidden" },
     },
     VOID: {
         checks: ["happenedWhenRecorded"],
