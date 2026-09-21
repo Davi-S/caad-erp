@@ -89,7 +89,7 @@ export const documents = sqliteTable("documents", {
     type: text("type", { enum: documentTypeValues }).notNull(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
     recordedAt: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
-    salesmanId: text("salesman_id")
+    performedBy: text("performed_by")
         .notNull()
         .references(() => salesmen.id),
     linkedDocumentId: text("linked_document_id").references((): AnySQLiteColumn => documents.id),
@@ -110,10 +110,10 @@ export const documentLines = sqliteTable("document_lines", {
     linkedLineId: text("linked_line_id").references((): AnySQLiteColumn => documentLines.id),
     quantity: integer("quantity").notNull(),
     unitPrice: integer("unit_price"),
-    itemDiscount: integer("item_discount"),
-    globalDiscount: integer("global_discount"),
+    lineDiscount: integer("line_discount"),
+    documentDiscountShare: integer("document_discount_share"),
     amount: integer("amount"),
-    cost: integer("cost"),
+    totalCost: integer("total_cost"),
 })
 
 /**

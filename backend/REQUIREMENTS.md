@@ -39,7 +39,7 @@ documents                                                 one row per business e
   type                TEXT     NOT NULL                   SALE | RETURN | CREDIT_PAYMENT | RESTOCK | WRITE_OFF | VOID
   occurred_at         INTEGER  NOT NULL                   when it happened
   recorded_at         INTEGER  NOT NULL                   when it was entered, never backdated
-  salesman_id         TEXT     NOT NULL  FK → salesmen    who performed it
+  performed_by        TEXT     NOT NULL  FK → salesmen    who performed it
   linked_document_id  TEXT     NULL      FK → documents   RETURN/CREDIT_PAYMENT → SALE, VOID → target
   notes               TEXT     NULL
 
@@ -50,10 +50,10 @@ document_lines                                            goods: what moved
   linked_line_id      TEXT     NULL      FK → document_lines   the line this one reverses
   quantity            INTEGER  NOT NULL                   signed, + into stock
   unit_price          INTEGER  NULL                       SALE only: catalog price snapshot
-  item_discount       INTEGER  NULL                       SALE only
-  global_discount     INTEGER  NULL                       SALE only: share of the sale's global discount
+  line_discount           INTEGER  NULL                   SALE only: discount given on this line
+  document_discount_share INTEGER  NULL                   SALE only: this line's share of the sale-wide discount
   amount              INTEGER  NULL                       sale-related lines only: signed, net sales value
-  cost                INTEGER  NULL                       RESTOCK only: line purchase cost (0 = free)
+  total_cost          INTEGER  NULL                   RESTOCK only: what the line cost together (0 = free)
 
 payments                                                  money: what moved, and how
   id                  TEXT     PK
@@ -70,7 +70,7 @@ payments                                                  money: what moved, and
 | `SALE`           | —            | ≥1: qty −, `unit_price`, discounts, `amount` +      | 0..n, +                                                |
 | `RETURN`         | a SALE       | ≥1: qty +, `amount` −, `linked_line_id` → sale line | 0..n, − (refunds)                                      |
 | `CREDIT_PAYMENT` | a SALE       | none                                                | ≥1, +                                                  |
-| `RESTOCK`        | —            | ≥1: qty +, `cost`                                   | 0..n, −                                                |
+| `RESTOCK`        | —            | ≥1: qty +, `total_cost`                             | 0..n, −                                                |
 | `WRITE_OFF`      | —            | ≥1: qty −                                           | none                                                   |
 | `VOID`           | any non-VOID | negated lines, `linked_line_id` → target line       | negated payments, `linked_payment_id` → target payment |
 
@@ -86,7 +86,7 @@ discounts and cost are read from the original line.
 | -------------------------------------------------- | ------------------------------------------------------------------------- |
 | Normal sale (one or more items)                    | `SALE` with one line per item and its payments                            |
 | Split payment (PIX + cash)                         | `SALE` with one payment per method                                        |
-| Item or cart discount                              | `item_discount` / `global_discount` on the lines                          |
+| Line or sale-wide discount                         | `line_discount` / `document_discount_share` on the lines                  |
 | Giveaway                                           | `SALE` with 100% discount and no payments                                 |
 | Credit sale                                        | `SALE` with no payments; the salesman owes the balance (#165)             |
 | Down payment                                       | `SALE` with payments below its total                                      |
@@ -107,8 +107,8 @@ discounts and cost are read from the original line.
 
 | Situation                           | How it is recorded                                                   |
 | ----------------------------------- | -------------------------------------------------------------------- |
-| Purchase                            | `RESTOCK` with `cost` per line and payments totalling the cost       |
-| Donation or found units             | `RESTOCK` with `cost = 0` and no payments                            |
+| Purchase                            | `RESTOCK` with `total_cost` per line and payments totalling it       |
+| Donation or found units             | `RESTOCK` with `total_cost = 0` and no payments                      |
 | Loss, damage, expiry, missing units | `WRITE_OFF`                                                          |
 | Stock count differs from the system | `WRITE_OFF` (fewer) or zero-cost `RESTOCK` (more) for the difference |
 

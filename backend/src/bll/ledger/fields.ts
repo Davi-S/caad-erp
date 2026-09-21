@@ -15,7 +15,7 @@ import { z } from "zod"
  * earlier. `notes` defaults to none, like the column it is stored in.
  */
 export const documentFields = {
-    salesmanId: z.string().trim().min(1, "Salesman is required"),
+    performedBy: z.string().trim().min(1, "Salesman is required"),
     occurredAt: z.date().optional(),
     notes: z.string().trim().min(1, "Notes cannot be blank").nullable().default(null),
 }

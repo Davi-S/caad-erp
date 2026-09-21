@@ -39,7 +39,7 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument
 
     const references = {
         type: "WRITE_OFF",
-        salesmanId: input.salesmanId,
+        performedBy: input.performedBy,
         productIds: input.items.map((item) => item.productId),
         linkedDocumentId: null,
     } as const
@@ -52,7 +52,7 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument
             type: "WRITE_OFF",
             occurredAt: input.occurredAt ?? recordedAt,
             recordedAt,
-            salesmanId: input.salesmanId,
+            performedBy: input.performedBy,
             linkedDocumentId: null,
             notes: input.notes,
             lines: input.items.map((item) => ({
@@ -63,10 +63,10 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument
                 // Stock leaves: quantities are stored negative
                 quantity: -item.quantity,
                 unitPrice: null,
-                itemDiscount: null,
-                globalDiscount: null,
+                lineDiscount: null,
+                documentDiscountShare: null,
                 amount: null,
-                cost: null,
+                totalCost: null,
             })),
             payments: [],
         }

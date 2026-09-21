@@ -14,7 +14,7 @@ import type { DB, DocumentType, LedgerIndex, ProductRow, SalesmanRow } from "../
  */
 export interface DocumentReferences {
     type: DocumentType
-    salesmanId: string
+    performedBy: string
     productIds: string[]
     linkedDocumentId: string | null
 }
@@ -51,7 +51,7 @@ export function loadContext(db: DB, references: DocumentReferences): LedgerConte
 
     return {
         products,
-        salesman: dal.getSalesman(db, references.salesmanId),
+        salesman: dal.getSalesman(db, references.performedBy),
         linked: references.linkedDocumentId
             ? dal.LedgerIndex.loadLinkedTo(db, references.linkedDocumentId)
             : new dal.LedgerIndex(),

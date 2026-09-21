@@ -49,10 +49,10 @@ interface LineSpec {
     /** `linked_line_id`: reversal lines point at the line they reverse. */
     link: Requirement
     unitPrice: ColumnSpec
-    itemDiscount: ColumnSpec
-    globalDiscount: ColumnSpec
+    lineDiscount: ColumnSpec
+    documentDiscountShare: ColumnSpec
     amount: ColumnSpec
-    cost: ColumnSpec
+    totalCost: ColumnSpec
 }
 
 interface PaymentSpec {
@@ -94,10 +94,10 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "negative",
             link: "forbidden",
             unitPrice: { presence: "required", sign: "nonNegative" },
-            itemDiscount: { presence: "required", sign: "nonNegative" },
-            globalDiscount: { presence: "required", sign: "nonNegative" },
+            lineDiscount: { presence: "required", sign: "nonNegative" },
+            documentDiscountShare: { presence: "required", sign: "nonNegative" },
             amount: { presence: "required", sign: "nonNegative" },
-            cost: { presence: "forbidden", sign: "any" },
+            totalCost: { presence: "forbidden", sign: "any" },
         },
         payments: { minimum: 0, sign: "positive", link: "forbidden" },
     },
@@ -111,10 +111,10 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "positive",
             link: "required",
             unitPrice: { presence: "forbidden", sign: "any" },
-            itemDiscount: { presence: "forbidden", sign: "any" },
-            globalDiscount: { presence: "forbidden", sign: "any" },
+            lineDiscount: { presence: "forbidden", sign: "any" },
+            documentDiscountShare: { presence: "forbidden", sign: "any" },
             amount: { presence: "required", sign: "nonPositive" },
-            cost: { presence: "forbidden", sign: "any" },
+            totalCost: { presence: "forbidden", sign: "any" },
         },
         payments: { minimum: 0, sign: "negative", link: "optional" },
     },
@@ -136,10 +136,10 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "positive",
             link: "forbidden",
             unitPrice: { presence: "forbidden", sign: "any" },
-            itemDiscount: { presence: "forbidden", sign: "any" },
-            globalDiscount: { presence: "forbidden", sign: "any" },
+            lineDiscount: { presence: "forbidden", sign: "any" },
+            documentDiscountShare: { presence: "forbidden", sign: "any" },
             amount: { presence: "forbidden", sign: "any" },
-            cost: { presence: "required", sign: "nonNegative" },
+            totalCost: { presence: "required", sign: "nonNegative" },
         },
         payments: { minimum: 0, sign: "negative", link: "forbidden" },
     },
@@ -153,10 +153,10 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "negative",
             link: "forbidden",
             unitPrice: { presence: "forbidden", sign: "any" },
-            itemDiscount: { presence: "forbidden", sign: "any" },
-            globalDiscount: { presence: "forbidden", sign: "any" },
+            lineDiscount: { presence: "forbidden", sign: "any" },
+            documentDiscountShare: { presence: "forbidden", sign: "any" },
             amount: { presence: "forbidden", sign: "any" },
-            cost: { presence: "forbidden", sign: "any" },
+            totalCost: { presence: "forbidden", sign: "any" },
         },
         payments: null,
     },
@@ -170,11 +170,11 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "nonZero",
             link: "required",
             unitPrice: { presence: "forbidden", sign: "any" },
-            itemDiscount: { presence: "forbidden", sign: "any" },
-            globalDiscount: { presence: "forbidden", sign: "any" },
+            lineDiscount: { presence: "forbidden", sign: "any" },
+            documentDiscountShare: { presence: "forbidden", sign: "any" },
             // Filled only when reversing a sale line, which the original says
             amount: { presence: "optional", sign: "any" },
-            cost: { presence: "forbidden", sign: "any" },
+            totalCost: { presence: "forbidden", sign: "any" },
         },
         payments: { minimum: 0, sign: "nonZero", link: "required" },
     },
@@ -190,7 +190,7 @@ const CHECKS = {
      * lines exactly, so goods that came in free have no payments.
      */
     costEqualsPayments(doc: NewLedgerDocument): void {
-        const cost = doc.lines.reduce((sum, line) => sum + (line.cost ?? 0), 0)
+        const cost = doc.lines.reduce((sum, line) => sum + (line.totalCost ?? 0), 0)
         const paid = -doc.payments.reduce((sum, payment) => sum + payment.amount, 0)
         if (cost !== paid) {
             throw new RuleViolationError(
@@ -206,7 +206,7 @@ const CHECKS = {
     amountMatchesLine(doc: NewLedgerDocument): void {
         for (const line of doc.lines) {
             const gross = Math.abs(line.quantity) * (line.unitPrice ?? 0)
-            const expected = gross - (line.itemDiscount ?? 0) - (line.globalDiscount ?? 0)
+            const expected = gross - (line.lineDiscount ?? 0) - (line.documentDiscountShare ?? 0)
             if (line.amount !== expected) {
                 throw new RuleViolationError(
                     `Line amount ${line.amount} does not match price and discounts (expected ${expected})`,
@@ -252,7 +252,7 @@ export function validateDocument(doc: NewLedgerDocument): void {
 export function validateReferences(references: DocumentReferences, context: LedgerContext): void {
     const spec = SPECS[references.type]
 
-    checkSalesman(references.salesmanId, context, spec.salesman)
+    checkSalesman(references.performedBy, context, spec.salesman)
     for (const productId of references.productIds) {
         checkProduct(productId, context, spec.products)
     }
@@ -274,7 +274,7 @@ export function validateInContext(doc: NewLedgerDocument, context: LedgerContext
     validateReferences(
         {
             type: doc.type,
-            salesmanId: doc.salesmanId,
+            performedBy: doc.performedBy,
             productIds: doc.lines.map((line) => line.productId),
             linkedDocumentId: doc.linkedDocumentId,
         },
@@ -323,10 +323,15 @@ function checkLines(doc: NewLedgerDocument, spec: LineSpec | null): void {
         checkLink("linked line", line.id, line.linkedLineId, spec.link, doc.type)
 
         checkColumn("unit price", line.unitPrice, spec.unitPrice, doc.type)
-        checkColumn("item discount", line.itemDiscount, spec.itemDiscount, doc.type)
-        checkColumn("global discount", line.globalDiscount, spec.globalDiscount, doc.type)
+        checkColumn("line discount", line.lineDiscount, spec.lineDiscount, doc.type)
+        checkColumn(
+            "document discount share",
+            line.documentDiscountShare,
+            spec.documentDiscountShare,
+            doc.type,
+        )
         checkColumn("amount", line.amount, spec.amount, doc.type)
-        checkColumn("cost", line.cost, spec.cost, doc.type)
+        checkColumn("total cost", line.totalCost, spec.totalCost, doc.type)
     }
 }
 

@@ -21,8 +21,9 @@ import { z } from "zod"
 /**
  * Input for recording a sale.
  *
- * `itemDiscount` comes off that line; `globalDiscount` comes off the whole cart
- * and is split across the lines in proportion to what they cost.
+ * `lineDiscount` comes off that line. `documentDiscount` comes off the whole
+ * sale and is split across the lines in proportion to what they cost, which is
+ * what each line stores as its `documentDiscountShare`.
  */
 export const saleSchema = z.object({
     ...documentFields,
@@ -31,14 +32,14 @@ export const saleSchema = z.object({
             z.object({
                 productId: productIdField,
                 quantity: quantityField,
-                itemDiscount: z
+                lineDiscount: z
                     .int("Discount must be a whole number of cents")
                     .nonnegative("Discount cannot be negative")
                     .default(0),
             }),
         )
         .min(1, "At least one item is required"),
-    globalDiscount: z
+    documentDiscount: z
         .int("Discount must be a whole number of cents")
         .nonnegative("Discount cannot be negative")
         .default(0),
@@ -63,7 +64,7 @@ export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
 
     const references = {
         type: "SALE",
-        salesmanId: input.salesmanId,
+        performedBy: input.performedBy,
         productIds: input.items.map((item) => item.productId),
         linkedDocumentId: null,
     } as const
@@ -78,7 +79,7 @@ export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
             return {
                 ...item,
                 unitPrice,
-                subtotal: item.quantity * unitPrice - item.itemDiscount,
+                subtotal: item.quantity * unitPrice - item.lineDiscount,
             }
         })
 
@@ -87,7 +88,7 @@ export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
         // reject.
         const shares = distribute(
             priced.map((item) => item.subtotal),
-            input.globalDiscount,
+            input.documentDiscount,
         )
 
         const lines: DocumentLineRow[] = priced.map((item, position) => ({
@@ -98,10 +99,10 @@ export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
             // Stock leaves: quantities are stored negative
             quantity: -item.quantity,
             unitPrice: item.unitPrice,
-            itemDiscount: item.itemDiscount,
-            globalDiscount: shares[position],
+            lineDiscount: item.lineDiscount,
+            documentDiscountShare: shares[position],
             amount: item.subtotal - shares[position],
-            cost: null,
+            totalCost: null,
         }))
 
         const doc: NewLedgerDocument = {
@@ -109,7 +110,7 @@ export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
             type: "SALE",
             occurredAt: input.occurredAt ?? recordedAt,
             recordedAt,
-            salesmanId: input.salesmanId,
+            performedBy: input.performedBy,
             linkedDocumentId: null,
             notes: input.notes,
             lines,

@@ -54,7 +54,7 @@ const SCHEMA_SQL = `
         type                TEXT     NOT NULL,
         occurred_at         INTEGER  NOT NULL,
         recorded_at         INTEGER  NOT NULL,
-        salesman_id         TEXT     NOT NULL REFERENCES salesmen (id),
+        performed_by        TEXT     NOT NULL REFERENCES salesmen (id),
         linked_document_id  TEXT              REFERENCES documents (id),
         notes               TEXT
     ) STRICT;
@@ -66,10 +66,10 @@ const SCHEMA_SQL = `
         linked_line_id      TEXT              REFERENCES document_lines (id),
         quantity            INTEGER  NOT NULL,
         unit_price          INTEGER,
-        item_discount       INTEGER,
-        global_discount     INTEGER,
+        line_discount       INTEGER,
+        document_discount_share     INTEGER,
         amount              INTEGER,
-        cost                INTEGER
+        total_cost          INTEGER
     ) STRICT;
 
     CREATE TABLE payments (

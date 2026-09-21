@@ -21,7 +21,7 @@ import { z } from "zod"
 /**
  * Input for recording a restock.
  *
- * `cost` is what the line's units cost in total, not per unit, and 0 records
+ * `totalCost` is what the line's units cost together, not per unit, and 0 records
  * goods that came in free. The payments must add up to the total cost, so they
  * are left out only when nothing was paid.
  */
@@ -32,7 +32,7 @@ export const restockSchema = z.object({
             z.object({
                 productId: productIdField,
                 quantity: quantityField,
-                cost: z
+                totalCost: z
                     .int("Cost must be a whole number of cents")
                     .nonnegative("Cost cannot be negative"),
             }),
@@ -59,7 +59,7 @@ export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
 
     const references = {
         type: "RESTOCK",
-        salesmanId: input.salesmanId,
+        performedBy: input.performedBy,
         productIds: input.items.map((item) => item.productId),
         linkedDocumentId: null,
     } as const
@@ -72,7 +72,7 @@ export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
             type: "RESTOCK",
             occurredAt: input.occurredAt ?? recordedAt,
             recordedAt,
-            salesmanId: input.salesmanId,
+            performedBy: input.performedBy,
             linkedDocumentId: null,
             notes: input.notes,
             lines: input.items.map((item) => ({
@@ -83,10 +83,10 @@ export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
                 // Stock arrives: quantities are stored positive
                 quantity: item.quantity,
                 unitPrice: null,
-                itemDiscount: null,
-                globalDiscount: null,
+                lineDiscount: null,
+                documentDiscountShare: null,
                 amount: null,
-                cost: item.cost,
+                totalCost: item.totalCost,
             })),
             payments: input.payments.map((payment) => ({
                 id: newId(),
