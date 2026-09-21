@@ -14,21 +14,22 @@
  * far, so the rounding error never accumulates and the last part absorbs what is
  * left.
  *
- * @param weights - What each part is proportional to (line subtotals), all >= 0.
- * @param total - Amount to split, >= 0.
+ * It splits whatever it is given, including a total larger than the weights or a
+ * negative weight; the result is then proportional but not meaningful, and it is
+ * up to the caller's rules to reject it.
+ *
+ * @param weights - What each part is proportional to (line subtotals).
+ * @param total - Amount to split.
  * @returns One amount per weight, summing to `total`.
  */
 export function distribute(weights: number[], total: number): number[] {
-    if (total < 0 || weights.some((weight) => weight < 0)) {
-        throw new RangeError("Amounts to distribute cannot be negative")
-    }
-
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
-    if (total > totalWeight) {
-        throw new RangeError("Amount to distribute cannot exceed the total weight")
-    }
-    if (total === 0 || totalWeight === 0) {
+    if (total === 0) {
         return weights.map(() => 0)
+    }
+    if (totalWeight === 0) {
+        // Nothing to be proportional to: the first part takes it all
+        return weights.map((_, position) => (position === 0 ? total : 0))
     }
 
     const parts: number[] = []

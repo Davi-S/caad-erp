@@ -82,17 +82,13 @@ export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
             }
         })
 
-        // A discount larger than what is being sold cannot be split; the document
-        // is built with no split at all and the rules reject it
-        const total = priced.reduce((sum, item) => sum + item.subtotal, 0)
-        const splittable =
-            priced.every((item) => item.subtotal >= 0) && input.globalDiscount <= total
-        const shares = splittable
-            ? distribute(
-                  priced.map((item) => item.subtotal),
-                  input.globalDiscount,
-              )
-            : priced.map(() => input.globalDiscount)
+        // Split to the cent, so the parts add up to the discount given. A discount
+        // larger than what is being sold leaves a line below zero, which the rules
+        // reject.
+        const shares = distribute(
+            priced.map((item) => item.subtotal),
+            input.globalDiscount,
+        )
 
         const lines: DocumentLineRow[] = priced.map((item, position) => ({
             id: newId(),

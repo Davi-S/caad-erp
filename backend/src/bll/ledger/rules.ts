@@ -49,7 +49,8 @@ interface LineSpec {
     /** `linked_line_id`: reversal lines point at the line they reverse. */
     link: Requirement
     unitPrice: ColumnSpec
-    discounts: ColumnSpec
+    itemDiscount: ColumnSpec
+    globalDiscount: ColumnSpec
     amount: ColumnSpec
     cost: ColumnSpec
 }
@@ -84,7 +85,7 @@ interface DocumentSpec {
  */
 const SPECS: Record<DocumentType, DocumentSpec> = {
     SALE: {
-        checks: ["discountsWithinGross", "amountMatchesLine"],
+        checks: ["amountMatchesLine"],
         salesman: "active",
         products: "active",
         linkedDocument: "forbidden",
@@ -93,9 +94,9 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "negative",
             link: "forbidden",
             unitPrice: { presence: "required", sign: "nonNegative" },
-            discounts: { presence: "required", sign: "nonNegative" },
-            // Never below zero, which `discountsWithinGross` says with the reason
-            amount: { presence: "required", sign: "any" },
+            itemDiscount: { presence: "required", sign: "nonNegative" },
+            globalDiscount: { presence: "required", sign: "nonNegative" },
+            amount: { presence: "required", sign: "nonNegative" },
             cost: { presence: "forbidden", sign: "any" },
         },
         payments: { minimum: 0, sign: "positive", link: "forbidden" },
@@ -110,7 +111,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "positive",
             link: "required",
             unitPrice: { presence: "forbidden", sign: "any" },
-            discounts: { presence: "forbidden", sign: "any" },
+            itemDiscount: { presence: "forbidden", sign: "any" },
+            globalDiscount: { presence: "forbidden", sign: "any" },
             amount: { presence: "required", sign: "nonPositive" },
             cost: { presence: "forbidden", sign: "any" },
         },
@@ -134,7 +136,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "positive",
             link: "forbidden",
             unitPrice: { presence: "forbidden", sign: "any" },
-            discounts: { presence: "forbidden", sign: "any" },
+            itemDiscount: { presence: "forbidden", sign: "any" },
+            globalDiscount: { presence: "forbidden", sign: "any" },
             amount: { presence: "forbidden", sign: "any" },
             cost: { presence: "required", sign: "nonNegative" },
         },
@@ -150,7 +153,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "negative",
             link: "forbidden",
             unitPrice: { presence: "forbidden", sign: "any" },
-            discounts: { presence: "forbidden", sign: "any" },
+            itemDiscount: { presence: "forbidden", sign: "any" },
+            globalDiscount: { presence: "forbidden", sign: "any" },
             amount: { presence: "forbidden", sign: "any" },
             cost: { presence: "forbidden", sign: "any" },
         },
@@ -166,7 +170,8 @@ const SPECS: Record<DocumentType, DocumentSpec> = {
             quantity: "nonZero",
             link: "required",
             unitPrice: { presence: "forbidden", sign: "any" },
-            discounts: { presence: "forbidden", sign: "any" },
+            itemDiscount: { presence: "forbidden", sign: "any" },
+            globalDiscount: { presence: "forbidden", sign: "any" },
             // Filled only when reversing a sale line, which the original says
             amount: { presence: "optional", sign: "any" },
             cost: { presence: "forbidden", sign: "any" },
@@ -191,22 +196,6 @@ const CHECKS = {
             throw new RuleViolationError(
                 `A ${doc.type} must be paid in full: cost ${cost}, paid ${paid}`,
             )
-        }
-    },
-
-    /**
-     * Nothing is sold for less than free: the discounts on a line cannot exceed
-     * what that line is worth at the catalog price.
-     */
-    discountsWithinGross(doc: NewLedgerDocument): void {
-        for (const line of doc.lines) {
-            const gross = Math.abs(line.quantity) * (line.unitPrice ?? 0)
-            const discount = (line.itemDiscount ?? 0) + (line.globalDiscount ?? 0)
-            if (discount > gross) {
-                throw new RuleViolationError(
-                    `Discounts of ${discount} are larger than the ${gross} being sold`,
-                )
-            }
         }
     },
 
@@ -334,8 +323,8 @@ function checkLines(doc: NewLedgerDocument, spec: LineSpec | null): void {
         checkLink("linked line", line.id, line.linkedLineId, spec.link, doc.type)
 
         checkColumn("unit price", line.unitPrice, spec.unitPrice, doc.type)
-        checkColumn("item discount", line.itemDiscount, spec.discounts, doc.type)
-        checkColumn("global discount", line.globalDiscount, spec.discounts, doc.type)
+        checkColumn("item discount", line.itemDiscount, spec.itemDiscount, doc.type)
+        checkColumn("global discount", line.globalDiscount, spec.globalDiscount, doc.type)
         checkColumn("amount", line.amount, spec.amount, doc.type)
         checkColumn("cost", line.cost, spec.cost, doc.type)
     }
