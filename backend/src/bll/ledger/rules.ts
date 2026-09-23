@@ -66,9 +66,19 @@ const CHECKS = {
     },
 
     /**
-     * Goods move against something agreed, and never more than was agreed. Every
-     * type that moves goods agrees them in the same document; delivering against
-     * an earlier agreement will widen this rule when a type does that.
+     * Every movement is covered by an agreement in the same document: same
+     * product, same direction, and no more units than were agreed. Not the other
+     * way round - goods agreed and not yet moved are a delivery still to come.
+     *
+     * Goods can move with nothing agreed at all; those shapes simply do not list
+     * this rule.
+     *
+     * It reads one document, so the agreement has to be in it. The deferred shapes
+     * agree goods now and move them in a later, linked document, and leave this
+     * rule out for that reason. A delivery type would have to match movements
+     * against the linked document's agreements and count what earlier deliveries
+     * already took, which needs the ledger around it: the rule then moves to
+     * `CONTEXT_CHECKS`.
      */
     movementsWithinAgreements(doc: NewLedgerDocument): void {
         for (const movement of doc.movements) {

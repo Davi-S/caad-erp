@@ -151,6 +151,7 @@ const MONEY_OUT_PAYMENTS: PaymentsShape = {
 const SHAPES = {
     moneyIn: { agreements: null, movements: null, payments: MONEY_IN_PAYMENTS, checks: [] },
 
+    // Note that some agreed items can be free, but the total cannot be free
     moneyInGoodsOut: {
         agreements: GOODS_OUT_AGREEMENTS,
         movements: GOODS_OUT_MOVEMENTS,
@@ -163,6 +164,7 @@ const SHAPES = {
         ],
     },
 
+    // Note that some agreed items can be free, but the total cannot be free
     moneyInGoodsDeferred: {
         agreements: GOODS_OUT_AGREEMENTS,
         movements: null,
