@@ -1,10 +1,10 @@
 /**
  * In-memory navigation over the ledger, or part of it.
  *
- * Indexes documents, lines and payments by ID and follows the link columns in
- * both directions (a row to what it links to, and a row to what links to it). It
- * only knows how rows point to each other, not what that means: rules and derived
- * values are the BLL's.
+ * Indexes documents, terms, movements and payments by ID and follows the link
+ * columns in both directions (a row to what it links to, and a row to what links
+ * to it). It only knows how rows point to each other, not what that means: rules
+ * and derived values are the BLL's.
  *
  * It is a snapshot: build one per operation and do not keep it, since it does
  * not follow later changes to the database. It can hold the whole ledger, only
@@ -15,17 +15,19 @@
 
 import type { DB } from "./client.js"
 import { listDocuments, listLinkedDocuments, type LedgerDocument } from "./documents.js"
-import type { DocumentLineRow, PaymentRow } from "./schema.js"
+import type { MovementRow, PaymentRow, TermsRow } from "./schema.js"
 
 export class LedgerIndex {
     /** Every document, in the order it was added (`sequence` order when loaded). */
     readonly documents: LedgerDocument[] = []
 
     private readonly docsById = new Map<string, LedgerDocument>()
-    private readonly linesById = new Map<string, DocumentLineRow>()
+    private readonly termsById = new Map<string, TermsRow>()
+    private readonly movementsById = new Map<string, MovementRow>()
     private readonly paymentsById = new Map<string, PaymentRow>()
     private readonly linkedDocs = new Map<string, LedgerDocument[]>()
-    private readonly lineReversers = new Map<string, DocumentLineRow[]>()
+    private readonly termsReversers = new Map<string, TermsRow[]>()
+    private readonly movementReversers = new Map<string, MovementRow[]>()
     private readonly paymentReversers = new Map<string, PaymentRow[]>()
 
     /**
@@ -60,10 +62,16 @@ export class LedgerIndex {
         if (doc.linkedDocumentId) {
             push(this.linkedDocs, doc.linkedDocumentId, doc)
         }
-        for (const line of doc.lines) {
-            this.linesById.set(line.id, line)
-            if (line.linkedLineId) {
-                push(this.lineReversers, line.linkedLineId, line)
+        for (const row of doc.terms) {
+            this.termsById.set(row.id, row)
+            if (row.linkedTermsId) {
+                push(this.termsReversers, row.linkedTermsId, row)
+            }
+        }
+        for (const movement of doc.movements) {
+            this.movementsById.set(movement.id, movement)
+            if (movement.linkedMovementId) {
+                push(this.movementReversers, movement.linkedMovementId, movement)
             }
         }
         for (const payment of doc.payments) {
@@ -78,8 +86,12 @@ export class LedgerIndex {
         return this.docsById.get(id)
     }
 
-    getLine(id: string): DocumentLineRow | undefined {
-        return this.linesById.get(id)
+    getTerms(id: string): TermsRow | undefined {
+        return this.termsById.get(id)
+    }
+
+    getMovement(id: string): MovementRow | undefined {
+        return this.movementsById.get(id)
     }
 
     getPayment(id: string): PaymentRow | undefined {
@@ -87,7 +99,7 @@ export class LedgerIndex {
     }
 
     /**
-     * The document a line or payment belongs to.
+     * The document a row belongs to.
      */
     documentOf(row: { documentId: string }): LedgerDocument {
         // Foreign keys guarantee the document exists
@@ -99,9 +111,14 @@ export class LedgerIndex {
         return this.linkedDocs.get(docId) ?? []
     }
 
-    /** Lines whose `linked_line_id` points to the given line. */
-    lineReversals(lineId: string): DocumentLineRow[] {
-        return this.lineReversers.get(lineId) ?? []
+    /** Terms whose `linked_terms_id` points to the given row. */
+    termsReversals(termsId: string): TermsRow[] {
+        return this.termsReversers.get(termsId) ?? []
+    }
+
+    /** Movements whose `linked_movement_id` points to the given movement. */
+    movementReversals(movementId: string): MovementRow[] {
+        return this.movementReversers.get(movementId) ?? []
     }
 
     /** Payments whose `linked_payment_id` points to the given payment. */

@@ -1,29 +1,36 @@
 /**
- * Data access for the ledger: `documents`, `document_lines` and `payments`.
+ * Data access for the ledger: `documents`, `terms`, `movements` and `payments`.
  *
- * The ledger is append-only: documents are inserted with their lines and payments
- * and never updated or deleted.
+ * A document carries three kinds of row: what was agreed, what goods moved and
+ * what money moved. Any of them can be absent, and which are expected is the
+ * BLL's business.
+ *
+ * The ledger is append-only: documents are inserted with their rows and never
+ * updated or deleted.
  */
 
 import { asc, eq, inArray, max, sql } from "drizzle-orm"
 import { inTransaction, type DB } from "./client.js"
 import {
-    documentLines,
     documents,
+    movements,
     payments,
-    type DocumentLineRow,
+    terms,
     type DocumentRow,
+    type MovementRow,
     type PaymentRow,
+    type TermsRow,
 } from "./schema.js"
 
 /**
- * A document together with its lines and payments.
+ * A document together with everything stored under it.
  *
- * Lines and payments have no meaningful order: they are sorted by ID only so that
- * repeated reads return the same order. Do not rely on it.
+ * The rows have no meaningful order: they are sorted by ID only so that repeated
+ * reads return the same order. Do not rely on it.
  */
 export interface LedgerDocument extends DocumentRow {
-    lines: DocumentLineRow[]
+    terms: TermsRow[]
+    movements: MovementRow[]
     payments: PaymentRow[]
 }
 
@@ -35,13 +42,14 @@ export type NewLedgerDocument = Omit<LedgerDocument, "sequence">
 /**
  * Reads the whole ledger.
  *
- * @returns Every document with its lines and payments, in the order they were
- * entered (`sequence`).
+ * @returns Every document with its rows, in the order they were entered
+ * (`sequence`).
  */
 export function listDocuments(db: DB): LedgerDocument[] {
     return group(
         db.select().from(documents).orderBy(asc(documents.sequence)).all(),
-        db.select().from(documentLines).orderBy(asc(documentLines.id)).all(),
+        db.select().from(terms).orderBy(asc(terms.id)).all(),
+        db.select().from(movements).orderBy(asc(movements.id)).all(),
         db.select().from(payments).orderBy(asc(payments.id)).all(),
     )
 }
@@ -50,8 +58,8 @@ export function listDocuments(db: DB): LedgerDocument[] {
  * Reads a document and every document linking to it, directly or through other
  * linked documents, following `linked_document_id` until no more are found.
  *
- * @returns The documents with their lines and payments, in `sequence` order;
- * empty if the document does not exist.
+ * @returns The documents with their rows, in `sequence` order; empty if the
+ * document does not exist.
  */
 export function listLinkedDocuments(db: DB, id: string): LedgerDocument[] {
     const ids = db
@@ -75,11 +83,12 @@ export function listLinkedDocuments(db: DB, id: string): LedgerDocument[] {
             .where(inArray(documents.id, ids))
             .orderBy(asc(documents.sequence))
             .all(),
+        db.select().from(terms).where(inArray(terms.documentId, ids)).orderBy(asc(terms.id)).all(),
         db
             .select()
-            .from(documentLines)
-            .where(inArray(documentLines.documentId, ids))
-            .orderBy(asc(documentLines.id))
+            .from(movements)
+            .where(inArray(movements.documentId, ids))
+            .orderBy(asc(movements.id))
             .all(),
         db
             .select()
@@ -93,8 +102,7 @@ export function listLinkedDocuments(db: DB, id: string): LedgerDocument[] {
 /**
  * Reads one document by key.
  *
- * @returns The document with its lines and payments, or `undefined` if there is
- * none.
+ * @returns The document with its rows, or `undefined` if there is none.
  */
 export function getDocument(db: DB, id: string): LedgerDocument | undefined {
     const doc = db.select().from(documents).where(eq(documents.id, id)).get()
@@ -104,11 +112,12 @@ export function getDocument(db: DB, id: string): LedgerDocument | undefined {
 
     return {
         ...doc,
-        lines: db
+        terms: db.select().from(terms).where(eq(terms.documentId, id)).orderBy(asc(terms.id)).all(),
+        movements: db
             .select()
-            .from(documentLines)
-            .where(eq(documentLines.documentId, id))
-            .orderBy(asc(documentLines.id))
+            .from(movements)
+            .where(eq(movements.documentId, id))
+            .orderBy(asc(movements.id))
             .all(),
         payments: db
             .select()
@@ -120,8 +129,8 @@ export function getDocument(db: DB, id: string): LedgerDocument | undefined {
 }
 
 /**
- * Inserts a document with its lines and payments atomically, giving it the next
- * `sequence` number.
+ * Inserts a document with its rows atomically, giving it the next `sequence`
+ * number.
  *
  * Reading the last sequence and inserting happen in the same transaction, and
  * SQLite allows a single writer, so two documents never get the same number.
@@ -129,7 +138,7 @@ export function getDocument(db: DB, id: string): LedgerDocument | undefined {
  * @returns The document as stored.
  */
 export function insertDocument(db: DB, record: NewLedgerDocument): LedgerDocument {
-    const { lines, payments: docPayments, ...doc } = record
+    const { terms: docTerms, movements: docMovements, payments: docPayments, ...doc } = record
 
     return inTransaction(db, () => {
         const last = db
@@ -143,33 +152,39 @@ export function insertDocument(db: DB, record: NewLedgerDocument): LedgerDocumen
             .values({ ...doc, sequence })
             .returning()
             .get()
-        const storedLines = lines.map((line) =>
-            db.insert(documentLines).values(line).returning().get(),
-        )
-        const storedPayments = docPayments.map((payment) =>
-            db.insert(payments).values(payment).returning().get(),
-        )
-        return { ...stored, lines: storedLines, payments: storedPayments }
+
+        return {
+            ...stored,
+            terms: docTerms.map((row) => db.insert(terms).values(row).returning().get()),
+            movements: docMovements.map((row) =>
+                db.insert(movements).values(row).returning().get(),
+            ),
+            payments: docPayments.map((row) => db.insert(payments).values(row).returning().get()),
+        }
     })
 }
 
 /**
- * Puts lines and payments under their documents, keeping the documents' order.
+ * Puts the rows under their documents, keeping the documents' order.
  */
 function group(
     docs: DocumentRow[],
-    lines: DocumentLineRow[],
+    docTerms: TermsRow[],
+    docMovements: MovementRow[],
     docPayments: PaymentRow[],
 ): LedgerDocument[] {
     const byId = new Map<string, LedgerDocument>()
     for (const doc of docs) {
-        byId.set(doc.id, { ...doc, lines: [], payments: [] })
+        byId.set(doc.id, { ...doc, terms: [], movements: [], payments: [] })
     }
-    for (const line of lines) {
-        byId.get(line.documentId)!.lines.push(line)
+    for (const row of docTerms) {
+        byId.get(row.documentId)!.terms.push(row)
     }
-    for (const payment of docPayments) {
-        byId.get(payment.documentId)!.payments.push(payment)
+    for (const row of docMovements) {
+        byId.get(row.documentId)!.movements.push(row)
+    }
+    for (const row of docPayments) {
+        byId.get(row.documentId)!.payments.push(row)
     }
     return [...byId.values()]
 }

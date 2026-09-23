@@ -9,6 +9,10 @@
  * SQL and `schema.ts` mirrors it for typed queries. The database only stores data:
  * it enforces column types, `NOT NULL`, primary keys and foreign keys, and
  * nothing else.
+ *
+ * A document carries three kinds of row: what was agreed (`terms`), what goods
+ * moved (`movements`) and what money moved (`payments`). Money lives on the deal,
+ * goods on the movement, so each table means one thing.
  */
 
 import type Database from "better-sqlite3"
@@ -59,17 +63,24 @@ const SCHEMA_SQL = `
         notes               TEXT
     ) STRICT;
 
-    CREATE TABLE document_lines (
+    CREATE TABLE terms (
+        id                      TEXT     NOT NULL PRIMARY KEY,
+        document_id             TEXT     NOT NULL REFERENCES documents (id),
+        product_id              TEXT     NOT NULL REFERENCES products (id),
+        linked_terms_id         TEXT              REFERENCES terms (id),
+        quantity                INTEGER  NOT NULL,
+        unit_price              INTEGER,
+        line_discount           INTEGER,
+        document_discount_share INTEGER,
+        value                   INTEGER  NOT NULL
+    ) STRICT;
+
+    CREATE TABLE movements (
         id                  TEXT     NOT NULL PRIMARY KEY,
         document_id         TEXT     NOT NULL REFERENCES documents (id),
         product_id          TEXT     NOT NULL REFERENCES products (id),
-        linked_line_id      TEXT              REFERENCES document_lines (id),
-        quantity            INTEGER  NOT NULL,
-        unit_price          INTEGER,
-        line_discount       INTEGER,
-        document_discount_share     INTEGER,
-        amount              INTEGER,
-        total_cost          INTEGER
+        linked_movement_id  TEXT              REFERENCES movements (id),
+        quantity            INTEGER  NOT NULL
     ) STRICT;
 
     CREATE TABLE payments (
@@ -84,9 +95,12 @@ const SCHEMA_SQL = `
     CREATE INDEX idx_salesman_history_salesman_id ON salesman_history (salesman_id);
     CREATE INDEX idx_documents_occurred_at        ON documents (occurred_at);
     CREATE INDEX idx_documents_linked_document_id ON documents (linked_document_id);
-    CREATE INDEX idx_document_lines_document_id   ON document_lines (document_id);
-    CREATE INDEX idx_document_lines_product_id    ON document_lines (product_id);
-    CREATE INDEX idx_document_lines_linked_line   ON document_lines (linked_line_id);
+    CREATE INDEX idx_terms_document_id            ON terms (document_id);
+    CREATE INDEX idx_terms_product_id             ON terms (product_id);
+    CREATE INDEX idx_terms_linked_terms_id        ON terms (linked_terms_id);
+    CREATE INDEX idx_movements_document_id        ON movements (document_id);
+    CREATE INDEX idx_movements_product_id         ON movements (product_id);
+    CREATE INDEX idx_movements_linked_movement_id ON movements (linked_movement_id);
     CREATE INDEX idx_payments_document_id         ON payments (document_id);
     CREATE INDEX idx_payments_linked_payment_id   ON payments (linked_payment_id);
 `

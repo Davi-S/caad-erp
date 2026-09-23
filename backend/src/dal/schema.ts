@@ -97,9 +97,12 @@ export const documents = sqliteTable("documents", {
 })
 
 /**
- * Goods: what moved in stock.
+ * What a document agreed: the goods promised and what they are worth.
+ *
+ * At most one row per product per document, so a movement finds its deal by
+ * product alone.
  */
-export const documentLines = sqliteTable("document_lines", {
+export const terms = sqliteTable("terms", {
     id: text("id").primaryKey(),
     documentId: text("document_id")
         .notNull()
@@ -107,13 +110,27 @@ export const documentLines = sqliteTable("document_lines", {
     productId: text("product_id")
         .notNull()
         .references(() => products.id),
-    linkedLineId: text("linked_line_id").references((): AnySQLiteColumn => documentLines.id),
+    linkedTermsId: text("linked_terms_id").references((): AnySQLiteColumn => terms.id),
     quantity: integer("quantity").notNull(),
     unitPrice: integer("unit_price"),
     lineDiscount: integer("line_discount"),
     documentDiscountShare: integer("document_discount_share"),
-    amount: integer("amount"),
-    totalCost: integer("total_cost"),
+    value: integer("value").notNull(),
+})
+
+/**
+ * Goods that actually moved.
+ */
+export const movements = sqliteTable("movements", {
+    id: text("id").primaryKey(),
+    documentId: text("document_id")
+        .notNull()
+        .references(() => documents.id),
+    productId: text("product_id")
+        .notNull()
+        .references(() => products.id),
+    linkedMovementId: text("linked_movement_id").references((): AnySQLiteColumn => movements.id),
+    quantity: integer("quantity").notNull(),
 })
 
 /**
@@ -134,5 +151,6 @@ export type SalesmanRow = typeof salesmen.$inferSelect
 export type ProductHistoryRow = typeof productHistory.$inferSelect
 export type SalesmanHistoryRow = typeof salesmanHistory.$inferSelect
 export type DocumentRow = typeof documents.$inferSelect
-export type DocumentLineRow = typeof documentLines.$inferSelect
+export type TermsRow = typeof terms.$inferSelect
+export type MovementRow = typeof movements.$inferSelect
 export type PaymentRow = typeof payments.$inferSelect
