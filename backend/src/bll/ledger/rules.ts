@@ -14,15 +14,15 @@ import { paymentMethodValues } from "../../dal/index.js"
 import type { DocumentType, NewLedgerDocument } from "../../dal/index.js"
 import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
 import type { DocumentReferences, LedgerContext } from "./context.js"
-import {
-    SPECS,
-    type MovementsShape,
-    type PaymentsShape,
-    type ReferenceRule,
-    type Presence,
-    type Sign,
-    type AgreementsShape,
-} from "./specs.js"
+import type {
+    AgreementsShape,
+    DocumentSpec,
+    MovementsShape,
+    PaymentsShape,
+    Presence,
+    ReferenceRule,
+    Sign,
+} from "./shapes.js"
 
 /**
  * The rules that read one document.
@@ -186,13 +186,17 @@ const CONTEXT_CHECKS = {
 export type ContextCheckName = keyof typeof CONTEXT_CHECKS
 
 /**
- * Checks a document against the shape of its type.
+ * Checks a document against its spec.
  *
  * @param doc - Document with its rows, as it will be stored.
+ * @param spec - What that kind of document is, from its command.
  * @throws {@link RuleViolationError} If any rule is broken.
  */
-export function validateDocument(doc: NewLedgerDocument): void {
-    const spec = SPECS[doc.type]
+export function validateDocument(doc: NewLedgerDocument, spec: DocumentSpec): void {
+    if (doc.type !== spec.type) {
+        // Only reachable by wiring a command to the wrong spec
+        throw new Error(`A ${doc.type} was checked against the spec of a ${spec.type}`)
+    }
 
     if (doc.occurredAt.getTime() > doc.recordedAt.getTime()) {
         throw new RuleViolationError("A document cannot have happened after it was recorded")
@@ -219,14 +223,17 @@ export function validateDocument(doc: NewLedgerDocument): void {
 /**
  * Checks what a document is about to refer to, before it is built.
  *
+ * @param spec - What the document being built is.
  * @param references - The records it will point at.
  * @param context - What they resolved to, from {@link loadContext}.
  * @throws {@link NotFoundError} If a reference names nothing.
  * @throws {@link InactiveError} If it names something inactive that must be active.
  */
-export function validateReferences(references: DocumentReferences, context: LedgerContext): void {
-    const spec = SPECS[references.type]
-
+export function validateReferences(
+    spec: DocumentSpec,
+    references: DocumentReferences,
+    context: LedgerContext,
+): void {
     checkSalesman(references.performedBy, context, spec.salesman)
     for (const productId of references.productIds) {
         checkProduct(productId, context, spec.products)
@@ -237,9 +244,7 @@ export function validateReferences(references: DocumentReferences, context: Ledg
             throw new NotFoundError(`Unknown document: ${references.linkedDocumentId}`)
         }
         if (spec.linkedTypes && !spec.linkedTypes.includes(target.type)) {
-            throw new RuleViolationError(
-                `A ${references.type} cannot be linked to a ${target.type}`,
-            )
+            throw new RuleViolationError(`A ${spec.type} cannot be linked to a ${target.type}`)
         }
     }
 }
@@ -248,13 +253,18 @@ export function validateReferences(references: DocumentReferences, context: Ledg
  * Checks a document against the records it refers to.
  *
  * @param doc - Document with its rows, as it will be stored.
+ * @param spec - What that kind of document is, from its command.
  * @param context - What those references resolved to, from {@link loadContext}.
  * @throws {@link RuleViolationError} If any rule is broken.
  */
-export function validateInContext(doc: NewLedgerDocument, context: LedgerContext): void {
+export function validateInContext(
+    doc: NewLedgerDocument,
+    spec: DocumentSpec,
+    context: LedgerContext,
+): void {
     validateReferences(
+        spec,
         {
-            type: doc.type,
             performedBy: doc.performedBy,
             productIds: [
                 ...doc.agreements.map((row) => row.productId),
@@ -265,7 +275,7 @@ export function validateInContext(doc: NewLedgerDocument, context: LedgerContext
         context,
     )
 
-    for (const check of SPECS[doc.type].contextChecks) {
+    for (const check of spec.contextChecks) {
         CONTEXT_CHECKS[check](doc, context)
     }
 }

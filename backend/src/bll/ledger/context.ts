@@ -7,13 +7,12 @@
  */
 
 import * as dal from "../../dal/index.js"
-import type { DB, DocumentType, LedgerIndex, ProductRow, SalesmanRow } from "../../dal/index.js"
+import type { DB, LedgerIndex, ProductRow, SalesmanRow } from "../../dal/index.js"
 
 /**
  * The records a document will point at, named before it is built.
  */
 export interface DocumentReferences {
-    type: DocumentType
     performedBy: string
     productIds: string[]
     linkedDocumentId: string | null

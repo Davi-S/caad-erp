@@ -12,7 +12,21 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, paymentField, productIdField, quantityField } from "../fields.js"
 import { post } from "../post.js"
+import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
+
+/**
+ * A restock: goods in, money out, both now.
+ */
+export const restockSpec: DocumentSpec = {
+    type: "RESTOCK",
+    shape: SHAPES.moneyOutGoodsIn,
+    checks: [],
+    contextChecks: [],
+    salesman: "active",
+    products: "active",
+    linkedTypes: null,
+}
 
 /**
  * Input for recording a restock.
@@ -51,8 +65,8 @@ export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
 
     return post(
         db,
+        restockSpec,
         {
-            type: "RESTOCK",
             performedBy: input.performedBy,
             productIds: input.items.map((item) => item.productId),
             linkedDocumentId: null,

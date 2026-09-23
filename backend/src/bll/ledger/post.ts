@@ -12,6 +12,7 @@
 import * as dal from "../../dal/index.js"
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
 import { loadContext, type DocumentReferences, type LedgerContext } from "./context.js"
+import type { DocumentSpec } from "./shapes.js"
 import { validateDocument, validateInContext, validateReferences } from "./rules.js"
 
 /**
@@ -21,6 +22,7 @@ import { validateDocument, validateInContext, validateReferences } from "./rules
  * document is built and checked against exactly the data it lands on.
  *
  * @param db - Active database client.
+ * @param spec - What kind of document is being written.
  * @param references - The records the document will point at.
  * @param build - Produces the document from what those references resolved to.
  * @returns The stored document.
@@ -30,17 +32,18 @@ import { validateDocument, validateInContext, validateReferences } from "./rules
  */
 export function post(
     db: DB,
+    spec: DocumentSpec,
     references: DocumentReferences,
     build: (context: LedgerContext) => NewLedgerDocument,
 ): LedgerDocument {
     return dal.inTransaction(db, () => {
         const context = loadContext(db, references)
-        validateReferences(references, context)
+        validateReferences(spec, references, context)
 
         const doc = build(context)
-        validateDocument(doc)
+        validateDocument(doc, spec)
         // Again, in case the document ended up pointing where its references did not
-        validateInContext(doc, context)
+        validateInContext(doc, spec, context)
 
         return dal.insertDocument(db, doc)
     })

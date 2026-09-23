@@ -11,7 +11,22 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, productIdField, quantityField } from "../fields.js"
 import { post } from "../post.js"
+import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
+
+/**
+ * A write-off: goods out, nothing agreed and no money.
+ */
+export const writeOffSpec: DocumentSpec = {
+    type: "WRITE_OFF",
+    shape: SHAPES.goodsOut,
+    checks: [],
+    contextChecks: [],
+    salesman: "active",
+    // Leftovers of a product that is no longer sold still have to be cleared
+    products: "exists",
+    linkedTypes: null,
+}
 
 /**
  * Input for recording a write-off.
@@ -40,8 +55,8 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument
 
     return post(
         db,
+        writeOffSpec,
         {
-            type: "WRITE_OFF",
             performedBy: input.performedBy,
             productIds: input.items.map((item) => item.productId),
             linkedDocumentId: null,

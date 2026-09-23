@@ -15,8 +15,22 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentDiscountField, documentFields, soldItemsField } from "../fields.js"
 import { post } from "../post.js"
+import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { priceItems } from "../rows.js"
 import { z } from "zod"
+
+/**
+ * A credit sale: goods out now, money later.
+ */
+export const creditSaleSpec: DocumentSpec = {
+    type: "CREDIT_SALE",
+    shape: SHAPES.moneyDeferredGoodsOut,
+    checks: [],
+    contextChecks: [],
+    salesman: "active",
+    products: "active",
+    linkedTypes: null,
+}
 
 /**
  * Input for recording a sale to be paid later.
@@ -45,8 +59,8 @@ export function recordCreditSale(db: DB, command: CreditSaleCommand): LedgerDocu
 
     return post(
         db,
+        creditSaleSpec,
         {
-            type: "CREDIT_SALE",
             performedBy: input.performedBy,
             productIds: input.items.map((item) => item.productId),
             linkedDocumentId: null,

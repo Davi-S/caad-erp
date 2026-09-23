@@ -10,8 +10,22 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentDiscountField, documentFields, paymentField, soldItemsField } from "../fields.js"
 import { post } from "../post.js"
+import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { priceItems } from "../rows.js"
 import { z } from "zod"
+
+/**
+ * A sale: goods out, money in, both now.
+ */
+export const saleSpec: DocumentSpec = {
+    type: "SALE",
+    shape: SHAPES.moneyInGoodsOut,
+    checks: [],
+    contextChecks: [],
+    salesman: "active",
+    products: "active",
+    linkedTypes: null,
+}
 
 /**
  * Input for recording a sale paid at the counter.
@@ -41,8 +55,8 @@ export function recordSale(db: DB, command: SaleCommand): LedgerDocument {
 
     return post(
         db,
+        saleSpec,
         {
-            type: "SALE",
             performedBy: input.performedBy,
             productIds: input.items.map((item) => item.productId),
             linkedDocumentId: null,

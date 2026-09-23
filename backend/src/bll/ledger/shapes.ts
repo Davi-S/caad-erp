@@ -1,16 +1,18 @@
 /**
- * What each kind of document is, expressed as data.
+ * The forms a document can take, and the vocabulary an intent is written in.
  *
  * Two layers. A **shape** says which rows a document carries and which way they
  * point: does it agree anything, do goods move, does money move, and with what
- * signs. An **intent** is the document type itself: what the event means, what it
- * may link to, and which bucket its numbers fall into when reporting.
+ * signs. An **intent** is the document type itself: what the event means and what
+ * it may link to.
  *
  * Several intents share a shape - a customer return moves goods in and money out
- * exactly like a restock - which is why the two are separate. The shape is looked
- * up from the intent; nothing is ever derived the other way.
+ * exactly like a restock - which is why the two are separate. The shape is named
+ * by the intent; nothing is ever derived the other way.
  *
- * `rules.ts` is the engine that checks a document against its entry here.
+ * Each intent states its own spec beside the command that records it, in
+ * `commands/`. What every spec draws on lives here, and `rules.ts` is the engine
+ * that checks a document against the spec it is handed.
  */
 
 import type { DocumentType } from "../../dal/index.js"
@@ -148,7 +150,7 @@ const MONEY_OUT_PAYMENTS: PaymentsShape = {
  * when they happen. What was agreed is always recorded, so nothing about the
  * agreement waits.
  */
-const SHAPES = {
+export const SHAPES = {
     moneyIn: { agreements: null, movements: null, payments: MONEY_IN_PAYMENTS, checks: [] },
 
     // Note that some agreed items can be free, but the total cannot be free
@@ -237,7 +239,13 @@ const SHAPES = {
 /** What a document needs of a record it names. */
 export type ReferenceRule = "active" | "exists" | "any"
 
+/**
+ * What one kind of document is: the form it takes, the rules that come with the
+ * intent, and what it is allowed to point at.
+ */
 export interface DocumentSpec {
+    /** The type stored on the document, and the one this spec governs. */
+    type: DocumentType
     shape: Shape
     /** Rules of this intent alone; what follows from its form is on the shape. */
     checks: CheckName[]
@@ -249,66 +257,4 @@ export interface DocumentSpec {
     products: ReferenceRule
     /** Which types it may link to; `null` when it links to none. */
     linkedTypes: DocumentType[] | null
-}
-
-/**
- * One entry per document type. Adding a kind of event is a row here plus a
- * command to build it.
- */
-export const SPECS: Record<DocumentType, DocumentSpec> = {
-    SALE: {
-        shape: SHAPES.moneyInGoodsOut,
-        checks: [],
-        contextChecks: [],
-        salesman: "active",
-        products: "active",
-        linkedTypes: null,
-    },
-    CREDIT_SALE: {
-        shape: SHAPES.moneyDeferredGoodsOut,
-        checks: [],
-        contextChecks: [],
-        salesman: "active",
-        products: "active",
-        linkedTypes: null,
-    },
-
-    RESTOCK: {
-        shape: SHAPES.moneyOutGoodsIn,
-        checks: [],
-        contextChecks: [],
-        salesman: "active",
-        products: "active",
-        linkedTypes: null,
-    },
-
-    WRITE_OFF: {
-        shape: SHAPES.goodsOut,
-        checks: [],
-        contextChecks: [],
-        salesman: "active",
-        // Leftovers of a product that is no longer sold still have to be cleared
-        products: "exists",
-        linkedTypes: null,
-    },
-
-    PAYMENT_IN: {
-        shape: SHAPES.moneyIn,
-        checks: [],
-        contextChecks: ["targetNotVoided"],
-        salesman: "active",
-        products: "any",
-        linkedTypes: ["CREDIT_SALE"],
-    },
-
-    VOID: {
-        shape: SHAPES.mirrored,
-        checks: ["occursWhenRecorded"],
-        contextChecks: ["targetIsVoidable", "targetFullyMirrored"],
-        salesman: "active",
-        products: "any",
-        // Anything but another void: an unwanted void is undone by recording the
-        // original again
-        linkedTypes: ["SALE", "CREDIT_SALE", "RESTOCK", "WRITE_OFF", "PAYMENT_IN"],
-    },
 }
