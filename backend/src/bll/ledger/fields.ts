@@ -1,8 +1,9 @@
 /**
  * Input pieces every ledger command shares.
  *
- * All of it is in the caller's terms: amounts are how much money moved, so they
- * are positive here and given their sign when the document is built.
+ * All of it is in the caller's terms: quantities are how many units changed
+ * hands and amounts are how much money did, so both are positive here and are
+ * given their direction when the document is built.
  */
 
 import { paymentMethodValues } from "../../dal/index.js"
@@ -38,6 +39,6 @@ export const quantityField = z
     .positive("Quantity must be greater than zero")
 
 /**
- * A product a line moves.
+ * A product a row names.
  */
 export const productIdField = z.string().trim().min(1, "Product is required")

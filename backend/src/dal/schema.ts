@@ -12,10 +12,21 @@ import { integer, sqliteTable, text, type AnySQLiteColumn } from "drizzle-orm/sq
  */
 export const documentTypeValues = [
     "SALE",
-    "RETURN",
-    "PAYMENT",
+    "CREDIT_SALE",
+    "PREPAID_SALE",
     "RESTOCK",
+    "CREDIT_RESTOCK",
+    "PREPAID_RESTOCK",
+    "CUSTOMER_RETURN",
+    "CREDIT_CUSTOMER_RETURN",
+    "SUPPLIER_RETURN",
+    "CREDIT_SUPPLIER_RETURN",
     "WRITE_OFF",
+    "FOUND",
+    "DELIVERY_OUT",
+    "DELIVERY_IN",
+    "PAYMENT_IN",
+    "PAYMENT_OUT",
     "VOID",
 ] as const
 export type DocumentType = (typeof documentTypeValues)[number]

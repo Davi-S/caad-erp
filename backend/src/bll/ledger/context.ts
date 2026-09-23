@@ -20,8 +20,7 @@ export interface DocumentReferences {
 }
 
 /**
- * Everything those references resolved to: the products, the salesman, and the
- * linked document with everything linked to it.
+ * Everything those references resolved to.
  *
  * Missing entries are kept as missing (`undefined`, or absent from the map) so
  * the rules can say which reference is wrong.

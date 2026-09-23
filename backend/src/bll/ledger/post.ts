@@ -3,10 +3,10 @@
  *
  * A write is always: check the input, load what the document will refer to, check
  * those references, build the rows, check the document, insert. Only the building
- * differs between document types, so everything else lives here.
+ * differs between intents, so everything else lives here.
  *
  * References are checked before building, so a builder can read prices and
- * original lines straight from the context without handling missing records.
+ * original rows straight from the context without handling missing records.
  */
 
 import * as dal from "../../dal/index.js"
