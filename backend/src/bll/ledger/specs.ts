@@ -57,16 +57,21 @@ export interface PaymentsShape {
 }
 
 /**
- * Which rows a document carries. `null` means the document has none of that kind.
+ * Which rows a document carries, and what follows from carrying them. `null`
+ * means the document has none of that kind.
+ *
+ * The checks here belong to the form, not to any one intent: a document that
+ * agrees goods and pays for them now must be settled now, whichever intent it is.
  */
 export interface Shape {
     terms: TermsShape | null
     movements: MovementsShape | null
     payments: PaymentsShape | null
+    checks: CheckName[]
 }
 
-/** Goods sold: they leave, and the customer owes their value. */
-const SELL_TERMS: TermsShape = {
+/** Goods going out: they leave, and their value is owed to us. Priced. */
+const GOODS_OUT_TERMS: TermsShape = {
     minimum: 1,
     linkedTermsId: "forbidden",
     quantity: "negative",
@@ -76,8 +81,8 @@ const SELL_TERMS: TermsShape = {
     documentDiscountShare: "required",
 }
 
-/** Goods bought: they arrive, and the supplier is owed their cost. */
-const BUY_TERMS: TermsShape = {
+/** Goods coming in: they arrive, and their cost is owed by us. Not priced. */
+const GOODS_IN_TERMS: TermsShape = {
     minimum: 1,
     linkedTermsId: "forbidden",
     quantity: "positive",
@@ -87,47 +92,117 @@ const BUY_TERMS: TermsShape = {
     documentDiscountShare: "forbidden",
 }
 
-const GOODS_OUT: MovementsShape = {
+/** Goods leaving. */
+const GOODS_OUT_MOVEMENTS: MovementsShape = {
     minimum: 1,
     linkedMovementId: "forbidden",
     quantity: "negative",
 }
-const GOODS_IN: MovementsShape = {
+
+/** Goods arriving. */
+const GOODS_IN_MOVEMENTS: MovementsShape = {
     minimum: 1,
     linkedMovementId: "forbidden",
     quantity: "positive",
 }
 /**
- * Money moving beside goods, at the counter. A deal is worth something and is
- * settled now, so there is always at least one payment; whether they add up to
- * the deal is `settledInFull`'s business.
+ * Money arriving, and money leaving. A deal that is settled carries at least one
+ * payment; whether they add up to the deal is `settledInFull`'s business.
  */
-const MONEY_IN: PaymentsShape = { minimum: 1, sign: "positive", linkedPaymentId: "forbidden" }
-const MONEY_OUT: PaymentsShape = { minimum: 1, sign: "negative", linkedPaymentId: "forbidden" }
+const MONEY_IN_PAYMENTS: PaymentsShape = {
+    minimum: 1,
+    sign: "positive",
+    linkedPaymentId: "forbidden",
+}
+
+const MONEY_OUT_PAYMENTS: PaymentsShape = {
+    minimum: 1,
+    sign: "negative",
+    linkedPaymentId: "forbidden",
+}
 
 /**
- * The shapes, named for what they do. Deferral is the absence of the rows that
- * have not happened yet: a credit sale has no payments, a pre-paid sale has no
- * movements.
+ * Every shape there is.
+ *
+ * A shape says which rows a document carries and which way they point. Money
+ * moves one way, goods the other, or only one of the two moves, which gives ten
+ * forms and no others. The names describe the movement; what the movement *means*
+ * is the intent's business.
+ *
+ * ```
+ *   money       goods       shape
+ *   in          -           moneyIn
+ *   in          out         moneyInGoodsOut
+ *   in          deferred    moneyInGoodsDeferred
+ *   -           in          goodsIn
+ *   -           out         goodsOut
+ *   out         in          moneyOutGoodsIn
+ *   out         -           moneyOut
+ *   out         deferred    moneyOutGoodsDeferred
+ *   deferred    out         moneyDeferredGoodsOut
+ *   deferred    in          moneyDeferredGoodsIn
+ * ```
+ *
+ * "Deferred" means the rows are simply absent, and a linked document brings them
+ * when they happen. What was agreed is always recorded, so nothing about the deal
+ * waits.
  */
 const SHAPES = {
-    sellNow: { terms: SELL_TERMS, movements: GOODS_OUT, payments: MONEY_IN },
-    sellOnCredit: { terms: SELL_TERMS, movements: GOODS_OUT, payments: null },
+    moneyIn: { terms: null, movements: null, payments: MONEY_IN_PAYMENTS, checks: [] },
 
-    buyNow: { terms: BUY_TERMS, movements: GOODS_IN, payments: MONEY_OUT },
-
-    /** Goods leave with nobody on the other side. */
-    goodsOutOnly: { terms: null, movements: GOODS_OUT, payments: null },
-
-    /** A document that exists only to move money carries at least one payment. */
-    moneyInOnly: {
-        terms: null,
-        movements: null,
-        payments: { minimum: 1, sign: "positive", linkedPaymentId: "forbidden" },
+    moneyInGoodsOut: {
+        terms: GOODS_OUT_TERMS,
+        movements: GOODS_OUT_MOVEMENTS,
+        payments: MONEY_IN_PAYMENTS,
+        checks: ["valueMatchesPricing", "dealHasValue", "movementsWithinTerms", "settledInFull"],
     },
 
-    /** A void carries whatever its target carries, negated; the mirror rule checks it. */
-    mirror: {
+    moneyInGoodsDeferred: {
+        terms: GOODS_OUT_TERMS,
+        movements: null,
+        payments: MONEY_IN_PAYMENTS,
+        checks: ["valueMatchesPricing", "dealHasValue", "settledInFull"],
+    },
+
+    goodsIn: { terms: null, movements: GOODS_IN_MOVEMENTS, payments: null, checks: [] },
+
+    goodsOut: { terms: null, movements: GOODS_OUT_MOVEMENTS, payments: null, checks: [] },
+
+    moneyOutGoodsIn: {
+        terms: GOODS_IN_TERMS,
+        movements: GOODS_IN_MOVEMENTS,
+        payments: MONEY_OUT_PAYMENTS,
+        checks: ["dealHasValue", "movementsWithinTerms", "settledInFull"],
+    },
+
+    moneyOut: { terms: null, movements: null, payments: MONEY_OUT_PAYMENTS, checks: [] },
+
+    moneyOutGoodsDeferred: {
+        terms: GOODS_IN_TERMS,
+        movements: null,
+        payments: MONEY_OUT_PAYMENTS,
+        checks: ["dealHasValue", "settledInFull"],
+    },
+
+    moneyDeferredGoodsOut: {
+        terms: GOODS_OUT_TERMS,
+        movements: GOODS_OUT_MOVEMENTS,
+        payments: null,
+        checks: ["valueMatchesPricing", "dealHasValue", "movementsWithinTerms"],
+    },
+
+    moneyDeferredGoodsIn: {
+        terms: GOODS_IN_TERMS,
+        movements: GOODS_IN_MOVEMENTS,
+        payments: null,
+        checks: ["dealHasValue", "movementsWithinTerms"],
+    },
+
+    /**
+     * Not one of the ten: a void carries whatever its target carries, negated, so
+     * its rows are whatever they have to be and the mirror rule checks them.
+     */
+    mirrored: {
         terms: {
             minimum: 0,
             linkedTermsId: "required",
@@ -139,6 +214,7 @@ const SHAPES = {
         },
         movements: { minimum: 0, linkedMovementId: "required", quantity: "nonZero" },
         payments: { minimum: 0, sign: "nonZero", linkedPaymentId: "required" },
+        checks: [],
     },
 } as const satisfies Record<string, Shape>
 
@@ -147,7 +223,7 @@ export type Reference = "active" | "exists" | "any"
 
 export interface DocumentSpec {
     shape: Shape
-    /** Rules of this type that are code rather than a table entry; see `CHECKS`. */
+    /** Rules of this intent alone; what follows from its form is on the shape. */
     checks: CheckName[]
     /** The same, for rules that need the documents around it; see `CONTEXT_CHECKS`. */
     contextChecks: ContextCheckName[]
@@ -165,33 +241,33 @@ export interface DocumentSpec {
  */
 export const SPECS: Record<DocumentType, DocumentSpec> = {
     SALE: {
-        shape: SHAPES.sellNow,
-        checks: ["valueMatchesPricing", "dealHasValue", "settledInFull"],
-        contextChecks: ["movementsWithinTerms"],
+        shape: SHAPES.moneyInGoodsOut,
+        checks: [],
+        contextChecks: [],
         salesman: "active",
         products: "active",
         linkedTypes: null,
     },
     CREDIT_SALE: {
-        shape: SHAPES.sellOnCredit,
-        checks: ["valueMatchesPricing", "dealHasValue"],
-        contextChecks: ["movementsWithinTerms"],
+        shape: SHAPES.moneyDeferredGoodsOut,
+        checks: [],
+        contextChecks: [],
         salesman: "active",
         products: "active",
         linkedTypes: null,
     },
 
     RESTOCK: {
-        shape: SHAPES.buyNow,
-        checks: ["dealHasValue", "settledInFull"],
-        contextChecks: ["movementsWithinTerms"],
+        shape: SHAPES.moneyOutGoodsIn,
+        checks: [],
+        contextChecks: [],
         salesman: "active",
         products: "active",
         linkedTypes: null,
     },
 
     WRITE_OFF: {
-        shape: SHAPES.goodsOutOnly,
+        shape: SHAPES.goodsOut,
         checks: [],
         contextChecks: [],
         salesman: "active",
@@ -201,7 +277,7 @@ export const SPECS: Record<DocumentType, DocumentSpec> = {
     },
 
     PAYMENT_IN: {
-        shape: SHAPES.moneyInOnly,
+        shape: SHAPES.moneyIn,
         checks: [],
         contextChecks: ["targetNotVoided"],
         salesman: "active",
@@ -210,7 +286,7 @@ export const SPECS: Record<DocumentType, DocumentSpec> = {
     },
 
     VOID: {
-        shape: SHAPES.mirror,
+        shape: SHAPES.mirrored,
         checks: ["happensWhenRecorded"],
         contextChecks: ["targetIsVoidable", "mirrorsTargetWhole"],
         salesman: "active",

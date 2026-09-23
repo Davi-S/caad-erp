@@ -66,6 +66,31 @@ const CHECKS = {
     },
 
     /**
+     * Goods move against something agreed, and never more than was agreed. Every
+     * type that moves goods agrees them in the same document; delivering against
+     * an earlier deal will widen this rule when a type does that.
+     */
+    movementsWithinTerms(doc: NewLedgerDocument): void {
+        for (const movement of doc.movements) {
+            const agreed = doc.terms.find((row) => row.productId === movement.productId)
+            if (!agreed) {
+                throw new RuleViolationError(`Nothing was agreed for ${movement.productId}`)
+            }
+            if (Math.sign(movement.quantity) !== Math.sign(agreed.quantity)) {
+                throw new RuleViolationError(
+                    `Goods for ${movement.productId} move the wrong way for a ${doc.type}`,
+                )
+            }
+
+            if (Math.abs(movement.quantity) > Math.abs(agreed.quantity)) {
+                throw new RuleViolationError(
+                    `${Math.abs(movement.quantity)} of ${movement.productId} moved against ${Math.abs(agreed.quantity)} agreed`,
+                )
+            }
+        }
+    },
+
+    /**
      * Nothing is left owing: the money that moved covers what was agreed. More
      * than that is a tip, or more handed to a supplier, and is allowed.
      */
@@ -95,31 +120,6 @@ const CONTEXT_CHECKS = {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
         if (context.linked.linkedDocuments(target.id).some((other) => other.type === "VOID")) {
             throw new RuleViolationError(`${target.id} is voided`)
-        }
-    },
-
-    /**
-     * Goods move against something agreed, and never more than was agreed. Every
-     * type that moves goods agrees them in the same document; delivering against
-     * an earlier deal will widen this rule when a type does that.
-     */
-    movementsWithinTerms(doc: NewLedgerDocument): void {
-        for (const movement of doc.movements) {
-            const agreed = doc.terms.find((row) => row.productId === movement.productId)
-            if (!agreed) {
-                throw new RuleViolationError(`Nothing was agreed for ${movement.productId}`)
-            }
-            if (Math.sign(movement.quantity) !== Math.sign(agreed.quantity)) {
-                throw new RuleViolationError(
-                    `Goods for ${movement.productId} move the wrong way for a ${doc.type}`,
-                )
-            }
-
-            if (Math.abs(movement.quantity) > Math.abs(agreed.quantity)) {
-                throw new RuleViolationError(
-                    `${Math.abs(movement.quantity)} of ${movement.productId} moved against ${Math.abs(agreed.quantity)} agreed`,
-                )
-            }
         }
     },
 
@@ -200,7 +200,8 @@ export function validateDocument(doc: NewLedgerDocument): void {
     checkMovements(doc, spec.shape.movements)
     checkPayments(doc, spec.shape.payments)
 
-    for (const check of spec.checks) {
+    // What follows from the form, then what follows from the intent
+    for (const check of [...spec.shape.checks, ...spec.checks]) {
         CHECKS[check](doc)
     }
 }
