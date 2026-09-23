@@ -1,276 +1,158 @@
 /**
- * The rules every document must satisfy on its own.
+ * The engine that checks a document against its entry in `specs.ts`.
  *
- * These describe the shape of each document type: which links, lines and payments
- * it has, which columns those fill, and which signs the numbers carry. They look
- * at one document only, so they can be checked before it is stored and, later,
- * re-checked over stored data.
+ * `validateDocument` reads a document on its own: the rows its shape allows, the
+ * signs they carry, the columns they fill. `validateReferences` and
+ * `validateInContext` check it against what it points at, taking those records as
+ * data so both stay pure.
  *
- * These are invariants of a stored document, not of a request: they hold whoever
- * built it, so they also catch a command that builds a row wrongly (a forgotten
- * minus sign). Input checks do not replace them, and they do not replace input
- * checks: nothing here checks blank text or missing fields.
- *
- * `validateInContext` covers the rules about what a document refers to: its
- * salesman, the products its lines move, and the document it links to. It takes
- * those records as data, loaded by `context.ts`, so it stays as pure as the rest.
- * The foreign keys in the database only stop a dangling row from being stored;
- * they are not what produces the error.
- *
- * Rules that weigh a document against a whole tree of others (over-reversal, sale
- * balance, dependencies) are not expressible as a spec entry and will live beside
- * these as code reading the same context.
+ * Rules that cannot be said in a table entry are named functions here, and a type
+ * applies the ones its spec lists.
  */
 
 import { paymentMethodValues } from "../../dal/index.js"
 import type { DocumentType, NewLedgerDocument } from "../../dal/index.js"
 import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
 import type { DocumentReferences, LedgerContext } from "./context.js"
-
-/** Whether a nullable column must, must not, or may carry a value. */
-type Requirement = "required" | "forbidden" | "optional"
-
-/** What a document needs of a record it names. */
-type Reference = "active" | "exists" | "any"
-
-/** Which values a number may take, on top of always being a whole number. */
-type Sign = "positive" | "negative" | "nonNegative" | "nonPositive" | "nonZero" | "any"
-
-/** Whether a nullable column carries a value, and which values it may take. */
-interface ColumnSpec {
-    presence: Requirement
-    sign: Sign
-}
-
-interface LineSpec {
-    /** How many lines the document needs. */
-    minimum: number
-    quantity: Sign
-    /** `linked_line_id`: reversal lines point at the line they reverse. */
-    link: Requirement
-    unitPrice: ColumnSpec
-    lineDiscount: ColumnSpec
-    documentDiscountShare: ColumnSpec
-    amount: ColumnSpec
-    totalCost: ColumnSpec
-}
-
-interface PaymentSpec {
-    minimum: number
-    sign: Sign
-    /** `linked_payment_id`: a void's payments point at the payment they cancel. */
-    link: Requirement
-}
-
-interface DocumentSpec {
-    /** Rules of this type that are code rather than a table entry; see `CHECKS`. */
-    checks: CheckName[]
-    /** The same, for rules that need what the document points at; see `CONTEXT_CHECKS`. */
-    contextChecks: ContextCheckName[]
-    /** The salesman who performed it. */
-    salesman: Reference
-    /** The products its lines move: reversals may touch deactivated ones. */
-    products: Reference
-    /** `linked_document_id`: set exactly for the types that reverse or settle another. */
-    linkedDocument: Requirement
-    /** Which types it may link to; `null` when it links to none. */
-    linkedTypes: DocumentType[] | null
-    /** `null` when the type has no lines at all. */
-    lines: LineSpec | null
-    /** `null` when the type has no payments at all. */
-    payments: PaymentSpec | null
-}
+import {
+    SPECS,
+    type MovementsShape,
+    type PaymentsShape,
+    type Reference,
+    type Requirement,
+    type Sign,
+    type TermsShape,
+} from "./specs.js"
 
 /**
- * One entry per document type, mirroring the document shapes in REQUIREMENTS.md.
- *
- * Reversal lines (`RETURN`, `VOID`) carry only quantity and amount: their price,
- * discounts and cost are read from the line they reverse.
- */
-const SPECS: Record<DocumentType, DocumentSpec> = {
-    SALE: {
-        checks: ["amountMatchesLine"],
-        contextChecks: [],
-        salesman: "active",
-        products: "active",
-        linkedDocument: "forbidden",
-        linkedTypes: null,
-        lines: {
-            minimum: 1,
-            quantity: "negative",
-            link: "forbidden",
-            unitPrice: { presence: "required", sign: "nonNegative" },
-            lineDiscount: { presence: "required", sign: "nonNegative" },
-            documentDiscountShare: { presence: "required", sign: "nonNegative" },
-            amount: { presence: "required", sign: "nonNegative" },
-            totalCost: { presence: "forbidden", sign: "any" },
-        },
-        payments: { minimum: 0, sign: "positive", link: "forbidden" },
-    },
-    RETURN: {
-        checks: [],
-        contextChecks: ["targetNotVoided"],
-        salesman: "active",
-        products: "any",
-        linkedDocument: "required",
-        linkedTypes: ["SALE"],
-        lines: {
-            minimum: 1,
-            quantity: "positive",
-            link: "required",
-            unitPrice: { presence: "forbidden", sign: "any" },
-            lineDiscount: { presence: "forbidden", sign: "any" },
-            documentDiscountShare: { presence: "forbidden", sign: "any" },
-            amount: { presence: "required", sign: "nonPositive" },
-            totalCost: { presence: "forbidden", sign: "any" },
-        },
-        // A refund is money moving now, not a payment being taken back
-        payments: { minimum: 0, sign: "negative", link: "forbidden" },
-    },
-    PAYMENT: {
-        checks: [],
-        // Money settled later: its direction follows the document it settles
-        contextChecks: ["targetNotVoided", "paymentsMatchTargetDirection"],
-        salesman: "active",
-        products: "any",
-        linkedDocument: "required",
-        // Anything that moves money can be settled later
-        linkedTypes: ["SALE", "RESTOCK", "RETURN", "WRITE_OFF"],
-        lines: null,
-        payments: { minimum: 1, sign: "nonZero", link: "forbidden" },
-    },
-    RESTOCK: {
-        checks: [],
-        contextChecks: [],
-        salesman: "active",
-        products: "active",
-        linkedDocument: "forbidden",
-        linkedTypes: null,
-        lines: {
-            minimum: 1,
-            quantity: "positive",
-            link: "forbidden",
-            unitPrice: { presence: "forbidden", sign: "any" },
-            lineDiscount: { presence: "forbidden", sign: "any" },
-            documentDiscountShare: { presence: "forbidden", sign: "any" },
-            amount: { presence: "forbidden", sign: "any" },
-            totalCost: { presence: "required", sign: "nonNegative" },
-        },
-        payments: { minimum: 0, sign: "negative", link: "forbidden" },
-    },
-    WRITE_OFF: {
-        checks: [],
-        contextChecks: [],
-        salesman: "active",
-        // Leftovers of a product that is no longer sold still have to be cleared
-        products: "exists",
-        linkedDocument: "forbidden",
-        linkedTypes: null,
-        lines: {
-            minimum: 1,
-            quantity: "negative",
-            link: "forbidden",
-            unitPrice: { presence: "forbidden", sign: "any" },
-            lineDiscount: { presence: "forbidden", sign: "any" },
-            documentDiscountShare: { presence: "forbidden", sign: "any" },
-            amount: { presence: "forbidden", sign: "any" },
-            totalCost: { presence: "forbidden", sign: "any" },
-        },
-        // Goods can leave for something: a supplier taking back what spoiled, an
-        // insurer paying for what was damaged, a customer paying for what they broke
-        payments: { minimum: 0, sign: "positive", link: "forbidden" },
-    },
-    VOID: {
-        checks: ["happenedWhenRecorded"],
-        contextChecks: ["reversesTargetWhole", "targetIsVoidable"],
-        salesman: "active",
-        products: "any",
-        linkedDocument: "required",
-        // Anything but another void: an unwanted void is undone by recording the
-        // original again
-        linkedTypes: ["SALE", "RETURN", "PAYMENT", "RESTOCK", "WRITE_OFF"],
-        lines: {
-            minimum: 0,
-            quantity: "nonZero",
-            link: "required",
-            unitPrice: { presence: "forbidden", sign: "any" },
-            lineDiscount: { presence: "forbidden", sign: "any" },
-            documentDiscountShare: { presence: "forbidden", sign: "any" },
-            // Filled only when reversing a sale line, which the original says
-            amount: { presence: "optional", sign: "any" },
-            totalCost: { presence: "forbidden", sign: "any" },
-        },
-        payments: { minimum: 0, sign: "nonZero", link: "required" },
-    },
-}
-
-/**
- * The rules that cannot be said in a table entry: each one reads a whole document
- * and throws if it is wrong. A type applies the ones its spec names.
+ * The rules that read one document.
  */
 const CHECKS = {
     /**
      * A correction is made now: it does not get a business time of its own, since
      * what it takes back keeps the original's.
      */
-    happenedWhenRecorded(doc: NewLedgerDocument): void {
+    happensWhenRecorded(doc: NewLedgerDocument): void {
         if (doc.occurredAt.getTime() !== doc.recordedAt.getTime()) {
             throw new RuleViolationError(`A ${doc.type} happens when it is recorded`)
         }
     },
 
     /**
-     * The amount is what was charged: the price times the quantity, less the
-     * discounts.
+     * What was agreed is the price times the quantity, less the discounts.
      */
-    amountMatchesLine(doc: NewLedgerDocument): void {
-        for (const line of doc.lines) {
-            const gross = Math.abs(line.quantity) * (line.unitPrice ?? 0)
-            const expected = gross - (line.lineDiscount ?? 0) - (line.documentDiscountShare ?? 0)
-            if (line.amount !== expected) {
+    valueMatchesPricing(doc: NewLedgerDocument): void {
+        for (const row of doc.terms) {
+            const gross = Math.abs(row.quantity) * (row.unitPrice ?? 0)
+            const expected = gross - (row.lineDiscount ?? 0) - (row.documentDiscountShare ?? 0)
+            if (row.value !== expected) {
                 throw new RuleViolationError(
-                    `Line amount ${line.amount} does not match price and discounts (expected ${expected})`,
+                    `Value ${row.value} does not match price and discounts (expected ${expected})`,
                 )
             }
         }
     },
+
+    /**
+     * A deal is worth something: goods that change hands for nothing are their
+     * own intent, so that a zero total cannot hide a forgotten price.
+     */
+    dealHasValue(doc: NewLedgerDocument): void {
+        if (sum(doc.terms.map((row) => row.value)) === 0) {
+            throw new RuleViolationError(
+                `A ${doc.type} is worth something; goods given for nothing are a gift`,
+            )
+        }
+    },
+
+    /**
+     * Nothing is left owing: the money that moved covers what was agreed. More
+     * than that is a tip, or more handed to a supplier, and is allowed.
+     */
+    settledInFull(doc: NewLedgerDocument): void {
+        const agreed = sum(doc.terms.map((row) => row.value))
+        const paid = sum(doc.payments.map((payment) => payment.amount))
+        const owed = agreed - paid
+        if (owed * Math.sign(agreed) > 0) {
+            throw new RuleViolationError(
+                `A ${doc.type} leaves nothing owing, but ${Math.abs(owed)} is unsettled`,
+            )
+        }
+    },
 }
 
-type CheckName = keyof typeof CHECKS
+export type CheckName = keyof typeof CHECKS
 
 /**
- * The rules that need what the document points at. A type applies the ones its
- * spec names.
+ * The rules that read the documents around this one.
  */
 const CONTEXT_CHECKS = {
     /**
-     * A void takes back the whole document: every line and every payment, each in
-     * full, and each pointing at the row it reverses. Taking back only part of
-     * something is a new business fact, which is what a return is for.
+     * Nothing is settled, fulfilled or taken back against an entry that never
+     * happened.
      */
-    reversesTargetWhole(doc: NewLedgerDocument, context: LedgerContext): void {
+    targetNotVoided(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+        if (context.linked.linkedDocuments(target.id).some((other) => other.type === "VOID")) {
+            throw new RuleViolationError(`${target.id} is voided`)
+        }
+    },
+
+    /**
+     * Goods move against something agreed, and never more than was agreed. Every
+     * type that moves goods agrees them in the same document; delivering against
+     * an earlier deal will widen this rule when a type does that.
+     */
+    movementsWithinTerms(doc: NewLedgerDocument): void {
+        for (const movement of doc.movements) {
+            const agreed = doc.terms.find((row) => row.productId === movement.productId)
+            if (!agreed) {
+                throw new RuleViolationError(`Nothing was agreed for ${movement.productId}`)
+            }
+            if (Math.sign(movement.quantity) !== Math.sign(agreed.quantity)) {
+                throw new RuleViolationError(
+                    `Goods for ${movement.productId} move the wrong way for a ${doc.type}`,
+                )
+            }
+
+            if (Math.abs(movement.quantity) > Math.abs(agreed.quantity)) {
+                throw new RuleViolationError(
+                    `${Math.abs(movement.quantity)} of ${movement.productId} moved against ${Math.abs(agreed.quantity)} agreed`,
+                )
+            }
+        }
+    },
+
+    /**
+     * A void takes back the whole document: every row of it, each in full, and
+     * each pointing at the row it reverses.
+     */
+    mirrorsTargetWhole(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
 
         checkMirrors(
-            doc.lines.map((line) => ({ of: line.linkedLineId, by: line.quantity })),
-            target.lines.map((line) => ({ id: line.id, value: line.quantity })),
-            "line",
+            doc.terms.map((row) => ({ of: row.linkedTermsId, by: row.quantity })),
+            target.terms.map((row) => ({ id: row.id, value: row.quantity })),
+            "agreement",
             target.id,
         )
         checkMirrors(
-            doc.payments.map((payment) => ({ of: payment.linkedPaymentId, by: payment.amount })),
-            target.payments.map((payment) => ({ id: payment.id, value: payment.amount })),
+            doc.movements.map((row) => ({ of: row.linkedMovementId, by: row.quantity })),
+            target.movements.map((row) => ({ id: row.id, value: row.quantity })),
+            "movement",
+            target.id,
+        )
+        checkMirrors(
+            doc.payments.map((row) => ({ of: row.linkedPaymentId, by: row.amount })),
+            target.payments.map((row) => ({ id: row.id, value: row.amount })),
             "payment",
             target.id,
         )
     },
 
     /**
-     * What hangs off a document is dealt with first: a document with a live
-     * return or payment on it cannot be voided until that is voided too.
-     *
-     * A document is voided or it is not, so a second void has nothing left to
-     * take back.
+     * What hangs off a document is dealt with first, and a document is voided or
+     * it is not, so a second void has nothing left to take back.
      */
     targetIsVoidable(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
@@ -289,64 +171,14 @@ const CONTEXT_CHECKS = {
             }
         }
     },
-
-    /**
-     * Nothing is settled against an entry that never happened.
-     */
-    targetNotVoided(doc: NewLedgerDocument, context: LedgerContext): void {
-        const target = context.linked.getDocument(doc.linkedDocumentId!)!
-        const voided = context.linked
-            .linkedDocuments(target.id)
-            .some((other) => other.type === "VOID")
-        if (voided) {
-            throw new RuleViolationError(`${target.id} is voided`)
-        }
-    },
-
-    /**
-     * Money settled later moves the same way as the document it settles: into the
-     * till for a sale, out of it for a restock or a refund.
-     */
-    paymentsMatchTargetDirection(doc: NewLedgerDocument, context: LedgerContext): void {
-        const target = context.linked.getDocument(doc.linkedDocumentId!)!
-        const direction = paymentDirection(target.type)
-        if (direction === 0) {
-            throw new RuleViolationError(`A ${target.type} takes no payments`)
-        }
-        for (const payment of doc.payments) {
-            if (Math.sign(payment.amount) !== direction) {
-                throw new RuleViolationError(
-                    `Money settling a ${target.type} moves ${direction > 0 ? "in" : "out"}, not the other way`,
-                )
-            }
-        }
-    },
 }
 
-type ContextCheckName = keyof typeof CONTEXT_CHECKS
-
-/**
- * Which way money moves on a document of this type: `1` into the till, `-1` out
- * of it.
- *
- * Read from the same table the rules read, so a command building a payment and
- * the rule checking it cannot disagree.
- *
- * @param type - The type whose money direction is wanted.
- * @returns The direction, or `0` when the type takes no payments.
- */
-export function paymentDirection(type: DocumentType): number {
-    const sign = SPECS[type].payments?.sign
-    if (sign === "positive") {
-        return 1
-    }
-    return sign === "negative" ? -1 : 0
-}
+export type ContextCheckName = keyof typeof CONTEXT_CHECKS
 
 /**
  * Checks a document against the shape of its type.
  *
- * @param doc - Document with its lines and payments, as it will be stored.
+ * @param doc - Document with its rows, as it will be stored.
  * @throws {@link RuleViolationError} If any rule is broken.
  */
 export function validateDocument(doc: NewLedgerDocument): void {
@@ -356,10 +188,17 @@ export function validateDocument(doc: NewLedgerDocument): void {
         throw new RuleViolationError("A document cannot have happened after it was recorded")
     }
 
-    checkLink("linked document", doc.id, doc.linkedDocumentId, spec.linkedDocument, doc.type)
+    checkLink(
+        "linked document",
+        doc.id,
+        doc.linkedDocumentId,
+        spec.linkedTypes ? "required" : "forbidden",
+        doc.type,
+    )
 
-    checkLines(doc, spec.lines)
-    checkPayments(doc, spec.payments)
+    checkTerms(doc, spec.shape.terms)
+    checkMovements(doc, spec.shape.movements)
+    checkPayments(doc, spec.shape.payments)
 
     for (const check of spec.checks) {
         CHECKS[check](doc)
@@ -397,18 +236,19 @@ export function validateReferences(references: DocumentReferences, context: Ledg
 /**
  * Checks a document against the records it refers to.
  *
- * @param doc - Document with its lines and payments, as it will be stored.
+ * @param doc - Document with its rows, as it will be stored.
  * @param context - What those references resolved to, from {@link loadContext}.
- * @throws {@link NotFoundError} If a reference names nothing.
- * @throws {@link InactiveError} If it names something inactive that must be active.
- * @throws {@link RuleViolationError} If any other rule is broken.
+ * @throws {@link RuleViolationError} If any rule is broken.
  */
 export function validateInContext(doc: NewLedgerDocument, context: LedgerContext): void {
     validateReferences(
         {
             type: doc.type,
             performedBy: doc.performedBy,
-            productIds: doc.lines.map((line) => line.productId),
+            productIds: [
+                ...doc.terms.map((row) => row.productId),
+                ...doc.movements.map((row) => row.productId),
+            ],
             linkedDocumentId: doc.linkedDocumentId,
         },
         context,
@@ -416,6 +256,100 @@ export function validateInContext(doc: NewLedgerDocument, context: LedgerContext
 
     for (const check of SPECS[doc.type].contextChecks) {
         CONTEXT_CHECKS[check](doc, context)
+    }
+}
+
+function checkTerms(doc: NewLedgerDocument, shape: TermsShape | null): void {
+    if (!shape) {
+        if (doc.terms.length > 0) {
+            throw new RuleViolationError(`A ${doc.type} agrees nothing`)
+        }
+        return
+    }
+    checkCount(doc.terms.length, shape.minimum, "agreement", doc.type)
+    checkOnePerProduct(doc.terms, "agreement", doc.type)
+
+    for (const row of doc.terms) {
+        checkBelongs("Agreement", row.id, row.documentId, doc.id)
+        checkNumber("Quantity", row.quantity, shape.quantity)
+        checkNumber("Value", row.value, shape.value)
+        checkLink("linked agreement", row.id, row.linkedTermsId, shape.linkedTermsId, doc.type)
+
+        checkColumn("unit price", row.unitPrice, shape.unitPrice, doc.type)
+        checkColumn("line discount", row.lineDiscount, shape.lineDiscount, doc.type)
+        checkColumn(
+            "document discount share",
+            row.documentDiscountShare,
+            shape.documentDiscountShare,
+            doc.type,
+        )
+        for (const value of [row.unitPrice, row.lineDiscount, row.documentDiscountShare]) {
+            if (value !== null) {
+                checkNumber("Pricing", value, "nonNegative")
+            }
+        }
+    }
+}
+
+function checkMovements(doc: NewLedgerDocument, shape: MovementsShape | null): void {
+    if (!shape) {
+        if (doc.movements.length > 0) {
+            throw new RuleViolationError(`A ${doc.type} moves no goods`)
+        }
+        return
+    }
+    checkCount(doc.movements.length, shape.minimum, "movement", doc.type)
+    checkOnePerProduct(doc.movements, "movement", doc.type)
+
+    for (const row of doc.movements) {
+        checkBelongs("Movement", row.id, row.documentId, doc.id)
+        checkNumber("Quantity", row.quantity, shape.quantity)
+        checkLink("linked movement", row.id, row.linkedMovementId, shape.linkedMovementId, doc.type)
+    }
+}
+
+function checkPayments(doc: NewLedgerDocument, shape: PaymentsShape | null): void {
+    if (!shape) {
+        if (doc.payments.length > 0) {
+            throw new RuleViolationError(`A ${doc.type} moves no money`)
+        }
+        return
+    }
+    checkCount(doc.payments.length, shape.minimum, "payment", doc.type)
+
+    for (const payment of doc.payments) {
+        checkBelongs("Payment", payment.id, payment.documentId, doc.id)
+        if (!(paymentMethodValues as readonly string[]).includes(payment.method)) {
+            throw new RuleViolationError(`Unknown payment method: ${payment.method}`)
+        }
+        checkNumber("Payment amount", payment.amount, shape.sign)
+        checkLink(
+            "linked payment",
+            payment.id,
+            payment.linkedPaymentId,
+            shape.linkedPaymentId,
+            doc.type,
+        )
+    }
+}
+
+function checkCount(count: number, minimum: number, what: string, type: DocumentType): void {
+    if (count < minimum) {
+        throw new RuleViolationError(`A ${type} needs at least ${minimum} ${what}(s)`)
+    }
+}
+
+/**
+ * One row per product, so goods that move can always be matched to what was
+ * agreed for them.
+ */
+function checkOnePerProduct(rows: { productId: string }[], what: string, type: DocumentType): void {
+    const seen = new Set<string>()
+    for (const row of rows) {
+        if (seen.has(row.productId)) {
+            throw new RuleViolationError(`A ${type} has two ${what} rows for ${row.productId}`)
+        }
+        seen.add(row.productId)
     }
 }
 
@@ -470,56 +404,6 @@ function checkProduct(productId: string, context: LedgerContext, reference: Refe
     }
 }
 
-function checkLines(doc: NewLedgerDocument, spec: LineSpec | null): void {
-    if (!spec) {
-        if (doc.lines.length > 0) {
-            throw new RuleViolationError(`A ${doc.type} cannot have lines`)
-        }
-        return
-    }
-    if (doc.lines.length < spec.minimum) {
-        throw new RuleViolationError(`A ${doc.type} needs at least ${spec.minimum} line(s)`)
-    }
-
-    for (const line of doc.lines) {
-        checkBelongs("Line", line.id, line.documentId, doc.id)
-        checkNumber("Line quantity", line.quantity, spec.quantity)
-        checkLink("linked line", line.id, line.linkedLineId, spec.link, doc.type)
-
-        checkColumn("unit price", line.unitPrice, spec.unitPrice, doc.type)
-        checkColumn("line discount", line.lineDiscount, spec.lineDiscount, doc.type)
-        checkColumn(
-            "document discount share",
-            line.documentDiscountShare,
-            spec.documentDiscountShare,
-            doc.type,
-        )
-        checkColumn("amount", line.amount, spec.amount, doc.type)
-        checkColumn("total cost", line.totalCost, spec.totalCost, doc.type)
-    }
-}
-
-function checkPayments(doc: NewLedgerDocument, spec: PaymentSpec | null): void {
-    if (!spec) {
-        if (doc.payments.length > 0) {
-            throw new RuleViolationError(`A ${doc.type} cannot have payments`)
-        }
-        return
-    }
-    if (doc.payments.length < spec.minimum) {
-        throw new RuleViolationError(`A ${doc.type} needs at least ${spec.minimum} payment(s)`)
-    }
-
-    for (const payment of doc.payments) {
-        checkBelongs("Payment", payment.id, payment.documentId, doc.id)
-        if (!(paymentMethodValues as readonly string[]).includes(payment.method)) {
-            throw new RuleViolationError(`Unknown payment method: ${payment.method}`)
-        }
-        checkNumber("Payment amount", payment.amount, spec.sign)
-        checkLink("linked payment", payment.id, payment.linkedPaymentId, spec.link, doc.type)
-    }
-}
-
 /**
  * A row belongs to the document it is stored under.
  */
@@ -550,17 +434,14 @@ function checkLink(
 function checkColumn(
     what: string,
     value: number | null,
-    spec: ColumnSpec,
+    requirement: Requirement,
     type: DocumentType,
 ): void {
-    if (spec.presence === "required" && value === null) {
-        throw new RuleViolationError(`A ${type} line must have a ${what}`)
+    if (requirement === "required" && value === null) {
+        throw new RuleViolationError(`A ${type} must have a ${what}`)
     }
-    if (spec.presence === "forbidden" && value !== null) {
-        throw new RuleViolationError(`A ${type} line cannot have a ${what}`)
-    }
-    if (value !== null) {
-        checkNumber(`Line ${what}`, value, spec.sign)
+    if (requirement === "forbidden" && value !== null) {
+        throw new RuleViolationError(`A ${type} cannot have a ${what}`)
     }
 }
 
@@ -581,4 +462,8 @@ function checkNumber(what: string, value: number, sign: Sign): void {
     if (!ok) {
         throw new RuleViolationError(`${what} ${value} is not allowed here`)
     }
+}
+
+function sum(values: number[]): number {
+    return values.reduce((total, value) => total + value, 0)
 }
