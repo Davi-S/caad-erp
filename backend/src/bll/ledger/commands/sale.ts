@@ -5,12 +5,12 @@
  * Goods sold to be paid for later are a `CREDIT_SALE`.
  */
 
-import type { DB, LedgerDocument } from "../../dal/index.js"
-import { newId } from "../../ids.js"
-import { validate } from "../validate.js"
-import { documentFields, paymentField } from "./fields.js"
-import { post } from "./post.js"
-import { documentDiscountField, itemsField, priceItems } from "./pricing.js"
+import type { DB, LedgerDocument } from "../../../dal/index.js"
+import { newId } from "../../../ids.js"
+import { validate } from "../../validate.js"
+import { documentDiscountField, documentFields, paymentField, soldItemsField } from "../fields.js"
+import { post } from "../post.js"
+import { priceItems } from "../rows.js"
 import { z } from "zod"
 
 /**
@@ -18,7 +18,7 @@ import { z } from "zod"
  */
 export const saleSchema = z.object({
     ...documentFields,
-    items: itemsField,
+    items: soldItemsField,
     documentDiscount: documentDiscountField,
     payments: z.array(paymentField).min(1, "At least one payment is required"),
 })

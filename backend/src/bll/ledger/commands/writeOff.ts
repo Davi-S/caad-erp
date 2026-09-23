@@ -6,11 +6,11 @@
  * the batches they came from. Goods that leave *for* something are not this.
  */
 
-import type { DB, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
-import { newId } from "../../ids.js"
-import { validate } from "../validate.js"
-import { documentFields, productIdField, quantityField } from "./fields.js"
-import { post } from "./post.js"
+import type { DB, LedgerDocument, NewLedgerDocument } from "../../../dal/index.js"
+import { newId } from "../../../ids.js"
+import { validate } from "../../validate.js"
+import { documentFields, productIdField, quantityField } from "../fields.js"
+import { post } from "../post.js"
 import { z } from "zod"
 
 /**

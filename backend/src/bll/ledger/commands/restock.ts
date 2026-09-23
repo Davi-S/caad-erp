@@ -7,11 +7,11 @@
  * worked out from it.
  */
 
-import type { DB, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
-import { newId } from "../../ids.js"
-import { validate } from "../validate.js"
-import { documentFields, paymentField, productIdField, quantityField } from "./fields.js"
-import { post } from "./post.js"
+import type { DB, LedgerDocument, NewLedgerDocument } from "../../../dal/index.js"
+import { newId } from "../../../ids.js"
+import { validate } from "../../validate.js"
+import { documentFields, paymentField, productIdField, quantityField } from "../fields.js"
+import { post } from "../post.js"
 import { z } from "zod"
 
 /**

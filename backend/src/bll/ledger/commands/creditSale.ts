@@ -10,12 +10,12 @@
  * the balance until it is paid.
  */
 
-import type { DB, LedgerDocument } from "../../dal/index.js"
-import { newId } from "../../ids.js"
-import { validate } from "../validate.js"
-import { documentFields } from "./fields.js"
-import { post } from "./post.js"
-import { documentDiscountField, itemsField, priceItems } from "./pricing.js"
+import type { DB, LedgerDocument } from "../../../dal/index.js"
+import { newId } from "../../../ids.js"
+import { validate } from "../../validate.js"
+import { documentDiscountField, documentFields, soldItemsField } from "../fields.js"
+import { post } from "../post.js"
+import { priceItems } from "../rows.js"
 import { z } from "zod"
 
 /**
@@ -23,7 +23,7 @@ import { z } from "zod"
  */
 export const creditSaleSchema = z.object({
     ...documentFields,
-    items: itemsField,
+    items: soldItemsField,
     documentDiscount: documentDiscountField,
 })
 

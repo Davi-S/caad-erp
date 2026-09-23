@@ -42,3 +42,29 @@ export const quantityField = z
  * A product a row names.
  */
 export const productIdField = z.string().trim().min(1, "Product is required")
+
+/**
+ * A discount, as a whole number of cents off.
+ */
+const discountField = z
+    .int("Discount must be a whole number of cents")
+    .nonnegative("Discount cannot be negative")
+
+/**
+ * What is being sold: a product, how many, and what comes off that line.
+ */
+export const soldItemsField = z
+    .array(
+        z.object({
+            productId: productIdField,
+            quantity: quantityField,
+            lineDiscount: discountField.default(0),
+        }),
+    )
+    .min(1, "At least one item is required")
+
+/**
+ * A discount over a whole cart, split across its items in proportion to what
+ * they cost.
+ */
+export const documentDiscountField = discountField.default(0)

@@ -176,6 +176,7 @@ const SHAPES = {
 
     goodsOut: { agreements: null, movements: GOODS_OUT_MOVEMENTS, payments: null, checks: [] },
 
+    // Note that some agreed items can be free, but the total cannot be free
     moneyOutGoodsIn: {
         agreements: GOODS_IN_AGREEMENTS,
         movements: GOODS_IN_MOVEMENTS,
@@ -185,6 +186,7 @@ const SHAPES = {
 
     moneyOut: { agreements: null, movements: null, payments: MONEY_OUT_PAYMENTS, checks: [] },
 
+    // Note that some agreed items can be free, but the total cannot be free
     moneyOutGoodsDeferred: {
         agreements: GOODS_IN_AGREEMENTS,
         movements: null,
@@ -192,6 +194,7 @@ const SHAPES = {
         checks: ["agreementsHaveValue", "paymentsSettleInFull"],
     },
 
+    // Note that some agreed items can be free, but the total cannot be free
     moneyDeferredGoodsOut: {
         agreements: GOODS_OUT_AGREEMENTS,
         movements: GOODS_OUT_MOVEMENTS,
@@ -203,6 +206,7 @@ const SHAPES = {
         ],
     },
 
+    // Note that some agreed items can be free, but the total cannot be free
     moneyDeferredGoodsIn: {
         agreements: GOODS_IN_AGREEMENTS,
         movements: GOODS_IN_MOVEMENTS,
