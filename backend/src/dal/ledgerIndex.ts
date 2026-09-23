@@ -1,7 +1,7 @@
 /**
  * In-memory navigation over the ledger, or part of it.
  *
- * Indexes documents, terms, movements and payments by ID and follows the link
+ * Indexes documents, agreements, movements and payments by ID and follows the link
  * columns in both directions (a row to what it links to, and a row to what links
  * to it). It only knows how rows point to each other, not what that means: rules
  * and derived values are the BLL's.
@@ -15,18 +15,18 @@
 
 import type { DB } from "./client.js"
 import { listDocuments, listLinkedDocuments, type LedgerDocument } from "./documents.js"
-import type { MovementRow, PaymentRow, TermsRow } from "./schema.js"
+import type { MovementRow, PaymentRow, AgreementRow } from "./schema.js"
 
 export class LedgerIndex {
     /** Every document, in the order it was added (`sequence` order when loaded). */
     readonly documents: LedgerDocument[] = []
 
     private readonly docsById = new Map<string, LedgerDocument>()
-    private readonly termsById = new Map<string, TermsRow>()
+    private readonly agreementsById = new Map<string, AgreementRow>()
     private readonly movementsById = new Map<string, MovementRow>()
     private readonly paymentsById = new Map<string, PaymentRow>()
     private readonly linkedDocs = new Map<string, LedgerDocument[]>()
-    private readonly termsReversers = new Map<string, TermsRow[]>()
+    private readonly agreementReversers = new Map<string, AgreementRow[]>()
     private readonly movementReversers = new Map<string, MovementRow[]>()
     private readonly paymentReversers = new Map<string, PaymentRow[]>()
 
@@ -62,10 +62,10 @@ export class LedgerIndex {
         if (doc.linkedDocumentId) {
             push(this.linkedDocs, doc.linkedDocumentId, doc)
         }
-        for (const row of doc.terms) {
-            this.termsById.set(row.id, row)
-            if (row.linkedTermsId) {
-                push(this.termsReversers, row.linkedTermsId, row)
+        for (const row of doc.agreements) {
+            this.agreementsById.set(row.id, row)
+            if (row.linkedAgreementId) {
+                push(this.agreementReversers, row.linkedAgreementId, row)
             }
         }
         for (const movement of doc.movements) {
@@ -86,8 +86,8 @@ export class LedgerIndex {
         return this.docsById.get(id)
     }
 
-    getTerms(id: string): TermsRow | undefined {
-        return this.termsById.get(id)
+    getAgreement(id: string): AgreementRow | undefined {
+        return this.agreementsById.get(id)
     }
 
     getMovement(id: string): MovementRow | undefined {
@@ -111,9 +111,9 @@ export class LedgerIndex {
         return this.linkedDocs.get(docId) ?? []
     }
 
-    /** Terms whose `linked_terms_id` points to the given row. */
-    termsReversals(termsId: string): TermsRow[] {
-        return this.termsReversers.get(termsId) ?? []
+    /** Agreements whose `linked_agreement_id` points to the given row. */
+    agreementReversals(agreementId: string): AgreementRow[] {
+        return this.agreementReversers.get(agreementId) ?? []
     }
 
     /** Movements whose `linked_movement_id` points to the given movement. */

@@ -2,8 +2,8 @@
  * Write-offs: stock that left with nobody on the other side (loss, damage,
  * expiry, units found missing).
  *
- * No deal, so no value: what the goods cost is derived from the batches they came
- * from. Goods that leave *for* something are not this.
+ * Nothing is agreed, so there is no value: what the goods cost is derived from
+ * the batches they came from. Goods that leave *for* something are not this.
  */
 
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../dal/index.js"
@@ -58,7 +58,7 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument
                 performedBy: input.performedBy,
                 linkedDocumentId: null,
                 notes: input.notes,
-                terms: [],
+                agreements: [],
                 movements: input.items.map((item) => ({
                     id: newId(),
                     documentId: id,

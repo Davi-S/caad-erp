@@ -1,5 +1,5 @@
 /**
- * Data access for the ledger: `documents`, `terms`, `movements` and `payments`.
+ * Data access for the ledger: `documents`, `agreements`, `movements` and `payments`.
  *
  * A document carries three kinds of row: what was agreed, what goods moved and
  * what money moved. Any of them can be absent, and which are expected is the
@@ -15,11 +15,11 @@ import {
     documents,
     movements,
     payments,
-    terms,
+    agreements,
     type DocumentRow,
     type MovementRow,
     type PaymentRow,
-    type TermsRow,
+    type AgreementRow,
 } from "./schema.js"
 
 /**
@@ -29,7 +29,7 @@ import {
  * reads return the same order. Do not rely on it.
  */
 export interface LedgerDocument extends DocumentRow {
-    terms: TermsRow[]
+    agreements: AgreementRow[]
     movements: MovementRow[]
     payments: PaymentRow[]
 }
@@ -48,7 +48,7 @@ export type NewLedgerDocument = Omit<LedgerDocument, "sequence">
 export function listDocuments(db: DB): LedgerDocument[] {
     return group(
         db.select().from(documents).orderBy(asc(documents.sequence)).all(),
-        db.select().from(terms).orderBy(asc(terms.id)).all(),
+        db.select().from(agreements).orderBy(asc(agreements.id)).all(),
         db.select().from(movements).orderBy(asc(movements.id)).all(),
         db.select().from(payments).orderBy(asc(payments.id)).all(),
     )
@@ -83,7 +83,12 @@ export function listLinkedDocuments(db: DB, id: string): LedgerDocument[] {
             .where(inArray(documents.id, ids))
             .orderBy(asc(documents.sequence))
             .all(),
-        db.select().from(terms).where(inArray(terms.documentId, ids)).orderBy(asc(terms.id)).all(),
+        db
+            .select()
+            .from(agreements)
+            .where(inArray(agreements.documentId, ids))
+            .orderBy(asc(agreements.id))
+            .all(),
         db
             .select()
             .from(movements)
@@ -112,7 +117,12 @@ export function getDocument(db: DB, id: string): LedgerDocument | undefined {
 
     return {
         ...doc,
-        terms: db.select().from(terms).where(eq(terms.documentId, id)).orderBy(asc(terms.id)).all(),
+        agreements: db
+            .select()
+            .from(agreements)
+            .where(eq(agreements.documentId, id))
+            .orderBy(asc(agreements.id))
+            .all(),
         movements: db
             .select()
             .from(movements)
@@ -138,7 +148,12 @@ export function getDocument(db: DB, id: string): LedgerDocument | undefined {
  * @returns The document as stored.
  */
 export function insertDocument(db: DB, record: NewLedgerDocument): LedgerDocument {
-    const { terms: docTerms, movements: docMovements, payments: docPayments, ...doc } = record
+    const {
+        agreements: docAgreements,
+        movements: docMovements,
+        payments: docPayments,
+        ...doc
+    } = record
 
     return inTransaction(db, () => {
         const last = db
@@ -155,7 +170,9 @@ export function insertDocument(db: DB, record: NewLedgerDocument): LedgerDocumen
 
         return {
             ...stored,
-            terms: docTerms.map((row) => db.insert(terms).values(row).returning().get()),
+            agreements: docAgreements.map((row) =>
+                db.insert(agreements).values(row).returning().get(),
+            ),
             movements: docMovements.map((row) =>
                 db.insert(movements).values(row).returning().get(),
             ),
@@ -169,16 +186,16 @@ export function insertDocument(db: DB, record: NewLedgerDocument): LedgerDocumen
  */
 function group(
     docs: DocumentRow[],
-    docTerms: TermsRow[],
+    docAgreements: AgreementRow[],
     docMovements: MovementRow[],
     docPayments: PaymentRow[],
 ): LedgerDocument[] {
     const byId = new Map<string, LedgerDocument>()
     for (const doc of docs) {
-        byId.set(doc.id, { ...doc, terms: [], movements: [], payments: [] })
+        byId.set(doc.id, { ...doc, agreements: [], movements: [], payments: [] })
     }
-    for (const row of docTerms) {
-        byId.get(row.documentId)!.terms.push(row)
+    for (const row of docAgreements) {
+        byId.get(row.documentId)!.agreements.push(row)
     }
     for (const row of docMovements) {
         byId.get(row.documentId)!.movements.push(row)

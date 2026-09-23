@@ -20,14 +20,14 @@ import type { CheckName, ContextCheckName } from "./rules.js"
 export type Sign = "positive" | "negative" | "nonNegative" | "nonPositive" | "nonZero" | "any"
 
 /** Whether a group of nullable columns must or must not carry values. */
-export type Requirement = "required" | "forbidden"
+export type Presence = "required" | "forbidden"
 
 /** What a document agrees: goods promised and what they are worth. */
-export interface TermsShape {
+export interface AgreementsShape {
     /** How many rows of this kind the document needs. */
     minimum: number
     /** Only a reversal points at what it takes back. */
-    linkedTermsId: Requirement
+    linkedAgreementId: Presence
     quantity: Sign
     value: Sign
     /**
@@ -35,16 +35,16 @@ export interface TermsShape {
      * goods, a purchase and a reversal do not - and they are stated one by one so
      * that a type can ever differ without the engine changing.
      */
-    unitPrice: Requirement
-    lineDiscount: Requirement
-    documentDiscountShare: Requirement
+    unitPrice: Presence
+    lineDiscount: Presence
+    documentDiscountShare: Presence
 }
 
 /** Goods that actually moved. */
 export interface MovementsShape {
     minimum: number
     /** Only a reversal points at what it takes back. */
-    linkedMovementId: Requirement
+    linkedMovementId: Presence
     quantity: Sign
 }
 
@@ -53,7 +53,7 @@ export interface PaymentsShape {
     minimum: number
     sign: Sign
     /** A void's payments name the payment they cancel. */
-    linkedPaymentId: Requirement
+    linkedPaymentId: Presence
 }
 
 /**
@@ -64,16 +64,16 @@ export interface PaymentsShape {
  * agrees goods and pays for them now must be settled now, whichever intent it is.
  */
 export interface Shape {
-    terms: TermsShape | null
+    agreements: AgreementsShape | null
     movements: MovementsShape | null
     payments: PaymentsShape | null
     checks: CheckName[]
 }
 
 /** Goods going out: they leave, and their value is owed to us. Priced. */
-const GOODS_OUT_TERMS: TermsShape = {
+const GOODS_OUT_AGREEMENTS: AgreementsShape = {
     minimum: 1,
-    linkedTermsId: "forbidden",
+    linkedAgreementId: "forbidden",
     quantity: "negative",
     value: "nonNegative",
     unitPrice: "required",
@@ -82,9 +82,9 @@ const GOODS_OUT_TERMS: TermsShape = {
 }
 
 /** Goods coming in: they arrive, and their cost is owed by us. Not priced. */
-const GOODS_IN_TERMS: TermsShape = {
+const GOODS_IN_AGREEMENTS: AgreementsShape = {
     minimum: 1,
-    linkedTermsId: "forbidden",
+    linkedAgreementId: "forbidden",
     quantity: "positive",
     value: "nonPositive",
     unitPrice: "forbidden",
@@ -106,8 +106,9 @@ const GOODS_IN_MOVEMENTS: MovementsShape = {
     quantity: "positive",
 }
 /**
- * Money arriving, and money leaving. A deal that is settled carries at least one
- * payment; whether they add up to the deal is `settledInFull`'s business.
+ * Money arriving, and money leaving. An agreement that is settled carries at
+ * least one payment; whether they add up to it is `paymentsSettleInFull`'s
+ * business.
  */
 const MONEY_IN_PAYMENTS: PaymentsShape = {
     minimum: 1,
@@ -144,58 +145,67 @@ const MONEY_OUT_PAYMENTS: PaymentsShape = {
  * ```
  *
  * "Deferred" means the rows are simply absent, and a linked document brings them
- * when they happen. What was agreed is always recorded, so nothing about the deal
- * waits.
+ * when they happen. What was agreed is always recorded, so nothing about the
+ * agreement waits.
  */
 const SHAPES = {
-    moneyIn: { terms: null, movements: null, payments: MONEY_IN_PAYMENTS, checks: [] },
+    moneyIn: { agreements: null, movements: null, payments: MONEY_IN_PAYMENTS, checks: [] },
 
     moneyInGoodsOut: {
-        terms: GOODS_OUT_TERMS,
+        agreements: GOODS_OUT_AGREEMENTS,
         movements: GOODS_OUT_MOVEMENTS,
         payments: MONEY_IN_PAYMENTS,
-        checks: ["valueMatchesPricing", "dealHasValue", "movementsWithinTerms", "settledInFull"],
+        checks: [
+            "agreementValueMatchesPricing",
+            "agreementsHaveValue",
+            "movementsWithinAgreements",
+            "paymentsSettleInFull",
+        ],
     },
 
     moneyInGoodsDeferred: {
-        terms: GOODS_OUT_TERMS,
+        agreements: GOODS_OUT_AGREEMENTS,
         movements: null,
         payments: MONEY_IN_PAYMENTS,
-        checks: ["valueMatchesPricing", "dealHasValue", "settledInFull"],
+        checks: ["agreementValueMatchesPricing", "agreementsHaveValue", "paymentsSettleInFull"],
     },
 
-    goodsIn: { terms: null, movements: GOODS_IN_MOVEMENTS, payments: null, checks: [] },
+    goodsIn: { agreements: null, movements: GOODS_IN_MOVEMENTS, payments: null, checks: [] },
 
-    goodsOut: { terms: null, movements: GOODS_OUT_MOVEMENTS, payments: null, checks: [] },
+    goodsOut: { agreements: null, movements: GOODS_OUT_MOVEMENTS, payments: null, checks: [] },
 
     moneyOutGoodsIn: {
-        terms: GOODS_IN_TERMS,
+        agreements: GOODS_IN_AGREEMENTS,
         movements: GOODS_IN_MOVEMENTS,
         payments: MONEY_OUT_PAYMENTS,
-        checks: ["dealHasValue", "movementsWithinTerms", "settledInFull"],
+        checks: ["agreementsHaveValue", "movementsWithinAgreements", "paymentsSettleInFull"],
     },
 
-    moneyOut: { terms: null, movements: null, payments: MONEY_OUT_PAYMENTS, checks: [] },
+    moneyOut: { agreements: null, movements: null, payments: MONEY_OUT_PAYMENTS, checks: [] },
 
     moneyOutGoodsDeferred: {
-        terms: GOODS_IN_TERMS,
+        agreements: GOODS_IN_AGREEMENTS,
         movements: null,
         payments: MONEY_OUT_PAYMENTS,
-        checks: ["dealHasValue", "settledInFull"],
+        checks: ["agreementsHaveValue", "paymentsSettleInFull"],
     },
 
     moneyDeferredGoodsOut: {
-        terms: GOODS_OUT_TERMS,
+        agreements: GOODS_OUT_AGREEMENTS,
         movements: GOODS_OUT_MOVEMENTS,
         payments: null,
-        checks: ["valueMatchesPricing", "dealHasValue", "movementsWithinTerms"],
+        checks: [
+            "agreementValueMatchesPricing",
+            "agreementsHaveValue",
+            "movementsWithinAgreements",
+        ],
     },
 
     moneyDeferredGoodsIn: {
-        terms: GOODS_IN_TERMS,
+        agreements: GOODS_IN_AGREEMENTS,
         movements: GOODS_IN_MOVEMENTS,
         payments: null,
-        checks: ["dealHasValue", "movementsWithinTerms"],
+        checks: ["agreementsHaveValue", "movementsWithinAgreements"],
     },
 
     /**
@@ -203,9 +213,9 @@ const SHAPES = {
      * its rows are whatever they have to be and the mirror rule checks them.
      */
     mirrored: {
-        terms: {
+        agreements: {
             minimum: 0,
-            linkedTermsId: "required",
+            linkedAgreementId: "required",
             quantity: "nonZero",
             value: "any",
             unitPrice: "forbidden",
@@ -219,7 +229,7 @@ const SHAPES = {
 } as const satisfies Record<string, Shape>
 
 /** What a document needs of a record it names. */
-export type Reference = "active" | "exists" | "any"
+export type ReferenceRule = "active" | "exists" | "any"
 
 export interface DocumentSpec {
     shape: Shape
@@ -228,9 +238,9 @@ export interface DocumentSpec {
     /** The same, for rules that need the documents around it; see `CONTEXT_CHECKS`. */
     contextChecks: ContextCheckName[]
     /** Whoever performed it. */
-    salesman: Reference
+    salesman: ReferenceRule
     /** The products it names: reversals may touch deactivated ones. */
-    products: Reference
+    products: ReferenceRule
     /** Which types it may link to; `null` when it links to none. */
     linkedTypes: DocumentType[] | null
 }
@@ -287,8 +297,8 @@ export const SPECS: Record<DocumentType, DocumentSpec> = {
 
     VOID: {
         shape: SHAPES.mirrored,
-        checks: ["happensWhenRecorded"],
-        contextChecks: ["targetIsVoidable", "mirrorsTargetWhole"],
+        checks: ["occursWhenRecorded"],
+        contextChecks: ["targetIsVoidable", "targetFullyMirrored"],
         salesman: "active",
         products: "any",
         // Anything but another void: an unwanted void is undone by recording the

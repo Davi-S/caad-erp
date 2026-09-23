@@ -10,9 +10,9 @@
  * it enforces column types, `NOT NULL`, primary keys and foreign keys, and
  * nothing else.
  *
- * A document carries three kinds of row: what was agreed (`terms`), what goods
- * moved (`movements`) and what money moved (`payments`). Money lives on the deal,
- * goods on the movement, so each table means one thing.
+ * A document carries three kinds of row: what was agreed (`agreements`), what
+ * goods moved (`movements`) and what money moved (`payments`). Money lives on the
+ * agreement, goods on the movement, so each table means one thing.
  */
 
 import type Database from "better-sqlite3"
@@ -63,11 +63,11 @@ const SCHEMA_SQL = `
         notes               TEXT
     ) STRICT;
 
-    CREATE TABLE terms (
+    CREATE TABLE agreements (
         id                      TEXT     NOT NULL PRIMARY KEY,
         document_id             TEXT     NOT NULL REFERENCES documents (id),
         product_id              TEXT     NOT NULL REFERENCES products (id),
-        linked_terms_id         TEXT              REFERENCES terms (id),
+        linked_agreement_id         TEXT              REFERENCES agreements (id),
         quantity                INTEGER  NOT NULL,
         unit_price              INTEGER,
         line_discount           INTEGER,
@@ -95,9 +95,9 @@ const SCHEMA_SQL = `
     CREATE INDEX idx_salesman_history_salesman_id ON salesman_history (salesman_id);
     CREATE INDEX idx_documents_occurred_at        ON documents (occurred_at);
     CREATE INDEX idx_documents_linked_document_id ON documents (linked_document_id);
-    CREATE INDEX idx_terms_document_id            ON terms (document_id);
-    CREATE INDEX idx_terms_product_id             ON terms (product_id);
-    CREATE INDEX idx_terms_linked_terms_id        ON terms (linked_terms_id);
+    CREATE INDEX idx_agreements_document_id            ON agreements (document_id);
+    CREATE INDEX idx_agreements_product_id             ON agreements (product_id);
+    CREATE INDEX idx_agreements_linked_agreement_id        ON agreements (linked_agreement_id);
     CREATE INDEX idx_movements_document_id        ON movements (document_id);
     CREATE INDEX idx_movements_product_id         ON movements (product_id);
     CREATE INDEX idx_movements_linked_movement_id ON movements (linked_movement_id);

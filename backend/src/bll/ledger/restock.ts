@@ -69,11 +69,11 @@ export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
                 performedBy: input.performedBy,
                 linkedDocumentId: null,
                 notes: input.notes,
-                terms: input.items.map((item) => ({
+                agreements: input.items.map((item) => ({
                     id: newId(),
                     documentId: id,
                     productId: item.productId,
-                    linkedTermsId: null,
+                    linkedAgreementId: null,
                     // Stock arrives, money leaves
                     quantity: item.quantity,
                     unitPrice: null,

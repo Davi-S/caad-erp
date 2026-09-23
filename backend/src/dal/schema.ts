@@ -99,10 +99,10 @@ export const documents = sqliteTable("documents", {
 /**
  * What a document agreed: the goods promised and what they are worth.
  *
- * At most one row per product per document, so a movement finds its deal by
- * product alone.
+ * At most one row per product per document, so a movement finds what was agreed
+ * for it by product alone.
  */
-export const terms = sqliteTable("terms", {
+export const agreements = sqliteTable("agreements", {
     id: text("id").primaryKey(),
     documentId: text("document_id")
         .notNull()
@@ -110,7 +110,7 @@ export const terms = sqliteTable("terms", {
     productId: text("product_id")
         .notNull()
         .references(() => products.id),
-    linkedTermsId: text("linked_terms_id").references((): AnySQLiteColumn => terms.id),
+    linkedAgreementId: text("linked_agreement_id").references((): AnySQLiteColumn => agreements.id),
     quantity: integer("quantity").notNull(),
     unitPrice: integer("unit_price"),
     lineDiscount: integer("line_discount"),
@@ -151,6 +151,6 @@ export type SalesmanRow = typeof salesmen.$inferSelect
 export type ProductHistoryRow = typeof productHistory.$inferSelect
 export type SalesmanHistoryRow = typeof salesmanHistory.$inferSelect
 export type DocumentRow = typeof documents.$inferSelect
-export type TermsRow = typeof terms.$inferSelect
+export type AgreementRow = typeof agreements.$inferSelect
 export type MovementRow = typeof movements.$inferSelect
 export type PaymentRow = typeof payments.$inferSelect

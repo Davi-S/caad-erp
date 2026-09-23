@@ -18,10 +18,10 @@ import {
     SPECS,
     type MovementsShape,
     type PaymentsShape,
-    type Reference,
-    type Requirement,
+    type ReferenceRule,
+    type Presence,
     type Sign,
-    type TermsShape,
+    type AgreementsShape,
 } from "./specs.js"
 
 /**
@@ -32,7 +32,7 @@ const CHECKS = {
      * A correction is made now: it does not get a business time of its own, since
      * what it takes back keeps the original's.
      */
-    happensWhenRecorded(doc: NewLedgerDocument): void {
+    occursWhenRecorded(doc: NewLedgerDocument): void {
         if (doc.occurredAt.getTime() !== doc.recordedAt.getTime()) {
             throw new RuleViolationError(`A ${doc.type} happens when it is recorded`)
         }
@@ -41,8 +41,8 @@ const CHECKS = {
     /**
      * What was agreed is the price times the quantity, less the discounts.
      */
-    valueMatchesPricing(doc: NewLedgerDocument): void {
-        for (const row of doc.terms) {
+    agreementValueMatchesPricing(doc: NewLedgerDocument): void {
+        for (const row of doc.agreements) {
             const gross = Math.abs(row.quantity) * (row.unitPrice ?? 0)
             const expected = gross - (row.lineDiscount ?? 0) - (row.documentDiscountShare ?? 0)
             if (row.value !== expected) {
@@ -54,11 +54,11 @@ const CHECKS = {
     },
 
     /**
-     * A deal is worth something: goods that change hands for nothing are their
+     * An agreement is worth something: goods that change hands for nothing are their
      * own intent, so that a zero total cannot hide a forgotten price.
      */
-    dealHasValue(doc: NewLedgerDocument): void {
-        if (sum(doc.terms.map((row) => row.value)) === 0) {
+    agreementsHaveValue(doc: NewLedgerDocument): void {
+        if (sum(doc.agreements.map((row) => row.value)) === 0) {
             throw new RuleViolationError(
                 `A ${doc.type} is worth something; goods given for nothing are a gift`,
             )
@@ -68,11 +68,11 @@ const CHECKS = {
     /**
      * Goods move against something agreed, and never more than was agreed. Every
      * type that moves goods agrees them in the same document; delivering against
-     * an earlier deal will widen this rule when a type does that.
+     * an earlier agreement will widen this rule when a type does that.
      */
-    movementsWithinTerms(doc: NewLedgerDocument): void {
+    movementsWithinAgreements(doc: NewLedgerDocument): void {
         for (const movement of doc.movements) {
-            const agreed = doc.terms.find((row) => row.productId === movement.productId)
+            const agreed = doc.agreements.find((row) => row.productId === movement.productId)
             if (!agreed) {
                 throw new RuleViolationError(`Nothing was agreed for ${movement.productId}`)
             }
@@ -94,8 +94,8 @@ const CHECKS = {
      * Nothing is left owing: the money that moved covers what was agreed. More
      * than that is a tip, or more handed to a supplier, and is allowed.
      */
-    settledInFull(doc: NewLedgerDocument): void {
-        const agreed = sum(doc.terms.map((row) => row.value))
+    paymentsSettleInFull(doc: NewLedgerDocument): void {
+        const agreed = sum(doc.agreements.map((row) => row.value))
         const paid = sum(doc.payments.map((payment) => payment.amount))
         const owed = agreed - paid
         if (owed * Math.sign(agreed) > 0) {
@@ -127,12 +127,12 @@ const CONTEXT_CHECKS = {
      * A void takes back the whole document: every row of it, each in full, and
      * each pointing at the row it reverses.
      */
-    mirrorsTargetWhole(doc: NewLedgerDocument, context: LedgerContext): void {
+    targetFullyMirrored(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
 
         checkMirrors(
-            doc.terms.map((row) => ({ of: row.linkedTermsId, by: row.quantity })),
-            target.terms.map((row) => ({ id: row.id, value: row.quantity })),
+            doc.agreements.map((row) => ({ of: row.linkedAgreementId, by: row.quantity })),
+            target.agreements.map((row) => ({ id: row.id, value: row.quantity })),
             "agreement",
             target.id,
         )
@@ -196,7 +196,7 @@ export function validateDocument(doc: NewLedgerDocument): void {
         doc.type,
     )
 
-    checkTerms(doc, spec.shape.terms)
+    checkAgreements(doc, spec.shape.agreements)
     checkMovements(doc, spec.shape.movements)
     checkPayments(doc, spec.shape.payments)
 
@@ -247,7 +247,7 @@ export function validateInContext(doc: NewLedgerDocument, context: LedgerContext
             type: doc.type,
             performedBy: doc.performedBy,
             productIds: [
-                ...doc.terms.map((row) => row.productId),
+                ...doc.agreements.map((row) => row.productId),
                 ...doc.movements.map((row) => row.productId),
             ],
             linkedDocumentId: doc.linkedDocumentId,
@@ -260,21 +260,27 @@ export function validateInContext(doc: NewLedgerDocument, context: LedgerContext
     }
 }
 
-function checkTerms(doc: NewLedgerDocument, shape: TermsShape | null): void {
+function checkAgreements(doc: NewLedgerDocument, shape: AgreementsShape | null): void {
     if (!shape) {
-        if (doc.terms.length > 0) {
+        if (doc.agreements.length > 0) {
             throw new RuleViolationError(`A ${doc.type} agrees nothing`)
         }
         return
     }
-    checkCount(doc.terms.length, shape.minimum, "agreement", doc.type)
-    checkOnePerProduct(doc.terms, "agreement", doc.type)
+    checkCount(doc.agreements.length, shape.minimum, "agreement", doc.type)
+    checkOnePerProduct(doc.agreements, "agreement", doc.type)
 
-    for (const row of doc.terms) {
+    for (const row of doc.agreements) {
         checkBelongs("Agreement", row.id, row.documentId, doc.id)
         checkNumber("Quantity", row.quantity, shape.quantity)
         checkNumber("Value", row.value, shape.value)
-        checkLink("linked agreement", row.id, row.linkedTermsId, shape.linkedTermsId, doc.type)
+        checkLink(
+            "linked agreement",
+            row.id,
+            row.linkedAgreementId,
+            shape.linkedAgreementId,
+            doc.type,
+        )
 
         checkColumn("unit price", row.unitPrice, shape.unitPrice, doc.type)
         checkColumn("line discount", row.lineDiscount, shape.lineDiscount, doc.type)
@@ -380,27 +386,27 @@ function checkMirrors(
     }
 }
 
-function checkSalesman(salesmanId: string, context: LedgerContext, reference: Reference): void {
-    if (reference === "any") {
+function checkSalesman(salesmanId: string, context: LedgerContext, rule: ReferenceRule): void {
+    if (rule === "any") {
         return
     }
     if (!context.salesman) {
         throw new NotFoundError(`Unknown salesman: ${salesmanId}`)
     }
-    if (reference === "active" && !context.salesman.isActive) {
+    if (rule === "active" && !context.salesman.isActive) {
         throw new InactiveError(`Salesman '${context.salesman.name}' is inactive`)
     }
 }
 
-function checkProduct(productId: string, context: LedgerContext, reference: Reference): void {
-    if (reference === "any") {
+function checkProduct(productId: string, context: LedgerContext, rule: ReferenceRule): void {
+    if (rule === "any") {
         return
     }
     const product = context.products.get(productId)
     if (!product) {
         throw new NotFoundError(`Unknown product: ${productId}`)
     }
-    if (reference === "active" && !product.isActive) {
+    if (rule === "active" && !product.isActive) {
         throw new InactiveError(`Product '${product.name}' is inactive`)
     }
 }
@@ -418,13 +424,13 @@ function checkLink(
     what: string,
     ownerId: string,
     value: string | null,
-    requirement: Requirement,
+    presence: Presence,
     type: DocumentType,
 ): void {
-    if (requirement === "required" && value === null) {
+    if (presence === "required" && value === null) {
         throw new RuleViolationError(`A ${type} must have a ${what}`)
     }
-    if (requirement === "forbidden" && value !== null) {
+    if (presence === "forbidden" && value !== null) {
         throw new RuleViolationError(`A ${type} cannot have a ${what}`)
     }
     if (value === ownerId) {
@@ -435,13 +441,13 @@ function checkLink(
 function checkColumn(
     what: string,
     value: number | null,
-    requirement: Requirement,
+    presence: Presence,
     type: DocumentType,
 ): void {
-    if (requirement === "required" && value === null) {
+    if (presence === "required" && value === null) {
         throw new RuleViolationError(`A ${type} must have a ${what}`)
     }
-    if (requirement === "forbidden" && value !== null) {
+    if (presence === "forbidden" && value !== null) {
         throw new RuleViolationError(`A ${type} cannot have a ${what}`)
     }
 }
