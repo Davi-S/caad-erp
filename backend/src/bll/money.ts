@@ -48,22 +48,3 @@ export function distribute(weights: number[], total: number): number[] {
 
     return parts
 }
-
-/**
- * The share of `amount` that corresponds to `part` out of `whole`, rounded to the
- * cent.
- *
- * Used for partial reversals. Callers must take the remaining amount, not this
- * share, when reversing the last part, so no cent is left behind.
- *
- * @param amount - Amount being shared out.
- * @param part - How much of the whole is taken.
- * @param whole - The whole, greater than 0.
- * @returns The rounded share.
- */
-export function shareOf(amount: number, part: number, whole: number): number {
-    if (whole <= 0) {
-        throw new RangeError("Cannot take a share of nothing")
-    }
-    return Math.round((amount * part) / whole)
-}
