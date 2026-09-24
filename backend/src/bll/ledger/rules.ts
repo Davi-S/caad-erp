@@ -475,22 +475,26 @@ function checkColumn(
     }
 }
 
+/**
+ * What each sign allows, and how to say so when it does not.
+ */
+const SIGNS: Record<Sign, { allows: (value: number) => boolean; requires: string }> = {
+    positive: { allows: (value) => value > 0, requires: "must be greater than zero" },
+    negative: { allows: (value) => value < 0, requires: "must be less than zero" },
+    nonNegative: { allows: (value) => value >= 0, requires: "cannot be negative" },
+    nonPositive: { allows: (value) => value <= 0, requires: "cannot be positive" },
+    nonZero: { allows: (value) => value !== 0, requires: "cannot be zero" },
+    any: { allows: () => true, requires: "" },
+}
+
 function checkNumber(what: string, value: number, sign: Sign): void {
     if (!Number.isInteger(value)) {
         throw new RuleViolationError(`${what} must be a whole number of units or cents`)
     }
 
-    const ok = {
-        positive: value > 0,
-        negative: value < 0,
-        nonNegative: value >= 0,
-        nonPositive: value <= 0,
-        nonZero: value !== 0,
-        any: true,
-    }[sign]
-
-    if (!ok) {
-        throw new RuleViolationError(`${what} ${value} is not allowed here`)
+    const rule = SIGNS[sign]
+    if (!rule.allows(value)) {
+        throw new RuleViolationError(`${what} ${rule.requires}: ${value}`)
     }
 }
 
