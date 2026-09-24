@@ -139,25 +139,45 @@ const CONTEXT_CHECKS = {
     /**
      * A void takes back the whole document: every row of it, each in full, and
      * each pointing at the row it reverses.
+     *
+     * "In full" means every number on the row, not just the quantity: a void that
+     * returned the goods of a credit sale but not its value would leave money owed
+     * on a sale that never happened.
      */
     targetFullyMirrored(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
 
         checkMirrors(
-            doc.agreements.map((row) => ({ of: row.linkedAgreementId, by: row.quantity })),
-            target.agreements.map((row) => ({ id: row.id, value: row.quantity })),
+            doc.agreements.map((row) => ({
+                of: row.linkedAgreementId,
+                productId: row.productId,
+                values: [row.quantity, row.value],
+            })),
+            target.agreements.map((row) => ({
+                id: row.id,
+                productId: row.productId,
+                values: [row.quantity, row.value],
+            })),
             "agreement",
             target.id,
         )
         checkMirrors(
-            doc.movements.map((row) => ({ of: row.linkedMovementId, by: row.quantity })),
-            target.movements.map((row) => ({ id: row.id, value: row.quantity })),
+            doc.movements.map((row) => ({
+                of: row.linkedMovementId,
+                productId: row.productId,
+                values: [row.quantity],
+            })),
+            target.movements.map((row) => ({
+                id: row.id,
+                productId: row.productId,
+                values: [row.quantity],
+            })),
             "movement",
             target.id,
         )
         checkMirrors(
-            doc.payments.map((row) => ({ of: row.linkedPaymentId, by: row.amount })),
-            target.payments.map((row) => ({ id: row.id, value: row.amount })),
+            doc.payments.map((row) => ({ of: row.linkedPaymentId, values: [row.amount] })),
+            target.payments.map((row) => ({ id: row.id, values: [row.amount] })),
             "payment",
             target.id,
         )
@@ -387,8 +407,8 @@ function checkOnePerProduct(rows: { productId: string }[], what: string, type: D
  * Every row of the target is taken back exactly once, by its own negation.
  */
 function checkMirrors(
-    reversals: { of: string | null; by: number }[],
-    originals: { id: string; value: number }[],
+    reversals: { of: string | null; productId?: string; values: number[] }[],
+    originals: { id: string; productId?: string; values: number[] }[],
     what: string,
     targetId: string,
 ): void {
@@ -403,7 +423,13 @@ function checkMirrors(
         if (mirrors.length !== 1) {
             throw new RuleViolationError(`${what} ${original.id} must be taken back exactly once`)
         }
-        if (mirrors[0].by !== -original.value) {
+        const mirror = mirrors[0]
+        if (mirror.productId !== original.productId) {
+            throw new RuleViolationError(
+                `${what} ${original.id} must be taken back for the same product`,
+            )
+        }
+        if (original.values.some((value, position) => mirror.values[position] !== -value)) {
             throw new RuleViolationError(`${what} ${original.id} must be taken back in full`)
         }
     }
