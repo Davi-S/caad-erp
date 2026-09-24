@@ -30,12 +30,19 @@ export function createDb(dbPath: string): DB {
  * Runs `fn` inside a single SQLite transaction, rolling back if it throws.
  *
  * `better-sqlite3` is synchronous and uses one connection, so every DAL call made
- * with `db` inside `fn` is part of the transaction. Nested calls become savepoints.
+ * with `db` inside `fn` is part of the transaction. Nested calls become savepoints,
+ * and only the outermost one opens the transaction.
+ *
+ * It begins as `IMMEDIATE`, taking the write lock at the start rather than on the
+ * first write. Every caller writes, and several read a number they are about to
+ * base a write on (`MAX(sequence) + 1`); with a deferred transaction two writers
+ * can read the same number and the second one fails on the unique index instead of
+ * waiting its turn.
  *
  * @param db - Drizzle client.
  * @param fn - Work to run atomically.
  * @returns Whatever `fn` returns.
  */
 export function inTransaction<T>(db: DB, fn: () => T): T {
-    return db.transaction(() => fn())
+    return db.transaction(() => fn(), { behavior: "immediate" })
 }
