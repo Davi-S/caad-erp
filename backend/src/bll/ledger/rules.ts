@@ -66,35 +66,38 @@ const CHECKS = {
     },
 
     /**
-     * Every movement is covered by an agreement in the same document: same
-     * product, same direction, and no more units than were agreed. Not the other
-     * way round - goods agreed and not yet moved are a delivery still to come.
+     * What moved is exactly what was agreed: the same products, the same
+     * quantities. A shape carrying both kinds of row says the goods moved now and
+     * in full; goods agreed now and moved later is what the deferred shapes
+     * express, by carrying no movements at all.
      *
      * Goods can move with nothing agreed at all; those shapes simply do not list
      * this rule.
      *
-     * It reads one document, so the agreement has to be in it. The deferred shapes
-     * agree goods now and move them in a later, linked document, and leave this
-     * rule out for that reason. A delivery type would have to match movements
-     * against the linked document's agreements and count what earlier deliveries
-     * already took, which needs the ledger around it: the rule then moves to
-     * `CONTEXT_CHECKS`.
+     * It reads one document, so the agreement has to be in it. A delivery type
+     * would match its movements against a linked document's agreements, counting
+     * what earlier deliveries already took, which needs the ledger around it: that
+     * rule belongs in `CONTEXT_CHECKS`.
      */
-    movementsWithinAgreements(doc: NewLedgerDocument): void {
+    movementsMatchAgreements(doc: NewLedgerDocument): void {
         for (const movement of doc.movements) {
-            const agreed = doc.agreements.find((row) => row.productId === movement.productId)
-            if (!agreed) {
+            if (!doc.agreements.some((row) => row.productId === movement.productId)) {
                 throw new RuleViolationError(`Nothing was agreed for ${movement.productId}`)
             }
-            if (Math.sign(movement.quantity) !== Math.sign(agreed.quantity)) {
+        }
+
+        // One row per product per document, so each agreement has at most one
+        // movement to find
+        for (const agreed of doc.agreements) {
+            const movement = doc.movements.find((row) => row.productId === agreed.productId)
+            if (!movement) {
                 throw new RuleViolationError(
-                    `Goods for ${movement.productId} move the wrong way for a ${doc.type}`,
+                    `${Math.abs(agreed.quantity)} of ${agreed.productId} was agreed but did not move`,
                 )
             }
-
-            if (Math.abs(movement.quantity) > Math.abs(agreed.quantity)) {
+            if (movement.quantity !== agreed.quantity) {
                 throw new RuleViolationError(
-                    `${Math.abs(movement.quantity)} of ${movement.productId} moved against ${Math.abs(agreed.quantity)} agreed`,
+                    `${Math.abs(movement.quantity)} of ${agreed.productId} moved against ${Math.abs(agreed.quantity)} agreed`,
                 )
             }
         }

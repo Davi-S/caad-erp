@@ -161,7 +161,7 @@ export const SHAPES = {
         checks: [
             "agreementValueMatchesPricing",
             "agreementsHaveValue",
-            "movementsWithinAgreements",
+            "movementsMatchAgreements",
             "paymentsSettleInFull",
         ],
     },
@@ -183,7 +183,7 @@ export const SHAPES = {
         agreements: GOODS_IN_AGREEMENTS,
         movements: GOODS_IN_MOVEMENTS,
         payments: MONEY_OUT_PAYMENTS,
-        checks: ["agreementsHaveValue", "movementsWithinAgreements", "paymentsSettleInFull"],
+        checks: ["agreementsHaveValue", "movementsMatchAgreements", "paymentsSettleInFull"],
     },
 
     moneyOut: { agreements: null, movements: null, payments: MONEY_OUT_PAYMENTS, checks: [] },
@@ -201,11 +201,7 @@ export const SHAPES = {
         agreements: GOODS_OUT_AGREEMENTS,
         movements: GOODS_OUT_MOVEMENTS,
         payments: null,
-        checks: [
-            "agreementValueMatchesPricing",
-            "agreementsHaveValue",
-            "movementsWithinAgreements",
-        ],
+        checks: ["agreementValueMatchesPricing", "agreementsHaveValue", "movementsMatchAgreements"],
     },
 
     // Note that some agreed items can be free, but the total cannot be free
@@ -213,7 +209,7 @@ export const SHAPES = {
         agreements: GOODS_IN_AGREEMENTS,
         movements: GOODS_IN_MOVEMENTS,
         payments: null,
-        checks: ["agreementsHaveValue", "movementsWithinAgreements"],
+        checks: ["agreementsHaveValue", "movementsMatchAgreements"],
     },
 
     /**
