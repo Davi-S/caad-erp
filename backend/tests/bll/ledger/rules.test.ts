@@ -531,9 +531,10 @@ describe("what follows from the documents around it", () => {
                 productId: row.productId,
                 linkedAgreementId: row.id,
                 quantity: -row.quantity,
-                unitPrice: null,
-                lineDiscount: null,
-                documentDiscountShare: null,
+                // The rate stays as it was; every amount reverses
+                unitPrice: row.unitPrice,
+                lineDiscount: -row.lineDiscount!,
+                documentDiscountShare: -row.documentDiscountShare!,
                 value: -row.value,
             })),
             movements: target.movements.map((row) => ({
@@ -572,6 +573,26 @@ describe("what follows from the documents around it", () => {
                 movements: mirror.movements.map((row) => ({ ...row, quantity: row.quantity - 1 })),
             }),
         ).toThrow(/movement .* must be taken back in full/)
+
+        // The goods and the money come back but the discount given does not
+        expect(() =>
+            checkInContext({
+                ...mirror,
+                agreements: mirror.agreements.map((row, position) =>
+                    position === 0 ? { ...row, lineDiscount: null } : row,
+                ),
+            }),
+        ).toThrow(/agreement .* must be taken back in full/)
+
+        // Taken back at a price the goods were never sold at
+        expect(() =>
+            checkInContext({
+                ...mirror,
+                agreements: mirror.agreements.map((row, position) =>
+                    position === 0 ? { ...row, unitPrice: 999 } : row,
+                ),
+            }),
+        ).toThrow(/agreement .* must be taken back at the same unit price/)
 
         // The right quantity, for the wrong product
         expect(() =>

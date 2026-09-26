@@ -21,8 +21,16 @@ import type { CheckName, ContextCheckName } from "./rules.js"
 /** Which values a number may take, on top of always being a whole number. */
 export type Sign = "positive" | "negative" | "nonNegative" | "nonPositive" | "nonZero" | "any"
 
-/** Whether a group of nullable columns must or must not carry values. */
-export type Presence = "required" | "forbidden"
+/**
+ * Whether a group of nullable columns must or must not carry values.
+ *
+ * `mirrored` is for a reversal: only the row being taken back says whether the
+ * column applies at all - voiding a sale reverses its discounts, voiding a
+ * purchase has none to reverse - so the shape defers to `targetFullyMirrored`,
+ * which compares the column against the original and is stricter than anything
+ * stated here.
+ */
+export type Presence = "required" | "forbidden" | "mirrored"
 
 /** What a document agrees: goods promised and what they are worth. */
 export interface AgreementsShape {
@@ -34,8 +42,11 @@ export interface AgreementsShape {
     value: Sign
     /**
      * The three pricing columns. They almost always agree - a sale prices its
-     * goods, a purchase and a reversal do not - and they are stated one by one so
-     * that a type can ever differ without the engine changing.
+     * goods, a purchase does not - and they are stated one by one so that a type
+     * can ever differ without the engine changing.
+     *
+     * A reversal carries whatever its target carried, so it states `mirrored`
+     * rather than choosing.
      */
     unitPrice: Presence
     lineDiscount: Presence
@@ -222,9 +233,9 @@ export const SHAPES = {
             linkedAgreementId: "required",
             quantity: "nonZero",
             value: "any",
-            unitPrice: "forbidden",
-            lineDiscount: "forbidden",
-            documentDiscountShare: "forbidden",
+            unitPrice: "mirrored",
+            lineDiscount: "mirrored",
+            documentDiscountShare: "mirrored",
         },
         movements: { minimum: 0, linkedMovementId: "required", quantity: "nonZero" },
         payments: { minimum: 0, sign: "nonZero", linkedPaymentId: "required" },

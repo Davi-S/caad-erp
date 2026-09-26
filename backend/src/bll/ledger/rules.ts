@@ -141,9 +141,15 @@ const CONTEXT_CHECKS = {
      * A void takes back the whole document: every row of it, each in full, and
      * each pointing at the row it reverses.
      *
-     * "In full" means every number on the row, not just the quantity: a void that
+     * "In full" means every amount on the row, not just the quantity: a void that
      * returned the goods of a credit sale but not its value would leave money owed
-     * on a sale that never happened.
+     * on a sale that never happened, and one that reversed the value but not the
+     * discounts would leave discounts standing on it.
+     *
+     * The unit price is a rate, not an amount, so it is carried through unchanged
+     * and the negated quantity is what reverses it. That keeps every column summable
+     * across the whole ledger: a voided document contributes nothing to a total of
+     * discounts given, of value agreed, or of `quantity * unitPrice`.
      */
     targetFullyMirrored(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
@@ -152,12 +158,14 @@ const CONTEXT_CHECKS = {
             doc.agreements.map((row) => ({
                 of: row.linkedAgreementId,
                 productId: row.productId,
-                values: [row.quantity, row.value],
+                negated: [row.quantity, row.value, row.lineDiscount, row.documentDiscountShare],
+                same: [row.unitPrice],
             })),
             target.agreements.map((row) => ({
                 id: row.id,
                 productId: row.productId,
-                values: [row.quantity, row.value],
+                negated: [row.quantity, row.value, row.lineDiscount, row.documentDiscountShare],
+                same: [row.unitPrice],
             })),
             "agreement",
             target.id,
@@ -166,19 +174,25 @@ const CONTEXT_CHECKS = {
             doc.movements.map((row) => ({
                 of: row.linkedMovementId,
                 productId: row.productId,
-                values: [row.quantity],
+                negated: [row.quantity],
+                same: [],
             })),
             target.movements.map((row) => ({
                 id: row.id,
                 productId: row.productId,
-                values: [row.quantity],
+                negated: [row.quantity],
+                same: [],
             })),
             "movement",
             target.id,
         )
         checkMirrors(
-            doc.payments.map((row) => ({ of: row.linkedPaymentId, values: [row.amount] })),
-            target.payments.map((row) => ({ id: row.id, values: [row.amount] })),
+            doc.payments.map((row) => ({
+                of: row.linkedPaymentId,
+                negated: [row.amount],
+                same: [],
+            })),
+            target.payments.map((row) => ({ id: row.id, negated: [row.amount], same: [] })),
             "payment",
             target.id,
         )
@@ -326,16 +340,17 @@ function checkAgreements(doc: NewLedgerDocument, shape: AgreementsShape | null):
             doc.type,
         )
 
-        checkColumn("unit price", row.unitPrice, shape.unitPrice, doc.type)
-        checkColumn("line discount", row.lineDiscount, shape.lineDiscount, doc.type)
-        checkColumn(
-            "document discount share",
-            row.documentDiscountShare,
-            shape.documentDiscountShare,
-            doc.type,
-        )
-        for (const value of [row.unitPrice, row.lineDiscount, row.documentDiscountShare]) {
-            if (value !== null) {
+        // A reversal's pricing is whatever it is taking back, negated, so it is
+        // neither required, forbidden nor non-negative here: `targetFullyMirrored`
+        // checks it against the original instead.
+        const pricing = [
+            ["unit price", row.unitPrice, shape.unitPrice],
+            ["line discount", row.lineDiscount, shape.lineDiscount],
+            ["document discount share", row.documentDiscountShare, shape.documentDiscountShare],
+        ] as const
+        for (const [what, value, presence] of pricing) {
+            checkColumn(what, value, presence, doc.type)
+            if (value !== null && presence !== "mirrored") {
                 checkNumber("Pricing", value, "nonNegative")
             }
         }
@@ -407,9 +422,11 @@ function checkOnePerProduct(rows: { productId: string }[], what: string, type: D
 /**
  * Every row of the target is taken back exactly once, by its own negation.
  */
+type Mirrorable = { productId?: string; negated: (number | null)[]; same: (number | null)[] }
+
 function checkMirrors(
-    reversals: { of: string | null; productId?: string; values: number[] }[],
-    originals: { id: string; productId?: string; values: number[] }[],
+    reversals: (Mirrorable & { of: string | null })[],
+    originals: (Mirrorable & { id: string })[],
     what: string,
     targetId: string,
 ): void {
@@ -430,8 +447,16 @@ function checkMirrors(
                 `${what} ${original.id} must be taken back for the same product`,
             )
         }
-        if (original.values.some((value, position) => mirror.values[position] !== -value)) {
+        // A column the original does not carry is not carried back either
+        const negates = (value: number | null, against: number | null) =>
+            value === null ? against === null : against === -value
+        if (original.negated.some((value, position) => !negates(value, mirror.negated[position]))) {
             throw new RuleViolationError(`${what} ${original.id} must be taken back in full`)
+        }
+        if (original.same.some((value, position) => mirror.same[position] !== value)) {
+            throw new RuleViolationError(
+                `${what} ${original.id} must be taken back at the same unit price`,
+            )
         }
     }
 }

@@ -17,7 +17,12 @@ import {
     recordWriteOff,
     updateProduct,
 } from "../../../../src/bll/index.js"
-import type { DB, ProductRow, SalesmanRow } from "../../../../src/dal/index.js"
+import {
+    listDocuments,
+    type DB,
+    type ProductRow,
+    type SalesmanRow,
+} from "../../../../src/dal/index.js"
 import { AT, names, owedOn, setup, stockOf, totals, without } from "../../fixtures.js"
 
 let db: DB
@@ -34,6 +39,26 @@ beforeEach(() => {
 afterEach(() => {
     vi.useRealTimers()
 })
+
+/**
+ * What the whole ledger has given away in discounts, and what its goods were
+ * priced at: the kind of sum a report is built from, taken straight off the rows
+ * with no idea that voids exist.
+ */
+function discountsGiven(db: DB): number {
+    return listDocuments(db)
+        .flatMap((doc) => doc.agreements)
+        .reduce(
+            (total, row) => total + (row.lineDiscount ?? 0) + (row.documentDiscountShare ?? 0),
+            0,
+        )
+}
+
+function pricedAt(db: DB): number {
+    return listDocuments(db)
+        .flatMap((doc) => doc.agreements)
+        .reduce((total, row) => total + row.quantity * (row.unitPrice ?? 0), 0)
+}
 
 function sell(quantity = 2): ReturnType<typeof recordSale> {
     return recordSale(db, {
@@ -56,9 +81,10 @@ describe("recordVoid", () => {
                 linkedAgreementId: sale.agreements[0].id,
                 quantity: 2,
                 value: -1000,
-                unitPrice: null,
-                lineDiscount: null,
-                documentDiscountShare: null,
+                // The rate it was sold at, unchanged; the negated quantity reverses it
+                unitPrice: 500,
+                lineDiscount: 0,
+                documentDiscountShare: 0,
             },
         ])
         expect(voided.movements).toMatchObject([
@@ -69,7 +95,36 @@ describe("recordVoid", () => {
         ])
     })
 
-    it("GIVEN a voided sale THEN the price and discounts stay on the rows being taken back, not on the void", () => {
+    it("GIVEN a voided sale that was discounted THEN the discounts are taken back too, so a total of what was given away nets to nothing", () => {
+        const water = createProduct(db, {
+            name: "Water",
+            sellPrice: 300,
+            isActive: true,
+            changedBy: boss.id,
+        })
+        const sale = recordSale(db, {
+            performedBy: boss.id,
+            items: [
+                { productId: coke.id, quantity: 2, lineDiscount: 100 },
+                { productId: water.id, quantity: 1, lineDiscount: 0 },
+            ],
+            documentDiscount: 60,
+            payments: [{ method: "Cash", amount: 1140 }],
+        })
+
+        const voided = recordVoid(db, { performedBy: boss.id, documentId: sale.id })
+
+        // Every discount the sale gave, reversed line for line
+        expect(sale.agreements.map((row) => row.lineDiscount)).toEqual([100, 0])
+        expect(voided.agreements.map((row) => row.lineDiscount)).toEqual([-100, 0])
+        // 60 split over subtotals of 900 and 300
+        expect(sale.agreements.map((row) => row.documentDiscountShare)).toEqual([45, 15])
+        expect(voided.agreements.map((row) => row.documentDiscountShare)).toEqual([-45, -15])
+
+        expect(discountsGiven(db)).toBe(0)
+    })
+
+    it("GIVEN a voided sale THEN the unit price is carried through, so what the goods were priced at nets to nothing as well", () => {
         const sale = recordSale(db, {
             performedBy: boss.id,
             items: [{ productId: coke.id, quantity: 2, lineDiscount: 100 }],
@@ -78,8 +133,29 @@ describe("recordVoid", () => {
 
         const voided = recordVoid(db, { performedBy: boss.id, documentId: sale.id })
 
-        expect(sale.agreements[0]).toMatchObject({ unitPrice: 500, lineDiscount: 100, value: 900 })
-        expect(voided.agreements[0]).toMatchObject({ unitPrice: null, value: -900 })
+        expect(sale.agreements[0]).toMatchObject({ unitPrice: 500, quantity: -2, value: 900 })
+        expect(voided.agreements[0]).toMatchObject({ unitPrice: 500, quantity: 2, value: -900 })
+        expect(pricedAt(db)).toBe(0)
+    })
+
+    it("GIVEN a voided purchase, which has no pricing at all THEN the void has none either", () => {
+        const restock = recordRestock(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 10, totalCost: 3000 }],
+            payments: [{ method: "Cash", amount: 3000 }],
+        })
+
+        const voided = recordVoid(db, { performedBy: boss.id, documentId: restock.id })
+
+        expect(voided.agreements[0]).toMatchObject({
+            quantity: -10,
+            value: 3000,
+            unitPrice: null,
+            lineDiscount: null,
+            documentDiscountShare: null,
+        })
+        expect(discountsGiven(db)).toBe(0)
+        expect(pricedAt(db)).toBe(0)
     })
 
     it("GIVEN anything voided THEN stock, cash and what was agreed all fall back on their own", () => {

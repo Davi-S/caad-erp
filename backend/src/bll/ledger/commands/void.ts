@@ -2,9 +2,10 @@
  * Voids: an entry that should never have been made.
  *
  * A void says the whole document did not happen, so it takes back every row of
- * it: what was agreed, what moved and what was paid. Correcting one detail means
- * voiding the document and recording it again with the right values and the
- * original's `occurred_at`.
+ * it: what was agreed, what moved, what was paid and what was discounted. Every
+ * amount reverses, so summing a column over the whole ledger never counts a
+ * voided document. Correcting one detail means voiding the document and recording
+ * it again with the right values and the original's `occurred_at`.
  *
  * A void cannot be voided: to undo one, record the original again.
  */
@@ -35,6 +36,14 @@ export const voidSpec: DocumentSpec = {
     // Anything but another void: an unwanted void is undone by recording the
     // original again
     linkedTypes: ["SALE", "CREDIT_SALE", "RESTOCK", "WRITE_OFF", "PAYMENT_IN"],
+}
+
+/**
+ * Negates an amount a row may not carry at all: a purchase has no discounts to
+ * take back, and its reversal has none either.
+ */
+function negate(amount: number | null): number | null {
+    return amount === null ? null : -amount
 }
 
 /**
@@ -86,18 +95,20 @@ export function recordVoid(db: DB, command: VoidCommand): LedgerDocument {
                 performedBy: input.performedBy,
                 linkedDocumentId: target.id,
                 notes: input.notes,
-                // Every row of the target, negated. Prices and discounts stay on
-                // the rows being taken back: the void only reverses the numbers
-                // that count.
+                // Every amount of the target, negated: what was agreed, what
+                // moved, what was paid and the discounts given, so a total over
+                // any of them nets to nothing once a document is voided. The unit
+                // price is a rate rather than an amount, so it is carried through
+                // as it was and the negated quantity is what reverses it.
                 agreements: target.agreements.map((row) => ({
                     id: newId(),
                     documentId: id,
                     productId: row.productId,
                     linkedAgreementId: row.id,
                     quantity: -row.quantity,
-                    unitPrice: null,
-                    lineDiscount: null,
-                    documentDiscountShare: null,
+                    unitPrice: row.unitPrice,
+                    lineDiscount: negate(row.lineDiscount),
+                    documentDiscountShare: negate(row.documentDiscountShare),
                     value: -row.value,
                 })),
                 movements: target.movements.map((row) => ({
