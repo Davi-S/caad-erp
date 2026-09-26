@@ -133,6 +133,29 @@ describe("recordWriteOff", () => {
         }
     })
 
+    it("GIVEN one bad line among valid ones THEN it is refused, naming the line: a valid first line does not vouch for the rest", () => {
+        const water = createProduct(db, {
+            name: "Water",
+            sellPrice: 300,
+            isActive: true,
+            changedBy: boss.id,
+        })
+
+        for (const quantity of [0, -1, 1.5]) {
+            const attempt = () =>
+                recordWriteOff(db, {
+                    performedBy: boss.id,
+                    items: [
+                        { productId: coke.id, quantity: 1 },
+                        { productId: water.id, quantity },
+                    ],
+                })
+
+            expect(attempt, String(quantity)).toThrow(InvalidInputError)
+            expect(attempt, String(quantity)).toThrow(names("items.1.quantity"))
+        }
+    })
+
     it("GIVEN the same product on two lines THEN the caller is told to say it once", () => {
         expect(() =>
             recordWriteOff(db, {

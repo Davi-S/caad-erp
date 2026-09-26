@@ -263,6 +263,34 @@ describe("recordSale", () => {
         }
     })
 
+    it("GIVEN one bad line among valid ones THEN it is refused, naming the line: a valid first line does not vouch for the rest", () => {
+        const badQuantity = () =>
+            recordSale(db, {
+                performedBy: boss.id,
+                items: [
+                    { productId: coke.id, quantity: 1 },
+                    { productId: water.id, quantity: 1.5 },
+                ],
+                payments: [{ method: "Cash", amount: 500 }],
+            })
+
+        expect(badQuantity).toThrow(InvalidInputError)
+        expect(badQuantity).toThrow(names("items.1.quantity"))
+
+        const badDiscount = () =>
+            recordSale(db, {
+                performedBy: boss.id,
+                items: [
+                    { productId: coke.id, quantity: 1 },
+                    { productId: water.id, quantity: 1, lineDiscount: -1 },
+                ],
+                payments: [{ method: "Cash", amount: 500 }],
+            })
+
+        expect(badDiscount).toThrow(InvalidInputError)
+        expect(badDiscount).toThrow(names("items.1.lineDiscount"))
+    })
+
     it("GIVEN a product that does not exist, or is inactive THEN the sale is refused, naming what is wrong", () => {
         expect(() =>
             recordSale(db, {

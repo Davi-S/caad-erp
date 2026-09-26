@@ -158,6 +158,50 @@ describe("recordCreditSale", () => {
         ).toThrow(InactiveError)
     })
 
+    it("GIVEN a quantity that is not a whole number of units THEN it is refused as bad input", () => {
+        for (const quantity of [0, -1, 1.5]) {
+            expect(() =>
+                recordCreditSale(db, {
+                    performedBy: boss.id,
+                    items: [{ productId: coke.id, quantity }],
+                }),
+            ).toThrow(InvalidInputError)
+        }
+    })
+
+    it("GIVEN one bad line among valid ones THEN it is refused, naming the line: a valid first line does not vouch for the rest", () => {
+        const water = createProduct(db, {
+            name: "Water",
+            sellPrice: 300,
+            isActive: true,
+            changedBy: boss.id,
+        })
+
+        const badQuantity = () =>
+            recordCreditSale(db, {
+                performedBy: boss.id,
+                items: [
+                    { productId: coke.id, quantity: 1 },
+                    { productId: water.id, quantity: 1.5 },
+                ],
+            })
+
+        expect(badQuantity).toThrow(InvalidInputError)
+        expect(badQuantity).toThrow(names("items.1.quantity"))
+
+        const badDiscount = () =>
+            recordCreditSale(db, {
+                performedBy: boss.id,
+                items: [
+                    { productId: coke.id, quantity: 1 },
+                    { productId: water.id, quantity: 1, lineDiscount: -1 },
+                ],
+            })
+
+        expect(badDiscount).toThrow(InvalidInputError)
+        expect(badDiscount).toThrow(names("items.1.lineDiscount"))
+    })
+
     it("GIVEN the same product on two lines THEN the caller is told to say it once", () => {
         expect(() =>
             recordCreditSale(db, {

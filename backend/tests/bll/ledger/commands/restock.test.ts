@@ -170,6 +170,53 @@ describe("recordRestock", () => {
         }
     })
 
+    it("GIVEN a quantity that is not a whole number of units THEN it is refused as bad input", () => {
+        for (const quantity of [0, -1, 1.5]) {
+            expect(() =>
+                recordRestock(db, {
+                    performedBy: boss.id,
+                    items: [{ productId: coke.id, quantity, totalCost: 100 }],
+                    payments: [{ method: "Cash", amount: 100 }],
+                }),
+            ).toThrow(InvalidInputError)
+        }
+    })
+
+    it("GIVEN one bad line among valid ones THEN it is refused, naming the line: a valid first line does not vouch for the rest", () => {
+        const water = createProduct(db, {
+            name: "Water",
+            sellPrice: 300,
+            isActive: true,
+            changedBy: boss.id,
+        })
+
+        const badQuantity = () =>
+            recordRestock(db, {
+                performedBy: boss.id,
+                items: [
+                    { productId: coke.id, quantity: 10, totalCost: 3000 },
+                    { productId: water.id, quantity: 1.5, totalCost: 100 },
+                ],
+                payments: [{ method: "Cash", amount: 3100 }],
+            })
+
+        expect(badQuantity).toThrow(InvalidInputError)
+        expect(badQuantity).toThrow(names("items.1.quantity"))
+
+        const badCost = () =>
+            recordRestock(db, {
+                performedBy: boss.id,
+                items: [
+                    { productId: coke.id, quantity: 10, totalCost: 3000 },
+                    { productId: water.id, quantity: 2, totalCost: -1 },
+                ],
+                payments: [{ method: "Cash", amount: 3000 }],
+            })
+
+        expect(badCost).toThrow(InvalidInputError)
+        expect(badCost).toThrow(names("items.1.totalCost"))
+    })
+
     it("GIVEN a product that is inactive THEN buying more of it is refused", () => {
         updateProduct(db, coke.id, { isActive: false, changedBy: boss.id })
 
