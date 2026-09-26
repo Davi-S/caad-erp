@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest"
 import {
+    createProduct,
     BusinessError,
     createSalesman,
     InactiveError,
@@ -30,7 +31,7 @@ import {
 } from "../../../src/bll/index.js"
 import type { DB, NewLedgerDocument, ProductRow, SalesmanRow } from "../../../src/dal/index.js"
 import { newId } from "../../../src/ids.js"
-import { asNew, contextFor, product, setup } from "../fixtures.js"
+import { asNew, contextFor, setup } from "../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -39,8 +40,8 @@ let water: ProductRow
 
 beforeEach(() => {
     ;({ db, boss } = setup())
-    coke = product(db, boss.id, { name: "Coke", sellPrice: 500 })
-    water = product(db, boss.id, { name: "Water", sellPrice: 300 })
+    coke = createProduct(db, { name: "Coke", sellPrice: 500, isActive: true, changedBy: boss.id })
+    water = createProduct(db, { name: "Water", sellPrice: 300, isActive: true, changedBy: boss.id })
 })
 
 /** A sale of two Coke, paid in full: the base for most of these cases. */

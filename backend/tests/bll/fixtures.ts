@@ -9,13 +9,7 @@
 
 import * as bll from "../../src/bll/index.js"
 import * as dal from "../../src/dal/index.js"
-import type {
-    DB,
-    LedgerDocument,
-    NewLedgerDocument,
-    ProductRow,
-    SalesmanRow,
-} from "../../src/dal/index.js"
+import type { DB, LedgerDocument, NewLedgerDocument, SalesmanRow } from "../../src/dal/index.js"
 import { freshDb } from "../fixtures.js"
 
 /** A fixed moment, so nothing depends on the clock unless it says so. */
@@ -27,20 +21,6 @@ export const AT = new Date("2026-01-02T15:00:00.000Z")
 export function setup(): { db: DB; boss: SalesmanRow } {
     const db = freshDb()
     return { db, boss: bll.createFirstSalesman(db, { name: "Boss" }) }
-}
-
-export function product(
-    db: DB,
-    changedBy: string,
-    fields: { name?: string; sellPrice?: number; isActive?: boolean } = {},
-): ProductRow {
-    return bll.createProduct(db, {
-        name: "Coke",
-        sellPrice: 500,
-        isActive: true,
-        changedBy,
-        ...fields,
-    })
 }
 
 /**

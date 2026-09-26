@@ -9,6 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+    createProduct,
     createSalesman,
     InactiveError,
     recordCreditSale,
@@ -26,7 +27,7 @@ import {
     type ProductRow,
     type SalesmanRow,
 } from "../../../src/dal/index.js"
-import { AT, owedOn, product, setup, stockOf, totals } from "../fixtures.js"
+import { AT, owedOn, setup, stockOf, totals } from "../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -36,7 +37,7 @@ beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(AT)
     ;({ db, boss } = setup())
-    coke = product(db, boss.id, { name: "Coke", sellPrice: 500 })
+    coke = createProduct(db, { name: "Coke", sellPrice: 500, isActive: true, changedBy: boss.id })
 })
 
 afterEach(() => {

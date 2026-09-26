@@ -5,6 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+    createProduct,
     createSalesman,
     InactiveError,
     InvalidInputError,
@@ -17,7 +18,7 @@ import {
     recordWriteOff,
 } from "../../../../src/bll/index.js"
 import type { DB, LedgerDocument, ProductRow, SalesmanRow } from "../../../../src/dal/index.js"
-import { AT, names, owedOn, product, setup, totals, without } from "../../fixtures.js"
+import { AT, names, owedOn, setup, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -28,7 +29,7 @@ beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(AT)
     ;({ db, boss } = setup())
-    coke = product(db, boss.id, { name: "Coke", sellPrice: 500 })
+    coke = createProduct(db, { name: "Coke", sellPrice: 500, isActive: true, changedBy: boss.id })
     credit = recordCreditSale(db, {
         performedBy: boss.id,
         items: [{ productId: coke.id, quantity: 3 }],

@@ -4,6 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+    createProduct,
     InactiveError,
     InvalidInputError,
     NotFoundError,
@@ -16,7 +17,7 @@ import {
     type ProductRow,
     type SalesmanRow,
 } from "../../../../src/dal/index.js"
-import { AT, names, owedOn, product, setup, totals, without } from "../../fixtures.js"
+import { AT, names, owedOn, setup, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -26,7 +27,7 @@ beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(AT)
     ;({ db, boss } = setup())
-    coke = product(db, boss.id, { name: "Coke", sellPrice: 500 })
+    coke = createProduct(db, { name: "Coke", sellPrice: 500, isActive: true, changedBy: boss.id })
 })
 
 afterEach(() => {
@@ -71,7 +72,12 @@ describe("recordCreditSale", () => {
     })
 
     it("GIVEN discounts THEN the debt is what was agreed after them, not the catalog total", () => {
-        const water = product(db, boss.id, { name: "Water", sellPrice: 300 })
+        const water = createProduct(db, {
+            name: "Water",
+            sellPrice: 300,
+            isActive: true,
+            changedBy: boss.id,
+        })
 
         const sale = recordCreditSale(db, {
             performedBy: boss.id,
@@ -131,7 +137,12 @@ describe("recordCreditSale", () => {
     })
 
     it("GIVEN a product or salesman that cannot take part THEN the sale is refused", () => {
-        const water = product(db, boss.id, { name: "Water", sellPrice: 300, isActive: false })
+        const water = createProduct(db, {
+            name: "Water",
+            sellPrice: 300,
+            isActive: false,
+            changedBy: boss.id,
+        })
 
         expect(() =>
             recordCreditSale(db, {

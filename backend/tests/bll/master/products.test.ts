@@ -15,7 +15,7 @@ import {
     updateProduct,
 } from "../../../src/bll/index.js"
 import type { DB, SalesmanRow } from "../../../src/dal/index.js"
-import { names, product, setup, without } from "../fixtures.js"
+import { names, setup, without } from "../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -53,26 +53,43 @@ describe("createProduct", () => {
     })
 
     it("GIVEN a blank name THEN it is refused", () => {
-        expect(() => product(db, boss.id, { name: "   " })).toThrow(/name: Name is required/)
+        expect(() =>
+            createProduct(db, { name: "   ", sellPrice: 500, isActive: true, changedBy: boss.id }),
+        ).toThrow(/name: Name is required/)
     })
 
     it("GIVEN a price of nothing THEN it is allowed, because a free product is a real thing", () => {
-        expect(product(db, boss.id, { sellPrice: 0 }).sellPrice).toBe(0)
+        expect(
+            createProduct(db, { name: "Coke", sellPrice: 0, isActive: true, changedBy: boss.id })
+                .sellPrice,
+        ).toBe(0)
     })
 
     it("GIVEN a price that is negative or not whole cents THEN it is refused", () => {
-        expect(() => product(db, boss.id, { sellPrice: -1 })).toThrow(/Price cannot be negative/)
-        expect(() => product(db, boss.id, { sellPrice: 1.5 })).toThrow(
-            /Price must be an integer amount in cents/,
-        )
+        expect(() =>
+            createProduct(db, { name: "Coke", sellPrice: -1, isActive: true, changedBy: boss.id }),
+        ).toThrow(/Price cannot be negative/)
+        expect(() =>
+            createProduct(db, { name: "Coke", sellPrice: 1.5, isActive: true, changedBy: boss.id }),
+        ).toThrow(/Price must be an integer amount in cents/)
     })
 
     it("GIVEN a product that is already inactive THEN it can still be created, so goods that are not for sale still have a catalog entry", () => {
-        expect(product(db, boss.id, { isActive: false }).isActive).toBe(false)
+        expect(
+            createProduct(db, { name: "Coke", sellPrice: 500, isActive: false, changedBy: boss.id })
+                .isActive,
+        ).toBe(false)
     })
 
     it("GIVEN an author who does not exist THEN nothing is created, and the error says which record is missing", () => {
-        expect(() => product(db, "nobody")).toThrow(NotFoundError)
+        expect(() =>
+            createProduct(db, {
+                name: "Coke",
+                sellPrice: 500,
+                isActive: true,
+                changedBy: "nobody",
+            }),
+        ).toThrow(NotFoundError)
         expect(listProducts(db)).toHaveLength(0)
     })
 
@@ -95,14 +112,26 @@ describe("createProduct", () => {
             changedBy: boss.id,
         })
 
-        expect(() => product(db, inactive.id)).toThrow(InactiveError)
+        expect(() =>
+            createProduct(db, {
+                name: "Coke",
+                sellPrice: 500,
+                isActive: true,
+                changedBy: inactive.id,
+            }),
+        ).toThrow(InactiveError)
         expect(listProducts(db)).toHaveLength(0)
     })
 })
 
 describe("updateProduct", () => {
     it("GIVEN no author THEN it is refused: every change is attributed, even a partial one", () => {
-        const coke = product(db, boss.id)
+        const coke = createProduct(db, {
+            name: "Coke",
+            sellPrice: 500,
+            isActive: true,
+            changedBy: boss.id,
+        })
 
         expect(() => updateProduct(db, coke.id, { sellPrice: 600 } as never)).toThrow(
             /changedBy: The salesman making the change is required/,
@@ -110,7 +139,12 @@ describe("updateProduct", () => {
     })
 
     it("GIVEN one field THEN only that field changes", () => {
-        const coke = product(db, boss.id, { name: "Coke", sellPrice: 500 })
+        const coke = createProduct(db, {
+            name: "Coke",
+            sellPrice: 500,
+            isActive: true,
+            changedBy: boss.id,
+        })
 
         const updated = updateProduct(db, coke.id, { sellPrice: 600, changedBy: boss.id })
 
@@ -118,7 +152,12 @@ describe("updateProduct", () => {
     })
 
     it("GIVEN only an author and nothing to change THEN it is refused", () => {
-        const coke = product(db, boss.id)
+        const coke = createProduct(db, {
+            name: "Coke",
+            sellPrice: 500,
+            isActive: true,
+            changedBy: boss.id,
+        })
 
         expect(() => updateProduct(db, coke.id, { changedBy: boss.id })).toThrow(InvalidInputError)
         expect(() => updateProduct(db, coke.id, { changedBy: boss.id })).toThrow(
@@ -133,7 +172,12 @@ describe("updateProduct", () => {
     })
 
     it("GIVEN a field the command does not accept THEN it is refused rather than dropped", () => {
-        const coke = product(db, boss.id)
+        const coke = createProduct(db, {
+            name: "Coke",
+            sellPrice: 500,
+            isActive: true,
+            changedBy: boss.id,
+        })
 
         expect(() =>
             updateProduct(db, coke.id, { costPrice: 300, changedBy: boss.id } as never),
@@ -141,7 +185,12 @@ describe("updateProduct", () => {
     })
 
     it("GIVEN an author who is inactive THEN the change is refused and the product is untouched", () => {
-        const coke = product(db, boss.id, { sellPrice: 500 })
+        const coke = createProduct(db, {
+            name: "Coke",
+            sellPrice: 500,
+            isActive: true,
+            changedBy: boss.id,
+        })
         const inactive = createSalesman(db, {
             name: "Inactive",
             isActive: false,
@@ -164,7 +213,12 @@ describe("getProduct", () => {
 
 describe("getProductHistory", () => {
     it("GIVEN a product that changed THEN every state it was left in comes back, oldest first", () => {
-        const coke = product(db, boss.id, { sellPrice: 500 })
+        const coke = createProduct(db, {
+            name: "Coke",
+            sellPrice: 500,
+            isActive: true,
+            changedBy: boss.id,
+        })
         updateProduct(db, coke.id, { sellPrice: 600, changedBy: boss.id })
 
         expect(getProductHistory(db, coke.id).map((row) => row.sellPrice)).toEqual([500, 600])

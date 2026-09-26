@@ -5,6 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+    createProduct,
     createSalesman,
     InactiveError,
     InvalidInputError,
@@ -14,7 +15,7 @@ import {
     updateProduct,
 } from "../../../../src/bll/index.js"
 import type { DB, ProductRow, SalesmanRow } from "../../../../src/dal/index.js"
-import { AT, names, product, setup, stockOf, totals, without } from "../../fixtures.js"
+import { AT, names, setup, stockOf, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -24,7 +25,7 @@ beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(AT)
     ;({ db, boss } = setup())
-    coke = product(db, boss.id, { name: "Coke", sellPrice: 500 })
+    coke = createProduct(db, { name: "Coke", sellPrice: 500, isActive: true, changedBy: boss.id })
 })
 
 afterEach(() => {
