@@ -13,9 +13,9 @@ import {
     listProducts,
     NotFoundError,
     updateProduct,
-} from "../../src/bll/index.js"
-import type { DB, SalesmanRow } from "../../src/dal/index.js"
-import { names, product, setup, without } from "./fixtures.js"
+} from "../../../src/bll/index.js"
+import type { DB, SalesmanRow } from "../../../src/dal/index.js"
+import { names, product, setup, without } from "../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow

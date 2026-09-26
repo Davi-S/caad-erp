@@ -9,7 +9,7 @@
 
 import type { AgreementRow, MovementRow } from "../../dal/index.js"
 import { newId } from "../../ids.js"
-import { distribute } from "../money.js"
+import { distribute } from "./money.js"
 import type { LedgerContext } from "./context.js"
 import type { soldItemsField } from "./fields.js"
 import type { z } from "zod"

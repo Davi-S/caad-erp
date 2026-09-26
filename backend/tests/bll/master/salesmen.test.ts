@@ -16,10 +16,10 @@ import {
     requireActiveSalesman,
     RuleViolationError,
     updateSalesman,
-} from "../../src/bll/index.js"
-import type { DB, SalesmanRow } from "../../src/dal/index.js"
-import { freshDb } from "../fixtures.js"
-import { names, without } from "./fixtures.js"
+} from "../../../src/bll/index.js"
+import type { DB, SalesmanRow } from "../../../src/dal/index.js"
+import { freshDb } from "../../fixtures.js"
+import { names, without } from "../fixtures.js"
 
 let db: DB
 
@@ -182,9 +182,7 @@ describe("updateSalesman", () => {
     })
 
     it("GIVEN only an author and nothing to change THEN it is refused", () => {
-        expect(() => updateSalesman(db, boss.id, { changedBy: boss.id })).toThrow(
-            InvalidInputError,
-        )
+        expect(() => updateSalesman(db, boss.id, { changedBy: boss.id })).toThrow(InvalidInputError)
         expect(() => updateSalesman(db, boss.id, { changedBy: boss.id })).toThrow(
             /No fields to update/,
         )

@@ -11,11 +11,11 @@
  * once, and are recorded as their own author.
  */
 
-import * as dal from "../dal/index.js"
-import type { DB, SalesmanHistoryRow, SalesmanRow } from "../dal/index.js"
-import { InactiveError, NotFoundError, RuleViolationError } from "./errors.js"
-import { newId } from "../ids.js"
-import { validate } from "./validate.js"
+import * as dal from "../../dal/index.js"
+import type { DB, SalesmanHistoryRow, SalesmanRow } from "../../dal/index.js"
+import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
+import { newId } from "../../ids.js"
+import { validate } from "../validate.js"
 import { z } from "zod"
 
 /**

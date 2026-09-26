@@ -1,5 +1,5 @@
 /**
- * The engine that checks a document against its entry in `specs.ts`.
+ * The engine that checks a document against the spec it is given.
  *
  * `validateDocument` reads a document on its own: the rows its shape allows, the
  * signs they carry, the columns they fill. `validateReferences` and

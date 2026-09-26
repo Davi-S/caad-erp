@@ -10,12 +10,12 @@
  * governed by the current catalog.
  */
 
-import * as dal from "../dal/index.js"
-import type { DB, ProductHistoryRow, ProductRow } from "../dal/index.js"
-import { NotFoundError } from "./errors.js"
-import { newId } from "../ids.js"
+import * as dal from "../../dal/index.js"
+import type { DB, ProductHistoryRow, ProductRow } from "../../dal/index.js"
+import { NotFoundError } from "../errors.js"
+import { newId } from "../../ids.js"
 import { changedByField, requireActiveSalesman } from "./salesmen.js"
-import { validate } from "./validate.js"
+import { validate } from "../validate.js"
 import { z } from "zod"
 
 /**

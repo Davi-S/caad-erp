@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest"
-import { distribute } from "../../src/bll/money.js"
+import { distribute } from "../../../src/bll/ledger/money.js"
 
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0)
 
