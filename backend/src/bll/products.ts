@@ -2,8 +2,8 @@
  * Product catalog operations.
  *
  * Products are current state, not ledger entries: they are created and updated in
- * place. They are never deleted, because ledger lines point at them; a product
- * that is no longer sold is deactivated instead.
+ * place. They are never deleted, because ledger rows point at them; a product that
+ * should no longer be sold is deactivated instead.
  *
  * The storage records a snapshot of every change; this layer only decides who the
  * change is recorded against. No rule reads that trail: new documents are always

@@ -185,8 +185,8 @@ describe("stock that goes negative", () => {
     })
 })
 
-describe("a product taken off the menu", () => {
-    it("GIVEN a product that is no longer sold THEN nothing new is bought or sold with it, while its leftovers and its past can still be dealt with", () => {
+describe("a product that is deactivated", () => {
+    it("GIVEN a product that is inactive THEN nothing new is bought or sold with it, while its remaining stock and its past can still be dealt with", () => {
         const sale = recordSale(db, {
             performedBy: boss.id,
             items: [{ productId: coke.id, quantity: 2 }],
@@ -220,8 +220,8 @@ describe("a product taken off the menu", () => {
     })
 })
 
-describe("a salesman who leaves", () => {
-    it("GIVEN a salesman who has left THEN their documents stand, they can record nothing more, and someone else can correct their work", () => {
+describe("a salesman who is deactivated", () => {
+    it("GIVEN a salesman who is inactive THEN their documents stand, they can record nothing more, and someone else can correct their work", () => {
         const helper = createSalesman(db, { name: "Helper", isActive: true, changedBy: boss.id })
         const sale = recordSale(db, {
             performedBy: helper.id,

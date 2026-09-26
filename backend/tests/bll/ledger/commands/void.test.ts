@@ -206,7 +206,7 @@ describe("recordVoid", () => {
         )
     })
 
-    it("GIVEN a sale of a product that is no longer sold THEN it can still be voided", () => {
+    it("GIVEN a sale of a product that is inactive THEN it can still be voided", () => {
         const sale = sell(1)
         updateProduct(db, coke.id, { isActive: false, changedBy: boss.id })
 
@@ -226,11 +226,15 @@ describe("recordVoid", () => {
         expect(stockOf(db, coke.id)).toBe(-2)
     })
 
-    it("GIVEN a salesman who has left THEN they cannot void anything", () => {
+    it("GIVEN a salesman who is inactive THEN they cannot void anything", () => {
         const sale = sell(1)
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
-        expect(() => recordVoid(db, { performedBy: gone.id, documentId: sale.id })).toThrow(
+        expect(() => recordVoid(db, { performedBy: inactive.id, documentId: sale.id })).toThrow(
             InactiveError,
         )
     })

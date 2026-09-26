@@ -80,27 +80,35 @@ describe("createSalesman", () => {
         expect(listSalesmen(db)).toHaveLength(1)
     })
 
-    it("GIVEN an author who has left THEN nothing is created", () => {
+    it("GIVEN an author who is inactive THEN nothing is created", () => {
         const boss = createFirstSalesman(db, { name: "Boss" })
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
         expect(() =>
-            createSalesman(db, { name: "Helper", isActive: true, changedBy: gone.id }),
+            createSalesman(db, { name: "Helper", isActive: true, changedBy: inactive.id }),
         ).toThrow(InactiveError)
         expect(listSalesmen(db)).toHaveLength(2)
     })
 
-    it("GIVEN a salesman who has already left the lounge THEN they can still be recorded, so their past work has an owner", () => {
+    it("GIVEN a salesman who is already inactive THEN they can still be recorded, so their past work has an owner", () => {
         const boss = createFirstSalesman(db, { name: "Boss" })
 
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
-        expect(gone.isActive).toBe(false)
+        expect(inactive.isActive).toBe(false)
     })
 })
 
 describe("updateSalesman", () => {
-    it("GIVEN a salesman leaving THEN they are deactivated rather than deleted, and the change is attributed", () => {
+    it("GIVEN a salesman who should no longer act THEN they are deactivated rather than deleted, and the change is attributed", () => {
         const boss = createFirstSalesman(db, { name: "Boss" })
         const helper = createSalesman(db, { name: "Helper", isActive: true, changedBy: boss.id })
 
@@ -115,7 +123,7 @@ describe("updateSalesman", () => {
         ])
     })
 
-    it("GIVEN a salesman closing the lounge on their own THEN they may deactivate themselves, since they are still active as they do it", () => {
+    it("GIVEN a salesman deactivating themselves THEN it is allowed, since they are still active as they do it", () => {
         const boss = createFirstSalesman(db, { name: "Boss" })
 
         expect(updateSalesman(db, boss.id, { isActive: false, changedBy: boss.id }).isActive).toBe(
@@ -145,11 +153,15 @@ describe("updateSalesman", () => {
 })
 
 describe("requireActiveSalesman", () => {
-    it("GIVEN a salesman who has left THEN they cannot act", () => {
+    it("GIVEN a salesman who is inactive THEN they cannot act", () => {
         const boss = createFirstSalesman(db, { name: "Boss" })
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
-        expect(() => requireActiveSalesman(db, gone.id)).toThrow(InactiveError)
+        expect(() => requireActiveSalesman(db, inactive.id)).toThrow(InactiveError)
         expect(() => requireActiveSalesman(db, "nobody")).toThrow(NotFoundError)
     })
 })

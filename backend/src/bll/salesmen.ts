@@ -2,7 +2,8 @@
  * Salesmen operations.
  *
  * Like products, salesmen are current state and are never deleted: documents
- * record who performed them, so a salesman who left is deactivated instead.
+ * record who performed them, so a salesman who should no longer act is deactivated
+ * instead.
  *
  * The storage records a snapshot of every change; this layer only decides who the
  * change is recorded against. Every salesman is added by an active salesman, which

@@ -23,7 +23,7 @@ export const writeOffSpec: DocumentSpec = {
     checks: [],
     contextChecks: [],
     salesman: "active",
-    // Leftovers of a product that is no longer sold still have to be cleared
+    // Stock of an inactive product still has to be cleared
     products: "exists",
     linkedTypes: null,
 }

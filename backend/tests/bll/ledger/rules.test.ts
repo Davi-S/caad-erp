@@ -446,13 +446,17 @@ describe("what follows from the intent", () => {
 })
 
 describe("what a document refers to", () => {
-    it("GIVEN a salesman who does not exist, or has left THEN it is refused, and the two cases are told apart", () => {
+    it("GIVEN a salesman who does not exist, or is inactive THEN it is refused, and the two cases are told apart", () => {
         const doc = sale()
 
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
         expect(() => checkInContext({ ...doc, performedBy: "nobody" })).toThrow(NotFoundError)
-        expect(() => checkInContext({ ...doc, performedBy: gone.id })).toThrow(InactiveError)
+        expect(() => checkInContext({ ...doc, performedBy: inactive.id })).toThrow(InactiveError)
     })
 
     it("GIVEN a product that no longer exists THEN it is refused as missing", () => {
@@ -467,14 +471,14 @@ describe("what a document refers to", () => {
         ).toThrow(NotFoundError)
     })
 
-    it("GIVEN a sale of a product that is no longer sold THEN it is refused", () => {
+    it("GIVEN a sale of a product that is inactive THEN it is refused", () => {
         const doc = sale()
         updateProduct(db, coke.id, { isActive: false, changedBy: boss.id })
 
         expect(() => checkInContext(doc)).toThrow(InactiveError)
     })
 
-    it("GIVEN a write-off of a product that is no longer sold THEN it is allowed: leftovers still have to be cleared", () => {
+    it("GIVEN a write-off of a product that is inactive THEN it is allowed: its remaining stock still has to be cleared", () => {
         const doc = writeOff()
         updateProduct(db, coke.id, { isActive: false, changedBy: boss.id })
 

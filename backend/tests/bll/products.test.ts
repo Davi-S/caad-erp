@@ -68,10 +68,14 @@ describe("createProduct", () => {
         expect(listProducts(db)).toHaveLength(0)
     })
 
-    it("GIVEN an author who has left THEN nothing is created: a change has to be attributable to someone active", () => {
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+    it("GIVEN an author who is inactive THEN nothing is created: a change has to be attributable to an active salesman", () => {
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
-        expect(() => product(db, gone.id)).toThrow(InactiveError)
+        expect(() => product(db, inactive.id)).toThrow(InactiveError)
         expect(listProducts(db)).toHaveLength(0)
     })
 })
@@ -116,11 +120,15 @@ describe("updateProduct", () => {
 
     it("GIVEN an author who is inactive THEN the change is refused and the product is untouched", () => {
         const coke = product(db, boss.id, { sellPrice: 500 })
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
-        expect(() => updateProduct(db, coke.id, { sellPrice: 600, changedBy: gone.id })).toThrow(
-            InactiveError,
-        )
+        expect(() =>
+            updateProduct(db, coke.id, { sellPrice: 600, changedBy: inactive.id }),
+        ).toThrow(InactiveError)
         expect(getProduct(db, coke.id).sellPrice).toBe(500)
         expect(getProductHistory(db, coke.id)).toHaveLength(1)
     })
@@ -133,13 +141,13 @@ describe("getProduct", () => {
 })
 
 describe("requireActiveProduct", () => {
-    it("GIVEN a product that is no longer sold THEN it is refused for anything that records something new", () => {
+    it("GIVEN a product that is inactive THEN it is refused for anything that records something new", () => {
         const coke = product(db, boss.id, { isActive: false })
 
         expect(() => requireActiveProduct(db, coke.id)).toThrow(InactiveError)
     })
 
-    it("GIVEN a product still sold THEN it comes back", () => {
+    it("GIVEN a product that is active THEN it comes back", () => {
         const coke = product(db, boss.id)
 
         expect(requireActiveProduct(db, coke.id)).toEqual(coke)

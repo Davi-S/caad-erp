@@ -23,7 +23,7 @@ import { z } from "zod"
  * `products: "any"` because a void names no products of its own - every product
  * on it comes from a row that is already stored, which storage guarantees exists.
  * Checking them would repeat the foreign key, and requiring them to be active
- * would stop a discontinued product's entries from ever being corrected.
+ * would stop an inactive product's entries from ever being corrected.
  */
 export const voidSpec: DocumentSpec = {
     type: "VOID",

@@ -127,7 +127,7 @@ describe("recordRestock", () => {
         }
     })
 
-    it("GIVEN a product that is no longer sold THEN buying more of it is refused", () => {
+    it("GIVEN a product that is inactive THEN buying more of it is refused", () => {
         updateProduct(db, coke.id, { isActive: false, changedBy: boss.id })
 
         expect(() =>

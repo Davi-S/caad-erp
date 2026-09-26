@@ -51,7 +51,7 @@ describe("recordWriteOff", () => {
         expect(totals(db)).toEqual({ stock: 7, cash: -3000, agreed: -3000 })
     })
 
-    it("GIVEN a product that is no longer sold THEN its leftovers can still be cleared", () => {
+    it("GIVEN a product that is inactive THEN its remaining stock can still be cleared", () => {
         updateProduct(db, coke.id, { isActive: false, changedBy: boss.id })
 
         const writeOff = recordWriteOff(db, {
@@ -77,8 +77,12 @@ describe("recordWriteOff", () => {
         expect(stockOf(db, coke.id)).toBe(-4)
     })
 
-    it("GIVEN a salesman who does not exist, or has left THEN the write-off is refused", () => {
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+    it("GIVEN a salesman who does not exist, or is inactive THEN the write-off is refused", () => {
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
         expect(() =>
             recordWriteOff(db, {
@@ -88,7 +92,7 @@ describe("recordWriteOff", () => {
         ).toThrow(NotFoundError)
         expect(() =>
             recordWriteOff(db, {
-                performedBy: gone.id,
+                performedBy: inactive.id,
                 items: [{ productId: coke.id, quantity: 1 }],
             }),
         ).toThrow(InactiveError)

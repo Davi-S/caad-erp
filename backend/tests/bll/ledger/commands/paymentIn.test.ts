@@ -185,12 +185,16 @@ describe("recordPaymentIn", () => {
         expect(payment.recordedAt).toEqual(AT)
     })
 
-    it("GIVEN a salesman who has left THEN the payment is refused", () => {
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+    it("GIVEN a salesman who is inactive THEN the payment is refused", () => {
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
         expect(() =>
             recordPaymentIn(db, {
-                performedBy: gone.id,
+                performedBy: inactive.id,
                 documentId: credit.id,
                 payments: [{ method: "Cash", amount: 100 }],
             }),

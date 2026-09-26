@@ -262,7 +262,7 @@ describe("recordSale", () => {
         }
     })
 
-    it("GIVEN a product that does not exist, or is no longer sold THEN the sale is refused, naming what is wrong", () => {
+    it("GIVEN a product that does not exist, or is inactive THEN the sale is refused, naming what is wrong", () => {
         expect(() =>
             recordSale(db, {
                 performedBy: boss.id,
@@ -281,8 +281,12 @@ describe("recordSale", () => {
         ).toThrow(InactiveError)
     })
 
-    it("GIVEN a salesman who does not exist, or has left THEN the sale is refused", () => {
-        const gone = createSalesman(db, { name: "Gone", isActive: false, changedBy: boss.id })
+    it("GIVEN a salesman who does not exist, or is inactive THEN the sale is refused", () => {
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
 
         expect(() =>
             recordSale(db, {
@@ -293,7 +297,7 @@ describe("recordSale", () => {
         ).toThrow(NotFoundError)
         expect(() =>
             recordSale(db, {
-                performedBy: gone.id,
+                performedBy: inactive.id,
                 items: [{ productId: coke.id, quantity: 1 }],
                 payments: [{ method: "Cash", amount: 500 }],
             }),
