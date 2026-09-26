@@ -158,7 +158,7 @@ describe("recordCreditSale", () => {
         ).toThrow(InactiveError)
     })
 
-    it("GIVEN a quantity that is not a whole number of units THEN it is refused as bad input", () => {
+    it("GIVEN a quantity that is not a positive whole number of units THEN it is refused as bad input", () => {
         for (const quantity of [0, -1, 1.5]) {
             expect(() =>
                 recordCreditSale(db, {
