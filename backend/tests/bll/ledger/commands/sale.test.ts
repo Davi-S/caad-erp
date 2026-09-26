@@ -19,7 +19,7 @@ import {
     type ProductRow,
     type SalesmanRow,
 } from "../../../../src/dal/index.js"
-import { AT, owedOn, product, setup, totals } from "../../fixtures.js"
+import { AT, names, owedOn, product, setup, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -327,6 +327,43 @@ describe("recordSale", () => {
                 payments: [{ method: "Cash", amount: 500 }],
             }),
         ).toThrow(/cannot have happened after it was recorded/)
+    })
+
+    it("GIVEN any mandatory field left out THEN it is refused, naming it: a command fills nothing in on the caller's behalf", () => {
+        const valid = {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 2 }],
+            payments: [{ method: "Cash", amount: 1000 }],
+        }
+
+        for (const path of [
+            "performedBy",
+            "items",
+            "items.0.productId",
+            "items.0.quantity",
+            "payments",
+            "payments.0.method",
+            "payments.0.amount",
+        ]) {
+            expect(() => recordSale(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => recordSale(db, without(valid, path) as never), path).toThrow(names(path))
+        }
+
+        expect(listDocuments(db)).toHaveLength(0)
+    })
+
+    it("GIVEN only the mandatory fields THEN the four that may be left out fall back to today, no note and no discount", () => {
+        const sale = recordSale(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 2 }],
+            payments: [{ method: "Cash", amount: 1000 }],
+        })
+
+        expect(sale.occurredAt).toEqual(AT)
+        expect(sale.notes).toBeNull()
+        expect(sale.agreements[0]).toMatchObject({ lineDiscount: 0, documentDiscountShare: 0 })
     })
 
     it("GIVEN a field the command does not accept THEN it is refused, so nothing a caller sends is silently dropped", () => {

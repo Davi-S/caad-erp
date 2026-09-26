@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
     createSalesman,
     InactiveError,
+    InvalidInputError,
     NotFoundError,
     recordCreditSale,
     recordPaymentIn,
@@ -16,7 +17,7 @@ import {
     updateProduct,
 } from "../../../../src/bll/index.js"
 import type { DB, ProductRow, SalesmanRow } from "../../../../src/dal/index.js"
-import { AT, owedOn, product, setup, stockOf, totals } from "../../fixtures.js"
+import { AT, names, owedOn, product, setup, stockOf, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -198,6 +199,27 @@ describe("recordVoid", () => {
         expect(() => recordVoid(db, { performedBy: boss.id, documentId: voided.id })).toThrow(
             /A VOID cannot be linked to a VOID/,
         )
+    })
+
+    it("GIVEN any mandatory field left out THEN it is refused, naming it", () => {
+        const sale = sell(1)
+        const valid = { performedBy: boss.id, documentId: sale.id }
+
+        for (const path of ["performedBy", "documentId"]) {
+            expect(() => recordVoid(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => recordVoid(db, without(valid, path) as never), path).toThrow(names(path))
+        }
+    })
+
+    it("GIVEN only the mandatory fields THEN the note falls back to none, and the date is not the caller's to give", () => {
+        const sale = sell(1)
+
+        const voided = recordVoid(db, { performedBy: boss.id, documentId: sale.id })
+
+        expect(voided.notes).toBeNull()
+        expect(voided.occurredAt).toEqual(voided.recordedAt)
     })
 
     it("GIVEN a document that does not exist THEN it is refused as missing", () => {

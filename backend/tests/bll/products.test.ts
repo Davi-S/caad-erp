@@ -16,7 +16,7 @@ import {
     updateProduct,
 } from "../../src/bll/index.js"
 import type { DB, SalesmanRow } from "../../src/dal/index.js"
-import { product, setup } from "./fixtures.js"
+import { names, product, setup, without } from "./fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -38,14 +38,19 @@ describe("createProduct", () => {
         expect(getProduct(db, coke.id)).toEqual(coke)
     })
 
-    it("GIVEN a missing field THEN it is refused: creation has no defaults to fall back on", () => {
-        expect(() =>
-            createProduct(db, {
-                name: "Coke",
-                isActive: true,
-                changedBy: boss.id,
-            } as never),
-        ).toThrow(InvalidInputError)
+    it("GIVEN any missing field THEN it is refused, naming it: creation has no defaults to fall back on", () => {
+        const valid = { name: "Coke", sellPrice: 500, isActive: true, changedBy: boss.id }
+
+        for (const path of ["name", "sellPrice", "isActive", "changedBy"]) {
+            expect(() => createProduct(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => createProduct(db, without(valid, path) as never), path).toThrow(
+                names(path),
+            )
+        }
+
+        expect(listProducts(db)).toHaveLength(0)
     })
 
     it("GIVEN a blank name THEN it is refused", () => {
@@ -95,6 +100,14 @@ describe("createProduct with a field it does not accept", () => {
 })
 
 describe("updateProduct", () => {
+    it("GIVEN no author THEN it is refused: every change is attributed, even a partial one", () => {
+        const coke = product(db, boss.id)
+
+        expect(() => updateProduct(db, coke.id, { sellPrice: 600 } as never)).toThrow(
+            /changedBy: The salesman making the change is required/,
+        )
+    })
+
     it("GIVEN one field THEN only that field changes", () => {
         const coke = product(db, boss.id, { name: "Coke", sellPrice: 500 })
 

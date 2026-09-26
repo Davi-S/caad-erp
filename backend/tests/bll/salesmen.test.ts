@@ -11,12 +11,14 @@ import {
     getSalesmanHistory,
     InactiveError,
     listSalesmen,
+    InvalidInputError,
     NotFoundError,
     requireActiveSalesman,
     RuleViolationError,
     updateSalesman,
 } from "../../src/bll/index.js"
 import { freshDb } from "../fixtures.js"
+import { names, without } from "./fixtures.js"
 import type { DB } from "../../src/dal/index.js"
 
 let db: DB
@@ -26,6 +28,12 @@ beforeEach(() => {
 })
 
 describe("createFirstSalesman", () => {
+    it("GIVEN no name THEN it is refused, naming it", () => {
+        expect(() => createFirstSalesman(db, {} as never)).toThrow(InvalidInputError)
+        expect(() => createFirstSalesman(db, {} as never)).toThrow(/name/)
+        expect(listSalesmen(db)).toHaveLength(0)
+    })
+
     it("GIVEN an empty ledger THEN the salesman is recorded as their own author, and is active", () => {
         const boss = createFirstSalesman(db, { name: "  Boss  " })
 
@@ -69,6 +77,22 @@ describe("createSalesman", () => {
             createSalesman(db, { name: "Boss", isActive: true, changedBy: "somebody" }),
         ).toThrow(NotFoundError)
         expect(listSalesmen(db)).toHaveLength(0)
+    })
+
+    it("GIVEN any missing field THEN it is refused, naming it", () => {
+        const boss = createFirstSalesman(db, { name: "Boss" })
+        const valid = { name: "Helper", isActive: true, changedBy: boss.id }
+
+        for (const path of ["name", "isActive", "changedBy"]) {
+            expect(() => createSalesman(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => createSalesman(db, without(valid, path) as never), path).toThrow(
+                names(path),
+            )
+        }
+
+        expect(listSalesmen(db)).toHaveLength(1)
     })
 
     it("GIVEN an author who does not exist THEN nothing is created", () => {

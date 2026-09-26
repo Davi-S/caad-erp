@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
     InactiveError,
+    InvalidInputError,
     NotFoundError,
     recordCreditSale,
     updateProduct,
@@ -15,7 +16,7 @@ import {
     type ProductRow,
     type SalesmanRow,
 } from "../../../../src/dal/index.js"
-import { AT, owedOn, product, setup, totals } from "../../fixtures.js"
+import { AT, names, owedOn, product, setup, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -93,6 +94,30 @@ describe("recordCreditSale", () => {
                 items: [{ productId: coke.id, quantity: 1, lineDiscount: 500 }],
             }),
         ).toThrow(/must be worth something/)
+    })
+
+    it("GIVEN any mandatory field left out THEN it is refused, naming it", () => {
+        const valid = { performedBy: boss.id, items: [{ productId: coke.id, quantity: 3 }] }
+
+        for (const path of ["performedBy", "items", "items.0.productId", "items.0.quantity"]) {
+            expect(() => recordCreditSale(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => recordCreditSale(db, without(valid, path) as never), path).toThrow(
+                names(path),
+            )
+        }
+    })
+
+    it("GIVEN only the mandatory fields THEN the rest falls back to today, no note and no discount", () => {
+        const sale = recordCreditSale(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 3 }],
+        })
+
+        expect(sale.occurredAt).toEqual(AT)
+        expect(sale.notes).toBeNull()
+        expect(sale.agreements[0]).toMatchObject({ lineDiscount: 0, documentDiscountShare: 0 })
     })
 
     it("GIVEN payments passed in anyway THEN it is refused rather than quietly dropped: settling a credit sale is its own document", () => {

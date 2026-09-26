@@ -16,7 +16,7 @@ import {
     type ProductRow,
     type SalesmanRow,
 } from "../../../../src/dal/index.js"
-import { AT, owedOn, product, setup, totals } from "../../fixtures.js"
+import { AT, names, owedOn, product, setup, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -113,6 +113,43 @@ describe("recordRestock", () => {
                 payments: [{ method: "Cash", amount: 1 }],
             }),
         ).toThrow(/must be worth something/)
+    })
+
+    it("GIVEN any mandatory field left out THEN it is refused, naming it: a free line has to say so with a cost of zero", () => {
+        const valid = {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 10, totalCost: 3000 }],
+            payments: [{ method: "Cash", amount: 3000 }],
+        }
+
+        for (const path of [
+            "performedBy",
+            "items",
+            "items.0.productId",
+            "items.0.quantity",
+            "items.0.totalCost",
+            "payments",
+            "payments.0.method",
+            "payments.0.amount",
+        ]) {
+            expect(() => recordRestock(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => recordRestock(db, without(valid, path) as never), path).toThrow(
+                names(path),
+            )
+        }
+    })
+
+    it("GIVEN only the mandatory fields THEN the rest falls back to today and no note", () => {
+        const restock = recordRestock(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 10, totalCost: 3000 }],
+            payments: [{ method: "Cash", amount: 3000 }],
+        })
+
+        expect(restock.occurredAt).toEqual(AT)
+        expect(restock.notes).toBeNull()
     })
 
     it("GIVEN a cost that is negative or not whole cents THEN it is refused as bad input", () => {

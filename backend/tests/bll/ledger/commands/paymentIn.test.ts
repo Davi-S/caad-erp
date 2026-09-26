@@ -17,7 +17,7 @@ import {
     recordWriteOff,
 } from "../../../../src/bll/index.js"
 import type { DB, LedgerDocument, ProductRow, SalesmanRow } from "../../../../src/dal/index.js"
-import { AT, owedOn, product, setup, totals } from "../../fixtures.js"
+import { AT, names, owedOn, product, setup, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -157,6 +157,40 @@ describe("recordPaymentIn", () => {
                 payments: [{ method: "Cash", amount: 100 }],
             }),
         ).toThrow(NotFoundError)
+    })
+
+    it("GIVEN any mandatory field left out THEN it is refused, naming it", () => {
+        const valid = {
+            performedBy: boss.id,
+            documentId: credit.id,
+            payments: [{ method: "Cash", amount: 500 }],
+        }
+
+        for (const path of [
+            "performedBy",
+            "documentId",
+            "payments",
+            "payments.0.method",
+            "payments.0.amount",
+        ]) {
+            expect(() => recordPaymentIn(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => recordPaymentIn(db, without(valid, path) as never), path).toThrow(
+                names(path),
+            )
+        }
+    })
+
+    it("GIVEN only the mandatory fields THEN the rest falls back to today and no note", () => {
+        const payment = recordPaymentIn(db, {
+            performedBy: boss.id,
+            documentId: credit.id,
+            payments: [{ method: "Cash", amount: 500 }],
+        })
+
+        expect(payment.occurredAt).toEqual(AT)
+        expect(payment.notes).toBeNull()
     })
 
     it("GIVEN no money, or money that is not whole positive cents THEN it is refused as bad input", () => {

@@ -93,6 +93,33 @@ export function owedOn(db: DB, documentId: string): number {
 }
 
 /**
+ * The same input with one field taken out of it.
+ *
+ * A path reaches into a list where it needs to - `items.0.quantity` - because half
+ * of what a command requires lives inside one. Used to check that leaving a field
+ * out is an error rather than something the command fills in.
+ */
+export function without(input: object, path: string): object {
+    const keys = path.split(".")
+    const clone = structuredClone(input) as Record<string, unknown>
+
+    let target = clone
+    for (const key of keys.slice(0, -1)) {
+        target = target[key] as Record<string, unknown>
+    }
+    delete target[keys[keys.length - 1]]
+
+    return clone
+}
+
+/**
+ * A pattern matching the field a message should name.
+ */
+export function names(path: string): RegExp {
+    return new RegExp(path.replaceAll(".", "\\."))
+}
+
+/**
  * A stored document as the rules see it, before it was stored.
  */
 export function asNew({ sequence: _sequence, ...document }: LedgerDocument): NewLedgerDocument {

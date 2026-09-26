@@ -14,7 +14,7 @@ import {
     updateProduct,
 } from "../../../../src/bll/index.js"
 import type { DB, ProductRow, SalesmanRow } from "../../../../src/dal/index.js"
-import { AT, product, setup, stockOf, totals } from "../../fixtures.js"
+import { AT, names, product, setup, stockOf, totals, without } from "../../fixtures.js"
 
 let db: DB
 let boss: SalesmanRow
@@ -96,6 +96,29 @@ describe("recordWriteOff", () => {
                 items: [{ productId: coke.id, quantity: 1 }],
             }),
         ).toThrow(InactiveError)
+    })
+
+    it("GIVEN any mandatory field left out THEN it is refused, naming it", () => {
+        const valid = { performedBy: boss.id, items: [{ productId: coke.id, quantity: 3 }] }
+
+        for (const path of ["performedBy", "items", "items.0.productId", "items.0.quantity"]) {
+            expect(() => recordWriteOff(db, without(valid, path) as never), path).toThrow(
+                InvalidInputError,
+            )
+            expect(() => recordWriteOff(db, without(valid, path) as never), path).toThrow(
+                names(path),
+            )
+        }
+    })
+
+    it("GIVEN only the mandatory fields THEN the rest falls back to today and no note", () => {
+        const writeOff = recordWriteOff(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 1 }],
+        })
+
+        expect(writeOff.occurredAt).toEqual(AT)
+        expect(writeOff.notes).toBeNull()
     })
 
     it("GIVEN a quantity that is not a whole number of units THEN it is refused as bad input", () => {
