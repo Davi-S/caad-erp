@@ -12,7 +12,7 @@
 
 import * as dal from "../dal/index.js"
 import type { DB, ProductHistoryRow, ProductRow } from "../dal/index.js"
-import { InactiveError, NotFoundError } from "./errors.js"
+import { NotFoundError } from "./errors.js"
 import { newId } from "../ids.js"
 import { changedByField, requireActiveSalesman } from "./salesmen.js"
 import { validate } from "./validate.js"
@@ -65,24 +65,6 @@ export function getProduct(db: DB, id: string): ProductRow {
     const product = dal.getProduct(db, id)
     if (!product) {
         throw new NotFoundError(`Unknown product: ${id}`)
-    }
-    return product
-}
-
-/**
- * A product that a new document moves.
- *
- * Only for lines recording something new: reversals may touch products that have
- * since been deactivated.
- *
- * @returns The product.
- * @throws {@link NotFoundError} If no product has that ID.
- * @throws {@link InactiveError} If the product is inactive.
- */
-export function requireActiveProduct(db: DB, id: string): ProductRow {
-    const product = getProduct(db, id)
-    if (!product.isActive) {
-        throw new InactiveError(`Product '${product.name}' is inactive`)
     }
     return product
 }

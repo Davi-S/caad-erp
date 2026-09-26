@@ -12,7 +12,6 @@ import {
     InvalidInputError,
     listProducts,
     NotFoundError,
-    requireActiveProduct,
     updateProduct,
 } from "../../src/bll/index.js"
 import type { DB, SalesmanRow } from "../../src/dal/index.js"
@@ -160,24 +159,6 @@ describe("updateProduct", () => {
 describe("getProduct", () => {
     it("GIVEN a product that does not exist THEN it is reported as missing rather than returned empty", () => {
         expect(() => getProduct(db, "nope")).toThrow(NotFoundError)
-    })
-})
-
-describe("requireActiveProduct", () => {
-    it("GIVEN a product that is inactive THEN it is refused for anything that records something new", () => {
-        const coke = product(db, boss.id, { isActive: false })
-
-        expect(() => requireActiveProduct(db, coke.id)).toThrow(InactiveError)
-    })
-
-    it("GIVEN a product that is active THEN it comes back", () => {
-        const coke = product(db, boss.id)
-
-        expect(requireActiveProduct(db, coke.id)).toEqual(coke)
-    })
-
-    it("GIVEN a product that does not exist THEN it is reported as missing", () => {
-        expect(() => requireActiveProduct(db, "nope")).toThrow(NotFoundError)
     })
 })
 
