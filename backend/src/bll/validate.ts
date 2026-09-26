@@ -5,6 +5,10 @@
  * trimming and defaults. A failure here means the caller sent something wrong, so
  * the message names the field to fix.
  *
+ * Every schema is strict: a field the command does not accept is an error, not
+ * something to drop quietly. A caller that sends a price with a sale item, or a
+ * date with a void, has misunderstood the command and is told so.
+ *
  * It speaks the caller's language ("write off 2 units"), while the ledger rules
  * speak the storage language ("this line's quantity is -2"). Both have an opinion
  * on a few values; see `ledger/rules.ts`.

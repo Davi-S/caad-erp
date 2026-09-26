@@ -10,7 +10,13 @@
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields, paymentField, productIdField, quantityField } from "../fields.js"
+import {
+    documentFields,
+    oneLinePerProduct,
+    paymentField,
+    productIdField,
+    quantityField,
+} from "../fields.js"
 import { post } from "../post.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
@@ -31,11 +37,11 @@ export const restockSpec: DocumentSpec = {
 /**
  * Input for recording a restock.
  */
-export const restockSchema = z.object({
+export const restockSchema = z.strictObject({
     ...documentFields,
     items: z
         .array(
-            z.object({
+            z.strictObject({
                 productId: productIdField,
                 quantity: quantityField,
                 totalCost: z
@@ -43,7 +49,8 @@ export const restockSchema = z.object({
                     .nonnegative("Cost cannot be negative"),
             }),
         )
-        .min(1, "At least one item is required"),
+        .min(1, "At least one item is required")
+        .superRefine(oneLinePerProduct),
     payments: z.array(paymentField).min(1, "At least one payment is required"),
 })
 

@@ -24,7 +24,7 @@ export const documentFields = {
 /**
  * One movement of money: how it was paid, and how much.
  */
-export const paymentField = z.object({
+export const paymentField = z.strictObject({
     method: z.enum(paymentMethodValues),
     amount: z
         .int("Amount must be a whole number of cents")
@@ -51,17 +51,42 @@ const discountField = z
     .nonnegative("Discount cannot be negative")
 
 /**
+ * One line per product.
+ *
+ * Two lines for the same product is a miscount at the counter, not a quantity to
+ * be added up: the caller says how many of each, once. The stored rows have the
+ * same rule, so this only decides which layer gets to explain it.
+ */
+export function oneLinePerProduct(
+    items: { productId: string }[],
+    ctx: z.core.$RefinementCtx,
+): void {
+    const seen = new Set<string>()
+    for (const [position, item] of items.entries()) {
+        if (seen.has(item.productId)) {
+            ctx.addIssue({
+                code: "custom",
+                path: [position, "productId"],
+                message: "This product is already listed",
+            })
+        }
+        seen.add(item.productId)
+    }
+}
+
+/**
  * What is being sold: a product, how many, and what comes off that line.
  */
 export const soldItemsField = z
     .array(
-        z.object({
+        z.strictObject({
             productId: productIdField,
             quantity: quantityField,
             lineDiscount: discountField.default(0),
         }),
     )
     .min(1, "At least one item is required")
+    .superRefine(oneLinePerProduct)
 
 /**
  * A discount over a whole cart, split across its items in proportion to what

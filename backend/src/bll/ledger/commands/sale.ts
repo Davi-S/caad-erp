@@ -30,7 +30,7 @@ export const saleSpec: DocumentSpec = {
 /**
  * Input for recording a sale paid at the counter.
  */
-export const saleSchema = z.object({
+export const saleSchema = z.strictObject({
     ...documentFields,
     items: soldItemsField,
     documentDiscount: documentDiscountField,

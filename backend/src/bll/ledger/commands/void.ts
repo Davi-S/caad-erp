@@ -43,7 +43,7 @@ export const voidSpec: DocumentSpec = {
  * `occurredAt` is not accepted: a correction is made now, and what it takes back
  * keeps the original's own date.
  */
-export const voidSchema = z.object({
+export const voidSchema = z.strictObject({
     performedBy: documentFields.performedBy,
     notes: documentFields.notes,
     documentId: z.string().trim().min(1, "Document is required"),

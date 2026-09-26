@@ -38,7 +38,7 @@ export const paymentInSpec: DocumentSpec = {
 /**
  * Input for recording money received.
  */
-export const paymentInSchema = z.object({
+export const paymentInSchema = z.strictObject({
     ...documentFields,
     documentId: z.string().trim().min(1, "Document is required"),
     payments: z.array(paymentField).min(1, "At least one payment is required"),

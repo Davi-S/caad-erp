@@ -54,13 +54,14 @@ const CHECKS = {
     },
 
     /**
-     * An agreement is worth something: goods that change hands for nothing are their
-     * own intent, so that a zero total cannot hide a forgotten price.
+     * What was agreed is worth something. Goods that change hands for nothing are
+     * their own kind of event - a gift on the way out, a donation on the way in -
+     * so a zero total here can only be a price that was forgotten.
      */
     agreementsHaveValue(doc: NewLedgerDocument): void {
         if (sum(doc.agreements.map((row) => row.value)) === 0) {
             throw new RuleViolationError(
-                `A ${doc.type} is worth something; goods given for nothing are a gift`,
+                `A ${doc.type} must be worth something; goods that change hands for nothing are a different kind of event`,
             )
         }
     },

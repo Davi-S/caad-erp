@@ -21,7 +21,7 @@ import { z } from "zod"
 /**
  * The editable fields of a product. Prices are integer cents.
  */
-const productFields = z.object({
+const productFields = z.strictObject({
     name: z.string().trim().min(1, "Name is required"),
     sellPrice: z
         .int("Price must be an integer amount in cents")

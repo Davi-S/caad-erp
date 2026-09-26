@@ -9,7 +9,7 @@
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields, productIdField, quantityField } from "../fields.js"
+import { documentFields, oneLinePerProduct, productIdField, quantityField } from "../fields.js"
 import { post } from "../post.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
@@ -31,11 +31,12 @@ export const writeOffSpec: DocumentSpec = {
 /**
  * Input for recording a write-off.
  */
-export const writeOffSchema = z.object({
+export const writeOffSchema = z.strictObject({
     ...documentFields,
     items: z
-        .array(z.object({ productId: productIdField, quantity: quantityField }))
-        .min(1, "At least one item is required"),
+        .array(z.strictObject({ productId: productIdField, quantity: quantityField }))
+        .min(1, "At least one item is required")
+        .superRefine(oneLinePerProduct),
 })
 
 export type WriteOffCommand = z.input<typeof writeOffSchema>

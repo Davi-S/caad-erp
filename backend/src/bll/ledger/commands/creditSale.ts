@@ -35,7 +35,7 @@ export const creditSaleSpec: DocumentSpec = {
 /**
  * Input for recording a sale to be paid later.
  */
-export const creditSaleSchema = z.object({
+export const creditSaleSchema = z.strictObject({
     ...documentFields,
     items: soldItemsField,
     documentDiscount: documentDiscountField,

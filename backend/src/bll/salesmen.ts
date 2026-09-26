@@ -19,7 +19,7 @@ import { z } from "zod"
 /**
  * The editable fields of a salesman.
  */
-const salesmanFields = z.object({
+const salesmanFields = z.strictObject({
     name: z.string().trim().min(1, "Name is required"),
     isActive: z.boolean(),
 })
