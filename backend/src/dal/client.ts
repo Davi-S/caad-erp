@@ -8,7 +8,12 @@
 import Database from "better-sqlite3"
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
 
-export type DB = BetterSQLite3Database
+/**
+ * A Drizzle client over an open SQLite connection.
+ *
+ * `$client` is that connection, which `applySchema` and the pragmas need.
+ */
+export type DB = BetterSQLite3Database & { $client: Database.Database }
 
 /**
  * Opens a SQLite database and wraps it in a Drizzle client.

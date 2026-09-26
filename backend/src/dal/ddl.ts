@@ -92,8 +92,11 @@ const SCHEMA_SQL = `
     ) STRICT;
 
     CREATE INDEX idx_product_history_product_id   ON product_history (product_id);
+    CREATE INDEX idx_product_history_changed_by   ON product_history (changed_by);
     CREATE INDEX idx_salesman_history_salesman_id ON salesman_history (salesman_id);
+    CREATE INDEX idx_salesman_history_changed_by  ON salesman_history (changed_by);
     CREATE INDEX idx_documents_occurred_at        ON documents (occurred_at);
+    CREATE INDEX idx_documents_performed_by       ON documents (performed_by);
     CREATE INDEX idx_documents_linked_document_id ON documents (linked_document_id);
     CREATE INDEX idx_agreements_document_id       ON agreements (document_id);
     CREATE INDEX idx_agreements_product_id        ON agreements (product_id);
