@@ -127,6 +127,49 @@ describe("recordSale", () => {
         expect(sale.agreements.reduce((total, row) => total + row.value, 0)).toBe(1200)
     })
 
+    it("GIVEN both kinds of discount THEN the cart discount is split over what the lines cost after their own discounts", () => {
+        const sale = recordSale(db, {
+            performedBy: boss.id,
+            items: [
+                { productId: coke.id, quantity: 2, lineDiscount: 100 },
+                { productId: water.id, quantity: 1 },
+            ],
+            documentDiscount: 100,
+            payments: [{ method: "Cash", amount: 1100 }],
+        })
+
+        // 900 and 300 of a 1200 cart, not 1000 and 300 of 1300: the line discount
+        // comes off first, so it also decides how much of the cart discount the
+        // line carries
+        expect(sale.agreements.map((row) => [row.lineDiscount, row.documentDiscountShare])).toEqual(
+            [
+                [100, 75],
+                [0, 25],
+            ],
+        )
+        expect(sale.agreements.map((row) => row.value)).toEqual([825, 275])
+        expect(sale.agreements.reduce((total, row) => total + row.value, 0)).toBe(1100)
+    })
+
+    it("GIVEN a line given away inside a cart that is discounted too THEN the free line takes none of the cart discount", () => {
+        const sale = recordSale(db, {
+            performedBy: boss.id,
+            items: [
+                { productId: coke.id, quantity: 1, lineDiscount: 500 },
+                { productId: water.id, quantity: 1 },
+            ],
+            documentDiscount: 100,
+            payments: [{ method: "Cash", amount: 200 }],
+        })
+
+        // The free line is worth nothing, so it is owed nothing of the 100 given
+        // away over the cart: the whole share falls on the line that costs something
+        expect(sale.agreements.map((row) => [row.documentDiscountShare, row.value])).toEqual([
+            [0, 0],
+            [100, 200],
+        ])
+    })
+
     it("GIVEN one item given away inside a cart that is paid for THEN it is allowed, and worth nothing on its own line", () => {
         const sale = recordSale(db, {
             performedBy: boss.id,
