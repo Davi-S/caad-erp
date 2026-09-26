@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
     getSalesman,
     insertSalesman,
+    listSalesmen,
     listSalesmanHistory,
     updateSalesman,
     type DB,
@@ -63,10 +64,42 @@ describe("updateSalesman", () => {
         ])
     })
 
+    it("GIVEN a write that changes nothing THEN it is still recorded, because storage records writes and not differences", () => {
+        const boss = addSalesman(db)
+
+        updateSalesman(db, boss.id, { name: "Boss" }, boss.id)
+
+        expect(listSalesmanHistory(db, boss.id)).toHaveLength(2)
+    })
+
     it("GIVEN an id that is not stored THEN there is nothing to return and nothing is recorded", () => {
         const boss = addSalesman(db)
 
         expect(updateSalesman(db, "nope", { name: "Ghost" }, boss.id)).toBeUndefined()
         expect(listSalesmanHistory(db, "nope")).toEqual([])
+    })
+
+    it("GIVEN a different salesman making the change THEN the snapshot names them, not the salesman it is about", () => {
+        const boss = addSalesman(db)
+        const helper = addSalesman(db, { name: "Helper" })
+
+        updateSalesman(db, helper.id, { isActive: false }, boss.id)
+
+        expect(listSalesmanHistory(db, helper.id).map((row) => row.changedBy)).toEqual([
+            helper.id,
+            boss.id,
+        ])
+    })
+})
+
+describe("listSalesmanHistory", () => {
+    it("GIVEN several salesmen THEN each one's history is its own, and the sequence counts every change there is", () => {
+        const boss = addSalesman(db)
+        const helper = addSalesman(db, { name: "Helper" })
+        updateSalesman(db, boss.id, { name: "Chief" }, boss.id)
+
+        expect(listSalesmen(db)).toHaveLength(2)
+        expect(listSalesmanHistory(db, boss.id).map((row) => row.sequence)).toEqual([1, 3])
+        expect(listSalesmanHistory(db, helper.id).map((row) => row.sequence)).toEqual([2])
     })
 })

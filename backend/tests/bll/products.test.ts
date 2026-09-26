@@ -68,9 +68,25 @@ describe("createProduct", () => {
         )
     })
 
+    it("GIVEN a product that is already inactive THEN it can still be created, so goods that are not for sale still have a catalog entry", () => {
+        expect(product(db, boss.id, { isActive: false }).isActive).toBe(false)
+    })
+
     it("GIVEN an author who does not exist THEN nothing is created, and the error says which record is missing", () => {
         expect(() => product(db, "nobody")).toThrow(NotFoundError)
         expect(listProducts(db)).toHaveLength(0)
+    })
+
+    it("GIVEN a field the command does not accept THEN it is refused rather than dropped", () => {
+        expect(() =>
+            createProduct(db, {
+                name: "Coke",
+                sellPrice: 500,
+                isActive: true,
+                changedBy: boss.id,
+                costPrice: 300,
+            } as never),
+        ).toThrow(/Unrecognized key: "costPrice"/)
     })
 
     it("GIVEN an author who is inactive THEN nothing is created: a change has to be attributable to an active salesman", () => {
@@ -82,20 +98,6 @@ describe("createProduct", () => {
 
         expect(() => product(db, inactive.id)).toThrow(InactiveError)
         expect(listProducts(db)).toHaveLength(0)
-    })
-})
-
-describe("createProduct with a field it does not accept", () => {
-    it("GIVEN a field the command does not know THEN it is refused rather than dropped", () => {
-        expect(() =>
-            createProduct(db, {
-                name: "Coke",
-                sellPrice: 500,
-                isActive: true,
-                changedBy: boss.id,
-                costPrice: 300,
-            } as never),
-        ).toThrow(/Unrecognized key: "costPrice"/)
     })
 })
 
@@ -131,6 +133,14 @@ describe("updateProduct", () => {
         )
     })
 
+    it("GIVEN a field the command does not accept THEN it is refused rather than dropped", () => {
+        const coke = product(db, boss.id)
+
+        expect(() =>
+            updateProduct(db, coke.id, { costPrice: 300, changedBy: boss.id } as never),
+        ).toThrow(/Unrecognized key: "costPrice"/)
+    })
+
     it("GIVEN an author who is inactive THEN the change is refused and the product is untouched", () => {
         const coke = product(db, boss.id, { sellPrice: 500 })
         const inactive = createSalesman(db, {
@@ -164,6 +174,10 @@ describe("requireActiveProduct", () => {
         const coke = product(db, boss.id)
 
         expect(requireActiveProduct(db, coke.id)).toEqual(coke)
+    })
+
+    it("GIVEN a product that does not exist THEN it is reported as missing", () => {
+        expect(() => requireActiveProduct(db, "nope")).toThrow(NotFoundError)
     })
 })
 
