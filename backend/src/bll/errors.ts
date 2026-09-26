@@ -36,6 +36,7 @@ export class NotFoundError extends BusinessError {}
 export class InactiveError extends BusinessError {}
 
 /**
- * The operation would break a business rule of the ledger.
+ * The operation would break a business rule: the input is well formed, but what it
+ * asks for is not allowed given what is already recorded.
  */
 export class RuleViolationError extends BusinessError {}

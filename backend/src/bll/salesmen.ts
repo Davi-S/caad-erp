@@ -5,13 +5,14 @@
  * record who performed them, so a salesman who left is deactivated instead.
  *
  * The storage records a snapshot of every change; this layer only decides who the
- * change is recorded against. The very first salesman has nobody else, so they
- * are their own author.
+ * change is recorded against. Every salesman is added by an active salesman, which
+ * leaves the first one with nobody to name: they come from `createFirstSalesman`,
+ * once, and are recorded as their own author.
  */
 
 import * as dal from "../dal/index.js"
 import type { DB, SalesmanHistoryRow, SalesmanRow } from "../dal/index.js"
-import { InactiveError, InvalidInputError, NotFoundError } from "./errors.js"
+import { InactiveError, NotFoundError, RuleViolationError } from "./errors.js"
 import { newId } from "../ids.js"
 import { validate } from "./validate.js"
 import { z } from "zod"
@@ -25,14 +26,34 @@ const salesmanFields = z.strictObject({
 })
 
 /**
- * Input for creating a salesman: every field must be given.
+ * Who is making a change, on any command that records one.
  *
- * `changedBy` is who is adding them, and is left out only for the very first
- * salesman, when there is nobody to name.
+ * The same message either way, so a caller who leaves it out and one who sends a
+ * blank string are told the same thing.
  */
-export const createSalesmanSchema = salesmanFields.extend({
-    changedBy: z.string().trim().min(1, "The salesman making the change is required").optional(),
-})
+export const changedByField = {
+    changedBy: z
+        .string({ error: "The salesman making the change is required" })
+        .trim()
+        .min(1, "The salesman making the change is required"),
+}
+
+/**
+ * Input for the first salesman: their name, and nothing else.
+ *
+ * There is nobody to attribute them to, and they are active by definition. A
+ * lounge whose only salesman is inactive could record nothing at all, and could
+ * not even bring them back, since that change would need an active author.
+ */
+export const createFirstSalesmanSchema = z.strictObject({ name: salesmanFields.shape.name })
+
+export type CreateFirstSalesmanCommand = z.infer<typeof createFirstSalesmanSchema>
+
+/**
+ * Input for creating a salesman: every field must be given, including who is
+ * adding them.
+ */
+export const createSalesmanSchema = salesmanFields.extend(changedByField)
 
 export type CreateSalesmanCommand = z.infer<typeof createSalesmanSchema>
 
@@ -42,9 +63,7 @@ export type CreateSalesmanCommand = z.infer<typeof createSalesmanSchema>
  */
 export const updateSalesmanSchema = salesmanFields
     .partial()
-    .extend({
-        changedBy: z.string().trim().min(1, "The salesman making the change is required"),
-    })
+    .extend(changedByField)
     .refine(
         (fields) => Object.keys(fields).some((field) => field !== "changedBy"),
         "No fields to update",
@@ -97,15 +116,38 @@ export function getSalesmanHistory(db: DB, id: string): SalesmanHistoryRow[] {
 }
 
 /**
- * Creates a salesman and records their first snapshot.
+ * Creates the salesman a new ledger starts with, recorded as their own author.
  *
- * The first salesman of an empty database is created without `changedBy` and is
- * recorded as their own author; after that, `changedBy` is required.
+ * Only ever the first: every salesman after them is added by one of them, so no
+ * salesman can be brought into being without somebody answering for it.
+ *
+ * @param command - Raw input matching {@link createFirstSalesmanSchema}.
+ * @returns The stored salesman.
+ * @throws {@link InvalidInputError} If the input is not valid.
+ * @throws {@link RuleViolationError} If the ledger already has a salesman.
+ */
+export function createFirstSalesman(db: DB, command: CreateFirstSalesmanCommand): SalesmanRow {
+    const fields = validate(createFirstSalesmanSchema, command)
+
+    return dal.inTransaction(db, () => {
+        if (dal.listSalesmen(db).length > 0) {
+            throw new RuleViolationError(
+                "The lounge already has a salesman; a new one is added by one of them",
+            )
+        }
+
+        // Nobody else exists yet to be recorded against
+        const id = newId()
+        return dal.insertSalesman(db, { id, ...fields, isActive: true }, id)
+    })
+}
+
+/**
+ * Creates a salesman and records their first snapshot.
  *
  * @param command - Raw input matching {@link createSalesmanSchema}.
  * @returns The stored salesman.
- * @throws {@link InvalidInputError} If the input is not valid, if `changedBy` is
- * missing while salesmen exist, or if it is given while none do.
+ * @throws {@link InvalidInputError} If the input is not valid.
  * @throws {@link NotFoundError} If the salesman making the change does not exist.
  * @throws {@link InactiveError} If that salesman is inactive.
  */
@@ -113,20 +155,8 @@ export function createSalesman(db: DB, command: CreateSalesmanCommand): Salesman
     const { changedBy, ...fields } = validate(createSalesmanSchema, command)
 
     return dal.inTransaction(db, () => {
-        const isFirst = dal.listSalesmen(db).length === 0
-        if (isFirst && changedBy) {
-            throw new InvalidInputError("The first salesman cannot be created by another salesman")
-        }
-        if (!isFirst && !changedBy) {
-            throw new InvalidInputError("The salesman making the change is required")
-        }
-        if (changedBy) {
-            requireActiveSalesman(db, changedBy)
-        }
-
-        // The first salesman has nobody else to be recorded against
-        const id = newId()
-        return dal.insertSalesman(db, { id, ...fields }, changedBy ?? id)
+        requireActiveSalesman(db, changedBy)
+        return dal.insertSalesman(db, { id: newId(), ...fields }, changedBy)
     })
 }
 

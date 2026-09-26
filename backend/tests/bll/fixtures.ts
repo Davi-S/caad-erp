@@ -26,7 +26,7 @@ export const AT = new Date("2026-01-02T15:00:00.000Z")
  */
 export function setup(): { db: DB; boss: SalesmanRow } {
     const db = freshDb()
-    return { db, boss: bll.createSalesman(db, { name: "Boss", isActive: true }) }
+    return { db, boss: bll.createFirstSalesman(db, { name: "Boss" }) }
 }
 
 export function product(

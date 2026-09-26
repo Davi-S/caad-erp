@@ -14,7 +14,7 @@ import * as dal from "../dal/index.js"
 import type { DB, ProductHistoryRow, ProductRow } from "../dal/index.js"
 import { InactiveError, NotFoundError } from "./errors.js"
 import { newId } from "../ids.js"
-import { requireActiveSalesman } from "./salesmen.js"
+import { changedByField, requireActiveSalesman } from "./salesmen.js"
 import { validate } from "./validate.js"
 import { z } from "zod"
 
@@ -28,13 +28,6 @@ const productFields = z.strictObject({
         .nonnegative("Price cannot be negative"),
     isActive: z.boolean(),
 })
-
-/**
- * Who is making the change, recorded in the product's history.
- */
-const changedByField = {
-    changedBy: z.string().trim().min(1, "The salesman making the change is required"),
-}
 
 /**
  * Input for creating a product: every field must be given.
