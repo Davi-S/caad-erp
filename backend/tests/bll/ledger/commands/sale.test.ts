@@ -449,7 +449,7 @@ describe("recordSale", () => {
         ).toThrow(/Unrecognized key: "documentDiscout"/)
     })
 
-    it("GIVEN a price sent with an item THEN it is refused: the price comes from the catalog, and a caller cannot set it", () => {
+    it("GIVEN a field the command does not accept inside an item THEN it is refused the same way, naming the line", () => {
         expect(() =>
             recordSale(db, {
                 performedBy: boss.id,

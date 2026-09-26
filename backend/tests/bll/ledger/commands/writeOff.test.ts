@@ -156,6 +156,25 @@ describe("recordWriteOff", () => {
         }
     })
 
+    it("GIVEN payments passed in anyway THEN it is refused rather than quietly dropped: nothing is paid for goods that were lost", () => {
+        expect(() =>
+            recordWriteOff(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 1 }],
+                payments: [{ method: "Cash", amount: 500 }],
+            } as never),
+        ).toThrow(/Unrecognized key: "payments"/)
+    })
+
+    it("GIVEN a field the command does not accept inside an item THEN it is refused the same way, naming the line", () => {
+        expect(() =>
+            recordWriteOff(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 1, value: 500 }],
+            } as never),
+        ).toThrow(/items\.0: Unrecognized key: "value"/)
+    })
+
     it("GIVEN the same product on two lines THEN the caller is told to say it once", () => {
         expect(() =>
             recordWriteOff(db, {

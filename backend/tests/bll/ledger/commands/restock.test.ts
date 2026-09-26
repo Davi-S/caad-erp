@@ -252,6 +252,27 @@ describe("recordRestock", () => {
         ).toThrow(/items\.1\.productId: This product is already listed/)
     })
 
+    it("GIVEN a discount passed in anyway THEN it is refused rather than quietly dropped: what a purchase cost is what was paid for it", () => {
+        expect(() =>
+            recordRestock(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+                payments: [{ method: "Cash", amount: 100 }],
+                documentDiscount: 10,
+            } as never),
+        ).toThrow(/Unrecognized key: "documentDiscount"/)
+    })
+
+    it("GIVEN a field the command does not accept inside an item THEN it is refused the same way, naming the line", () => {
+        expect(() =>
+            recordRestock(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 2, totalCost: 200, unitCost: 100 }],
+                payments: [{ method: "Cash", amount: 200 }],
+            } as never),
+        ).toThrow(/items\.0: Unrecognized key: "unitCost"/)
+    })
+
     it("GIVEN no payment at all THEN it is refused as bad input, since a restock is paid at entry", () => {
         expect(() =>
             recordRestock(db, {

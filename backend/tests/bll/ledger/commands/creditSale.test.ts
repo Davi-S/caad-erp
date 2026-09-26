@@ -136,6 +136,15 @@ describe("recordCreditSale", () => {
         ).toThrow(/Unrecognized key: "payments"/)
     })
 
+    it("GIVEN a field the command does not accept inside an item THEN it is refused the same way, naming the line", () => {
+        expect(() =>
+            recordCreditSale(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 1, unitPrice: 100 }],
+            } as never),
+        ).toThrow(/items\.0: Unrecognized key: "unitPrice"/)
+    })
+
     it("GIVEN a product or salesman that cannot take part THEN the sale is refused", () => {
         const water = createProduct(db, {
             name: "Water",
