@@ -10,6 +10,7 @@ import type { DocumentType } from "../../../dal/index.js"
 import type { DocumentSpec } from "../shapes.js"
 import { creditRestockSpec } from "./creditRestock.js"
 import { deliveryInSpec } from "./deliveryIn.js"
+import { expenseSpec } from "./expense.js"
 import { goodsDonationInSpec } from "./goodsDonationIn.js"
 import { moneyDonationInSpec } from "./moneyDonationIn.js"
 import { creditSaleSpec } from "./creditSale.js"
@@ -34,6 +35,7 @@ export * from "./paymentIn.js"
 export * from "./paymentOut.js"
 export * from "./deliveryOut.js"
 export * from "./deliveryIn.js"
+export * from "./expense.js"
 export * from "./moneyDonationIn.js"
 export * from "./goodsDonationIn.js"
 export * from "./void.js"
@@ -47,6 +49,7 @@ export const SPECS: Record<DocumentType, DocumentSpec> = {
     CREDIT_RESTOCK: creditRestockSpec,
     PRE_PAID_RESTOCK: prePaidRestockSpec,
     WRITE_OFF: writeOffSpec,
+    EXPENSE: expenseSpec,
     MONEY_DONATION_IN: moneyDonationInSpec,
     GOODS_DONATION_IN: goodsDonationInSpec,
     PAYMENT_IN: paymentInSpec,

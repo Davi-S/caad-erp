@@ -43,6 +43,7 @@ export const voidSpec: DocumentSpec = {
         "CREDIT_RESTOCK",
         "PRE_PAID_RESTOCK",
         "WRITE_OFF",
+        "EXPENSE",
         "MONEY_DONATION_IN",
         "GOODS_DONATION_IN",
         "PAYMENT_IN",
