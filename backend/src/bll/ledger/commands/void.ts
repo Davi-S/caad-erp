@@ -35,7 +35,15 @@ export const voidSpec: DocumentSpec = {
     products: "any",
     // Anything but another void: an unwanted void is undone by recording the
     // original again
-    linkedTypes: ["SALE", "CREDIT_SALE", "RESTOCK", "WRITE_OFF", "PAYMENT_IN"],
+    linkedTypes: [
+        "SALE",
+        "CREDIT_SALE",
+        "PRE_PAID_SALE",
+        "RESTOCK",
+        "WRITE_OFF",
+        "PAYMENT_IN",
+        "DELIVERY_OUT",
+    ],
 }
 
 /**

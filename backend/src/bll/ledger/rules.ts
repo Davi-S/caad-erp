@@ -11,7 +11,12 @@
  */
 
 import { paymentMethodValues } from "../../dal/index.js"
-import type { DocumentType, NewLedgerDocument } from "../../dal/index.js"
+import type {
+    DocumentType,
+    LedgerDocument,
+    LedgerIndex,
+    NewLedgerDocument,
+} from "../../dal/index.js"
 import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
 import type { DocumentReferences, LedgerContext } from "./context.js"
 import type {
@@ -75,10 +80,10 @@ const CHECKS = {
      * Goods can move with nothing agreed at all; those shapes simply do not list
      * this rule.
      *
-     * It reads one document, so the agreement has to be in it. A delivery type
-     * would match its movements against a linked document's agreements, counting
-     * what earlier deliveries already took, which needs the ledger around it: that
-     * rule belongs in `CONTEXT_CHECKS`.
+     * It reads one document, so the agreement has to be in it. A delivery matches
+     * its movements against a linked document's agreements instead, counting what
+     * earlier deliveries already took, which needs the ledger around it: that rule
+     * is `movementsWithinAgreed`, below.
      */
     movementsMatchAgreements(doc: NewLedgerDocument): void {
         for (const movement of doc.movements) {
@@ -196,6 +201,53 @@ const CONTEXT_CHECKS = {
             "payment",
             target.id,
         )
+    },
+
+    /**
+     * Goods handed over against a sale stay within what it agreed, counting what
+     * earlier deliveries out already took.
+     *
+     * This is `movementsMatchAgreements` for a document whose agreement lives
+     * elsewhere: the units are matched against the linked sale rather than against
+     * rows of its own, so it needs the ledger around it. Partial is fine, as
+     * instalments are for a payment; over is not. Overpaying leaves credit, but
+     * handing over goods that were never sold leaves stock gone with nothing to
+     * account for it.
+     *
+     * A voided delivery out took nothing: its units come back on the void, which hangs
+     * off it, and the two cancel in the count.
+     */
+    movementsWithinAgreed(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+
+        // Everything is counted as units, so the signs stay out of the arithmetic
+        const agreed = new Map<string, number>()
+        for (const row of target.agreements) {
+            agreed.set(row.productId, -row.quantity)
+        }
+
+        const taken = new Map<string, number>()
+        for (const other of descendants(context.linked, target.id)) {
+            for (const row of other.movements) {
+                taken.set(row.productId, (taken.get(row.productId) ?? 0) - row.quantity)
+            }
+        }
+
+        for (const row of doc.movements) {
+            const promised = agreed.get(row.productId)
+            if (promised === undefined) {
+                throw new RuleViolationError(
+                    `Nothing was agreed for ${row.productId} on ${target.id}`,
+                )
+            }
+            const already = taken.get(row.productId) ?? 0
+            const now = -row.quantity
+            if (already + now > promised) {
+                throw new RuleViolationError(
+                    `${promised} of ${row.productId} was agreed and ${already} already moved, so ${now} more cannot`,
+                )
+            }
+        }
     },
 
     /**
@@ -397,6 +449,14 @@ function checkPayments(doc: NewLedgerDocument, shape: PaymentsShape | null): voi
             doc.type,
         )
     }
+}
+
+/**
+ * Every document hanging off this one, however deep: the deliveries out against
+ * a sale, and the voids against those deliveries.
+ */
+function descendants(index: LedgerIndex, id: string): LedgerDocument[] {
+    return index.linkedDocuments(id).flatMap((doc) => [doc, ...descendants(index, doc.id)])
 }
 
 function checkCount(count: number, minimum: number, what: string, type: DocumentType): void {
