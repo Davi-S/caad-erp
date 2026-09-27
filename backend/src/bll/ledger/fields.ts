@@ -93,3 +93,28 @@ export const soldItemsField = z
  * they cost.
  */
 export const documentDiscountField = discountField.default(0)
+
+/**
+ * What a line's units cost together, not what one of them cost.
+ */
+const totalCostField = z
+    .int("Cost must be a whole number of cents")
+    .nonnegative("Cost cannot be negative")
+
+/**
+ * What is being bought: a product, how many, and what those units cost.
+ *
+ * The sale side works the other way round: there the catalog says what a unit is
+ * worth and the discounts come off it, while here the supplier's price is simply
+ * what it is, so a purchase states the total and nothing is worked out.
+ */
+export const purchasedItemsField = z
+    .array(
+        z.strictObject({
+            productId: productIdField,
+            quantity: quantityField,
+            totalCost: totalCostField,
+        }),
+    )
+    .min(1, "At least one item is required")
+    .superRefine(oneLinePerProduct)

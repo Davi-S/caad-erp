@@ -15,8 +15,10 @@ export const documentTypeValues = [
     "CREDIT_SALE",
     "PRE_PAID_SALE",
     "RESTOCK",
+    "CREDIT_RESTOCK",
     "WRITE_OFF",
     "PAYMENT_IN",
+    "PAYMENT_OUT",
     "DELIVERY_OUT",
     "VOID",
 ] as const

@@ -11,10 +11,11 @@ import type { AgreementRow, MovementRow } from "../../dal/index.js"
 import { newId } from "../../ids.js"
 import { distribute } from "./money.js"
 import type { LedgerContext } from "./context.js"
-import type { soldItemsField } from "./fields.js"
+import type { purchasedItemsField, soldItemsField } from "./fields.js"
 import type { z } from "zod"
 
 export type SoldItems = z.output<typeof soldItemsField>
+export type PurchasedItems = z.output<typeof purchasedItemsField>
 
 /**
  * Prices a cart of goods leaving, giving the rows a sale stores: what was
@@ -69,6 +70,46 @@ export function priceItems(
             productId: item.productId,
             linkedMovementId: null,
             quantity: -item.quantity,
+        })),
+    }
+}
+
+/**
+ * Costs a cart of goods arriving, giving the rows a purchase stores: what is
+ * owed for them, and the goods that came with it.
+ *
+ * Nothing is priced. What a unit is worth on the way in is not a fact the ledger
+ * has - the supplier charged what they charged - so the line states its total and
+ * the pricing columns stay empty. Whether the money moves now or is owed is the
+ * command's business, not this one's.
+ *
+ * @param documentId - The document the rows belong to.
+ * @param items - What is being bought, as the caller counts it.
+ * @returns The agreement and movement rows, ready to store.
+ */
+export function costItems(
+    documentId: string,
+    items: PurchasedItems,
+): { agreements: AgreementRow[]; movements: MovementRow[] } {
+    return {
+        agreements: items.map((item) => ({
+            id: newId(),
+            documentId,
+            productId: item.productId,
+            linkedAgreementId: null,
+            // Stock arrives, and its cost is owed
+            quantity: item.quantity,
+            unitPrice: null,
+            lineDiscount: null,
+            documentDiscountShare: null,
+            value: -item.totalCost,
+        })),
+        movements: items.map((item) => ({
+            id: newId(),
+            documentId,
+            productId: item.productId,
+            linkedMovementId: null,
+            quantity: item.quantity,
         })),
     }
 }

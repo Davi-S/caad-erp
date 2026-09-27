@@ -10,14 +10,9 @@
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import {
-    documentFields,
-    oneLinePerProduct,
-    paymentField,
-    productIdField,
-    quantityField,
-} from "../fields.js"
+import { documentFields, paymentField, purchasedItemsField } from "../fields.js"
 import { post } from "../post.js"
+import { costItems } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -39,18 +34,7 @@ export const restockSpec: DocumentSpec = {
  */
 export const restockSchema = z.strictObject({
     ...documentFields,
-    items: z
-        .array(
-            z.strictObject({
-                productId: productIdField,
-                quantity: quantityField,
-                totalCost: z
-                    .int("Cost must be a whole number of cents")
-                    .nonnegative("Cost cannot be negative"),
-            }),
-        )
-        .min(1, "At least one item is required")
-        .superRefine(oneLinePerProduct),
+    items: purchasedItemsField,
     payments: z.array(paymentField).min(1, "At least one payment is required"),
 })
 
@@ -90,25 +74,7 @@ export function recordRestock(db: DB, command: RestockCommand): LedgerDocument {
                 performedBy: input.performedBy,
                 linkedDocumentId: null,
                 notes: input.notes,
-                agreements: input.items.map((item) => ({
-                    id: newId(),
-                    documentId: id,
-                    productId: item.productId,
-                    linkedAgreementId: null,
-                    // Stock arrives, money leaves
-                    quantity: item.quantity,
-                    unitPrice: null,
-                    lineDiscount: null,
-                    documentDiscountShare: null,
-                    value: -item.totalCost,
-                })),
-                movements: input.items.map((item) => ({
-                    id: newId(),
-                    documentId: id,
-                    productId: item.productId,
-                    linkedMovementId: null,
-                    quantity: item.quantity,
-                })),
+                ...costItems(id, input.items),
                 payments: input.payments.map((payment) => ({
                     id: newId(),
                     documentId: id,

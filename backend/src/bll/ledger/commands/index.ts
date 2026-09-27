@@ -8,9 +8,11 @@
 
 import type { DocumentType } from "../../../dal/index.js"
 import type { DocumentSpec } from "../shapes.js"
+import { creditRestockSpec } from "./creditRestock.js"
 import { creditSaleSpec } from "./creditSale.js"
 import { deliveryOutSpec } from "./deliveryOut.js"
 import { paymentInSpec } from "./paymentIn.js"
+import { paymentOutSpec } from "./paymentOut.js"
 import { prePaidSaleSpec } from "./prePaidSale.js"
 import { restockSpec } from "./restock.js"
 import { saleSpec } from "./sale.js"
@@ -19,10 +21,12 @@ import { writeOffSpec } from "./writeOff.js"
 
 export * from "./sale.js"
 export * from "./creditSale.js"
+export * from "./creditRestock.js"
 export * from "./prePaidSale.js"
 export * from "./restock.js"
 export * from "./writeOff.js"
 export * from "./paymentIn.js"
+export * from "./paymentOut.js"
 export * from "./deliveryOut.js"
 export * from "./void.js"
 
@@ -32,8 +36,10 @@ export const SPECS: Record<DocumentType, DocumentSpec> = {
     CREDIT_SALE: creditSaleSpec,
     PRE_PAID_SALE: prePaidSaleSpec,
     RESTOCK: restockSpec,
+    CREDIT_RESTOCK: creditRestockSpec,
     WRITE_OFF: writeOffSpec,
     PAYMENT_IN: paymentInSpec,
+    PAYMENT_OUT: paymentOutSpec,
     DELIVERY_OUT: deliveryOutSpec,
     VOID: voidSpec,
 }
