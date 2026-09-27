@@ -111,7 +111,7 @@ describe("recordRestock", () => {
         expect(totals(db).stock).toBe(12)
     })
 
-    it("GIVEN a delivery that cost nothing at all THEN it is refused, because goods arriving for free is a different kind of event", () => {
+    it("GIVEN a restock that cost nothing at all THEN it is refused, because goods arriving for free is a different kind of event", () => {
         expect(() =>
             recordRestock(db, {
                 performedBy: boss.id,

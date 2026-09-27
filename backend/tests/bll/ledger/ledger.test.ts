@@ -44,7 +44,7 @@ afterEach(() => {
     vi.useRealTimers()
 })
 
-/** A day's trading: a delivery, a counter sale, a sale on credit, an instalment, a loss. */
+/** A day's trading: a restock, a counter sale, a sale on credit, an instalment, a loss. */
 function aDay() {
     const restock = recordRestock(db, {
         performedBy: boss.id,
@@ -73,7 +73,7 @@ function aDay() {
 }
 
 describe("a day of trading", () => {
-    it("GIVEN a delivery, a sale, a sale on credit, an instalment and a loss THEN stock, cash and what was agreed each come out on their own terms", () => {
+    it("GIVEN a restock, a sale, a sale on credit, an instalment and a loss THEN stock, cash and what was agreed each come out on their own terms", () => {
         aDay()
 
         expect(totals(db)).toEqual({
@@ -81,7 +81,7 @@ describe("a day of trading", () => {
             stock: 18,
             // 6000 paid out, 1000 taken, 500 collected
             cash: -4500,
-            // the delivery cost, the sale, the credit sale: the loss agreed nothing
+            // the restock cost, the sale, the credit sale: the loss agreed nothing
             agreed: -3500,
         })
     })
@@ -168,7 +168,7 @@ describe("correcting a mistake", () => {
 })
 
 describe("stock that goes negative", () => {
-    it("GIVEN a sale made before the delivery was entered THEN it is allowed, and the shortfall shows until the delivery is entered", () => {
+    it("GIVEN a sale made before the restock was entered THEN it is allowed, and the shortfall shows until the restock is entered", () => {
         recordSale(db, {
             performedBy: boss.id,
             items: [{ productId: coke.id, quantity: 2 }],
