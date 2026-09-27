@@ -10,6 +10,8 @@ import type { DocumentType } from "../../../dal/index.js"
 import type { DocumentSpec } from "../shapes.js"
 import { creditRestockSpec } from "./creditRestock.js"
 import { deliveryInSpec } from "./deliveryIn.js"
+import { goodsDonationInSpec } from "./goodsDonationIn.js"
+import { moneyDonationInSpec } from "./moneyDonationIn.js"
 import { creditSaleSpec } from "./creditSale.js"
 import { deliveryOutSpec } from "./deliveryOut.js"
 import { paymentInSpec } from "./paymentIn.js"
@@ -32,6 +34,8 @@ export * from "./paymentIn.js"
 export * from "./paymentOut.js"
 export * from "./deliveryOut.js"
 export * from "./deliveryIn.js"
+export * from "./moneyDonationIn.js"
+export * from "./goodsDonationIn.js"
 export * from "./void.js"
 
 /** What the ledger can record. */
@@ -43,6 +47,8 @@ export const SPECS: Record<DocumentType, DocumentSpec> = {
     CREDIT_RESTOCK: creditRestockSpec,
     PRE_PAID_RESTOCK: prePaidRestockSpec,
     WRITE_OFF: writeOffSpec,
+    MONEY_DONATION_IN: moneyDonationInSpec,
+    GOODS_DONATION_IN: goodsDonationInSpec,
     PAYMENT_IN: paymentInSpec,
     PAYMENT_OUT: paymentOutSpec,
     DELIVERY_OUT: deliveryOutSpec,
