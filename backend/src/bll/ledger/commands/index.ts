@@ -20,6 +20,7 @@ import { paymentOutSpec } from "./paymentOut.js"
 import { prePaidRestockSpec } from "./prePaidRestock.js"
 import { prePaidSaleSpec } from "./prePaidSale.js"
 import { restockSpec } from "./restock.js"
+import { returnSpec } from "./return.js"
 import { saleSpec } from "./sale.js"
 import { voidSpec } from "./void.js"
 import { writeOffSpec } from "./writeOff.js"
@@ -29,6 +30,7 @@ export * from "./creditSale.js"
 export * from "./creditRestock.js"
 export * from "./prePaidRestock.js"
 export * from "./prePaidSale.js"
+export * from "./return.js"
 export * from "./restock.js"
 export * from "./writeOff.js"
 export * from "./paymentIn.js"
@@ -45,6 +47,7 @@ export const SPECS: Record<DocumentType, DocumentSpec> = {
     SALE: saleSpec,
     CREDIT_SALE: creditSaleSpec,
     PRE_PAID_SALE: prePaidSaleSpec,
+    RETURN: returnSpec,
     RESTOCK: restockSpec,
     CREDIT_RESTOCK: creditRestockSpec,
     PRE_PAID_RESTOCK: prePaidRestockSpec,

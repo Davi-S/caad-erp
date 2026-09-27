@@ -224,8 +224,13 @@ export const SHAPES = {
     },
 
     /**
-     * Not one of the ten: a void carries whatever its target carries, negated, so
-     * its rows are whatever they have to be and the mirror rule checks them.
+     * Not one of the ten: a reversal carries rows that are already stored,
+     * negated, so its rows are whatever they have to be and the rules of the
+     * intent check them against what they take back.
+     *
+     * A void takes back a whole document, which `targetFullyMirrored` enforces
+     * exactly. A return takes back part of one, so its amounts are a share of the
+     * original rather than its negation, and `returnsWithinSold` caps them.
      */
     mirrored: {
         agreements: {
@@ -238,7 +243,10 @@ export const SHAPES = {
             documentDiscountShare: "mirrored",
         },
         movements: { minimum: 0, linkedMovementId: "required", quantity: "nonZero" },
-        payments: { minimum: 0, sign: "nonZero", linkedPaymentId: "required" },
+        // A void reverses the payments it takes back and says so; a refund is new
+        // money out, possibly by another method, and names no payment of its own.
+        // `targetFullyMirrored` is what requires the link where it is required.
+        payments: { minimum: 0, sign: "nonZero", linkedPaymentId: "mirrored" },
         checks: [],
     },
 } as const satisfies Record<string, Shape>

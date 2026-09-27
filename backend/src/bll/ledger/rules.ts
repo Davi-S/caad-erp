@@ -11,12 +11,7 @@
  */
 
 import { paymentMethodValues } from "../../dal/index.js"
-import type {
-    DocumentType,
-    LedgerDocument,
-    LedgerIndex,
-    NewLedgerDocument,
-} from "../../dal/index.js"
+import type { DocumentType, NewLedgerDocument } from "../../dal/index.js"
 import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
 import type { DocumentReferences, LedgerContext } from "./context.js"
 import type {
@@ -234,7 +229,7 @@ const CONTEXT_CHECKS = {
         }
 
         const taken = new Map<string, number>()
-        for (const other of descendants(context.linked, target.id)) {
+        for (const other of context.linked.descendants(target.id)) {
             for (const row of other.movements) {
                 const promise = agreed.get(row.productId)
                 if (promise) {
@@ -259,6 +254,60 @@ const CONTEXT_CHECKS = {
             if (already + now > promised) {
                 throw new RuleViolationError(
                     `${promised} of ${row.productId} was agreed and ${already} already moved, so ${now} more cannot`,
+                )
+            }
+        }
+    },
+
+    /**
+     * Goods coming back stay within what the sale put out, counting what earlier
+     * returns already brought back.
+     *
+     * The mirror of `movementsWithinAgreed`, and a separate rule because the
+     * movements point the other way: a delivery moves goods *with* what its target
+     * agreed, fulfilling it, while a return moves them *against* it, undoing part
+     * of it. Folding both into one rule would mean a direction that means
+     * "same as" in one case and "opposite to" in the other.
+     *
+     * A voided return brought nothing back: its units leave again on the void,
+     * which hangs off it, and the two cancel in the count.
+     */
+    returnsWithinSold(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+
+        const agreed = new Set(target.agreements.map((row) => row.id))
+        for (const row of doc.agreements) {
+            if (!agreed.has(row.linkedAgreementId!)) {
+                throw new RuleViolationError(
+                    `A ${doc.type} takes back a deal that ${target.id} never agreed`,
+                )
+            }
+        }
+
+        // What each row points at says which line it takes back; how much of that
+        // line has already gone back is counted by product, because a void of a
+        // return points at the return's own row rather than at the sale's, and
+        // still has to cancel it
+        const back = new Map<string, number>()
+        for (const other of context.linked.descendants(target.id)) {
+            for (const row of other.movements) {
+                back.set(row.productId, (back.get(row.productId) ?? 0) + row.quantity)
+            }
+        }
+
+        const moved = new Map(target.movements.map((row) => [row.id, row]))
+        for (const row of doc.movements) {
+            const original = moved.get(row.linkedMovementId!)
+            if (!original) {
+                throw new RuleViolationError(
+                    `A ${doc.type} takes back goods that ${target.id} never moved`,
+                )
+            }
+            const total = Math.abs(original.quantity)
+            const already = back.get(original.productId) ?? 0
+            if (already + row.quantity > total) {
+                throw new RuleViolationError(
+                    `${total} of ${row.productId} was sold and ${already} already came back, so ${row.quantity} more cannot`,
                 )
             }
         }
@@ -463,14 +512,6 @@ function checkPayments(doc: NewLedgerDocument, shape: PaymentsShape | null): voi
             doc.type,
         )
     }
-}
-
-/**
- * Every document hanging off this one, however deep: the deliveries out against
- * a sale, and the voids against those deliveries.
- */
-function descendants(index: LedgerIndex, id: string): LedgerDocument[] {
-    return index.linkedDocuments(id).flatMap((doc) => [doc, ...descendants(index, doc.id)])
 }
 
 function checkCount(count: number, minimum: number, what: string, type: DocumentType): void {

@@ -37,6 +37,14 @@ export class LedgerIndex {
         return this.linkedDocs.get(docId) ?? []
     }
 
+    /**
+     * Every document hanging off the given one, however deep: what points at it,
+     * what points at those, and so on. The document itself is not included.
+     */
+    descendants(docId: string): LedgerDocument[] {
+        return this.linkedDocuments(docId).flatMap((doc) => [doc, ...this.descendants(doc.id)])
+    }
+
     private add(doc: LedgerDocument): void {
         this.docsById.set(doc.id, doc)
         if (doc.linkedDocumentId) {
