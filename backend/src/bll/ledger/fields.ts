@@ -118,3 +118,14 @@ export const purchasedItemsField = z
     )
     .min(1, "At least one item is required")
     .superRefine(oneLinePerProduct)
+
+/**
+ * Goods that only move: a product and how many units of it.
+ *
+ * No money is named, because these documents settle against what a linked
+ * document already agreed, or against nothing at all.
+ */
+export const movedItemsField = z
+    .array(z.strictObject({ productId: productIdField, quantity: quantityField }))
+    .min(1, "At least one item is required")
+    .superRefine(oneLinePerProduct)

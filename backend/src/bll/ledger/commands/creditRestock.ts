@@ -12,8 +12,9 @@
 import type { DB, LedgerDocument, NewLedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields, oneLinePerProduct, productIdField, quantityField } from "../fields.js"
+import { documentFields, purchasedItemsField } from "../fields.js"
 import { post } from "../post.js"
+import { costItems } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -38,18 +39,7 @@ export const creditRestockSpec: DocumentSpec = {
  */
 export const creditRestockSchema = z.strictObject({
     ...documentFields,
-    items: z
-        .array(
-            z.strictObject({
-                productId: productIdField,
-                quantity: quantityField,
-                totalCost: z
-                    .int("Cost must be a whole number of cents")
-                    .nonnegative("Cost cannot be negative"),
-            }),
-        )
-        .min(1, "At least one item is required")
-        .superRefine(oneLinePerProduct),
+    items: purchasedItemsField,
 })
 
 export type CreditRestockCommand = z.input<typeof creditRestockSchema>
@@ -88,25 +78,7 @@ export function recordCreditRestock(db: DB, command: CreditRestockCommand): Ledg
                 performedBy: input.performedBy,
                 linkedDocumentId: null,
                 notes: input.notes,
-                agreements: input.items.map((item) => ({
-                    id: newId(),
-                    documentId: id,
-                    productId: item.productId,
-                    linkedAgreementId: null,
-                    // Stock arrives, and its cost is owed
-                    quantity: item.quantity,
-                    unitPrice: null,
-                    lineDiscount: null,
-                    documentDiscountShare: null,
-                    value: -item.totalCost,
-                })),
-                movements: input.items.map((item) => ({
-                    id: newId(),
-                    documentId: id,
-                    productId: item.productId,
-                    linkedMovementId: null,
-                    quantity: item.quantity,
-                })),
+                ...costItems(id, input.items),
                 payments: [],
             }
             return doc

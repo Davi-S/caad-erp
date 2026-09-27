@@ -220,28 +220,42 @@ const CONTEXT_CHECKS = {
     movementsWithinAgreed(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
 
-        // Everything is counted as units, so the signs stay out of the arithmetic
-        const agreed = new Map<string, number>()
+        // Counted in units, in the direction the target agreed: a sale owes goods
+        // out, a purchase paid for up front owes them in. Folding the sign away
+        // here lets the arithmetic below read the same either way, and still lets a
+        // void cancel the delivery it takes back, because its movements point
+        // against that direction and so count negative.
+        const agreed = new Map<string, { units: number; way: number }>()
         for (const row of target.agreements) {
-            agreed.set(row.productId, -row.quantity)
+            agreed.set(row.productId, {
+                units: Math.abs(row.quantity),
+                way: Math.sign(row.quantity),
+            })
         }
 
         const taken = new Map<string, number>()
         for (const other of descendants(context.linked, target.id)) {
             for (const row of other.movements) {
-                taken.set(row.productId, (taken.get(row.productId) ?? 0) - row.quantity)
+                const promise = agreed.get(row.productId)
+                if (promise) {
+                    taken.set(
+                        row.productId,
+                        (taken.get(row.productId) ?? 0) + row.quantity * promise.way,
+                    )
+                }
             }
         }
 
         for (const row of doc.movements) {
-            const promised = agreed.get(row.productId)
-            if (promised === undefined) {
+            const promise = agreed.get(row.productId)
+            if (promise === undefined) {
                 throw new RuleViolationError(
                     `Nothing was agreed for ${row.productId} on ${target.id}`,
                 )
             }
+            const promised = promise.units
             const already = taken.get(row.productId) ?? 0
-            const now = -row.quantity
+            const now = row.quantity * promise.way
             if (already + now > promised) {
                 throw new RuleViolationError(
                     `${promised} of ${row.productId} was agreed and ${already} already moved, so ${now} more cannot`,

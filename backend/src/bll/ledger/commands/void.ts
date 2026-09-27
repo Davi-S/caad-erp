@@ -41,10 +41,12 @@ export const voidSpec: DocumentSpec = {
         "PRE_PAID_SALE",
         "RESTOCK",
         "CREDIT_RESTOCK",
+        "PRE_PAID_RESTOCK",
         "WRITE_OFF",
         "PAYMENT_IN",
         "PAYMENT_OUT",
         "DELIVERY_OUT",
+        "DELIVERY_IN",
     ],
 }
 
