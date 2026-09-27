@@ -506,6 +506,120 @@ describe("what follows from the documents around it", () => {
         expect(() => checkInContext(payment)).toThrow(`${credit.id} is voided`)
     })
 
+    it("GIVEN a return that takes back a line of some other document THEN it is refused", () => {
+        const target = recordSale(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 2 }],
+            payments: [{ method: "Cash", amount: 1000 }],
+        })
+        const id = newId()
+        const at = new Date()
+
+        // Built by hand: the command's own builder reads the line it takes back
+        // from the sale, so it cannot produce this; the engine is checked on its own
+        expect(() =>
+            checkInContext({
+                id,
+                type: "RETURN",
+                occurredAt: at,
+                recordedAt: at,
+                performedBy: boss.id,
+                linkedDocumentId: target.id,
+                notes: null,
+                agreements: [
+                    {
+                        id: newId(),
+                        documentId: id,
+                        productId: water.id,
+                        linkedAgreementId: null,
+                        quantity: 1,
+                        unitPrice: null,
+                        lineDiscount: null,
+                        documentDiscountShare: null,
+                        value: -300,
+                    },
+                ],
+                movements: [
+                    {
+                        id: newId(),
+                        documentId: id,
+                        productId: water.id,
+                        linkedMovementId: null,
+                        quantity: 1,
+                    },
+                ],
+                payments: [
+                    {
+                        id: newId(),
+                        documentId: id,
+                        linkedPaymentId: null,
+                        method: "Cash",
+                        amount: -300,
+                    },
+                ],
+            }),
+        ).toThrow(/takes back a deal that .* never agreed/)
+    })
+
+    it("GIVEN a return whose goods take back a movement of some other document THEN it is refused", () => {
+        const target = recordSale(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 2 }],
+            payments: [{ method: "Cash", amount: 1000 }],
+        })
+        const elsewhere = recordSale(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 1 }],
+            payments: [{ method: "Cash", amount: 500 }],
+        })
+        const id = newId()
+        const at = new Date()
+
+        // The deal it takes back is this sale's; the goods are another sale's
+        expect(() =>
+            checkInContext({
+                id,
+                type: "RETURN",
+                occurredAt: at,
+                recordedAt: at,
+                performedBy: boss.id,
+                linkedDocumentId: target.id,
+                notes: null,
+                agreements: [
+                    {
+                        id: newId(),
+                        documentId: id,
+                        productId: coke.id,
+                        linkedAgreementId: target.agreements[0].id,
+                        quantity: 1,
+                        unitPrice: 500,
+                        lineDiscount: 0,
+                        documentDiscountShare: 0,
+                        value: -500,
+                    },
+                ],
+                movements: [
+                    {
+                        id: newId(),
+                        documentId: id,
+                        productId: coke.id,
+                        linkedMovementId: elsewhere.movements[0].id,
+                        quantity: 1,
+                    },
+                ],
+                payments: [
+                    {
+                        id: newId(),
+                        documentId: id,
+                        linkedPaymentId: null,
+                        method: "Cash",
+                        amount: -500,
+                    },
+                ],
+            }),
+        ).toThrow(/takes back goods that .* never moved/)
+    })
+
     it("GIVEN a void that leaves some of the target behind THEN it is refused, kind by kind", () => {
         const target = recordSale(db, {
             performedBy: boss.id,

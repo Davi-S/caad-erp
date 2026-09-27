@@ -73,6 +73,27 @@ describe("LedgerIndex.loadLinkedTo", () => {
     })
 })
 
+describe("LedgerIndex.descendants", () => {
+    it("GIVEN documents hanging off each other THEN every one below is listed, however deep, and the document itself is not", () => {
+        const target = insert()
+        const child = insert(target)
+        const grandchild = insert(child)
+        const sibling = insert(target)
+        insert() // unrelated
+
+        const index = LedgerIndex.loadLinkedTo(db, target)
+
+        expect(
+            index
+                .descendants(target)
+                .map((doc) => doc.id)
+                .sort(),
+        ).toEqual([child, grandchild, sibling].sort())
+        expect(index.descendants(child).map((doc) => doc.id)).toEqual([grandchild])
+        expect(index.descendants(grandchild)).toEqual([])
+    })
+})
+
 describe("new LedgerIndex()", () => {
     it("GIVEN a document that links to nothing, so nothing was loaded THEN the index finds nothing", () => {
         const index = new LedgerIndex()
