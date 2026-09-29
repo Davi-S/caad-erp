@@ -1,7 +1,13 @@
 {
     "$schema": "https://unpkg.com/knip@5/schemas/knip.json",
     "workspaces": {
-        "backend": {},
+        "backend": {
+            "ignoreDependencies": [
+                "@trpc/server",
+                "exceljs",
+                "mercadopago"
+            ]
+        },
         "frontend": {
             "vite": true
         }

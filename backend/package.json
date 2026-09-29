@@ -9,8 +9,8 @@
         "dev": "tsx watch src/trpc/server.ts",
         "start": "node dist/trpc/server.js",
         "test": "vitest run",
-        "db:init": "tsx scripts/db-init.ts",
-        "db:seed": "tsx scripts/db-seed.ts"
+        "test:coverage": "vitest run --coverage.enabled --coverage.provider=v8 --coverage.include='src/**' --coverage.reporter=text --coverage.reporter=html",
+        "db:init": "tsx scripts/db-init.ts"
     },
     "dependencies": {
         "@trpc/server": "^11.18.0",
