@@ -94,14 +94,32 @@ describe("recordPaymentOut", () => {
         expect(owedOn(db, credit.id)).toBe(0)
     })
 
-    it("GIVEN more paid than is owed THEN it is allowed, and leaves the supplier owing us the difference", () => {
+    it("GIVEN more paid than is owed THEN it is refused: paying a supplier extra is an expense of its own", () => {
+        expect(() =>
+            recordPaymentOut(db, {
+                performedBy: boss.id,
+                documentId: credit.id,
+                payments: [{ method: "Cash", amount: 3500 }],
+            }),
+        ).toThrow(/3000 is owed on .* and 0 already settled, so 3500 more cannot/)
+        expect(owedOn(db, credit.id)).toBe(-3000)
+    })
+
+    it("GIVEN instalments that would overshoot together THEN it is refused, counting what earlier ones settled", () => {
         recordPaymentOut(db, {
             performedBy: boss.id,
             documentId: credit.id,
-            payments: [{ method: "Cash", amount: 3500 }],
+            payments: [{ method: "Cash", amount: 2000 }],
         })
 
-        expect(owedOn(db, credit.id)).toBe(500)
+        expect(() =>
+            recordPaymentOut(db, {
+                performedBy: boss.id,
+                documentId: credit.id,
+                payments: [{ method: "PIX", amount: 1500 }],
+            }),
+        ).toThrow(/3000 is owed on .* and 2000 already settled, so 1500 more cannot/)
+        expect(owedOn(db, credit.id)).toBe(-1000)
     })
 
     it("GIVEN a restock already paid at the counter THEN there is nothing to settle against it", () => {

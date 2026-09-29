@@ -73,17 +73,35 @@ describe("recordPaymentIn", () => {
         expect(owedOn(db, credit.id)).toBe(0)
     })
 
-    it("GIVEN more than is owed THEN it is allowed, and the sale is left holding a credit", () => {
+    it("GIVEN more than is owed THEN it is refused: what the shop keeps on top is a document of its own", () => {
+        expect(() =>
+            recordPaymentIn(db, {
+                performedBy: boss.id,
+                documentId: credit.id,
+                payments: [{ method: "Cash", amount: 1700 }],
+            }),
+        ).toThrow(/1500 is owed on .* and 0 already settled, so 1700 more cannot/)
+        expect(owedOn(db, credit.id)).toBe(1500)
+    })
+
+    it("GIVEN instalments that would overshoot together THEN it is refused, counting what earlier ones settled", () => {
         recordPaymentIn(db, {
             performedBy: boss.id,
             documentId: credit.id,
-            payments: [{ method: "Cash", amount: 1700 }],
+            payments: [{ method: "Cash", amount: 1000 }],
         })
 
-        expect(owedOn(db, credit.id)).toBe(-200)
+        expect(() =>
+            recordPaymentIn(db, {
+                performedBy: boss.id,
+                documentId: credit.id,
+                payments: [{ method: "Cash", amount: 600 }],
+            }),
+        ).toThrow(/1500 is owed on .* and 1000 already settled, so 600 more cannot/)
+        expect(owedOn(db, credit.id)).toBe(500)
     })
 
-    it("GIVEN a sale that was already settled THEN paying again is still allowed: nothing is capped here", () => {
+    it("GIVEN a sale that was already settled THEN paying again is refused: there is nothing left to settle", () => {
         recordPaymentIn(db, {
             performedBy: boss.id,
             documentId: credit.id,
@@ -95,6 +113,24 @@ describe("recordPaymentIn", () => {
                 performedBy: boss.id,
                 documentId: credit.id,
                 payments: [{ method: "Cash", amount: 100 }],
+            }),
+        ).toThrow(/1500 is owed on .* and 1500 already settled, so 100 more cannot/)
+    })
+
+    it("GIVEN a payment that was voided THEN what it settled is owed again, and can be paid once more", () => {
+        const payment = recordPaymentIn(db, {
+            performedBy: boss.id,
+            documentId: credit.id,
+            payments: [{ method: "Cash", amount: 1500 }],
+        })
+        recordVoid(db, { performedBy: boss.id, documentId: payment.id })
+
+        expect(owedOn(db, credit.id)).toBe(1500)
+        expect(() =>
+            recordPaymentIn(db, {
+                performedBy: boss.id,
+                documentId: credit.id,
+                payments: [{ method: "Cash", amount: 1500 }],
             }),
         ).not.toThrow()
     })

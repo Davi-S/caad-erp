@@ -9,6 +9,7 @@ import {
     InactiveError,
     InvalidInputError,
     NotFoundError,
+    recordMoneyDonationIn,
     recordSale,
     RuleViolationError,
     updateProduct,
@@ -232,14 +233,30 @@ describe("recordSale", () => {
         expect(owedOn(db, sale.id)).toBe(0)
     })
 
-    it("GIVEN more money than the sale is worth THEN it is allowed, and the sale is left holding a credit", () => {
+    it("GIVEN more money than the sale is worth THEN it is refused: what the shop keeps on top is a document of its own", () => {
+        expect(() =>
+            recordSale(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 2 }],
+                payments: [{ method: "Cash", amount: 1200 }],
+            }),
+        ).toThrow(/A SALE settles exactly, but 200 is over/)
+        expect(listDocuments(db)).toHaveLength(0)
+
+        // What the shop actually keeps on top of the cart says so itself
         const sale = recordSale(db, {
             performedBy: boss.id,
             items: [{ productId: coke.id, quantity: 2 }],
-            payments: [{ method: "Cash", amount: 1200 }],
+            payments: [{ method: "Cash", amount: 1000 }],
+        })
+        recordMoneyDonationIn(db, {
+            performedBy: boss.id,
+            notes: "a tip",
+            payments: [{ method: "Cash", amount: 200 }],
         })
 
-        expect(owedOn(db, sale.id)).toBe(-200)
+        expect(owedOn(db, sale.id)).toBe(0)
+        expect(totals(db).cash).toBe(1200)
     })
 
     it("GIVEN less money than the sale is worth THEN it is refused, and says how much is unsettled", () => {
@@ -249,7 +266,7 @@ describe("recordSale", () => {
                 items: [{ productId: coke.id, quantity: 2 }],
                 payments: [{ method: "Cash", amount: 501 }],
             }),
-        ).toThrow(/A SALE leaves nothing owing, but 499 is unsettled/)
+        ).toThrow(/A SALE settles exactly, but 499 is unsettled/)
     })
 
     it("GIVEN a rule that refuses the sale THEN nothing at all is written", () => {

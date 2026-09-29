@@ -91,18 +91,19 @@ describe("recordPrePaidSale", () => {
                 items: [{ productId: coke.id, quantity: 2 }],
                 payments: [{ method: "Cash", amount: 600 }],
             }),
-        ).toThrow(/A PRE_PAID_SALE leaves nothing owing, but 400 is unsettled/)
+        ).toThrow(/A PRE_PAID_SALE settles exactly, but 400 is unsettled/)
         expect(listDocuments(db)).toHaveLength(0)
     })
 
-    it("GIVEN more paid than the goods are worth THEN it is allowed, the way a tip is", () => {
-        const sale = recordPrePaidSale(db, {
-            performedBy: boss.id,
-            items: [{ productId: coke.id, quantity: 1 }],
-            payments: [{ method: "Cash", amount: 600 }],
-        })
-
-        expect(owedOn(db, sale.id)).toBe(-100)
+    it("GIVEN more paid than the goods are worth THEN it is refused: a tip is a document of its own", () => {
+        expect(() =>
+            recordPrePaidSale(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 1 }],
+                payments: [{ method: "Cash", amount: 600 }],
+            }),
+        ).toThrow(/A PRE_PAID_SALE settles exactly, but 100 is over/)
+        expect(listDocuments(db)).toHaveLength(0)
     })
 
     it("GIVEN a cart that is entirely free THEN it is refused, exactly as a counter sale would be", () => {

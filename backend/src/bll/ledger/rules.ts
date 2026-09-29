@@ -105,16 +105,20 @@ const CHECKS = {
     },
 
     /**
-     * Nothing is left owing: the money that moved covers what was agreed. More
-     * than that is a tip, or more handed to a supplier, and is allowed.
+     * The money that moved is exactly what was agreed: nothing left owing, and
+     * nothing over.
+     *
+     * Handing over more than a cart comes to is a second event and it has a document
+     * of its own: `MONEY_DONATION_IN` or `EXPENSE`, for example.
      */
-    paymentsSettleInFull(doc: NewLedgerDocument): void {
+    paymentsSettleExactly(doc: NewLedgerDocument): void {
         const agreed = sum(doc.agreements.map((row) => row.value))
         const paid = sum(doc.payments.map((payment) => payment.amount))
         const owed = agreed - paid
-        if (owed * Math.sign(agreed) > 0) {
+        if (owed !== 0) {
+            const short = owed * Math.sign(agreed) > 0
             throw new RuleViolationError(
-                `A ${doc.type} leaves nothing owing, but ${Math.abs(owed)} is unsettled`,
+                `A ${doc.type} settles exactly, but ${Math.abs(owed)} is ${short ? "unsettled" : "over"}`,
             )
         }
     },
@@ -256,6 +260,39 @@ const CONTEXT_CHECKS = {
                     `${promised} of ${row.productId} was agreed and ${already} already moved, so ${now} more cannot`,
                 )
             }
+        }
+    },
+
+    /**
+     * Money settling a document stays within what it owes, counting what earlier
+     * payments already settled.
+     *
+     * The money-side twin of `movementsWithinAgreed`, and it exists for the same
+     * reason: a document that is settled later is settled up to what it owes and
+     * no further. Paying a supplier or a tab more than it comes to, for example
+     * leaves a credit that nothing in the system tracks or reports, so the excess
+     * belongs in a document that says what it is.
+     *
+     * The direction comes from what the target agreed, so one rule covers money
+     * owed to the shop and money owed by it. A voided payment settled nothing: its
+     * amounts come back on the void, which hangs off it, and the two cancel.
+     */
+    paymentsWithinOwed(doc: NewLedgerDocument, context: LedgerContext): void {
+        const target = context.linked.getDocument(doc.linkedDocumentId!)!
+
+        const owed = sum(target.agreements.map((row) => row.value))
+        const way = Math.sign(owed)
+
+        let settled = 0
+        for (const other of context.linked.descendants(target.id)) {
+            settled += sum(other.payments.map((payment) => payment.amount)) * way
+        }
+        const now = sum(doc.payments.map((payment) => payment.amount)) * way
+
+        if (settled + now > Math.abs(owed)) {
+            throw new RuleViolationError(
+                `${Math.abs(owed)} is owed on ${target.id} and ${settled} already settled, so ${now} more cannot`,
+            )
         }
     },
 

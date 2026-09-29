@@ -6,8 +6,8 @@
  * credit sale; this only records money moving, so what is still owed is the sale's
  * value less every payment made against it.
  *
- * Nothing is capped. Paying more than is owed leaves the sale overpaid, which the
- * balance reports show as credit, the same way a tip does.
+ * It is capped at what the sale still owes, counting what earlier payments
+ * already settled. Money handed over on top of that is a `MONEY_DONATION_IN`.
  */
 
 import type { DB, LedgerDocument } from "../../../dal/index.js"
@@ -29,7 +29,7 @@ export const paymentInSpec: DocumentSpec = {
     type: "PAYMENT_IN",
     shape: SHAPES.moneyIn,
     checks: [],
-    contextChecks: ["targetNotVoided"],
+    contextChecks: ["targetNotVoided", "paymentsWithinOwed"],
     salesman: "active",
     products: "any",
     linkedTypes: ["CREDIT_SALE"],

@@ -9,9 +9,9 @@
  * worth stay on the sale, and this only records units going out, so what is still
  * to collect is the sale's quantity less every delivery out made against it.
  *
- * Unlike a payment, it is capped. Handing over more than was sold is not a tip:
- * it is stock leaving with nothing behind it, so the units are counted against
- * what the sale agreed and what earlier deliveries out already took.
+ * It is capped, the way a payment in is. Handing over more than was sold is stock
+ * leaving with nothing behind it, so the units are counted against what the sale
+ * agreed and what earlier deliveries out already took.
  */
 
 import type { DB, LedgerDocument } from "../../../dal/index.js"

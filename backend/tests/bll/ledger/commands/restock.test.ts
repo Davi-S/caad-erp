@@ -76,18 +76,19 @@ describe("recordRestock", () => {
                 items: [{ productId: coke.id, quantity: 10, totalCost: 3000 }],
                 payments: [{ method: "Cash", amount: 1000 }],
             }),
-        ).toThrow(/A RESTOCK leaves nothing owing, but 2000 is unsettled/)
+        ).toThrow(/A RESTOCK settles exactly, but 2000 is unsettled/)
         expect(listDocuments(db)).toHaveLength(0)
     })
 
-    it("GIVEN more paid than the goods cost THEN it is allowed, the way handing the supplier extra is", () => {
-        const restock = recordRestock(db, {
-            performedBy: boss.id,
-            items: [{ productId: coke.id, quantity: 10, totalCost: 3000 }],
-            payments: [{ method: "Cash", amount: 3500 }],
-        })
-
-        expect(owedOn(db, restock.id)).toBe(500)
+    it("GIVEN more paid than the goods cost THEN it is refused: paying a supplier extra is an expense of its own", () => {
+        expect(() =>
+            recordRestock(db, {
+                performedBy: boss.id,
+                items: [{ productId: coke.id, quantity: 10, totalCost: 3000 }],
+                payments: [{ method: "Cash", amount: 3500 }],
+            }),
+        ).toThrow(/A RESTOCK settles exactly, but 500 is over/)
+        expect(listDocuments(db)).toHaveLength(0)
     })
 
     it("GIVEN one line thrown in for free inside a purchase THEN it is allowed and costs nothing", () => {

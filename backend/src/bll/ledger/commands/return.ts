@@ -41,7 +41,7 @@ export const returnSpec: DocumentSpec = {
     type: "RETURN",
     shape: SHAPES.mirrored,
     // What moneyOutGoodsIn have
-    checks: ["agreementsHaveValue", "movementsMatchAgreements", "paymentsSettleInFull"],
+    checks: ["agreementsHaveValue", "movementsMatchAgreements", "paymentsSettleExactly"],
     contextChecks: ["targetNotVoided", "returnsWithinSold"],
     salesman: "active",
     // Goods already sold have to be returnable, whatever the catalog says now

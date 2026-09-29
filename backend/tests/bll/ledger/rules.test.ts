@@ -411,7 +411,7 @@ describe("what follows from the form", () => {
         const doc = sale()
 
         expect(() => check({ ...doc, payments: [{ ...doc.payments[0], amount: 400 }] })).toThrow(
-            /A SALE leaves nothing owing, but 600 is unsettled/,
+            /A SALE settles exactly, but 600 is unsettled/,
         )
     })
 
@@ -419,7 +419,7 @@ describe("what follows from the form", () => {
         const doc = restock()
 
         expect(() => check({ ...doc, payments: [{ ...doc.payments[0], amount: -1000 }] })).toThrow(
-            /A RESTOCK leaves nothing owing, but 2000 is unsettled/,
+            /A RESTOCK settles exactly, but 2000 is unsettled/,
         )
     })
 

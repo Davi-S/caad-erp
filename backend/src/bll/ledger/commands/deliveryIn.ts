@@ -6,10 +6,9 @@
  * what it cost stay on the purchase, so what is still to arrive is its quantity
  * less every delivery made against it.
  *
- * Like a delivery out, it is capped. Taking in more units than were bought is not
- * a windfall: it is stock appearing with nothing accounting for it, so the units
- * are counted against what the purchase agreed and what earlier deliveries
- * already brought.
+ * Like a delivery out, it is capped. Taking in more units than were bought is
+ * stock appearing with nothing accounting for it, so the units are counted
+ * against what the purchase agreed and what earlier deliveries already brought.
  */
 
 import type { DB, LedgerDocument } from "../../../dal/index.js"

@@ -329,19 +329,20 @@ describe("recordReturn", () => {
                 items: [{ productId: coke.id, quantity: 4 }],
                 payments: [{ method: "Cash", amount: 1000 }],
             }),
-        ).toThrow(/A RETURN leaves nothing owing, but 1000 is unsettled/)
+        ).toThrow(/A RETURN settles exactly, but 1000 is unsettled/)
         expect(listDocuments(db)).toHaveLength(1)
     })
 
-    it("GIVEN more refunded than the goods were sold for THEN it is allowed, the way handing back extra is", () => {
-        const returned = recordReturn(db, {
-            performedBy: boss.id,
-            documentId: sale.id,
-            items: [{ productId: coke.id, quantity: 4 }],
-            payments: [{ method: "Cash", amount: 2500 }],
-        })
-
-        expect(owedOn(db, returned.id)).toBe(500)
+    it("GIVEN more refunded than the goods were sold for THEN it is refused: giving extra back is an expense of its own", () => {
+        expect(() =>
+            recordReturn(db, {
+                performedBy: boss.id,
+                documentId: sale.id,
+                items: [{ productId: coke.id, quantity: 4 }],
+                payments: [{ method: "Cash", amount: 2500 }],
+            }),
+        ).toThrow(/A RETURN settles exactly, but 500 is over/)
+        expect(listDocuments(db)).toHaveLength(1)
     })
 
     it("GIVEN a product that went inactive after it was sold THEN it can still come back", () => {

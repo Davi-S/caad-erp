@@ -6,9 +6,9 @@
  * The document carries payments and nothing else: what was agreed stays on the
  * restock, so what is still owed is its cost less every payment made against it.
  *
- * Nothing is capped. Paying a supplier more than is owed leaves the restock
- * overpaid, which the balance reports show as credit with them, the same way
- * overpaying a customer's account does.
+ * It is capped at what the restock still owes, counting what earlier payments
+ * already settled. Money handed to a supplier on top of that is not part of
+ * settling the debt: a fee or a rounding-up is an `EXPENSE`, which says so.
  */
 
 import type { DB, LedgerDocument } from "../../../dal/index.js"
@@ -29,7 +29,7 @@ export const paymentOutSpec: DocumentSpec = {
     type: "PAYMENT_OUT",
     shape: SHAPES.moneyOut,
     checks: [],
-    contextChecks: ["targetNotVoided"],
+    contextChecks: ["targetNotVoided", "paymentsWithinOwed"],
     salesman: "active",
     products: "any",
     linkedTypes: ["CREDIT_RESTOCK"],

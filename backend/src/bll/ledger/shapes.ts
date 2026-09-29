@@ -120,7 +120,7 @@ const GOODS_IN_MOVEMENTS: MovementsShape = {
 }
 /**
  * Money arriving, and money leaving. An agreement that is settled carries at
- * least one payment; whether they add up to it is `paymentsSettleInFull`'s
+ * least one payment; whether they add up to it is `paymentsSettleExactly`'s
  * business.
  */
 const MONEY_IN_PAYMENTS: PaymentsShape = {
@@ -173,7 +173,7 @@ export const SHAPES = {
             "agreementValueMatchesPricing",
             "agreementsHaveValue",
             "movementsMatchAgreements",
-            "paymentsSettleInFull",
+            "paymentsSettleExactly",
         ],
     },
 
@@ -182,7 +182,7 @@ export const SHAPES = {
         agreements: GOODS_OUT_AGREEMENTS,
         movements: null,
         payments: MONEY_IN_PAYMENTS,
-        checks: ["agreementValueMatchesPricing", "agreementsHaveValue", "paymentsSettleInFull"],
+        checks: ["agreementValueMatchesPricing", "agreementsHaveValue", "paymentsSettleExactly"],
     },
 
     goodsIn: { agreements: null, movements: GOODS_IN_MOVEMENTS, payments: null, checks: [] },
@@ -194,7 +194,7 @@ export const SHAPES = {
         agreements: GOODS_IN_AGREEMENTS,
         movements: GOODS_IN_MOVEMENTS,
         payments: MONEY_OUT_PAYMENTS,
-        checks: ["agreementsHaveValue", "movementsMatchAgreements", "paymentsSettleInFull"],
+        checks: ["agreementsHaveValue", "movementsMatchAgreements", "paymentsSettleExactly"],
     },
 
     moneyOut: { agreements: null, movements: null, payments: MONEY_OUT_PAYMENTS, checks: [] },
@@ -204,7 +204,7 @@ export const SHAPES = {
         agreements: GOODS_IN_AGREEMENTS,
         movements: null,
         payments: MONEY_OUT_PAYMENTS,
-        checks: ["agreementsHaveValue", "paymentsSettleInFull"],
+        checks: ["agreementsHaveValue", "paymentsSettleExactly"],
     },
 
     // Note that some agreed items can be free, but the total cannot be free
