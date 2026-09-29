@@ -11,6 +11,7 @@ import {
     InvalidInputError,
     NotFoundError,
     recordRestock,
+    recordVoid,
     recordWriteOff,
     updateProduct,
 } from "../../../../src/bll/index.js"
@@ -97,6 +98,47 @@ describe("recordWriteOff", () => {
                 items: [{ productId: coke.id, quantity: 1 }],
             }),
         ).toThrow(InactiveError)
+    })
+
+    it("GIVEN a write-off that should not have been entered THEN voiding it puts the stock back", () => {
+        recordRestock(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 10, totalCost: 3000 }],
+            payments: [{ method: "Cash", amount: 3000 }],
+        })
+        const writeOff = recordWriteOff(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 3 }],
+        })
+        expect(stockOf(db, coke.id)).toBe(7)
+
+        const voided = recordVoid(db, { performedBy: boss.id, documentId: writeOff.id })
+
+        expect(voided.movements).toMatchObject([{ productId: coke.id, quantity: 3 }])
+        expect(stockOf(db, coke.id)).toBe(10)
+    })
+
+    it("GIVEN units lost earlier and entered later THEN it keeps the day they were lost", () => {
+        const yesterday = new Date(AT.getTime() - 86_400_000)
+
+        const writeOff = recordWriteOff(db, {
+            performedBy: boss.id,
+            occurredAt: yesterday,
+            items: [{ productId: coke.id, quantity: 1 }],
+        })
+
+        expect(writeOff.occurredAt).toEqual(yesterday)
+        expect(writeOff.recordedAt).toEqual(AT)
+    })
+
+    it("GIVEN a note saying what happened THEN it is kept with the write-off", () => {
+        const writeOff = recordWriteOff(db, {
+            performedBy: boss.id,
+            notes: "  dropped a crate  ",
+            items: [{ productId: coke.id, quantity: 1 }],
+        })
+
+        expect(writeOff.notes).toBe("dropped a crate")
     })
 
     it("GIVEN any mandatory field left out THEN it is refused, naming it", () => {

@@ -14,6 +14,7 @@ import {
     recordPaymentOut,
     recordRestock,
     recordVoid,
+    recordWriteOff,
 } from "../../../../src/bll/index.js"
 import {
     listDocuments,
@@ -122,20 +123,53 @@ describe("recordPaymentOut", () => {
         expect(owedOn(db, credit.id)).toBe(-1000)
     })
 
-    it("GIVEN a restock already paid at the counter THEN there is nothing to settle against it", () => {
-        const paid = recordRestock(db, {
+    it("GIVEN a restock that was already settled THEN paying again is refused: there is nothing left to settle", () => {
+        recordPaymentOut(db, {
             performedBy: boss.id,
-            items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
-            payments: [{ method: "Cash", amount: 100 }],
+            documentId: credit.id,
+            payments: [{ method: "Cash", amount: 3000 }],
         })
 
         expect(() =>
             recordPaymentOut(db, {
                 performedBy: boss.id,
-                documentId: paid.id,
+                documentId: credit.id,
                 payments: [{ method: "Cash", amount: 100 }],
             }),
-        ).toThrow(/cannot be linked to a/)
+        ).toThrow(/3000 is owed on .* and 3000 already settled, so 100 more cannot/)
+    })
+
+    it("GIVEN anything other than a credit restock THEN it is refused, naming what was pointed at", () => {
+        const paid = recordRestock(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+            payments: [{ method: "Cash", amount: 100 }],
+        })
+        const writeOff = recordWriteOff(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 1 }],
+        })
+        const voided = recordVoid(db, { performedBy: boss.id, documentId: writeOff.id })
+        const payment = recordPaymentOut(db, {
+            performedBy: boss.id,
+            documentId: credit.id,
+            payments: [{ method: "Cash", amount: 100 }],
+        })
+
+        for (const [target, type] of [
+            [paid, "RESTOCK"],
+            [writeOff, "WRITE_OFF"],
+            [voided, "VOID"],
+            [payment, "PAYMENT_OUT"],
+        ] as const) {
+            expect(() =>
+                recordPaymentOut(db, {
+                    performedBy: boss.id,
+                    documentId: target.id,
+                    payments: [{ method: "Cash", amount: 100 }],
+                }),
+            ).toThrow(`A PAYMENT_OUT cannot be linked to a ${type}`)
+        }
     })
 
     it("GIVEN a credit restock that was voided THEN nothing can be paid against it", () => {

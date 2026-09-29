@@ -135,6 +135,38 @@ describe("recordPaymentIn", () => {
         ).not.toThrow()
     })
 
+    it("GIVEN a payment split between methods THEN each one is recorded with its own", () => {
+        const payment = recordPaymentIn(db, {
+            performedBy: boss.id,
+            documentId: credit.id,
+            payments: [
+                { method: "Cash", amount: 500 },
+                { method: "PIX", amount: 1000 },
+            ],
+        })
+
+        expect(payment.payments).toMatchObject([
+            { method: "Cash", amount: 500 },
+            { method: "PIX", amount: 1000 },
+        ])
+        expect(owedOn(db, credit.id)).toBe(0)
+    })
+
+    it("GIVEN a credit sale with a payment on it THEN voiding the sale is refused until the payment is voided first", () => {
+        const payment = recordPaymentIn(db, {
+            performedBy: boss.id,
+            documentId: credit.id,
+            payments: [{ method: "Cash", amount: 500 }],
+        })
+
+        expect(() => recordVoid(db, { performedBy: boss.id, documentId: credit.id })).toThrow(
+            /has a PAYMENT_IN on it; void that first/,
+        )
+
+        recordVoid(db, { performedBy: boss.id, documentId: payment.id })
+        expect(() => recordVoid(db, { performedBy: boss.id, documentId: credit.id })).not.toThrow()
+    })
+
     it("GIVEN anything other than a credit sale THEN it is refused, naming what was pointed at", () => {
         const sale = recordSale(db, {
             performedBy: boss.id,
@@ -230,6 +262,32 @@ describe("recordPaymentIn", () => {
         expect(payment.notes).toBeNull()
     })
 
+    it("GIVEN one bad payment among valid ones THEN it is refused, naming the line", () => {
+        const attempt = () =>
+            recordPaymentIn(db, {
+                performedBy: boss.id,
+                documentId: credit.id,
+                payments: [
+                    { method: "Cash", amount: 100 },
+                    { method: "PIX", amount: -1 },
+                ],
+            })
+
+        expect(attempt).toThrow(InvalidInputError)
+        expect(attempt).toThrow(names("payments.1.amount"))
+    })
+
+    it("GIVEN items passed in anyway THEN it is refused rather than quietly dropped: a payment moves no goods", () => {
+        expect(() =>
+            recordPaymentIn(db, {
+                performedBy: boss.id,
+                documentId: credit.id,
+                payments: [{ method: "Cash", amount: 100 }],
+                items: [{ productId: coke.id, quantity: 1 }],
+            } as never),
+        ).toThrow(/Unrecognized key: "items"/)
+    })
+
     it("GIVEN no money, or money that is not whole positive cents THEN it is refused as bad input", () => {
         for (const payments of [
             [],
@@ -256,13 +314,20 @@ describe("recordPaymentIn", () => {
         expect(payment.recordedAt).toEqual(AT)
     })
 
-    it("GIVEN a salesman who is inactive THEN the payment is refused", () => {
+    it("GIVEN a salesman who does not exist, or is inactive THEN no money moves", () => {
+        expect(() =>
+            recordPaymentIn(db, {
+                performedBy: "nobody",
+                documentId: credit.id,
+                payments: [{ method: "Cash", amount: 100 }],
+            }),
+        ).toThrow(NotFoundError)
+
         const inactive = createSalesman(db, {
             name: "Inactive",
             isActive: false,
             changedBy: boss.id,
         })
-
         expect(() =>
             recordPaymentIn(db, {
                 performedBy: inactive.id,
@@ -270,6 +335,7 @@ describe("recordPaymentIn", () => {
                 payments: [{ method: "Cash", amount: 100 }],
             }),
         ).toThrow(InactiveError)
+        expect(owedOn(db, credit.id)).toBe(1500)
     })
 })
 

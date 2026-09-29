@@ -9,6 +9,7 @@ import {
     InvalidInputError,
     NotFoundError,
     recordCreditSale,
+    recordPaymentIn,
     updateProduct,
 } from "../../../../src/bll/index.js"
 import {
@@ -57,6 +58,22 @@ describe("recordCreditSale", () => {
         })
 
         expect(owedOn(db, sale.id)).toBe(1500)
+    })
+
+    it("GIVEN the customer pays afterwards THEN the debt falls to nothing", () => {
+        const sale = recordCreditSale(db, {
+            performedBy: boss.id,
+            items: [{ productId: coke.id, quantity: 3 }],
+        })
+
+        recordPaymentIn(db, {
+            performedBy: boss.id,
+            documentId: sale.id,
+            payments: [{ method: "Cash", amount: 1500 }],
+        })
+
+        expect(owedOn(db, sale.id)).toBe(0)
+        expect(totals(db)).toEqual({ stock: -3, cash: 1500, agreed: 1500 })
     })
 
     it("GIVEN the catalog price changes afterwards THEN the debt does not move with it", () => {

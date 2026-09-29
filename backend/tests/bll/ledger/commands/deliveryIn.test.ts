@@ -245,6 +245,17 @@ describe("recordDeliveryIn", () => {
         ).toThrow(NotFoundError)
     })
 
+    it("GIVEN a delivery dated in the future THEN it is refused, as any document is", () => {
+        expect(() =>
+            recordDeliveryIn(db, {
+                performedBy: boss.id,
+                documentId: prePaid.id,
+                occurredAt: new Date(AT.getTime() + 86_400_000),
+                items: [{ productId: coke.id, quantity: 1 }],
+            }),
+        ).toThrow(/cannot have happened after it was recorded/)
+    })
+
     it("GIVEN goods received earlier and entered later THEN the delivery keeps the day they arrived", () => {
         const yesterday = new Date(AT.getTime() - 86_400_000)
 

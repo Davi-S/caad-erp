@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
     createProduct,
+    createSalesman,
     InactiveError,
     InvalidInputError,
     NotFoundError,
@@ -120,6 +121,74 @@ describe("recordRestock", () => {
                 payments: [{ method: "Cash", amount: 1 }],
             }),
         ).toThrow(/must be worth something/)
+    })
+
+    it("GIVEN a salesman who does not exist, or is inactive THEN nothing is bought", () => {
+        expect(() =>
+            recordRestock(db, {
+                performedBy: "nobody",
+                items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+                payments: [{ method: "Cash", amount: 100 }],
+            }),
+        ).toThrow(NotFoundError)
+
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
+        expect(() =>
+            recordRestock(db, {
+                performedBy: inactive.id,
+                items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+                payments: [{ method: "Cash", amount: 100 }],
+            }),
+        ).toThrow(InactiveError)
+        expect(listDocuments(db)).toHaveLength(0)
+    })
+
+    it("GIVEN a restock entered for an earlier day THEN it keeps that day, and records that it was entered now", () => {
+        const yesterday = new Date(AT.getTime() - 86_400_000)
+
+        const restock = recordRestock(db, {
+            performedBy: boss.id,
+            occurredAt: yesterday,
+            items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+            payments: [{ method: "Cash", amount: 100 }],
+        })
+
+        expect(restock.occurredAt).toEqual(yesterday)
+        expect(restock.recordedAt).toEqual(AT)
+    })
+
+    it("GIVEN a restock dated in the future THEN it is refused", () => {
+        expect(() =>
+            recordRestock(db, {
+                performedBy: boss.id,
+                occurredAt: new Date(AT.getTime() + 86_400_000),
+                items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+                payments: [{ method: "Cash", amount: 100 }],
+            }),
+        ).toThrow(/cannot have happened after it was recorded/)
+    })
+
+    it("GIVEN notes THEN they are trimmed, and a blank note is refused rather than stored empty", () => {
+        const restock = recordRestock(db, {
+            performedBy: boss.id,
+            notes: "  short delivery  ",
+            items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+            payments: [{ method: "Cash", amount: 100 }],
+        })
+
+        expect(restock.notes).toBe("short delivery")
+        expect(() =>
+            recordRestock(db, {
+                performedBy: boss.id,
+                notes: "   ",
+                items: [{ productId: coke.id, quantity: 1, totalCost: 100 }],
+                payments: [{ method: "Cash", amount: 100 }],
+            }),
+        ).toThrow(/notes: Notes cannot be blank/)
     })
 
     it("GIVEN any mandatory field left out THEN it is refused, naming it: a free line has to say so with a cost of zero", () => {
