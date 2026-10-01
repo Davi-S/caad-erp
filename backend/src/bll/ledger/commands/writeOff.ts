@@ -11,6 +11,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, movedItemsField } from "../fields.js"
 import { post } from "../post.js"
+import { movementRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -72,14 +73,7 @@ export function recordWriteOff(db: DB, command: WriteOffCommand): LedgerDocument
                 linkedDocumentId: null,
                 notes: input.notes,
                 agreements: [],
-                movements: input.items.map((item) => ({
-                    id: newId(),
-                    documentId: id,
-                    productId: item.productId,
-                    linkedMovementId: null,
-                    // Stock leaves
-                    quantity: -item.quantity,
-                })),
+                movements: movementRows(id, input.items, "out"),
                 payments: [],
             }
             return doc

@@ -16,6 +16,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, documentIdField, movedItemsField } from "../fields.js"
 import { post } from "../post.js"
+import { movementRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -83,14 +84,7 @@ export function recordDeliveryIn(db: DB, command: DeliveryInCommand): LedgerDocu
                 linkedDocumentId: input.documentId,
                 notes: input.notes,
                 agreements: [],
-                movements: input.items.map((item) => ({
-                    id: newId(),
-                    documentId: id,
-                    productId: item.productId,
-                    linkedMovementId: null,
-                    // Stock arrives
-                    quantity: item.quantity,
-                })),
+                movements: movementRows(id, input.items, "in"),
                 payments: [],
             }
         },

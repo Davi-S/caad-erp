@@ -24,7 +24,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, documentIdField, movedItemsField, paymentsField } from "../fields.js"
 import { post } from "../post.js"
-import { refundItems } from "../rows.js"
+import { paymentRows, refundItems } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -101,14 +101,7 @@ export function recordReturn(db: DB, command: ReturnCommand): LedgerDocument {
                 linkedDocumentId: input.documentId,
                 notes: input.notes,
                 ...refundItems(id, input.items, target, context.linked.descendants(target.id)),
-                payments: input.payments.map((payment) => ({
-                    id: newId(),
-                    documentId: id,
-                    linkedPaymentId: null,
-                    method: payment.method,
-                    // Money leaves
-                    amount: -payment.amount,
-                })),
+                payments: paymentRows(id, input.payments, "out"),
             }
         },
     )

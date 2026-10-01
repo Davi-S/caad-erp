@@ -12,7 +12,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, paymentsField, purchasedItemsField } from "../fields.js"
 import { post } from "../post.js"
-import { costItems } from "../rows.js"
+import { costItems, paymentRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -68,9 +68,9 @@ export function recordPrePaidRestock(db: DB, command: PrePaidRestockCommand): Le
         () => {
             const recordedAt = new Date()
             const id = newId()
-            // Costed exactly as a restock is; the movements it works out are not
-            // this document's, and come with the delivery in instead
-            const { agreements } = costItems(id, input.items)
+            // Costed exactly as a restock is; the goods come with the delivery in
+            // instead
+            const agreements = costItems(id, input.items)
 
             return {
                 id,
@@ -82,14 +82,7 @@ export function recordPrePaidRestock(db: DB, command: PrePaidRestockCommand): Le
                 notes: input.notes,
                 agreements,
                 movements: [],
-                payments: input.payments.map((payment) => ({
-                    id: newId(),
-                    documentId: id,
-                    linkedPaymentId: null,
-                    method: payment.method,
-                    // Money leaves
-                    amount: -payment.amount,
-                })),
+                payments: paymentRows(id, input.payments, "out"),
             }
         },
     )

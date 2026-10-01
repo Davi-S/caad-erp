@@ -7,21 +7,81 @@
  * kind of cart, not one module per kind of document.
  */
 
-import type { AgreementRow, LedgerDocument, MovementRow } from "../../dal/index.js"
+import type { AgreementRow, LedgerDocument, MovementRow, PaymentRow } from "../../dal/index.js"
 import { newId } from "../../ids.js"
 import { RuleViolationError } from "../errors.js"
-import { distribute } from "./money.js"
+import { distribute, sum } from "./money.js"
 import type { LedgerContext } from "./context.js"
-import type { movedItemsField, purchasedItemsField, soldItemsField } from "./fields.js"
+import type {
+    movedItemsField,
+    paymentsField,
+    purchasedItemsField,
+    soldItemsField,
+} from "./fields.js"
 import type { z } from "zod"
 
 export type SoldItems = z.output<typeof soldItemsField>
 export type PurchasedItems = z.output<typeof purchasedItemsField>
 export type MovedItems = z.output<typeof movedItemsField>
+export type Payments = z.output<typeof paymentsField>
 
 /**
- * Prices a cart of goods leaving, giving the rows a sale stores: what was
- * agreed, and the goods that left with it.
+ * Which way something crosses the counter: into the shop, or out of it. Callers
+ * count in positive units and cents, and this is what gives them their sign.
+ */
+export type Direction = "in" | "out"
+
+function signed(amount: number, direction: Direction): number {
+    return direction === "in" ? amount : -amount
+}
+
+/**
+ * Builds the payment rows for money moving now.
+ *
+ * @param documentId - The document the rows belong to.
+ * @param payments - How it was paid, as the caller counts it.
+ * @param direction - Whether the money arrives or leaves.
+ * @returns The payment rows, ready to store.
+ */
+export function paymentRows(
+    documentId: string,
+    payments: Payments,
+    direction: Direction,
+): PaymentRow[] {
+    return payments.map((payment) => ({
+        id: newId(),
+        documentId,
+        linkedPaymentId: null,
+        method: payment.method,
+        amount: signed(payment.amount, direction),
+    }))
+}
+
+/**
+ * Builds the movement rows for goods moving now.
+ *
+ * @param documentId - The document the rows belong to.
+ * @param items - What moved, as the caller counts it.
+ * @param direction - Whether the stock arrives or leaves.
+ * @returns The movement rows, ready to store.
+ */
+export function movementRows(
+    documentId: string,
+    items: { productId: string; quantity: number }[],
+    direction: Direction,
+): MovementRow[] {
+    return items.map((item) => ({
+        id: newId(),
+        documentId,
+        productId: item.productId,
+        linkedMovementId: null,
+        quantity: signed(item.quantity, direction),
+    }))
+}
+
+/**
+ * Prices a cart of goods leaving, giving what a sale agrees. Whether the goods
+ * leave now or later is the command's business, not this one's.
  *
  * Prices come from the catalog, never from the caller: the agreement stores the
  * catalog price of the moment, the discounts given and the net value, so a later
@@ -31,14 +91,14 @@ export type MovedItems = z.output<typeof movedItemsField>
  * @param items - What is being sold, as the caller counts it.
  * @param documentDiscount - Discount over the whole cart.
  * @param context - Where the catalog prices are read from.
- * @returns The agreement and movement rows, ready to store.
+ * @returns The agreement rows, ready to store.
  */
 export function priceItems(
     documentId: string,
     items: SoldItems,
     documentDiscount: number,
     context: LedgerContext,
-): { agreements: AgreementRow[]; movements: MovementRow[] } {
+): AgreementRow[] {
     // The catalog price of this moment is what the sale is made at
     const priced = items.map((item) => {
         const unitPrice = context.products.get(item.productId)!.sellPrice
@@ -53,67 +113,46 @@ export function priceItems(
         documentDiscount,
     )
 
-    return {
-        agreements: priced.map((item, position) => ({
-            id: newId(),
-            documentId,
-            productId: item.productId,
-            linkedAgreementId: null,
-            // Stock leaves: quantities are stored negative
-            quantity: -item.quantity,
-            unitPrice: item.unitPrice,
-            lineDiscount: item.lineDiscount,
-            documentDiscountShare: shares[position],
-            value: item.subtotal - shares[position],
-        })),
-        movements: priced.map((item) => ({
-            id: newId(),
-            documentId,
-            productId: item.productId,
-            linkedMovementId: null,
-            quantity: -item.quantity,
-        })),
-    }
+    return priced.map((item, position) => ({
+        id: newId(),
+        documentId,
+        productId: item.productId,
+        linkedAgreementId: null,
+        // Stock leaves: quantities are stored negative
+        quantity: -item.quantity,
+        unitPrice: item.unitPrice,
+        lineDiscount: item.lineDiscount,
+        documentDiscountShare: shares[position],
+        value: item.subtotal - shares[position],
+    }))
 }
 
 /**
- * Costs a cart of goods arriving, giving the rows a purchase stores: what is
- * owed for them, and the goods that came with it.
+ * Costs a cart of goods arriving, giving what a purchase agrees: what is owed
+ * for them.
  *
  * Nothing is priced. What a unit is worth on the way in is not a fact the ledger
  * has - the supplier charged what they charged - so the line states its total and
- * the pricing columns stay empty. Whether the money moves now or is owed is the
- * command's business, not this one's.
+ * the pricing columns stay empty. Whether the money and the goods move now or
+ * later is the command's business, not this one's.
  *
  * @param documentId - The document the rows belong to.
  * @param items - What is being bought, as the caller counts it.
- * @returns The agreement and movement rows, ready to store.
+ * @returns The agreement rows, ready to store.
  */
-export function costItems(
-    documentId: string,
-    items: PurchasedItems,
-): { agreements: AgreementRow[]; movements: MovementRow[] } {
-    return {
-        agreements: items.map((item) => ({
-            id: newId(),
-            documentId,
-            productId: item.productId,
-            linkedAgreementId: null,
-            // Stock arrives, and its cost is owed
-            quantity: item.quantity,
-            unitPrice: null,
-            lineDiscount: null,
-            documentDiscountShare: null,
-            value: -item.totalCost,
-        })),
-        movements: items.map((item) => ({
-            id: newId(),
-            documentId,
-            productId: item.productId,
-            linkedMovementId: null,
-            quantity: item.quantity,
-        })),
-    }
+export function costItems(documentId: string, items: PurchasedItems): AgreementRow[] {
+    return items.map((item) => ({
+        id: newId(),
+        documentId,
+        productId: item.productId,
+        linkedAgreementId: null,
+        // Stock arrives, and its cost is owed
+        quantity: item.quantity,
+        unitPrice: null,
+        lineDiscount: null,
+        documentDiscountShare: null,
+        value: -item.totalCost,
+    }))
 }
 
 /**
@@ -146,7 +185,6 @@ export function refundItems(
     target: LedgerDocument,
     history: LedgerDocument[],
 ): { agreements: AgreementRow[]; movements: MovementRow[] } {
-    const sum = (values: number[]) => values.reduce((total, value) => total + value, 0)
     const priorAgreements = history.flatMap((doc) => doc.agreements)
     const priorMovements = history.flatMap((doc) => doc.movements)
 

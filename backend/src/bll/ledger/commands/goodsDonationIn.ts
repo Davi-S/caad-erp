@@ -15,6 +15,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, movedItemsField } from "../fields.js"
 import { post } from "../post.js"
+import { movementRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -79,14 +80,8 @@ export function recordGoodsDonationIn(db: DB, command: GoodsDonationInCommand): 
                 linkedDocumentId: null,
                 notes: input.notes,
                 agreements: [],
-                movements: input.items.map((item) => ({
-                    id: newId(),
-                    documentId: id,
-                    productId: item.productId,
-                    linkedMovementId: null,
-                    // Stock arrives, owing nothing
-                    quantity: item.quantity,
-                })),
+                // Stock arrives, owing nothing
+                movements: movementRows(id, input.items, "in"),
                 payments: [],
             }
         },

@@ -15,6 +15,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, documentIdField, paymentsField } from "../fields.js"
 import { post } from "../post.js"
+import { paymentRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -82,14 +83,7 @@ export function recordPaymentIn(db: DB, command: PaymentInCommand): LedgerDocume
                 notes: input.notes,
                 agreements: [],
                 movements: [],
-                payments: input.payments.map((payment) => ({
-                    id: newId(),
-                    documentId: id,
-                    linkedPaymentId: null,
-                    method: payment.method,
-                    // Money arrives
-                    amount: payment.amount,
-                })),
+                payments: paymentRows(id, input.payments, "in"),
             }
         },
     )

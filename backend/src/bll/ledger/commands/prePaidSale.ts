@@ -12,7 +12,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentDiscountField, documentFields, paymentsField, soldItemsField } from "../fields.js"
 import { post } from "../post.js"
-import { priceItems } from "../rows.js"
+import { paymentRows, priceItems } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -69,9 +69,9 @@ export function recordPrePaidSale(db: DB, command: PrePaidSaleCommand): LedgerDo
         (context) => {
             const recordedAt = new Date()
             const id = newId()
-            // Priced exactly as a counter sale is; the movements it works out are
-            // not this document's, and come with the delivery out instead
-            const { agreements } = priceItems(id, input.items, input.documentDiscount, context)
+            // Priced exactly as a counter sale is; the goods come with the
+            // delivery out instead
+            const agreements = priceItems(id, input.items, input.documentDiscount, context)
 
             return {
                 id,
@@ -83,14 +83,7 @@ export function recordPrePaidSale(db: DB, command: PrePaidSaleCommand): LedgerDo
                 notes: input.notes,
                 agreements,
                 movements: [],
-                payments: input.payments.map((payment) => ({
-                    id: newId(),
-                    documentId: id,
-                    linkedPaymentId: null,
-                    method: payment.method,
-                    // Money arrives
-                    amount: payment.amount,
-                })),
+                payments: paymentRows(id, input.payments, "in"),
             }
         },
     )
