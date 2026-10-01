@@ -460,6 +460,31 @@ describe("what a document refers to", () => {
         expect(() => checkInContext({ ...doc, performedBy: inactive.id })).toThrow(InactiveError)
     })
 
+    it("GIVEN a spec that only needs the salesman to exist THEN an inactive one is allowed, and a missing one is still refused", () => {
+        const doc = sale()
+        const spec: DocumentSpec = { ...SPECS.SALE, salesman: "exists" }
+        const inactive = createSalesman(db, {
+            name: "Inactive",
+            isActive: false,
+            changedBy: boss.id,
+        })
+
+        const withSalesman = (performedBy: string) => {
+            const changed = { ...doc, performedBy }
+            validateInContext(changed, spec, contextFor(db, changed))
+        }
+
+        expect(() => withSalesman(inactive.id)).not.toThrow()
+        expect(() => withSalesman("nobody")).toThrow(NotFoundError)
+    })
+
+    it("GIVEN a spec that does not check the salesman THEN even a missing one is allowed", () => {
+        const doc = { ...sale(), performedBy: "nobody" }
+        const spec: DocumentSpec = { ...SPECS.SALE, salesman: "any" }
+
+        expect(() => validateInContext(doc, spec, contextFor(db, doc))).not.toThrow()
+    })
+
     it("GIVEN a product that no longer exists THEN it is refused as missing", () => {
         const doc = sale()
 

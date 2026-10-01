@@ -47,11 +47,14 @@ const CHECKS = {
 
     /**
      * What was agreed is the price times the quantity, less the discounts.
+     *
+     * Only for shapes that require the pricing columns, which are checked before
+     * this runs.
      */
     agreementValueMatchesPricing(doc: NewLedgerDocument): void {
         for (const row of doc.agreements) {
-            const gross = Math.abs(row.quantity) * (row.unitPrice ?? 0)
-            const expected = gross - (row.lineDiscount ?? 0) - (row.documentDiscountShare ?? 0)
+            const gross = Math.abs(row.quantity) * row.unitPrice!
+            const expected = gross - row.lineDiscount! - row.documentDiscountShare!
             if (row.value !== expected) {
                 throw new RuleViolationError(
                     `Value ${row.value} does not match price and discounts (expected ${expected})`,

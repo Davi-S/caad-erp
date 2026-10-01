@@ -9,6 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
     getProduct,
+    getProducts,
     listProductHistory,
     listProducts,
     updateProduct,
@@ -48,6 +49,24 @@ describe("insertProduct", () => {
                 isActive: true,
             },
         ])
+    })
+})
+
+describe("getProducts", () => {
+    it("GIVEN some ids THEN only the products that exist come back", () => {
+        const coke = addProduct(db, boss.id, { name: "Coke" })
+        const water = addProduct(db, boss.id, { name: "Water" })
+        addProduct(db, boss.id, { name: "Juice" })
+
+        const found = getProducts(db, [water.id, "nope", coke.id])
+
+        expect(found.map((product) => product.id).sort()).toEqual([coke.id, water.id].sort())
+    })
+
+    it("GIVEN no ids THEN nothing comes back", () => {
+        addProduct(db, boss.id)
+
+        expect(getProducts(db, [])).toEqual([])
     })
 })
 

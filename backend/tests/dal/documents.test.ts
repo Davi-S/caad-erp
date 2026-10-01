@@ -82,6 +82,33 @@ describe("insertDocument", () => {
         expect(sequences).toEqual([1, 2, 3])
     })
 
+    it("GIVEN several rows of a kind THEN they come back in the order they were given, while a later read sorts them by id", () => {
+        const id = newId()
+        // Ids are time-ordered, so reversing puts them out of id order
+        const payments = [
+            paymentRow(id, { amount: 100 }),
+            paymentRow(id, { amount: 200 }),
+            paymentRow(id, { amount: 300 }),
+        ].reverse()
+        const record = documentRecord(id, boss.id, { payments })
+
+        const stored = insertDocument(db, record)
+
+        expect(stored.payments).toEqual(payments)
+        expect(getDocument(db, id)!.payments).toEqual([...payments].reverse())
+    })
+
+    it("GIVEN an amount of minus zero THEN it comes back as stored, as zero", () => {
+        const id = newId()
+        const record = documentRecord(id, boss.id, {
+            agreements: [agreementRow(id, coke.id, { lineDiscount: -0 })],
+        })
+
+        const stored = insertDocument(db, record)
+
+        expect(Object.is(stored.agreements[0].lineDiscount, 0)).toBe(true)
+    })
+
     it("GIVEN a row that names something unknown THEN the whole document is refused and nothing is written", () => {
         const id = newId()
         const record = documentRecord(id, boss.id, {
