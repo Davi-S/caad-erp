@@ -11,9 +11,16 @@
  */
 
 import { paymentMethodValues } from "../../dal/index.js"
-import type { DocumentType, NewLedgerDocument } from "../../dal/index.js"
+import type {
+    AgreementRow,
+    DocumentType,
+    MovementRow,
+    NewLedgerDocument,
+    PaymentRow,
+} from "../../dal/index.js"
 import { InactiveError, NotFoundError, RuleViolationError } from "../errors.js"
 import type { DocumentReferences, LedgerContext } from "./context.js"
+import { sum } from "./money.js"
 import type {
     AgreementsShape,
     DocumentSpec,
@@ -136,7 +143,7 @@ const CONTEXT_CHECKS = {
      */
     targetNotVoided(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
-        if (context.linked.linkedDocuments(target.id).some((other) => other.type === "VOID")) {
+        if (isVoided(context, target.id)) {
             throw new RuleViolationError(`${target.id} is voided`)
         }
     },
@@ -158,45 +165,33 @@ const CONTEXT_CHECKS = {
     targetFullyMirrored(doc: NewLedgerDocument, context: LedgerContext): void {
         const target = context.linked.getDocument(doc.linkedDocumentId!)!
 
+        const agreement = (row: AgreementRow): Mirrorable => ({
+            productId: row.productId,
+            negated: [row.quantity, row.value, row.lineDiscount, row.documentDiscountShare],
+            same: [row.unitPrice],
+        })
+        const movement = (row: MovementRow): Mirrorable => ({
+            productId: row.productId,
+            negated: [row.quantity],
+            same: [],
+        })
+        const payment = (row: PaymentRow): Mirrorable => ({ negated: [row.amount], same: [] })
+
         checkMirrors(
-            doc.agreements.map((row) => ({
-                of: row.linkedAgreementId,
-                productId: row.productId,
-                negated: [row.quantity, row.value, row.lineDiscount, row.documentDiscountShare],
-                same: [row.unitPrice],
-            })),
-            target.agreements.map((row) => ({
-                id: row.id,
-                productId: row.productId,
-                negated: [row.quantity, row.value, row.lineDiscount, row.documentDiscountShare],
-                same: [row.unitPrice],
-            })),
+            doc.agreements.map((row) => ({ of: row.linkedAgreementId, ...agreement(row) })),
+            target.agreements.map((row) => ({ id: row.id, ...agreement(row) })),
             "agreement",
             target.id,
         )
         checkMirrors(
-            doc.movements.map((row) => ({
-                of: row.linkedMovementId,
-                productId: row.productId,
-                negated: [row.quantity],
-                same: [],
-            })),
-            target.movements.map((row) => ({
-                id: row.id,
-                productId: row.productId,
-                negated: [row.quantity],
-                same: [],
-            })),
+            doc.movements.map((row) => ({ of: row.linkedMovementId, ...movement(row) })),
+            target.movements.map((row) => ({ id: row.id, ...movement(row) })),
             "movement",
             target.id,
         )
         checkMirrors(
-            doc.payments.map((row) => ({
-                of: row.linkedPaymentId,
-                negated: [row.amount],
-                same: [],
-            })),
-            target.payments.map((row) => ({ id: row.id, negated: [row.amount], same: [] })),
+            doc.payments.map((row) => ({ of: row.linkedPaymentId, ...payment(row) })),
+            target.payments.map((row) => ({ id: row.id, ...payment(row) })),
             "payment",
             target.id,
         )
@@ -361,10 +356,7 @@ const CONTEXT_CHECKS = {
             if (dependent.type === "VOID") {
                 throw new RuleViolationError(`${target.id} is already voided`)
             }
-            const voided = context.linked
-                .linkedDocuments(dependent.id)
-                .some((other) => other.type === "VOID")
-            if (!voided) {
+            if (!isVoided(context, dependent.id)) {
                 throw new RuleViolationError(
                     `${target.id} has a ${dependent.type} on it; void that first`,
                 )
@@ -613,6 +605,13 @@ function checkMirrors(
     }
 }
 
+/**
+ * Whether a void hangs off the document: a voided one never happened.
+ */
+function isVoided(context: LedgerContext, documentId: string): boolean {
+    return context.linked.linkedDocuments(documentId).some((other) => other.type === "VOID")
+}
+
 function checkSalesman(salesmanId: string, context: LedgerContext, rule: ReferenceRule): void {
     if (rule === "any") {
         return
@@ -700,8 +699,4 @@ function checkNumber(what: string, value: number, sign: Sign): void {
     if (!rule.allows(value)) {
         throw new RuleViolationError(`${what} ${rule.requires}: ${value}`)
     }
-}
-
-function sum(values: number[]): number {
-    return values.reduce((total, value) => total + value, 0)
 }

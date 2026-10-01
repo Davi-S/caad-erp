@@ -7,6 +7,13 @@
  */
 
 /**
+ * Adds up amounts.
+ */
+export function sum(values: number[]): number {
+    return values.reduce((total, value) => total + value, 0)
+}
+
+/**
  * Splits `total` across `weights` so the parts add up to `total` exactly.
  *
  * Uses the largest-remainder method on a running balance: each part is the
@@ -23,7 +30,7 @@
  * @returns One amount per weight, summing to `total`.
  */
 export function distribute(weights: number[], total: number): number[] {
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
+    const totalWeight = sum(weights)
     if (total === 0) {
         return weights.map(() => 0)
     }
