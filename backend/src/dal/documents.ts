@@ -9,8 +9,8 @@
  * updated or deleted.
  */
 
-import { asc, eq, inArray, max, sql } from "drizzle-orm"
-import { inTransaction, type DB } from "./client.js"
+import { asc, inArray, sql } from "drizzle-orm"
+import { inTransaction, nextSequence, type DB } from "./client.js"
 import {
     documents,
     movements,
@@ -46,12 +46,7 @@ export type NewLedgerDocument = Omit<LedgerDocument, "sequence">
  * (`sequence`).
  */
 export function listDocuments(db: DB): LedgerDocument[] {
-    return group(
-        db.select().from(documents).orderBy(asc(documents.sequence)).all(),
-        db.select().from(agreements).orderBy(asc(agreements.id)).all(),
-        db.select().from(movements).orderBy(asc(movements.id)).all(),
-        db.select().from(payments).orderBy(asc(payments.id)).all(),
-    )
+    return load(db)
 }
 
 /**
@@ -72,36 +67,7 @@ export function listLinkedDocuments(db: DB, id: string): LedgerDocument[] {
                 SELECT id FROM linked`,
         )
         .map((row) => row.id)
-    if (ids.length === 0) {
-        return []
-    }
-
-    return group(
-        db
-            .select()
-            .from(documents)
-            .where(inArray(documents.id, ids))
-            .orderBy(asc(documents.sequence))
-            .all(),
-        db
-            .select()
-            .from(agreements)
-            .where(inArray(agreements.documentId, ids))
-            .orderBy(asc(agreements.id))
-            .all(),
-        db
-            .select()
-            .from(movements)
-            .where(inArray(movements.documentId, ids))
-            .orderBy(asc(movements.id))
-            .all(),
-        db
-            .select()
-            .from(payments)
-            .where(inArray(payments.documentId, ids))
-            .orderBy(asc(payments.id))
-            .all(),
-    )
+    return ids.length === 0 ? [] : load(db, ids)
 }
 
 /**
@@ -110,40 +76,12 @@ export function listLinkedDocuments(db: DB, id: string): LedgerDocument[] {
  * @returns The document with its rows, or `undefined` if there is none.
  */
 export function getDocument(db: DB, id: string): LedgerDocument | undefined {
-    const doc = db.select().from(documents).where(eq(documents.id, id)).get()
-    if (!doc) {
-        return undefined
-    }
-
-    return {
-        ...doc,
-        agreements: db
-            .select()
-            .from(agreements)
-            .where(eq(agreements.documentId, id))
-            .orderBy(asc(agreements.id))
-            .all(),
-        movements: db
-            .select()
-            .from(movements)
-            .where(eq(movements.documentId, id))
-            .orderBy(asc(movements.id))
-            .all(),
-        payments: db
-            .select()
-            .from(payments)
-            .where(eq(payments.documentId, id))
-            .orderBy(asc(payments.id))
-            .all(),
-    }
+    return load(db, [id])[0]
 }
 
 /**
  * Inserts a document with its rows atomically, giving it the next `sequence`
  * number.
- *
- * Reading the last sequence and inserting happen in the same transaction, and
- * SQLite allows a single writer, so two documents never get the same number.
  *
  * @returns The document as stored.
  */
@@ -156,29 +94,80 @@ export function insertDocument(db: DB, record: NewLedgerDocument): LedgerDocumen
     } = record
 
     return inTransaction(db, () => {
-        const last = db
-            .select({ value: max(documents.sequence) })
-            .from(documents)
-            .get()
-        const sequence = (last?.value ?? 0) + 1
-
         const stored = db
             .insert(documents)
-            .values({ ...doc, sequence })
+            .values({ ...doc, sequence: nextSequence(db, documents, documents.sequence) })
             .returning()
             .get()
 
+        // One statement per kind of row. Read back rather than echoed, so the
+        // caller gets what SQLite stored (a -0 comes back as 0, for one)
         return {
             ...stored,
-            agreements: docAgreements.map((row) =>
-                db.insert(agreements).values(row).returning().get(),
-            ),
-            movements: docMovements.map((row) =>
-                db.insert(movements).values(row).returning().get(),
-            ),
-            payments: docPayments.map((row) => db.insert(payments).values(row).returning().get()),
+            agreements:
+                docAgreements.length > 0
+                    ? inOrderOf(
+                          docAgreements,
+                          db.insert(agreements).values(docAgreements).returning().all(),
+                      )
+                    : [],
+            movements:
+                docMovements.length > 0
+                    ? inOrderOf(
+                          docMovements,
+                          db.insert(movements).values(docMovements).returning().all(),
+                      )
+                    : [],
+            payments:
+                docPayments.length > 0
+                    ? inOrderOf(
+                          docPayments,
+                          db.insert(payments).values(docPayments).returning().all(),
+                      )
+                    : [],
         }
     })
+}
+
+/**
+ * Puts rows read back from `RETURNING` in the order they were given: SQLite does
+ * not promise any order for them.
+ */
+function inOrderOf<T extends { id: string }>(given: T[], stored: T[]): T[] {
+    const byId = new Map(stored.map((row) => [row.id, row]))
+    return given.map((row) => byId.get(row.id)!)
+}
+
+/**
+ * Reads documents with their rows: the given ones, or every one.
+ */
+function load(db: DB, ids?: string[]): LedgerDocument[] {
+    return group(
+        db
+            .select()
+            .from(documents)
+            .where(ids && inArray(documents.id, ids))
+            .orderBy(asc(documents.sequence))
+            .all(),
+        db
+            .select()
+            .from(agreements)
+            .where(ids && inArray(agreements.documentId, ids))
+            .orderBy(asc(agreements.id))
+            .all(),
+        db
+            .select()
+            .from(movements)
+            .where(ids && inArray(movements.documentId, ids))
+            .orderBy(asc(movements.id))
+            .all(),
+        db
+            .select()
+            .from(payments)
+            .where(ids && inArray(payments.documentId, ids))
+            .orderBy(asc(payments.id))
+            .all(),
+    )
 }
 
 /**

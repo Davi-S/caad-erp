@@ -6,7 +6,9 @@
  */
 
 import Database from "better-sqlite3"
+import { max } from "drizzle-orm"
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
+import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core"
 
 /**
  * A Drizzle client over an open SQLite connection.
@@ -50,4 +52,19 @@ export function createDb(dbPath: string): DB {
  */
 export function inTransaction<T>(db: DB, fn: () => T): T {
     return db.transaction(() => fn(), { behavior: "immediate" })
+}
+
+/**
+ * The `sequence` number the next row of an append-only table gets.
+ *
+ * Must run inside the transaction that inserts the row: see {@link inTransaction}
+ * for why two writers never read the same number.
+ *
+ * @param table - The table being appended to.
+ * @param sequence - Its `sequence` column.
+ * @returns One past the highest number in use, or 1 for an empty table.
+ */
+export function nextSequence(db: DB, table: SQLiteTable, sequence: SQLiteColumn): number {
+    const last = db.select({ value: max(sequence) }).from(table).get()
+    return Number(last?.value ?? 0) + 1
 }

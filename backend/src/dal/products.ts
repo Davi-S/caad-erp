@@ -7,9 +7,9 @@
  * here: whose ID it is, is for the caller to decide.
  */
 
-import { asc, eq, max } from "drizzle-orm"
+import { asc, eq, inArray } from "drizzle-orm"
 import { newId } from "../ids.js"
-import { inTransaction, type DB } from "./client.js"
+import { inTransaction, nextSequence, type DB } from "./client.js"
 import { productHistory, products, type ProductHistoryRow, type ProductRow } from "./schema.js"
 
 /**
@@ -24,6 +24,13 @@ export function listProducts(db: DB): ProductRow[] {
  */
 export function getProduct(db: DB, id: string): ProductRow | undefined {
     return db.select().from(products).where(eq(products.id, id)).get()
+}
+
+/**
+ * @returns The products with the given IDs that exist, in no particular order.
+ */
+export function getProducts(db: DB, ids: string[]): ProductRow[] {
+    return ids.length === 0 ? [] : db.select().from(products).where(inArray(products.id, ids)).all()
 }
 
 /**
@@ -81,15 +88,10 @@ export function listProductHistory(db: DB, productId: string): ProductHistoryRow
  * snapshots never get the same number.
  */
 function recordSnapshot(db: DB, product: ProductRow, changedBy: string): void {
-    const last = db
-        .select({ value: max(productHistory.sequence) })
-        .from(productHistory)
-        .get()
-
     db.insert(productHistory)
         .values({
             id: newId(),
-            sequence: (last?.value ?? 0) + 1,
+            sequence: nextSequence(db, productHistory, productHistory.sequence),
             productId: product.id,
             changedBy,
             recordedAt: new Date(),

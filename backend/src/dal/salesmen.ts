@@ -7,9 +7,9 @@
  * here: whose ID it is, is for the caller to decide.
  */
 
-import { asc, eq, max } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import { newId } from "../ids.js"
-import { inTransaction, type DB } from "./client.js"
+import { inTransaction, nextSequence, type DB } from "./client.js"
 import { salesmanHistory, salesmen, type SalesmanHistoryRow, type SalesmanRow } from "./schema.js"
 
 /**
@@ -84,15 +84,10 @@ export function listSalesmanHistory(db: DB, salesmanId: string): SalesmanHistory
  * number.
  */
 function recordSnapshot(db: DB, salesman: SalesmanRow, changedBy: string): void {
-    const last = db
-        .select({ value: max(salesmanHistory.sequence) })
-        .from(salesmanHistory)
-        .get()
-
     db.insert(salesmanHistory)
         .values({
             id: newId(),
-            sequence: (last?.value ?? 0) + 1,
+            sequence: nextSequence(db, salesmanHistory, salesmanHistory.sequence),
             salesmanId: salesman.id,
             changedBy,
             recordedAt: new Date(),

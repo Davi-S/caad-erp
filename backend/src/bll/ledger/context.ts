@@ -39,16 +39,10 @@ export interface LedgerContext {
  * @returns The rows named, found or not.
  */
 export function loadContext(db: DB, references: DocumentReferences): LedgerContext {
-    const products = new Map<string, ProductRow>()
-    for (const productId of new Set(references.productIds)) {
-        const product = dal.getProduct(db, productId)
-        if (product) {
-            products.set(productId, product)
-        }
-    }
+    const products = dal.getProducts(db, [...new Set(references.productIds)])
 
     return {
-        products,
+        products: new Map(products.map((product) => [product.id, product])),
         salesman: dal.getSalesman(db, references.performedBy),
         linked: references.linkedDocumentId
             ? dal.LedgerIndex.loadLinkedTo(db, references.linkedDocumentId)
