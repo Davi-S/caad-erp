@@ -16,7 +16,7 @@ import { validate } from "../../validate.js"
 import { documentDiscountField, documentFields, soldItemsField } from "../fields.js"
 import { post } from "../post.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
-import { movementRows, priceItems } from "../rows.js"
+import { movementRows, soldAgreementRows } from "../rows.js"
 import { z } from "zod"
 
 /**
@@ -77,7 +77,7 @@ export function recordCreditSale(db: DB, command: CreditSaleCommand): LedgerDocu
                 performedBy: input.performedBy,
                 linkedDocumentId: null,
                 notes: input.notes,
-                agreements: priceItems(id, input.items, input.documentDiscount, context),
+                agreements: soldAgreementRows(id, input.items, input.documentDiscount, context),
                 movements: movementRows(id, input.items, "out"),
                 payments: [],
             }

@@ -12,7 +12,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentDiscountField, documentFields, paymentsField, soldItemsField } from "../fields.js"
 import { post } from "../post.js"
-import { paymentRows, priceItems } from "../rows.js"
+import { paymentRows, soldAgreementRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -71,7 +71,7 @@ export function recordPrePaidSale(db: DB, command: PrePaidSaleCommand): LedgerDo
             const id = newId()
             // Priced exactly as a counter sale is; the goods come with the
             // delivery out instead
-            const agreements = priceItems(id, input.items, input.documentDiscount, context)
+            const agreements = soldAgreementRows(id, input.items, input.documentDiscount, context)
 
             return {
                 id,

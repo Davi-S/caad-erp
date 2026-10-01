@@ -93,7 +93,7 @@ export function movementRows(
  * @param context - Where the catalog prices are read from.
  * @returns The agreement rows, ready to store.
  */
-export function priceItems(
+export function soldAgreementRows(
     documentId: string,
     items: SoldItems,
     documentDiscount: number,
@@ -140,7 +140,7 @@ export function priceItems(
  * @param items - What is being bought, as the caller counts it.
  * @returns The agreement rows, ready to store.
  */
-export function costItems(documentId: string, items: PurchasedItems): AgreementRow[] {
+export function purchasedAgreementRows(documentId: string, items: PurchasedItems): AgreementRow[] {
     return items.map((item) => ({
         id: newId(),
         documentId,

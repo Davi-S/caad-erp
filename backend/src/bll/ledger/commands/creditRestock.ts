@@ -14,7 +14,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, purchasedItemsField } from "../fields.js"
 import { post } from "../post.js"
-import { costItems, movementRows } from "../rows.js"
+import { movementRows, purchasedAgreementRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -78,7 +78,7 @@ export function recordCreditRestock(db: DB, command: CreditRestockCommand): Ledg
                 performedBy: input.performedBy,
                 linkedDocumentId: null,
                 notes: input.notes,
-                agreements: costItems(id, input.items),
+                agreements: purchasedAgreementRows(id, input.items),
                 movements: movementRows(id, input.items, "in"),
                 payments: [],
             }

@@ -12,7 +12,7 @@ import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, paymentsField, purchasedItemsField } from "../fields.js"
 import { post } from "../post.js"
-import { costItems, paymentRows } from "../rows.js"
+import { paymentRows, purchasedAgreementRows } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
 
@@ -70,7 +70,7 @@ export function recordPrePaidRestock(db: DB, command: PrePaidRestockCommand): Le
             const id = newId()
             // Costed exactly as a restock is; the goods come with the delivery in
             // instead
-            const agreements = costItems(id, input.items)
+            const agreements = purchasedAgreementRows(id, input.items)
 
             return {
                 id,
