@@ -10,7 +10,7 @@
  * A void cannot be voided: to undo one, record the original again.
  */
 
-import type { DB, LedgerDocument } from "../../../dal/index.js"
+import { documentTypeValues, type DB, type LedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
 import { documentFields, documentIdField } from "../fields.js"
@@ -35,23 +35,7 @@ export const voidSpec: DocumentSpec = {
     products: "any",
     // Anything but another void: an unwanted void is undone by recording the
     // original again
-    linkedTypes: [
-        "SALE",
-        "CREDIT_SALE",
-        "PRE_PAID_SALE",
-        "RETURN",
-        "RESTOCK",
-        "CREDIT_RESTOCK",
-        "PRE_PAID_RESTOCK",
-        "WRITE_OFF",
-        "EXPENSE",
-        "MONEY_DONATION_IN",
-        "GOODS_DONATION_IN",
-        "PAYMENT_IN",
-        "PAYMENT_OUT",
-        "DELIVERY_OUT",
-        "DELIVERY_IN",
-    ],
+    linkedTypes: documentTypeValues.filter((type) => type !== "VOID"),
 }
 
 /**
