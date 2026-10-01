@@ -42,7 +42,7 @@ export function createDb(dbPath: string): DB {
  *
  * It begins as `IMMEDIATE`, taking the write lock at the start rather than on the
  * first write. Every caller writes, and several read a number they are about to
- * base a write on (`MAX(sequence) + 1`); with a deferred transaction two writers
+ * base a write on ({@link nextSequence}); with a deferred transaction two writers
  * can read the same number and the second one fails on the unique index instead of
  * waiting its turn.
  *

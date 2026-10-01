@@ -24,7 +24,7 @@ export const documentFields = {
 /**
  * One movement of money: how it was paid, and how much.
  */
-export const paymentField = z.strictObject({
+export const paymentLineField = z.strictObject({
     method: z.enum(paymentMethodValues),
     amount: z
         .int("Amount must be a whole number of cents")
@@ -34,7 +34,7 @@ export const paymentField = z.strictObject({
 /**
  * Every way a document's money moved, at least one.
  */
-export const paymentsField = z.array(paymentField).min(1, "At least one payment is required")
+export const paymentsField = z.array(paymentLineField).min(1, "At least one payment is required")
 
 /**
  * The document another one settles, fulfils or takes back.

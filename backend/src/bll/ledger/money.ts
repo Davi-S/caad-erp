@@ -1,5 +1,5 @@
 /**
- * Splitting amounts of money without losing or inventing cents.
+ * Adding up and splitting amounts of money without losing or inventing cents.
  *
  * Every amount is an integer number of cents. These are pure helpers: they are
  * given already-valid numbers and treat anything else as a bug, not as bad user

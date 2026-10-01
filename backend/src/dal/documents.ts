@@ -25,8 +25,9 @@ import {
 /**
  * A document together with everything stored under it.
  *
- * The rows have no meaningful order: they are sorted by ID only so that repeated
- * reads return the same order. Do not rely on it.
+ * The rows have no meaningful order. Reads sort them by ID so that repeated reads
+ * return the same order; a document just inserted keeps the order it was given
+ * in. Do not rely on either.
  */
 export interface LedgerDocument extends DocumentRow {
     agreements: AgreementRow[]

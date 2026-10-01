@@ -83,9 +83,6 @@ export function listProductHistory(db: DB, productId: string): ProductHistoryRow
 
 /**
  * Appends the state a write left the product in, with the next `sequence` number.
- *
- * Runs inside the caller's transaction, and SQLite allows a single writer, so two
- * snapshots never get the same number.
  */
 function recordSnapshot(db: DB, product: ProductRow, changedBy: string): void {
     db.insert(productHistory)

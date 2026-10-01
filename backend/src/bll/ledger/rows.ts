@@ -4,7 +4,7 @@
  * Commands say what happened; the work of turning that into agreement, movement
  * and payment rows, with their ids, their signs and the columns their shape
  * requires, lives here whenever more than one command needs it. One function per
- * kind of cart, not one module per kind of document.
+ * kind of row or cart, not one module per kind of document.
  */
 
 import type { AgreementRow, LedgerDocument, MovementRow, PaymentRow } from "../../dal/index.js"
