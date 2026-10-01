@@ -22,7 +22,7 @@
 import type { DB, LedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields, movedItemsField, paymentField } from "../fields.js"
+import { documentFields, documentIdField, movedItemsField, paymentsField } from "../fields.js"
 import { post } from "../post.js"
 import { refundItems } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
@@ -57,9 +57,9 @@ export const returnSpec: DocumentSpec = {
  */
 export const returnSchema = z.strictObject({
     ...documentFields,
-    documentId: z.string().trim().min(1, "Document is required"),
+    documentId: documentIdField,
     items: movedItemsField,
-    payments: z.array(paymentField).min(1, "At least one payment is required"),
+    payments: paymentsField,
 })
 
 export type ReturnCommand = z.input<typeof returnSchema>

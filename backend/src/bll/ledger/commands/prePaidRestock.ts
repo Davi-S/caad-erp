@@ -10,7 +10,7 @@
 import type { DB, LedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields, paymentField, purchasedItemsField } from "../fields.js"
+import { documentFields, paymentsField, purchasedItemsField } from "../fields.js"
 import { post } from "../post.js"
 import { costItems } from "../rows.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
@@ -38,7 +38,7 @@ export const prePaidRestockSpec: DocumentSpec = {
 export const prePaidRestockSchema = z.strictObject({
     ...documentFields,
     items: purchasedItemsField,
-    payments: z.array(paymentField).min(1, "At least one payment is required"),
+    payments: paymentsField,
 })
 
 export type PrePaidRestockCommand = z.input<typeof prePaidRestockSchema>

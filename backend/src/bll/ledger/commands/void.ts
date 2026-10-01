@@ -13,7 +13,7 @@
 import type { DB, LedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields } from "../fields.js"
+import { documentFields, documentIdField } from "../fields.js"
 import { post } from "../post.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
@@ -71,7 +71,7 @@ function negate(amount: number | null): number | null {
 export const voidSchema = z.strictObject({
     performedBy: documentFields.performedBy,
     notes: documentFields.notes,
-    documentId: z.string().trim().min(1, "Document is required"),
+    documentId: documentIdField,
 })
 
 export type VoidCommand = z.input<typeof voidSchema>

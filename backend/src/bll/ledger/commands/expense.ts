@@ -17,7 +17,7 @@
 import type { DB, LedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields, paymentField } from "../fields.js"
+import { documentFields, paymentsField } from "../fields.js"
 import { post } from "../post.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
@@ -40,7 +40,7 @@ export const expenseSpec: DocumentSpec = {
  */
 export const expenseSchema = z.strictObject({
     ...documentFields,
-    payments: z.array(paymentField).min(1, "At least one payment is required"),
+    payments: paymentsField,
 })
 
 export type ExpenseCommand = z.input<typeof expenseSchema>

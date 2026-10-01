@@ -32,6 +32,16 @@ export const paymentField = z.strictObject({
 })
 
 /**
+ * Every way a document's money moved, at least one.
+ */
+export const paymentsField = z.array(paymentField).min(1, "At least one payment is required")
+
+/**
+ * The document another one settles, fulfils or takes back.
+ */
+export const documentIdField = z.string().trim().min(1, "Document is required")
+
+/**
  * A quantity of units, as the caller counts them.
  */
 export const quantityField = z
@@ -75,18 +85,22 @@ export function oneLinePerProduct(
 }
 
 /**
+ * A cart: at least one line, one per product.
+ */
+function itemsOf<T extends z.ZodType<{ productId: string }>>(line: T) {
+    return z.array(line).min(1, "At least one item is required").superRefine(oneLinePerProduct)
+}
+
+/**
  * What is being sold: a product, how many, and what comes off that line.
  */
-export const soldItemsField = z
-    .array(
-        z.strictObject({
-            productId: productIdField,
-            quantity: quantityField,
-            lineDiscount: discountField.default(0),
-        }),
-    )
-    .min(1, "At least one item is required")
-    .superRefine(oneLinePerProduct)
+export const soldItemsField = itemsOf(
+    z.strictObject({
+        productId: productIdField,
+        quantity: quantityField,
+        lineDiscount: discountField.default(0),
+    }),
+)
 
 /**
  * A discount over a whole cart, split across its items in proportion to what
@@ -108,16 +122,13 @@ const totalCostField = z
  * worth and the discounts come off it, while here the supplier's price is simply
  * what it is, so a purchase states the total and nothing is worked out.
  */
-export const purchasedItemsField = z
-    .array(
-        z.strictObject({
-            productId: productIdField,
-            quantity: quantityField,
-            totalCost: totalCostField,
-        }),
-    )
-    .min(1, "At least one item is required")
-    .superRefine(oneLinePerProduct)
+export const purchasedItemsField = itemsOf(
+    z.strictObject({
+        productId: productIdField,
+        quantity: quantityField,
+        totalCost: totalCostField,
+    }),
+)
 
 /**
  * Goods that only move: a product and how many units of it.
@@ -125,7 +136,6 @@ export const purchasedItemsField = z
  * No money is named, because these documents settle against what a linked
  * document already agreed, or against nothing at all.
  */
-export const movedItemsField = z
-    .array(z.strictObject({ productId: productIdField, quantity: quantityField }))
-    .min(1, "At least one item is required")
-    .superRefine(oneLinePerProduct)
+export const movedItemsField = itemsOf(
+    z.strictObject({ productId: productIdField, quantity: quantityField }),
+)

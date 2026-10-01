@@ -17,7 +17,7 @@
 import type { DB, LedgerDocument } from "../../../dal/index.js"
 import { newId } from "../../../ids.js"
 import { validate } from "../../validate.js"
-import { documentFields, movedItemsField } from "../fields.js"
+import { documentFields, documentIdField, movedItemsField } from "../fields.js"
 import { post } from "../post.js"
 import { SHAPES, type DocumentSpec } from "../shapes.js"
 import { z } from "zod"
@@ -44,7 +44,7 @@ export const deliveryOutSpec: DocumentSpec = {
  */
 export const deliveryOutSchema = z.strictObject({
     ...documentFields,
-    documentId: z.string().trim().min(1, "Document is required"),
+    documentId: documentIdField,
     items: movedItemsField,
 })
 
